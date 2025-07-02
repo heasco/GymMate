@@ -10,6 +10,17 @@ const app = express();
 const PORT = process.env.PORT || 8080;
 const DB_URL = "mongodb+srv://herodvelasco023:Qn0ihspOECvY5vq2@cluster0.vejigze.mongodb.net/goalsgym?retryWrites=true&w=majority&appName=Cluster0";
 
+mongoose.connect(DB_URL, {
+  dbName: 'goalsgym',
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+  ssl: true,
+  tlsAllowInvalidCertificates: false,
+  retryWrites: true,
+  socketTimeoutMS: 30000,
+  connectTimeoutMS: 30000
+});
+
 // ======================
 // Middleware - Open CORS
 // ======================
