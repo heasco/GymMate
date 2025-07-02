@@ -23,77 +23,46 @@
         <p class="error-message" id="error-message"></p>
     </div>
 
-    <script>
-        // API Configuration - Updated with your Render URL
-        const API_CONFIG = {
-            development: 'http://localhost:8080',
-            production: 'https://flex-it-goalsgym-it-project-2.onrender.com' // Your live Render URL
-        };
+   <script>
+    const API_URL = 'https://flex-it-goalsgym-it-project-2.onrender.com';
+    
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
         
-        // Detect environment
-        const isDevelopment = window.location.hostname === 'localhost' || 
-                            window.location.hostname === '127.0.0.1';
-        const API_BASE_URL = isDevelopment ? API_CONFIG.development : API_CONFIG.production;
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+        const errorElement = document.getElementById('error-message');
+        const submitButton = e.target.querySelector('button[type="submit"]');
 
-        document.getElementById('loginForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const username = document.getElementById('username').value.trim();
-            const password = document.getElementById('password').value.trim();
-            const errorElement = document.getElementById('error-message');
-            const submitButton = e.target.querySelector('button[type="submit"]');
+        submitButton.disabled = true;
+        submitButton.textContent = 'Logging in...';
+        errorElement.textContent = '';
 
-            try {
-                // Show loading state
-                submitButton.disabled = true;
-                submitButton.textContent = 'Logging in...';
-                errorElement.textContent = '';
+        try {
+            const response = await fetch(`${API_URL}/login`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ username, password })
+            });
 
-                // API request with credentials and CORS mode
-                const response = await fetch(`${API_BASE_URL}/login`, {
-                    method: 'POST',
-                    mode: 'cors', // Explicitly enable CORS
-                    credentials: 'include', // Include cookies if needed
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ username, password })
-                });
-
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error || 'Login failed');
-                }
-
-                const data = await response.json();
-                
-                // Store user data
-                if (data.user) {
-                    localStorage.setItem('authUser', JSON.stringify({
-                        id: data.user.id,
-                        username: data.user.username,
-                        name: data.user.name
-                    }));
-                }
-                
-                // Redirect to admin dashboard
-                window.location.href = 'admin-mainpage.html';
-
-            } catch (err) {
-                console.error('Login error:', err);
-                errorElement.textContent = err.message.includes('Failed to fetch') 
-                    ? 'Cannot connect to server. Please try again.' 
-                    : err.message;
-            } finally {
-                submitButton.disabled = false;
-                submitButton.textContent = 'Login';
+            if (!response.ok) {
+                const error = await response.json().catch(() => ({}));
+                throw new Error(error.message || 'Login failed');
             }
-        });
 
-        // Debugging helper
-        document.addEventListener('DOMContentLoaded', () => {
-            document.getElementById('username').focus();
-            console.log('API Base URL:', API_BASE_URL);
+            const data = await response.json();
+            localStorage.setItem('user', JSON.stringify(data.user));
+            window.location.href = 'admin-mainpage.html';
+            
+        } catch (err) {
+            errorElement.textContent = err.message;
+            console.error('Login error:', err);
+        } finally {
+            submitButton.disabled = false;
+            submitButton.textContent = 'Login';
+        }
         });
     </script>
 </body>
