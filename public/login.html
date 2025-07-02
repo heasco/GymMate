@@ -24,10 +24,10 @@
     </div>
 
     <script>
-        // API Configuration (put this at the top)
+        // API Configuration - Updated with your Render URL
         const API_CONFIG = {
             development: 'http://localhost:8080',
-            production: 'https://your-production-api.com' // REPLACE WITH YOUR LIVE API URL
+            production: 'https://flex-it-goalsgym-it-project-2.onrender.com' // Your live Render URL
         };
         
         // Detect environment
@@ -49,9 +49,11 @@
                 submitButton.textContent = 'Logging in...';
                 errorElement.textContent = '';
 
-                // Use the environment-aware API URL
+                // API request with credentials and CORS mode
                 const response = await fetch(`${API_BASE_URL}/login`, {
                     method: 'POST',
+                    mode: 'cors', // Explicitly enable CORS
+                    credentials: 'include', // Include cookies if needed
                     headers: {
                         'Content-Type': 'application/json',
                     },
@@ -70,8 +72,7 @@
                     localStorage.setItem('authUser', JSON.stringify({
                         id: data.user.id,
                         username: data.user.username,
-                        name: data.user.name,
-                        // Add other needed user data
+                        name: data.user.name
                     }));
                 }
                 
@@ -89,12 +90,10 @@
             }
         });
 
-        // Auto-focus username field on page load
+        // Debugging helper
         document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('username').focus();
-            
-            // Debug: Log which API URL is being used
-            console.log('Using API base URL:', API_BASE_URL);
+            console.log('API Base URL:', API_BASE_URL);
         });
     </script>
 </body>
