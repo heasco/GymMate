@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <link rel="stylesheet" href="admin-mainpage.css">
+    <style>
+       
+    </style>
+</head>
+<body>
+    <header class="admin-header">
+        <h1>Admin Dashboard</h1>
+        <button class="logout-btn" id="logoutBtn">Logout</button>
+    </header>
+    
+    <main class="admin-content">
+        <section id="adminPanel">
+            <!-- Your admin content goes here -->
+            <h2>Welcome, <span id="adminName"></span>!</h2>
+            <p>You have successfully logged in to the admin panel.</p>
+        </section>
+    </main>
+
+    <script>
+        // Check authentication on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            const user = JSON.parse(localStorage.getItem('authUser'));
+            
+            if (!user) {
+                window.location.href = 'login.html';
+                return;
+            }
+            
+            // Display admin name
+            document.getElementById('adminName').textContent = user.name || user.username;
+            
+            // Logout functionality
+            document.getElementById('logoutBtn').addEventListener('click', () => {
+                localStorage.removeItem('authUser');
+                window.location.href = 'login.html';
+            });
+        });
+    </script>
+</body>
+</html>
