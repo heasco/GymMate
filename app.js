@@ -1,42 +1,59 @@
-require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const cors = require('cors');
-const helmet = require('helmet');
 const app = express();
 
-// Security middleware
-app.use(helmet());
-app.use(express.json({ limit: '10kb' }));
+// ======================
+// Constants
+// ======================
+const PORT = process.env.PORT || 8080;
+const DB_URL = "mongodb+srv://herodvelasco023:Qn0ihspOECvY5vq2@cluster0.vejigze.mongodb.net/goalsgym?retryWrites=true&w=majority&appName=Cluster0";
 
-// Temporary CORS (replace with your actual frontend URL later)
+// ======================
+// Middleware - Open CORS
+// ======================
 app.use(cors({
-  origin: '*', // ⚠️ Temporary - change to your Render frontend URL after deployment
+  origin: '*', // Allow all origins temporarily
+  credentials: true,
   methods: ['GET', 'POST', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-// Database connection
-const DB_URL = process.env.MONGODB_URI || "mongodb://localhost:27017/goalsgym";
+app.use(express.json({ limit: '10kb' }));
 
+// JSON error handler
+app.use((err, req, res, next) => {
+  if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
+    return res.status(400).json({ error: "Invalid JSON format" });
+  }
+  next();
+});
+
+// ======================
+// Database Connection
+// ======================
 mongoose.connect(DB_URL, {
   dbName: 'goalsgym',
   useNewUrlParser: true,
-  useUnifiedTopology: true
+  useUnifiedTopology: true,
+  retryWrites: true,
+  w: 'majority'
 });
 
 mongoose.connection.on('connected', () => {
   console.log('✅ MongoDB connected');
-  if (process.env.NODE_ENV !== 'production') initializeAdmin();
+  initializeAdmin(); // Initialize admin for both dev and production (temporary)
 });
 
 mongoose.connection.on('error', err => {
-  console.error('❌ MongoDB error:', err);
-  if (process.env.NODE_ENV === 'production') process.exit(1);
+  console.error('❌ MongoDB connection error:', err);
+  if (process.env.PORT) process.exit(1); // Exit in production
 });
 
-// Admin initialization (dev only)
+// ======================
+// Admin Initialization
+// ======================
 async function initializeAdmin() {
   try {
     const adminExists = await mongoose.connection.db.collection('admin').countDocuments({ username: 'admin' });
@@ -45,21 +62,27 @@ async function initializeAdmin() {
       await mongoose.connection.db.collection('admin').insertOne({
         username: 'admin',
         password: hashedPassword,
+        name: 'System Admin',
+        phone: '+1234567890',
         role: 'admin',
         createdAt: new Date()
       });
       console.log('🔑 Default admin created');
     }
   } catch (err) {
-    console.error('Admin init error:', err);
+    console.error('Admin initialization error:', err);
   }
 }
 
+// ======================
 // Routes
+// ======================
 app.post('/login', async (req, res) => {
   try {
     const { username, password } = req.body;
-    const admin = await mongoose.connection.db.collection('admin').findOne({ username });
+    const admin = await mongoose.connection.db.collection('admin').findOne({ 
+      username: username.trim() 
+    });
     
     if (!admin || !(await bcrypt.compare(password, admin.password))) {
       return res.status(401).json({ error: 'Invalid credentials' });
@@ -67,7 +90,11 @@ app.post('/login', async (req, res) => {
 
     res.json({ 
       success: true,
-      user: { id: admin._id, username: admin.username }
+      user: {
+        id: admin._id,
+        username: admin.username,
+        name: admin.name
+      }
     });
   } catch (err) {
     console.error('Login error:', err);
@@ -75,19 +102,22 @@ app.post('/login', async (req, res) => {
   }
 });
 
-// Health check
-app.get('/health', (req, res) => res.json({ status: 'ok' }));
+// Health check endpoint
+app.get('/health', (req, res) => res.json({ 
+  status: 'ok', 
+  db: mongoose.connection.readyState === 1 
+}));
 
-// Error handling
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ 
-    error: process.env.NODE_ENV === 'production' ? 'Server error' : err.message 
-  });
+// ======================
+// Server Start
+// ======================
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`MongoDB: ${DB_URL.split('@')[1].split('?')[0]}`);
+  console.log(`CORS: Enabled for all origins (*)`);
 });
 
-const PORT = process.env.PORT || 8080;
-app.listen(PORT, () => {
-  console.log(`🚀 Server running in ${process.env.NODE_ENV || 'development'} mode`);
-  console.log(`Access at: http://localhost:${PORT}`);
+// Crash protection
+process.on('unhandledRejection', err => {
+  console.error('Unhandled Rejection:', err);
 });
