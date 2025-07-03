@@ -5,27 +5,12 @@ stages:
 
 pages:
   stage: deploy
-  before_script:
-    - mkdir -p public
   script:
-    - mv login.html public/index.html
-    - cp -r *.html *.css *.js public/
-    - echo "Deployed to $CI_PAGES_URL"
+    - mkdir -p public
+    - cp -r *.html *.css *.js public/  # Copy all web files
+    - echo "Pages deployed to $CI_PAGES_URL"
   artifacts:
     paths:
       - public
   rules:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
-
-deploy_backend:
-  stage: deploy
-  image: node:16
-  script:
-    - npm install
-    - npm install -g pm2
-    - pm2 start app.js --name goalsgym-backend
-  rules:
-    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
-  environment:
-    name: production
-    url: https://flex-it-goalsgym-it-project-2.onrender.com
