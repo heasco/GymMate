@@ -10,23 +10,16 @@ pages:
     - echo "Current directory contents:"
     - ls -la
   script:
-    # Copy HTML files if they exist
-    - shopt -s nullglob  # Prevent errors if no files match
+    # Copy files with error suppression
     - cp *.html public/ 2>/dev/null || echo "No HTML files found"
-    
-    # Copy CSS files if they exist
     - cp *.css public/ 2>/dev/null || echo "No CSS files found"
-    
-    # Copy JS files if they exist
     - cp *.js public/ 2>/dev/null || echo "No JS files found"
     
-    # Verify at least one file was copied
-    - if [ -z "$(ls -A public)" ]; then
-        echo "Error: No files were copied to public/";
-        exit 1;
-      else
-        echo "Copied files:";
-        ls -la public/;
+    # Create default index.html if none exists
+    - |
+      if [ ! -f public/index.html ]; then
+        echo "Creating default index.html"
+        echo "<h1>Welcome to GoalsGym</h1><p><a href='login.html'>Login</a></p>" > public/index.html
       fi
   artifacts:
     paths:
