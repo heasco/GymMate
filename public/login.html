@@ -3,10 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Login</title>
-    <link rel="stylesheet" href="style.css">
+    <title>Admin Login - GOALS Gym</title>
+    <link rel="stylesheet" href="style.css"> <!-- Make sure this path is correct -->
 </head>
 <body>
+    <!-- HTML code content goes here-->
     <div class="login-container">
         <h1 class="login-title">Admin Login</h1>
         <form id="loginForm">
@@ -23,7 +24,8 @@
         <p class="error-message" id="error-message"></p>
     </div>
 
-   <script>
+    <!-- JS connection -->
+    <script>
     const API_URL = 'https://flex-it-goalsgym-it-project-2.onrender.com';
     
     document.getElementById('loginForm').addEventListener('submit', async (e) => {
@@ -52,8 +54,24 @@
                 throw new Error(error.message || 'Login failed');
             }
 
+            // --- START ADDITION --- //
             const data = await response.json();
-            localStorage.setItem('user', JSON.stringify(data.user));
+            console.log("API Response:", data); // Debug the full response
+            
+            // Store user data with all necessary fields
+            localStorage.setItem('authUser', JSON.stringify({
+                id: data.user.id,
+                username: data.user.username,
+                name: data.user.name,
+                token: data.token || null,      // If your API provides tokens
+                timestamp: Date.now()           // For session expiration
+            }));
+            
+            // Verify storage
+            console.log("Stored auth data:", localStorage.getItem('authUser'));
+            // --- END ADDITION --- //
+
+            // Redirect only AFTER storing data
             window.location.href = 'admin-mainpage.html';
             
         } catch (err) {
@@ -63,7 +81,7 @@
             submitButton.disabled = false;
             submitButton.textContent = 'Login';
         }
-        });
-    </script>
+    });
+</script>
 </body>
 </html>

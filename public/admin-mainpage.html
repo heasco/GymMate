@@ -3,45 +3,68 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard</title>
+    <title>Admin Dashboard - GOALS Gym</title>
     <link rel="stylesheet" href="admin-mainpage.css">
-    <style>
-       
-    </style>
 </head>
 <body>
     <header class="admin-header">
-        <h1>Admin Dashboard</h1>
+        <h1>GOALS Gym Admin Dashboard</h1>
         <button class="logout-btn" id="logoutBtn">Logout</button>
     </header>
     
     <main class="admin-content">
         <section id="adminPanel">
-            <!-- Your admin content goes here -->
             <h2>Welcome, <span id="adminName"></span>!</h2>
             <p>You have successfully logged in to the admin panel.</p>
+            
+            <div class="admin-section">
+                <h3>Quick Actions</h3>
+                <div class="action-buttons">
+                    <button class="action-btn" id="manageMembers">Manage Members</button>
+                    <button class="action-btn" id="viewReports">View Reports</button>
+                    <button class="action-btn" id="systemSettings">System Settings</button>
+                </div>
+            </div>
         </section>
     </main>
 
-    <script>
-        // Check authentication on page load
-        document.addEventListener('DOMContentLoaded', () => {
-            const user = JSON.parse(localStorage.getItem('authUser'));
-            
-            if (!user) {
-                window.location.href = 'login.html';
-                return;
-            }
-            
-            // Display admin name
-            document.getElementById('adminName').textContent = user.name || user.username;
-            
-            // Logout functionality
-            document.getElementById('logoutBtn').addEventListener('click', () => {
-                localStorage.removeItem('authUser');
-                window.location.href = 'login.html';
-            });
+   <script>
+    // Debugging initialization
+    console.group("Auth Debug");
+    console.log("Page loaded:", new Date().toISOString());
+    
+    // 1. Verify storage
+    const rawAuth = localStorage.getItem('authUser');
+    console.log("Raw localStorage:", rawAuth);
+    
+    try {
+        // 2. Parse data
+        const authData = JSON.parse(rawAuth);
+        console.log("Parsed auth data:", authData);
+        
+        // 3. Validation
+        if (!authData?.username) {
+            console.warn("Invalid/missing auth data");
+            throw new Error("Authentication required");
+        }
+        
+        // 4. Display UI
+        document.getElementById('adminName').textContent = authData.name || authData.username;
+        console.log("Authentication successful");
+        
+        // Setup controls
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            localStorage.removeItem('authUser');
+            window.location.href = 'login.html';
         });
+        
+    } catch (error) {
+        console.error("Auth check failed:", error);
+        localStorage.removeItem('authUser'); // Clear corrupted data
+        window.location.href = 'login.html';
+    } finally {
+        console.groupEnd();
+    }
     </script>
 </body>
 </html>
