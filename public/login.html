@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Login - GOALS Gym</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="./style.css">
 </head>
 <body>
     <div class="login-container">
@@ -24,9 +24,8 @@
     </div>
 
     <script>
-        // GitLab Pages compatible configuration
+        // Configuration
         const API_URL = 'https://flex-it-goalsgym-it-project-2.onrender.com';
-        const GITLAB_PROJECT_PATH = '/flex-it-goalsgym-it-project-2-ecd552';
         
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -41,45 +40,31 @@
             errorElement.textContent = '';
 
             try {
-                console.log("Attempting login...");
                 const response = await fetch(`${API_URL}/login`, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ username, password })
                 });
 
-                console.log("Login response status:", response.status);
-                
                 if (!response.ok) {
                     const error = await response.json().catch(() => ({}));
-                    throw new Error(error.message || 'Login failed');
+                    throw new Error(error.message || 'Invalid credentials');
                 }
 
                 const data = await response.json();
-                console.log("Login successful:", data);
                 
-                // Store authentication data
+                // Store auth data with expiration (1 hour)
                 localStorage.setItem('authUser', JSON.stringify({
-                    id: data.user.id,
-                    username: data.user.username,
-                    name: data.user.name,
+                    user: data.user,
                     timestamp: Date.now()
                 }));
                 
-                // GitLab Pages compatible redirect
-                const adminPageUrl = window.location.hostname.includes('gitlab.io')
-                    ? `${GITLAB_PROJECT_PATH}/admin-mainpage.html`
-                    : 'admin-mainpage.html';
-                
-                console.log("Redirecting to:", adminPageUrl);
-                window.location.href = adminPageUrl;
+                // Redirect to admin page
+                window.location.href = 'admin-mainpage.html';
                 
             } catch (err) {
-                console.error("Login failed:", err);
                 errorElement.textContent = err.message.includes('Failed to fetch')
-                    ? 'Cannot connect to server. Please try again later.'
+                    ? 'Server unavailable. Try again later.'
                     : err.message;
             } finally {
                 submitButton.disabled = false;
@@ -87,11 +72,8 @@
             }
         });
 
-        // Auto-focus username field on load
-        document.addEventListener('DOMContentLoaded', () => {
-            document.getElementById('username').focus();
-            console.log("Login page loaded for:", window.location.href);
-        });
+        // Auto-focus username field
+        document.getElementById('username').focus();
     </script>
 </body>
 </html>

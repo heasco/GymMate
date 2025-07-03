@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard - GOALS Gym</title>
-    <link rel="stylesheet" href="admin-mainpage.css">
+    <link rel="stylesheet" href="./admin-mainpage.css">
 </head>
 <body>
     <header class="admin-header">
@@ -29,45 +29,40 @@
     </main>
 
     <script>
-        // GitLab Pages compatible authentication
+        // Session management
         document.addEventListener('DOMContentLoaded', () => {
-            console.group("[GOALS Gym] Auth Check");
-            
-            try {
-                // 1. Get authentication data
-                const authData = JSON.parse(localStorage.getItem('authUser'));
-                console.log("Auth data loaded:", authData);
-                
-                // 2. Validate session
-                if (!authData?.username) {
-                    throw new Error("No active session found");
-                }
-                
-                // 3. Display user info
-                document.getElementById('adminName').textContent = authData.name || authData.username;
-                console.log("User authenticated:", authData.username);
-                
-                // 4. Set up logout button
-                document.getElementById('logoutBtn').addEventListener('click', () => {
-                    localStorage.removeItem('authUser');
-                    window.location.href = '/flex-it-goalsgym-it-project-2-ecd552/login.html';
-                });
-                
-                // 5. Set up action buttons (stub functions)
-                ['manageMembers', 'viewReports', 'systemSettings'].forEach(id => {
-                    document.getElementById(id).addEventListener('click', () => {
-                        console.log(`Action: ${id}`);
-                        // Add actual functionality here
-                    });
-                });
-                
-            } catch (error) {
-                console.error("Authentication error:", error);
-                // Redirect to login page with full GitLab Pages path
-                window.location.href = '/flex-it-goalsgym-it-project-2-ecd552/login.html';
-            } finally {
-                console.groupEnd();
+            const authUser = JSON.parse(localStorage.getItem('authUser'));
+            const adminName = document.getElementById('adminName');
+            const logoutBtn = document.getElementById('logoutBtn');
+
+            // Check valid session (1 hour expiration)
+            if (!authUser || (Date.now() - authUser.timestamp > 3600000)) {
+                localStorage.removeItem('authUser');
+                window.location.href = 'login.html';
+                return;
             }
+
+            // Display user info
+            adminName.textContent = authUser.user.name || authUser.user.username;
+
+            // Logout handler
+            logoutBtn.addEventListener('click', () => {
+                localStorage.removeItem('authUser');
+                window.location.href = 'login.html';
+            });
+
+            // Button actions (stub functions)
+            document.getElementById('manageMembers').addEventListener('click', () => {
+                alert('Manage Members clicked');
+            });
+
+            document.getElementById('viewReports').addEventListener('click', () => {
+                alert('View Reports clicked');
+            });
+
+            document.getElementById('systemSettings').addEventListener('click', () => {
+                alert('System Settings clicked');
+            });
         });
     </script>
 </body>
