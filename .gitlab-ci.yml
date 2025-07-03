@@ -6,22 +6,37 @@ stages:
 pages:
   stage: deploy
   before_script:
-    - echo "Cleaning public directory..."
-    - rm -rf public
+    - echo "Preparing deployment..."
     - mkdir -p public
+    - echo "Current directory structure:"
+    - ls -la
   script:
-    # Copy ALL frontend files (HTML, CSS, JS, images)
-    - echo "Copying files to public directory..."
-    - cp -r *.html *.css *.js images/ public/ 2>/dev/null || echo "Some files not found (this may be normal)"
+    # Copy HTML files
+    - echo "Copying HTML files..."
+    - find . -maxdepth 1 -name '*.html' -exec cp -v {} public/ \;
+    
+    # Copy CSS files
+    - echo "Copying CSS files..."
+    - find . -maxdepth 1 -name '*.css' -exec cp -v {} public/ \;
+    
+    # Copy JS files
+    - echo "Copying JavaScript files..."
+    - find . -maxdepth 1 -name '*.js' -exec cp -v {} public/ \;
+    
+    # Copy images directory if it exists
+    - echo "Copying images..."
+    - if [ -d images ]; then
+        cp -rv images public/;
+      else
+        echo "No images directory found";
+      fi
 
-    # Verify copied files (critical debugging)
+    # Verify copied files
     - echo "Final public directory contents:"
     - ls -la public/
   artifacts:
     paths:
       - public
-    expire_in: 1 hour # Optional: Reduces storage usage
-  rules:
-    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    expire_in: 1 week
   only:
-    - main  # Replace with your default branch if different
+    - master  # Change to your default branch name if different
