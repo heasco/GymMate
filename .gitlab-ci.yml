@@ -43,6 +43,7 @@ pages:
     # Verify copied files
     - echo "Final public directory contents:"
     - ls -la public/
+    - echo "https://${CI_PROJECT_NAMESPACE}.gitlab.io/${CI_PROJECT_NAME}" > public/CNAME
   artifacts:
     paths:
       - public
