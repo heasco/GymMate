@@ -1,17 +1,19 @@
-image: alpine:latest  # More lightweight than busybox
+image: alpine:latest
+
+stages:
+  - deploy
 
 pages:
   stage: deploy
   before_script:
-    - mv login.html public/index.html
     - mkdir -p public
   script:
-    - cp -r *.html *.css *.js public/  # Copies all necessary files
+    - mv login.html public/index.html
+    - cp -r *.html *.css *.js public/
     - echo "Deployed to $CI_PAGES_URL"
   artifacts:
     paths:
       - public
-    only: master
   rules:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
 
@@ -22,8 +24,8 @@ deploy_backend:
     - npm install
     - npm install -g pm2
     - pm2 start app.js --name goalsgym-backend
-  only:
-    - main
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
   environment:
     name: production
-    url: https://your-backend-domain.com
+    url: https://flex-it-goalsgym-it-project-2.onrender.com
