@@ -5,6 +5,12 @@ stages:
 
 pages:
   stage: deploy
+  variables:
+    CACHE_BUSTER: $(date +%s)  # Cache invalidation variable
+  cache:
+    paths:
+      - public
+    policy: push  # Only upload cache, don't download
   before_script:
     - echo "Preparing deployment..."
     - mkdir -p public
@@ -30,6 +36,9 @@ pages:
       else
         echo "No images directory found";
       fi
+
+    # Create CNAME file for cache invalidation
+    - echo "${CI_PAGES_URL}" > public/CNAME
 
     # Verify copied files
     - echo "Final public directory contents:"
