@@ -113,6 +113,15 @@ app.post('/login', async (req, res) => {
   }
 });
 
+// In your backend (app.js)
+res.json({ 
+  success: true,
+  user: {
+    id: admin._id,
+    username: admin.username
+  }
+});
+
 // Health check endpoint
 app.get('/health', (req, res) => res.json({ 
   status: 'ok', 
