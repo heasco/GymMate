@@ -4,10 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Login - GOALS Gym</title>
-    <link rel="stylesheet" href="style.css"> <!-- Make sure this path is correct -->
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <!-- HTML code content goes here-->
     <div class="login-container">
         <h1 class="login-title">Admin Login</h1>
         <form id="loginForm">
@@ -23,65 +22,76 @@
         </form>
         <p class="error-message" id="error-message"></p>
     </div>
-    <!--needs necessary JS script-->
-    <!-- JS connection -->
+
     <script>
-    const API_URL = 'https://flex-it-goalsgym-it-project-2.onrender.com';
-    
-    document.getElementById('loginForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
+        // GitLab Pages compatible configuration
+        const API_URL = 'https://flex-it-goalsgym-it-project-2.onrender.com';
+        const GITLAB_PROJECT_PATH = '/flex-it-goalsgym-it-project-2-ecd552';
         
-        const username = document.getElementById('username').value;
-        const password = document.getElementById('password').value;
-        const errorElement = document.getElementById('error-message');
-        const submitButton = e.target.querySelector('button[type="submit"]');
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const errorElement = document.getElementById('error-message');
+            const submitButton = e.target.querySelector('button[type="submit"]');
 
-        submitButton.disabled = true;
-        submitButton.textContent = 'Logging in...';
-        errorElement.textContent = '';
+            submitButton.disabled = true;
+            submitButton.textContent = 'Logging in...';
+            errorElement.textContent = '';
 
-        try {
-            const response = await fetch(`${API_URL}/login`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ username, password })
-            });
+            try {
+                console.log("Attempting login...");
+                const response = await fetch(`${API_URL}/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ username, password })
+                });
 
-            if (!response.ok) {
-                const error = await response.json().catch(() => ({}));
-                throw new Error(error.message || 'Login failed');
+                console.log("Login response status:", response.status);
+                
+                if (!response.ok) {
+                    const error = await response.json().catch(() => ({}));
+                    throw new Error(error.message || 'Login failed');
+                }
+
+                const data = await response.json();
+                console.log("Login successful:", data);
+                
+                // Store authentication data
+                localStorage.setItem('authUser', JSON.stringify({
+                    id: data.user.id,
+                    username: data.user.username,
+                    name: data.user.name,
+                    timestamp: Date.now()
+                }));
+                
+                // GitLab Pages compatible redirect
+                const adminPageUrl = window.location.hostname.includes('gitlab.io')
+                    ? `${GITLAB_PROJECT_PATH}/admin-mainpage.html`
+                    : 'admin-mainpage.html';
+                
+                console.log("Redirecting to:", adminPageUrl);
+                window.location.href = adminPageUrl;
+                
+            } catch (err) {
+                console.error("Login failed:", err);
+                errorElement.textContent = err.message.includes('Failed to fetch')
+                    ? 'Cannot connect to server. Please try again later.'
+                    : err.message;
+            } finally {
+                submitButton.disabled = false;
+                submitButton.textContent = 'Login';
             }
+        });
 
-            // --- START ADDITION --- //
-            const data = await response.json();
-            console.log("API Response:", data); // Debug the full response
-            
-            // Store user data with all necessary fields
-            localStorage.setItem('authUser', JSON.stringify({
-                id: data.user.id,
-                username: data.user.username,
-                name: data.user.name,
-                token: data.token || null,      // If your API provides tokens
-                timestamp: Date.now()           // For session expiration
-            }));
-            
-            // Verify storage
-            console.log("Stored auth data:", localStorage.getItem('authUser'));
-            // --- END ADDITION --- //
-
-            // Redirect only AFTER storing data
-            window.location.href = 'admin-mainpage.html';
-            
-        } catch (err) {
-            errorElement.textContent = err.message;
-            console.error('Login error:', err);
-        } finally {
-            submitButton.disabled = false;
-            submitButton.textContent = 'Login';
-        }
-    });
-</script>
+        // Auto-focus username field on load
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('username').focus();
+            console.log("Login page loaded for:", window.location.href);
+        });
+    </script>
 </body>
 </html>

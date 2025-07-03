@@ -28,44 +28,47 @@
         </section>
     </main>
 
-   <script>
-    // Debugging initialization
-    //check for errors
-    console.group("Auth Debug");
-    console.log("Page loaded:", new Date().toISOString());
-    
-    // 1. Verify storage
-    const rawAuth = localStorage.getItem('authUser');
-    console.log("Raw localStorage:", rawAuth);
-    
-    try {
-        // 2. Parse data
-        const authData = JSON.parse(rawAuth);
-        console.log("Parsed auth data:", authData);
-        
-        // 3. Validation
-        if (!authData?.username) {
-            console.warn("Invalid/missing auth data");
-            throw new Error("Authentication required");
-        }
-        
-        // 4. Display UI
-        document.getElementById('adminName').textContent = authData.name || authData.username;
-        console.log("Authentication successful");
-        
-        // Setup controls
-        document.getElementById('logoutBtn').addEventListener('click', () => {
-            localStorage.removeItem('authUser');
-            window.location.href = 'login.html';
+    <script>
+        // GitLab Pages compatible authentication
+        document.addEventListener('DOMContentLoaded', () => {
+            console.group("[GOALS Gym] Auth Check");
+            
+            try {
+                // 1. Get authentication data
+                const authData = JSON.parse(localStorage.getItem('authUser'));
+                console.log("Auth data loaded:", authData);
+                
+                // 2. Validate session
+                if (!authData?.username) {
+                    throw new Error("No active session found");
+                }
+                
+                // 3. Display user info
+                document.getElementById('adminName').textContent = authData.name || authData.username;
+                console.log("User authenticated:", authData.username);
+                
+                // 4. Set up logout button
+                document.getElementById('logoutBtn').addEventListener('click', () => {
+                    localStorage.removeItem('authUser');
+                    window.location.href = '/flex-it-goalsgym-it-project-2-ecd552/login.html';
+                });
+                
+                // 5. Set up action buttons (stub functions)
+                ['manageMembers', 'viewReports', 'systemSettings'].forEach(id => {
+                    document.getElementById(id).addEventListener('click', () => {
+                        console.log(`Action: ${id}`);
+                        // Add actual functionality here
+                    });
+                });
+                
+            } catch (error) {
+                console.error("Authentication error:", error);
+                // Redirect to login page with full GitLab Pages path
+                window.location.href = '/flex-it-goalsgym-it-project-2-ecd552/login.html';
+            } finally {
+                console.groupEnd();
+            }
         });
-        
-    } catch (error) {
-        console.error("Auth check failed:", error);
-        localStorage.removeItem('authUser'); // Clear corrupted data
-        window.location.href = 'login.html';
-    } finally {
-        console.groupEnd();
-    }
     </script>
 </body>
 </html>
