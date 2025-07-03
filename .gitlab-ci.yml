@@ -5,10 +5,29 @@ stages:
 
 pages:
   stage: deploy
-  script:
+  before_script:
     - mkdir -p public
-    - cp -r *.html *.css *.js public/  # Copy all web files
-    - echo "Pages deployed to $CI_PAGES_URL"
+    - echo "Current directory contents:"
+    - ls -la
+  script:
+    # Copy HTML files if they exist
+    - shopt -s nullglob  # Prevent errors if no files match
+    - cp *.html public/ 2>/dev/null || echo "No HTML files found"
+    
+    # Copy CSS files if they exist
+    - cp *.css public/ 2>/dev/null || echo "No CSS files found"
+    
+    # Copy JS files if they exist
+    - cp *.js public/ 2>/dev/null || echo "No JS files found"
+    
+    # Verify at least one file was copied
+    - if [ -z "$(ls -A public)" ]; then
+        echo "Error: No files were copied to public/";
+        exit 1;
+      else
+        echo "Copied files:";
+        ls -la public/;
+      fi
   artifacts:
     paths:
       - public
