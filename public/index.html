@@ -3,42 +3,107 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GOALS Gym - Achieve Your Fitness Goals</title>
+    <title>GOALS Gym Baguio - Professional Fitness Center</title>
     <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <header>
-        <nav>
-            <a href="#" class="logo">GOALS GYM</a>
-            <div class="nav-links">
-                <a href="#">Home</a>
-                <a href="#">Facilities</a>
-                <a href="#">Programs</a>
-                <a href="#">About</a>
-                <a href="#">Contact</a>
+    <!-- Header with Logo and Navigation -->
+    <header class="business-header">
+        <div class="header-container">
+            <div class="logo-container">
+                <h1>GOALS GYM</h1>
+                <p>Baguio's Premier Fitness Center</p>
             </div>
-        </nav>
+            <nav class="business-nav">
+                <a href="#home" class="active">Home</a>
+                <a href="#facilities">Facilities</a>
+                <a href="#programs">Programs</a>
+                <a href="#about">About</a>
+                <a href="#contact">Contact</a>
+            </nav>
+        </div>
     </header>
-    
-    <section class="hero">
+
+    <!-- Hero Section -->
+    <section id="home" class="business-hero">
         <div class="hero-content">
-            <h1>TRANSFORM YOUR BODY</h1>
+            <h2>TRANSFORM YOUR BODY</h2>
             <p>At GOALS Gym, we provide world-class training facilities and personalized programs to help you achieve your fitness goals. Our certified trainers will guide you every step of the way.</p>
-            <a href="#login" class="btn">GET STARTED TODAY</a>
+            <a href="#membership" class="business-btn">GET STARTED TODAY</a>
         </div>
     </section>
-    
-    <section id="login" class="login-section">
-        <div class="login-box">
-            <h2>ADMIN LOGIN</h2>
+
+    <!-- Facilities Section -->
+    <section id="facilities" class="business-section">
+        <div class="section-container">
+            <h3>OUR FACILITIES</h3>
+            <div class="divider"></div>
+            <div class="facilities-grid">
+                <div class="facility-card">
+                    <div class="facility-icon">🏋️</div>
+                    <h4>Weight Training</h4>
+                    <p>Premium strength equipment from leading brands</p>
+                </div>
+                <div class="facility-card">
+                    <div class="facility-icon">🏃</div>
+                    <h4>Cardio Zone</h4>
+                    <p>State-of-the-art treadmills, bikes, and rowers</p>
+                </div>
+                <div class="facility-card">
+                    <div class="facility-icon">🧘</div>
+                    <h4>Group Classes</h4>
+                    <p>Yoga, HIIT, spin, and specialty classes</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Programs Section -->
+    <section id="programs" class="business-section dark-section">
+        <div class="section-container">
+            <h3>TRAINING PROGRAMS</h3>
+            <div class="divider"></div>
+            <div class="programs-list">
+                <div class="program-item">
+                    <h4>Personal Training</h4>
+                    <p>1-on-1 customized workout plans with certified trainers</p>
+                </div>
+                <div class="program-item">
+                    <h4>Nutrition Planning</h4>
+                    <p>Meal plans tailored to your fitness objectives</p>
+                </div>
+                <div class="program-item">
+                    <h4>Body Transformation</h4>
+                    <p>12-week intensive program with guaranteed results</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Admin Login Section -->
+    <section class="business-section">
+        <div class="section-container">
+            <h3>ADMIN LOGIN</h3>
+            <div class="divider"></div>
             <p>Access the GOALS Gym management system</p>
-            <a href="login.html" class="btn">LOGIN HERE</a>
+            <a href="login.html" class="business-btn outline">LOGIN HERE</a>
         </div>
     </section>
-    
-    <footer>
-        <p>&copy; 2023 GOALS Gym. All rights reserved.</p>
-        <p>123 Fitness Street, Gym City | (555) 123-4567 | info@goalsgym.com</p>
+
+    <!-- Footer -->
+    <footer class="business-footer">
+        <div class="footer-container">
+            <div class="footer-info">
+                <h4>GOALS GYM BAGUIO</h4>
+                <p>123 Fitness Street, Baguio City</p>
+                <p>(074) 123-4567</p>
+                <p>info@goalsgymbaguio.com</p>
+            </div>
+            <div class="footer-copyright">
+                <p>&copy; 2025 GOALS Gym Baguio. All rights reserved.</p>
+            </div>
+        </div>
     </footer>
 </body>
 </html>
