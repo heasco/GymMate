@@ -1,23 +1,179 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="utf-8">
-    <meta name="generator" content="GitLab Pages">
-    <title>Plain HTML site using GitLab Pages</title>
-    <link rel="stylesheet" href="style.css">
-  </head>
-  <body>
-    <div class="navbar">
-      <a href="https://pages.gitlab.io/plain-html/">Plain HTML Example</a>
-      <a href="https://gitlab.com/pages/plain-html/">Repository</a>
-      <a href="https://gitlab.com/pages/">Other Examples</a>
-    </div>
-
-    <h1>Hello World!</h1>
-
-    <p>
-      This is a simple plain-HTML website on GitLab Pages, without any fancy static site generator.
-    </p>
-  </body>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GOALS Gym - Achieve Your Fitness Goals</title>
+    <style>
+        :root {
+            --primary: #ff3333;
+            --dark: #121212;
+            --light: #ffffff;
+            --gray: #2d2d2d;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--dark);
+            color: var(--light);
+            line-height: 1.6;
+        }
+        
+        header {
+            background-color: var(--dark);
+            padding: 1rem 0;
+            border-bottom: 3px solid var(--primary);
+        }
+        
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+        
+        .logo {
+            color: var(--primary);
+            font-size: 1.8rem;
+            font-weight: bold;
+            text-decoration: none;
+        }
+        
+        .nav-links a {
+            color: var(--light);
+            text-decoration: none;
+            margin-left: 2rem;
+            transition: color 0.3s;
+        }
+        
+        .nav-links a:hover {
+            color: var(--primary);
+        }
+        
+        .hero {
+            background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('https://images.unsplash.com/photo-1571902943202-507ec2618e8f?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80');
+            background-size: cover;
+            background-position: center;
+            height: 70vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 0 2rem;
+        }
+        
+        .hero-content h1 {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            color: var(--primary);
+        }
+        
+        .hero-content p {
+            font-size: 1.2rem;
+            max-width: 800px;
+            margin: 0 auto 2rem;
+        }
+        
+        .btn {
+            display: inline-block;
+            background-color: var(--primary);
+            color: var(--light);
+            padding: 0.8rem 2rem;
+            border-radius: 4px;
+            text-decoration: none;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+        
+        .btn:hover {
+            background-color: #cc0000;
+        }
+        
+        .login-section {
+            background-color: var(--gray);
+            padding: 4rem 2rem;
+            text-align: center;
+        }
+        
+        .login-box {
+            background-color: var(--dark);
+            border: 1px solid var(--primary);
+            border-radius: 8px;
+            padding: 2rem;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+        
+        .login-box h2 {
+            color: var(--primary);
+            margin-top: 0;
+        }
+        
+        footer {
+            background-color: var(--dark);
+            color: var(--light);
+            text-align: center;
+            padding: 2rem;
+            border-top: 1px solid var(--gray);
+        }
+        
+        @media (max-width: 768px) {
+            nav {
+                flex-direction: column;
+                padding: 1rem;
+            }
+            
+            .nav-links {
+                margin-top: 1rem;
+            }
+            
+            .nav-links a {
+                margin: 0 1rem;
+            }
+            
+            .hero-content h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <nav>
+            <a href="#" class="logo">GOALS GYM</a>
+            <div class="nav-links">
+                <a href="#">Home</a>
+                <a href="#">Facilities</a>
+                <a href="#">Programs</a>
+                <a href="#">About</a>
+                <a href="#">Contact</a>
+            </div>
+        </nav>
+    </header>
+    
+    <section class="hero">
+        <div class="hero-content">
+            <h1>TRANSFORM YOUR BODY</h1>
+            <p>At GOALS Gym, we provide world-class training facilities and personalized programs to help you achieve your fitness goals. Our certified trainers will guide you every step of the way.</p>
+            <a href="#login" class="btn">GET STARTED TODAY</a>
+        </div>
+    </section>
+    
+    <section id="login" class="login-section">
+        <div class="login-box">
+            <h2>ADMIN LOGIN</h2>
+            <p>Access the GOALS Gym management system</p>
+            <a href="/flex-it-goalsgym-it-project-2-ecd552/login.html" class="btn">LOGIN HERE</a>
+        </div>
+    </section>
+    
+    <footer>
+        <p>&copy; 2023 GOALS Gym. All rights reserved.</p>
+        <p>123 Fitness Street, Gym City | (555) 123-4567 | info@goalsgym.com</p>
+    </footer>
+</body>
 </html>
-
