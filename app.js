@@ -1,3 +1,5 @@
+//This is the main server
+
 require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
@@ -70,7 +72,7 @@ async function initializeAdmin() {
 }
 
 // ======================
-// Routes
+// Routes (Routes for Login)
 // ======================
 app.post('/login', async (req, res) => {
   try {
@@ -111,6 +113,68 @@ app.post('/login', async (req, res) => {
   }
 });
 
+//Routes for adding member by admin:
+const Member = require('./models/Member');
+
+// Then your route handler
+app.post('/api/members', async (req, res) => {
+  try {
+    // Add admin authentication check here if needed
+    // if (!req.user || req.user.role !== 'admin') {
+    //   return res.status(403).json({ error: 'Unauthorized' });
+    // }
+
+    const { name, type, joinDate, phone, email } = req.body;
+
+    // Validate required fields
+    if (!name || !type) {
+      return res.status(400).json({ error: 'Name and member type are required' });
+    }
+
+    // Create new member document
+    const newMember = new Member({
+      name,
+      type,
+      joinDate: joinDate || new Date(),
+      phone,
+      email
+      // status and dates are automatically added by defaults
+    });
+
+    // Save to MongoDB
+    const savedMember = await newMember.save();
+
+    res.status(201).json({
+      success: true,
+      message: 'Member added successfully',
+      member: {
+        id: savedMember._id,
+        name: savedMember.name,
+        type: savedMember.type
+      }
+    });
+
+  } catch (err) {
+    console.error('Error adding member:', err);
+    
+    // Handle duplicate key errors (if you have unique constraints)
+    if (err.code === 11000) {
+      return res.status(400).json({ error: 'Member already exists' });
+    }
+
+    // Handle validation errors
+    if (err.name === 'ValidationError') {
+      const messages = Object.values(err.errors).map(val => val.message);
+      return res.status(400).json({ 
+        error: 'Validation error',
+        details: messages 
+      });
+    }
+    
+    res.status(500).json({ error: 'Server error while adding member' });
+  }
+});
+
 // Protected route example
 app.get('/admin/data', async (req, res) => {
   try {
@@ -120,6 +184,10 @@ app.get('/admin/data', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+// After all your routes
+const errorHandler = require('./middleware/error');
+app.use(errorHandler);
 
 // Health check endpoint
 app.get('/health', (req, res) => {
