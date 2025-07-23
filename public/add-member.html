@@ -36,37 +36,35 @@
     </form>
 </div>
 <script>
-    document.getElementById('memberForm').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  
+   async function addMember() {
+  const memberData = {
+    name: document.getElementById('name').value.trim(), // Required
+    type: document.getElementById('type').value, // Must be 'monthly'/'combative'
+    phone: document.getElementById('phone').value || undefined, // Optional
+    email: document.getElementById('email').value || undefined // Optional
+  };
+
   try {
-    const response = await fetch('https://flex-it-goalsgym-it-project-2.onrender.com/api/members', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        name: document.getElementById('memberName').value,
-        type: document.getElementById('memberType').value,
-        phone: document.getElementById('phone').value,
-        email: document.getElementById('email').value
-      })
-    });
+    const response = await fetch(
+      'https://flex-it-goalsgym-it-project-2.onrender.com/api/members',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(memberData)
+      }
+    );
 
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.error || 'Failed to add member');
+      throw new Error(errorData.details?.join(', ') || 'Validation failed');
     }
 
-    const result = await response.json();
-    alert(`Member added! ID: ${result.member.id}`);
-    document.getElementById('memberForm').reset();
-    
+    alert('Member added successfully!');
   } catch (error) {
-    console.error('Full error:', error);
     alert(`Error: ${error.message}`);
+    console.error('Validation details:', error);
   }
-});
+}
 </script>
 
 
