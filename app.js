@@ -116,62 +116,111 @@ app.post('/login', async (req, res) => {
 //Routes for adding member by admin:
 const Member = require('./models/Member');
 
-// Then your route handler
+// Route: Add New Member
+// ======================
 app.post('/api/members', async (req, res) => {
-  try {
-    // Add admin authentication check here if needed
-    // if (!req.user || req.user.role !== 'admin') {
-    //   return res.status(403).json({ error: 'Unauthorized' });
-    // }
+  console.log('[Member] Creation request received:', req.body);
 
-    const { name, type, joinDate, phone, email } = req.body;
+  try {
+    // Destructure and trim inputs
+    const { 
+      name: rawName, 
+      type: rawType, 
+      joinDate, 
+      phone: rawPhone, 
+      email: rawEmail 
+    } = req.body;
+
+    // Clean and validate inputs
+    const name = rawName?.trim();
+    const type = rawType?.trim().toLowerCase();
+    const phone = rawPhone?.trim();
+    const email = rawEmail?.trim().toLowerCase();
 
     // Validate required fields
     if (!name || !type) {
-      return res.status(400).json({ error: 'Name and member type are required' });
+      const errors = {};
+      if (!name) errors.name = 'Name is required';
+      if (!type) errors.type = 'Member type is required';
+      return res.status(400).json({ 
+        success: false,
+        error: 'Validation failed',
+        details: errors
+      });
     }
 
-    // Create new member document
+    // Validate member type
+    if (!['monthly', 'combative'].includes(type)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Validation failed',
+        details: {
+          type: 'Member type must be either "monthly" or "combative"'
+        }
+      });
+    }
+
+    // Create and save member
     const newMember = new Member({
       name,
       type,
-      joinDate: joinDate || new Date(),
-      phone,
-      email
-      // status and dates are automatically added by defaults
+      joinDate: joinDate ? new Date(joinDate) : new Date(),
+      phone: phone || undefined, // Store as undefined if empty
+      email: email || undefined  // Store as undefined if empty
     });
 
-    // Save to MongoDB
     const savedMember = await newMember.save();
+    console.log(`[Member] Successfully created (ID: ${savedMember._id})`);
 
-    res.status(201).json({
+    // Successful response
+    return res.status(201).json({
       success: true,
-      message: 'Member added successfully',
-      member: {
+      message: 'Member created successfully',
+      data: {
         id: savedMember._id,
         name: savedMember.name,
-        type: savedMember.type
+        type: savedMember.type,
+        joinDate: savedMember.joinDate
       }
     });
 
   } catch (err) {
-    console.error('Error adding member:', err);
-    
-    // Handle duplicate key errors (if you have unique constraints)
+    console.error('[Member] Creation error:', err);
+
+    // Handle duplicate key errors
     if (err.code === 11000) {
-      return res.status(400).json({ error: 'Member already exists' });
+      const duplicateField = Object.keys(err.keyPattern)[0];
+      return res.status(409).json({
+        success: false,
+        error: 'Duplicate entry',
+        details: {
+          [duplicateField]: `This ${duplicateField} already exists`
+        }
+      });
     }
 
     // Handle validation errors
     if (err.name === 'ValidationError') {
-      const messages = Object.values(err.errors).map(val => val.message);
-      return res.status(400).json({ 
-        error: 'Validation error',
-        details: messages 
+      const errors = {};
+      Object.values(err.errors).forEach(e => {
+        errors[e.path] = e.message;
+      });
+      return res.status(400).json({
+        success: false,
+        error: 'Validation failed',
+        details: errors
       });
     }
-    
-    res.status(500).json({ error: 'Server error while adding member' });
+
+    // Generic server error
+    return res.status(500).json({
+      success: false,
+      error: 'Internal server error',
+      details: process.env.NODE_ENV === 'development' ? {
+        message: err.message,
+        stack: err.stack
+      } : undefined
+    });
   }
 });
 
