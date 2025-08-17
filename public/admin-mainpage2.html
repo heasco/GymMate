@@ -1,0 +1,192 @@
+/* ADMIN MAINPAGE2 HTML */
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>Admin Dashboard - GOALS Gym</title>
+  <link rel="stylesheet" href="./admin-mainpage.css" />
+  <style>
+    /* small modal styling to match existing dark UI */
+    .modal-backdrop { position:fixed; inset:0; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,0.6); z-index:60; }
+    .modal { background:#111; color:white; padding:16px; border-radius:8px; width:520px; max-width:94%; border:1px solid #333; }
+    .form-row { display:flex; gap:8px; margin-bottom:8px; }
+    .form-row input, .form-row select { flex:1; padding:8px; border-radius:6px; border:1px solid #333; background:#0f0f0f; color:white; }
+    .btn.small { padding:6px 10px; border-radius:6px; cursor:pointer; border:none; }
+    .btn.primary { background:#198754; color:white; }
+    .btn.cancel { background:#333; color:white; border:1px solid #444; }
+  </style>
+</head>
+<body>
+  <header class="admin-header">
+    <h1>GOALS Gym Admin Dashboard</h1>
+    <div style="display:flex; gap:12px; align-items:center;">
+      <span id="adminName" class="small">Admin</span>
+      <button class="logout-btn" id="logoutBtn">Logout</button>
+    </div>
+  </header>
+
+  <main class="admin-content">
+    <section id="adminPanel">
+      <h2>Welcome, <span id="adminUser">Admin (demo)</span>!</h2>
+      <p>You have successfully logged in to the admin panel.</p>
+
+      <div class="admin-section">
+        <h3>Quick Actions</h3>
+        <div class="action-buttons">
+          <button class="action-btn" id="manageMembers">Manage Members</button>
+          <button class="action-btn" id="viewReports">View Reports</button>
+          <button class="action-btn" id="systemSettings">System Settings</button>
+          <!-- CHANGED: "Add member" now opens a small modal instead of navigating -->
+          <button id="openAddModal" class="addMember" style="cursor:pointer">Add member</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Small Add/Edit Member modal (shared UI) -->
+  <div id="modalBackdrop" class="modal-backdrop" role="dialog" aria-modal="true">
+    <div class="modal">
+      <h3 id="modalTitle">Add Member</h3>
+
+      <div>
+        <div class="form-row">
+          <input id="name" placeholder="Full name" />
+          <select id="type">
+            <option value="combative">combative</option>
+            <option value="monthly">monthly</option>
+          </select>
+        </div>
+
+        <div class="form-row">
+          <input id="joinDate" type="date" />
+          <input id="email" type="email" placeholder="email@example.com" />
+        </div>
+
+        <div class="form-row">
+          <input id="phone" placeholder="Phone (optional)" />
+          <select id="status">
+            <option value="active">active</option>
+            <option value="inactive">inactive</option>
+            <option value="pending">pending</option>
+            <option value="suspended">suspended</option>
+          </select>
+        </div>
+
+        <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:8px;">
+          <button id="cancel" class="btn small cancel">Cancel</button>
+          <button id="save" class="btn small primary">Save</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // API base detection (same logic as manage page)
+    let API_BASE = '/api/members';
+    const origin = window.location.origin || '';
+    if (origin.includes(':5500') || origin.includes('127.0.0.1:5500')) {
+      API_BASE = 'http://localhost:8080/api/members';
+    }
+
+    // Session & UI
+    document.addEventListener('DOMContentLoaded', () => {
+      const authUser = JSON.parse(localStorage.getItem('authUser') || 'null');
+      const adminUser = document.getElementById('adminUser');
+      const adminName = document.getElementById('adminName');
+
+      if (!authUser || (Date.now() - (authUser.timestamp || 0) > 3600000)) {
+        adminUser.textContent = 'Admin (demo)';
+        adminName.textContent = 'Admin';
+      } else {
+        adminUser.textContent = authUser.user.name || authUser.user.username || 'Admin';
+        adminName.textContent = authUser.user.name || authUser.user.username || 'Admin';
+      }
+
+      document.getElementById('logoutBtn').addEventListener('click', () => {
+        localStorage.removeItem('authUser');
+        window.location.href = 'login.html';
+      });
+
+      // Manage Members still opens the full Manage Members page (separate window/tab)
+      document.getElementById('manageMembers').addEventListener('click', () => {
+        window.open('admin-manage-members.html', '_blank');
+      });
+
+      document.getElementById('viewReports').addEventListener('click', () => alert('View Reports clicked'));
+      document.getElementById('systemSettings').addEventListener('click', () => alert('System Settings clicked'));
+
+      // Add-member modal controls (opens small popup on this page)
+      const openAddModal = document.getElementById('openAddModal');
+      const modalBackdrop = document.getElementById('modalBackdrop');
+      const modalTitle = document.getElementById('modalTitle');
+      const nameEl = document.getElementById('name');
+      const typeEl = document.getElementById('type');
+      const joinDateEl = document.getElementById('joinDate');
+      const emailEl = document.getElementById('email');
+      const phoneEl = document.getElementById('phone');
+      const statusEl = document.getElementById('status');
+      const cancelBtn = document.getElementById('cancel');
+      const saveBtn = document.getElementById('save');
+
+      let editingId = null; // not used on dashboard modal (create only), but kept for parity
+
+      function showModal(show) {
+        modalBackdrop.style.display = show ? 'flex' : 'none';
+      }
+
+      openAddModal.addEventListener('click', () => {
+        editingId = null;
+        modalTitle.textContent = 'Add Member';
+        nameEl.value = '';
+        typeEl.value = 'combative';
+        joinDateEl.value = new Date().toISOString().slice(0,10);
+        emailEl.value = '';
+        phoneEl.value = '';
+        statusEl.value = 'active';
+        showModal(true);
+      });
+
+      cancelBtn.addEventListener('click', () => showModal(false));
+      modalBackdrop.addEventListener('click', (e) => { if (e.target === modalBackdrop) showModal(false); });
+
+      // API call to create member
+      async function apiPost(body) {
+        try {
+          const r = await fetch(API_BASE, { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify(body) });
+          if (!r.ok) {
+            const err = await r.json().catch(()=>null);
+            throw new Error(err && err.error ? JSON.stringify(err) : 'API error');
+          }
+          return await r.json();
+        } catch (e) {
+          console.warn('API POST failed, error:', e);
+          return null;
+        }
+      }
+
+      saveBtn.addEventListener('click', async () => {
+        const payload = {
+          name: nameEl.value.trim(),
+          type: typeEl.value,
+          joinDate: joinDateEl.value || null,
+          email: emailEl.value.trim(),
+          phone: phoneEl.value.trim(),
+          status: statusEl.value
+        };
+        if (!payload.name) return alert('Please provide a name');
+        // Try create via API; if not reachable, show a friendly message
+        const created = await apiPost(payload);
+        if (created && created._id) {
+          alert('Member created successfully');
+          showModal(false);
+        } else {
+          // API unreachable: let user know their server might be down (we do NOT fallback to localStorage here to keep behavior simple)
+          alert('Could not create member. Make sure your backend server is running (node server.js) and you opened this page from the server origin (http://localhost:8080/admin-mainpage.html).');
+        }
+      });
+    });
+  </script>
+</body>
+</html>
