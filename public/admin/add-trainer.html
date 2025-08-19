@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Add Trainer | Goals Gym</title>
+</head>
+<body>
+  <div class="add-trainer-form">
+    <h2>Add New Trainer</h2>
+    <form id="trainerForm">
+      <div class="form-group">
+        <label for="name">Full Name:</label>
+        <input type="text" id="name" name="name" required />
+      </div>
+
+      <div class="form-group">
+        <label for="specialization">Specialization:</label>
+        <select id="specialization" name="specialization" required>
+          <option value="">Select Specialization</option>
+          <option value="Boxing">Boxing</option>
+          <option value="Kickboxing">Kickboxing</option>
+          <option value="Weight Training">Weight Training</option>
+          <option value="Cardio">Cardio</option>
+          <option value="Yoga">Yoga</option>
+          <option value="Pilates">Pilates</option>
+          <option value="CrossFit">CrossFit</option>
+          <option value="Personal Training">Personal Training</option>
+          <option value="Group Fitness">Group Fitness</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="custom_specialization" id="custom_label" style="display: none;">Custom Specialization:</label>
+        <input
+          type="text"
+          id="custom_specialization"
+          name="custom_specialization"
+          style="display: none;"
+          placeholder="Enter custom specialization"
+        />
+      </div>
+
+      <div class="form-group">
+        <div class="checkbox-group">
+          <input type="checkbox" id="is_available" name="is_available" checked />
+          <label for="is_available">Currently Available</label>
+        </div>
+        <div class="form-note">Check if the trainer is available for new assignments</div>
+      </div>
+
+      <div class="form-group">
+        <label for="assigned_classes">Assigned Classes (Optional):</label>
+        <textarea
+          id="assigned_classes"
+          name="assigned_classes"
+          rows="3"
+          placeholder="Enter class IDs separated by commas (e.g., CLS-001, CLS-002)"
+        ></textarea>
+        <div class="form-note">Leave empty if no classes are assigned yet</div>
+      </div>
+
+      <button type="submit" class="add-trainer-button">Add Trainer</button>
+    </form>
+  </div>
+
+  <script>
+    document.getElementById('specialization').addEventListener('change', function () {
+      const customField = document.getElementById('custom_specialization');
+      const customLabel = document.getElementById('custom_label');
+
+      if (this.value === 'Other') {
+        customField.style.display = 'block';
+        customLabel.style.display = 'block';
+        customField.required = true;
+      } else {
+        customField.style.display = 'none';
+        customLabel.style.display = 'none';
+        customField.required = false;
+        customField.value = '';
+      }
+    });
+
+    document.getElementById('trainerForm').addEventListener('submit', async function (e) {
+      e.preventDefault();
+      const submitBtn = document.querySelector('.add-trainer-button');
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Adding...';
+
+      try {
+        // Prepare specialization
+        let specialization = document.getElementById('specialization').value;
+        if (specialization === 'Other') {
+          specialization = document.getElementById('custom_specialization').value.trim();
+        }
+
+        // Parse assigned classes
+        const assignedClassesInput = document.getElementById('assigned_classes').value.trim();
+        const assignedClasses = assignedClassesInput
+          ? assignedClassesInput.split(',').map((cls) => cls.trim()).filter(Boolean)
+          : [];
+
+        const trainerData = {
+          name: document.getElementById('name').value.trim(),
+          specialization: specialization,
+          is_available: document.getElementById('is_available').checked,
+          assigned_classes: assignedClasses,
+        };
+
+        console.log('Sending trainer data:', trainerData);
+
+        const response = await fetch('https://flex-it-goalsgym-it-project-2.onrender.com/api/trainers', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${localStorage.getItem('authToken') || ''}`,
+          },
+          body: JSON.stringify(trainerData),
+        });
+
+        const responseData = await response.json();
+        console.log('Server response:', responseData);
+
+        if (!response.ok) {
+          let errorMsg = 'Failed to add trainer';
+          if (responseData.details) {
+            errorMsg +=
+              ':\n' +
+              Object.entries(responseData.details)
+                .filter(([_, value]) => value)
+                .map(([field, error]) => `• ${field}: ${error}`)
+                .join('\n');
+          } else if (responseData.error) {
+            errorMsg = responseData.error;
+          }
+          throw new Error(errorMsg);
+        }
+
+        alert(`Trainer added successfully!\nTrainer ID: ${responseData.data.trainer_id}\nName: ${responseData.data.name}`);
+        this.reset();
+        // Reset custom specialization field
+        document.getElementById('custom_specialization').style.display = 'none';
+        document.getElementById('custom_label').style.display = 'none';
+      } catch (err) {
+        console.error('Error:', err);
+        alert(`Error: ${err.message}`);
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Add Trainer';
+      }
+    });
+  </script>
+</body>
+</html>
