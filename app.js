@@ -17,10 +17,10 @@ const DB_URL = process.env.MONGODB_URI || "mongodb+srv://herodvelasco023:Qn0ihsp
 // Middleware
 // ======================
 app.use(cors({
-  origin: '*', // Allow all origins temporarily
+  origin: '*',
   credentials: true,
-  methods: ['GET', 'POST', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Added PUT and DELETE
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
 
 app.use(express.json({ limit: '10kb' }));
@@ -39,12 +39,12 @@ mongoose.connect(DB_URL, {
 });
 
 mongoose.connection.on('connected', () => {
-  console.log('✅ MongoDB connected');
+  console.log('MongoDB connected');
   initializeAdmin();
 });
 
 mongoose.connection.on('error', err => {
-  console.error('❌ MongoDB connection error:', err);
+  console.error('MongoDB connection error:', err);
   if (process.env.NODE_ENV === 'production') process.exit(1);
 });
 
@@ -113,11 +113,12 @@ app.post('/login', async (req, res) => {
   }
 });
 
-//Routes for adding member by admin:
+// Routes for adding member by admin
 const Member = require('./models/Member');
 
-// Route: Add New Member
-// ======================
+
+// Route: Add New Member with Auto-Generated ID
+// ============================================
 app.post('/api/members', async (req, res) => {
   console.log('[Member] Creation request received:', req.body);
 
@@ -160,27 +161,30 @@ app.post('/api/members', async (req, res) => {
       });
     }
 
-    // Create and save member
+    // Create new member (don't specify memberId - it will be auto-generated)
     const newMember = new Member({
       name,
       type,
       joinDate: joinDate ? new Date(joinDate) : new Date(),
-      phone: phone || undefined, // Store as undefined if empty
-      email: email || undefined  // Store as undefined if empty
+      phone: phone || undefined,
+      email: email || undefined
     });
 
     const savedMember = await newMember.save();
-    console.log(`[Member] Successfully created (ID: ${savedMember._id})`);
+    console.log(`[Member] Successfully created (MongoID: ${savedMember._id}, MemberID: ${savedMember.memberId})`);
 
-    // Successful response
+    // Successful response with both IDs
     return res.status(201).json({
       success: true,
       message: 'Member created successfully',
       data: {
-        id: savedMember._id,
+        memberId: savedMember.memberId,  // The auto-generated MEM-0001 ID
+        mongoId: savedMember._id,       // The MongoDB _id
         name: savedMember.name,
         type: savedMember.type,
-        joinDate: savedMember.joinDate
+        joinDate: savedMember.joinDate,
+        phone: savedMember.phone,
+        email: savedMember.email
       }
     });
 
@@ -190,11 +194,15 @@ app.post('/api/members', async (req, res) => {
     // Handle duplicate key errors
     if (err.code === 11000) {
       const duplicateField = Object.keys(err.keyPattern)[0];
+      const errorMessage = duplicateField === 'memberId' 
+        ? 'Member ID generation conflict' 
+        : `This ${duplicateField} already exists`;
+      
       return res.status(409).json({
         success: false,
         error: 'Duplicate entry',
         details: {
-          [duplicateField]: `This ${duplicateField} already exists`
+          [duplicateField]: errorMessage
         }
       });
     }
@@ -221,6 +229,125 @@ app.post('/api/members', async (req, res) => {
         stack: err.stack
       } : undefined
     });
+  }
+});
+//protect routes
+const auth = require('./middleware/auth');
+// Import Trainer model
+
+
+// ======================
+// Trainer Routes
+// ======================
+const Trainer = require('./models/Trainer');
+
+// Add new trainer route
+app.post('/api/trainers', async (req, res) => {
+  try {
+    console.log("Incoming trainer data:", req.body);
+
+    const { name, specialization, is_available, assigned_classes } = req.body;
+
+    // Validate required fields
+    if (!name || !specialization) {
+      const errors = {};
+      if (!name) errors.name = 'Name is required';
+      if (!specialization) errors.specialization = 'Specialization is required';
+
+      return res.status(400).json({
+        success: false,
+        error: 'Validation failed',
+        details: errors
+      });
+    }
+
+    // Create trainer instance
+    const newTrainer = new Trainer({
+      name: name.trim(),
+      specialization: specialization.trim(),
+      is_available: is_available !== undefined ? Boolean(is_available) : true,
+      assigned_classes: Array.isArray(assigned_classes) ? assigned_classes : [],
+    });
+
+    const savedTrainer = await newTrainer.save();
+    console.log(`[Trainer] Created (MongoID: ${savedTrainer._id}, TrainerID: ${savedTrainer.trainer_id})`);
+
+    res.status(201).json({
+      success: true,
+      message: 'Trainer created successfully',
+      data: {
+        trainer_id: savedTrainer.trainer_id,
+        mongoId: savedTrainer._id,
+        name: savedTrainer.name,
+        specialization: savedTrainer.specialization,
+        is_available: savedTrainer.is_available,
+        assigned_classes: savedTrainer.assigned_classes,
+        feedback_received: savedTrainer.feedback_received,
+        createdAt: savedTrainer.createdAt
+      }
+    });
+
+  } catch (err) {
+    console.error("Error in /api/trainers:", err);
+
+    if (err.code === 11000) {
+      const duplicateField = Object.keys(err.keyPattern)[0];
+      const errorMessage = duplicateField === 'trainer_id'
+        ? 'Trainer ID generation conflict'
+        : `This ${duplicateField} already exists`;
+
+      return res.status(409).json({
+        success: false,
+        error: 'Duplicate entry',
+        details: { [duplicateField]: errorMessage }
+      });
+    }
+
+    if (err.name === 'ValidationError') {
+      const errors = {};
+      Object.values(err.errors).forEach(e => { errors[e.path] = e.message; });
+      return res.status(400).json({
+        success: false,
+        error: 'Validation failed',
+        details: errors
+      });
+    }
+
+    return res.status(500).json({
+      success: false,
+      error: 'Internal server error',
+      details: process.env.NODE_ENV === 'development' ? { message: err.message, stack: err.stack } : undefined
+    });
+  }
+});
+
+// Get all trainers
+app.get('/api/trainers', async (req, res) => {
+  try {
+    const trainers = await Trainer.find().sort({ createdAt: -1 });
+    res.json({
+      success: true,
+      count: trainers.length,
+      data: trainers
+    });
+  } catch (err) {
+    console.error('Error fetching trainers:', err);
+    res.status(500).json({ success: false, error: 'Failed to fetch trainers' });
+  }
+});
+
+// Get available trainers only
+app.get('/api/trainers/available', async (req, res) => {
+  try {
+    const availableTrainers = await Trainer.findAvailable();
+    res.json({
+      success: true,
+      count: availableTrainers.length,
+      data: availableTrainers
+    });
+  } catch (err) {
+    console.error('Error fetching available trainers:', err);
+    res.status(500).json({ success: false, error: 'Failed to fetch available trainers' });
   }
 });
 
@@ -280,3 +407,8 @@ process.on('SIGTERM', () => {
     console.log('Server terminated');
   });
 });
+
+// ======================
+// Schedule Routes
+// ======================
+
