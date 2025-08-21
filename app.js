@@ -353,6 +353,201 @@ app.get('/api/trainers/available', async (req, res) => {
   }
 });
 
+// Add to your app.js after other model imports
+const Class = require('./models/Classes');
+
+// ======================
+// Class Routes
+// ======================
+
+// Add new class route
+app.post('/api/classes', async (req, res) => {
+  console.log("Incoming class data:", req.body);
+  try {
+    const { class_name, description, schedule, trainer_id, capacity } = req.body;
+
+    // Validate required fields
+    if (!class_name || !schedule || !trainer_id || !capacity) {
+      const errors = {};
+      if (!class_name) errors.class_name = 'Class name is required';
+      if (!schedule) errors.schedule = 'Schedule is required';
+      if (!trainer_id) errors.trainer_id = 'Trainer ID is required';
+      if (!capacity) errors.capacity = 'Capacity is required';
+
+      return res.status(400).json({
+        success: false,
+        error: 'Validation failed',
+        details: errors
+      });
+    }
+
+    // Create class instance
+    const newClass = new Class({
+      class_name: class_name.trim(),
+      description: description ? description.trim() : '',
+      schedule: schedule.trim(),
+      trainer_id: trainer_id.trim(),
+      capacity: parseInt(capacity)
+    });
+
+    const savedClass = await newClass.save();
+    console.log(`[Class] Created (MongoID: ${savedClass._id}, ClassID: ${savedClass.class_id})`);
+
+    res.status(201).json({
+      success: true,
+      message: 'Class created successfully',
+      data: {
+        class_id: savedClass.class_id,
+        mongoId: savedClass._id,
+        class_name: savedClass.class_name,
+        description: savedClass.description,
+        schedule: savedClass.schedule,
+        trainer_id: savedClass.trainer_id,
+        capacity: savedClass.capacity,
+        createdAt: savedClass.createdAt
+      }
+    });
+
+  } catch (err) {
+    console.error("Error in /api/classes:", err);
+
+    if (err.code === 11000) {
+      return res.status(409).json({
+        success: false,
+        error: 'Duplicate entry',
+        details: { class_id: 'Class ID generation conflict' }
+      });
+    }
+
+    if (err.name === 'ValidationError') {
+      const errors = {};
+      Object.values(err.errors).forEach(e => { errors[e.path] = e.message; });
+      return res.status(400).json({
+        success: false,
+        error: 'Validation failed',
+        details: errors
+      });
+    }
+
+    return res.status(500).json({
+      success: false,
+      error: 'Internal server error',
+      details: process.env.NODE_ENV === 'development' ? { message: err.message, stack: err.stack } : undefined
+    });
+  }
+});
+
+// Get all classes
+app.get('/api/classes', async (req, res) => {
+  try {
+    const classes = await Class.find().sort({ createdAt: -1 });
+    res.json({
+      success: true,
+      count: classes.length,
+      data: classes
+    });
+  } catch (err) {
+    console.error('Error fetching classes:', err);
+    res.status(500).json({ success: false, error: 'Failed to fetch classes' });
+  }
+});
+
+// Get class by ID
+app.get('/api/classes/:id', async (req, res) => {
+  try {
+    const classData = await Class.findOne({ 
+      $or: [
+        { class_id: req.params.id },
+        { _id: req.params.id }
+      ]
+    });
+    
+    if (!classData) {
+      return res.status(404).json({ success: false, error: 'Class not found' });
+    }
+    
+    res.json({
+      success: true,
+      data: classData
+    });
+  } catch (err) {
+    console.error('Error fetching class:', err);
+    res.status(500).json({ success: false, error: 'Failed to fetch class' });
+  }
+});
+
+// Update class
+app.put('/api/classes/:id', async (req, res) => {
+  try {
+    const { class_name, description, schedule, trainer_id, capacity } = req.body;
+    
+    const updatedClass = await Class.findOneAndUpdate(
+      { 
+        $or: [
+          { class_id: req.params.id },
+          { _id: req.params.id }
+        ]
+      },
+      { 
+        class_name, 
+        description, 
+        schedule, 
+        trainer_id, 
+        capacity 
+      },
+      { new: true, runValidators: true }
+    );
+    
+    if (!updatedClass) {
+      return res.status(404).json({ success: false, error: 'Class not found' });
+    }
+    
+    res.json({
+      success: true,
+      message: 'Class updated successfully',
+      data: updatedClass
+    });
+  } catch (err) {
+    console.error('Error updating class:', err);
+    
+    if (err.name === 'ValidationError') {
+      const errors = {};
+      Object.values(err.errors).forEach(e => { errors[e.path] = e.message; });
+      return res.status(400).json({
+        success: false,
+        error: 'Validation failed',
+        details: errors
+      });
+    }
+    
+    res.status(500).json({ success: false, error: 'Failed to update class' });
+  }
+});
+
+// Delete class
+app.delete('/api/classes/:id', async (req, res) => {
+  try {
+    const deletedClass = await Class.findOneAndDelete({
+      $or: [
+        { class_id: req.params.id },
+        { _id: req.params.id }
+      ]
+    });
+    
+    if (!deletedClass) {
+      return res.status(404).json({ success: false, error: 'Class not found' });
+    }
+    
+    res.json({
+      success: true,
+      message: 'Class deleted successfully'
+    });
+  } catch (err) {
+    console.error('Error deleting class:', err);
+    res.status(500).json({ success: false, error: 'Failed to delete class' });
+  }
+});
+
 // Protected route example
 app.get('/admin/data', async (req, res) => {
   try {
