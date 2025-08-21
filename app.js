@@ -243,8 +243,8 @@ const Trainer = require('./models/Trainer');
 
 // Add new trainer route
 app.post('/api/trainers', async (req, res) => {
+  console.log("Incoming trainer data:", req.body);
   try {
-    console.log("Incoming trainer data:", req.body);
 
     const { name, specialization, is_available, assigned_classes } = req.body;
 
