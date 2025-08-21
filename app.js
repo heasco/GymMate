@@ -14,16 +14,41 @@ const PORT = process.env.PORT || 8080;
 const DB_URL = process.env.MONGODB_URI || "mongodb+srv://herodvelasco023:Qn0ihspOECvY5vq2@cluster0.vejigze.mongodb.net/goalsgym?retryWrites=true&w=majority&appName=Cluster0";
 
 // ======================
-// Middleware
+// CORS Configuration
 // ======================
+const allowedOrigins = [
+  "https://goalsgym.com",
+  "https://www.goalsgym.com",
+  "https://admin.goalsgym.com"
+  // This is only a temporary domain names
+  // Add other trusted domains here
+];
+
 app.use(cors({
-  origin: '*',
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Added PUT and DELETE
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  credentials: false, //  Only true if you actually use cookies/auth headers
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  maxAge: 86400 //  Cache preflight response for 24 hours
 }));
 
+// ======================
+// Security Headers
+// ======================
+const helmet = require("helmet");
+app.use(helmet());
+
+// ======================
+// Middleware
+// ======================
 app.use(express.json({ limit: '10kb' }));
+
 
 // ======================
 // Database Connection
