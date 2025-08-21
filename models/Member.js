@@ -1,9 +1,15 @@
 const mongoose = require('mongoose');
 
 const MemberSchema = new mongoose.Schema({
+  memberId: {
+    type: String,
+    unique: true,
+    index: true
+  },
   name: { 
     type: String, 
-    required: [true, 'Please add a name'] 
+    required: [true, 'Please add a name'],
+    trim: true
   },
   type: { 
     type: String, 
@@ -18,19 +24,21 @@ const MemberSchema = new mongoose.Schema({
   },
   phone: { 
     type: String,
+    trim: true,
     validate: {
       validator: function(v) {
-        return /\d{3}-\d{3}-\d{4}/.test(v); // Simple phone validation
+        return /^\+63\d{10}$/.test(v); // Philippine format: +639XXXXXXXXX
       },
-      message: props => `${props.value} is not a valid phone number!`
+      message: props => `${props.value} is not a valid Philippine phone number!`
     }
   },
   email: { 
     type: String,
     lowercase: true,
+    trim: true,
     validate: {
       validator: function(v) {
-        return /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(v);
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
       },
       message: props => `${props.value} is not a valid email!`
     }
@@ -41,12 +49,37 @@ const MemberSchema = new mongoose.Schema({
     enum: ['active', 'inactive', 'suspended'] 
   }
 }, {
-  timestamps: true // Adds createdAt and updatedAt automatically
+  timestamps: true
 });
 
-// Add indexes for better performance
-MemberSchema.index({ name: 'text' });
-MemberSchema.index({ type: 1 });
-MemberSchema.index({ status: 1 });
+// Auto-generate memberId before saving
+MemberSchema.pre('save', async function(next) {
+  if (!this.isNew || this.memberId) return next();
+  
+  try {
+    // Find the member with highest memberId
+    const lastMember = await this.constructor.findOne(
+      { memberId: { $exists: true } },
+      { memberId: 1 },
+      { sort: { memberId: -1 } }
+    );
+    
+    // Extract the number and increment
+    const lastNumber = lastMember ? 
+      parseInt(lastMember.memberId.split('-')[1], 10) : 0;
+    const nextNumber = lastNumber + 1;
+    
+    // Format as MEM-0001
+    this.memberId = `MEM-${String(nextNumber).padStart(4, '0')}`;
+    next();
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Create the model (handle potential duplicate models)
+if (mongoose.models.Member) {
+  mongoose.deleteModel('Member');
+}
 
 module.exports = mongoose.model('Member', MemberSchema);

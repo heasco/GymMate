@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Document</title>
+        <link rel="stylesheet" href="trainer-mainpage.css">
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>Flex-IT</h1>
+                <h2>Goals Gym</h2>
+                <h3>Trainer</h3>
+            </div>
+        <div class= "Trainer-Menu">
+            <div class="Trainer-action-buttons">
+                <button class="action-btn" id="trainer-logout-btn">Log Out</button>
+                <button class="action-btn" id ="View Schedule" onclick="window.location.href='trainer-schedule.html'">View Schedule</button>
+                <button class="action-btn" id="View Member's Feedback">View Member's Feedback</button>
+                <button class="action-btn" id="View Classes Schedule ">View Classes Schedule</button>
+            </div>
+
+        </div>
+        <script>
+            document.getElementById("trainer-logout-btn").addEventListener("click", function(){
+                window.location.href="trainer-login.html";
+            })
+        </script>
+</html>

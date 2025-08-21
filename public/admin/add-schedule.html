@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Schedule Management - GOALS Gym</title>
+    <link href='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css' rel='stylesheet' />
+    
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+        }
+        .admin-header {
+            background-color: #2c3e50;
+            color: white;
+            padding: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .admin-content {
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .calendar-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        #calendar {
+            margin-top: 20px;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .action-btn {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .action-btn:hover {
+            background-color: #2980b9;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+        .modal-content {
+            background-color: white;
+            margin: 10% auto;
+            padding: 20px;
+            border-radius: 8px;
+            width: 80%;
+            max-width: 500px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .modal-buttons {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .btn {
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .btn-primary {
+            background-color: #3498db;
+            color: white;
+            border: none;
+        }
+        .btn-secondary {
+            background-color: #95a5a6;
+            color: white;
+            border: none;
+        }
+        .message {
+            padding: 10px;
+            margin-bottom: 15px;
+            border-radius: 4px;
+            display: none;
+        }
+        .success {
+            background-color: #dff0d8;
+            color: #3c763d;
+        }
+        .error {
+            background-color: #f2dede;
+            color: #a94442;
+        }
+    </style>
+</head>
+<body>
+    <header class="admin-header">
+        <h1>GOALS Gym - Schedule Management</h1>
+        <button class="logout-btn" id="logoutBtn">Logout</button>
+    </header>
+    
+    <main class="admin-content">
+        <div class="action-buttons">
+            <button class="action-btn" id="addScheduleBtn">Add New Schedule</button>
+            <button class="action-btn" id="refreshBtn">Refresh Calendar</button>
+        </div>
+        
+        <div class="message" id="message"></div>
+        
+        <div class="calendar-container">
+            <div id="calendar"></div>
+        </div>
+    </main>
+
+    <!-- Add/Edit Schedule Modal -->
+    <div id="scheduleModal" class="modal">
+        <div class="modal-content">
+            <h2 id="modalTitle">Add New Schedule</h2>
+            <form id="scheduleForm">
+                <input type="hidden" id="scheduleId">
+                
+                <div class="form-group">
+                    <label for="modalClassName">Class Name:</label>
+                    <input type="text" id="modalClassName" name="className" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="modalInstructor">Instructor:</label>
+                    <input type="text" id="modalInstructor" name="instructor" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="modalDayOfWeek">Day of Week:</label>
+                    <select id="modalDayOfWeek" name="dayOfWeek" required>
+                        <option value="">Select a day</option>
+                        <option value="Monday">Monday</option>
+                        <option value="Tuesday">Tuesday</option>
+                        <option value="Wednesday">Wednesday</option>
+                        <option value="Thursday">Thursday</option>
+                        <option value="Friday">Friday</option>
+                        <option value="Saturday">Saturday</option>
+                        <option value="Sunday">Sunday</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="modalStartTime">Start Time:</label>
+                    <input type="time" id="modalStartTime" name="startTime" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="modalEndTime">End Time:</label>
+                    <input type="time" id="modalEndTime" name="endTime" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="modalMaxParticipants">Max Participants:</label>
+                    <input type="number" id="modalMaxParticipants" name="maxParticipants" min="1" required>
+                </div>
+                
+                <div class="modal-buttons">
+                    <button type="button" class="btn btn-secondary" id="cancelBtn">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js'></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Check authentication
+            const authUser = JSON.parse(localStorage.getItem('authUser'));
+            if (!authUser || (Date.now() - authUser.timestamp > 3600000)) {
+                localStorage.removeItem('authUser');
+                window.location.href = '../login.html';
+                return;
+            }
+
+            // DOM elements
+            const calendarEl = document.getElementById('calendar');
+            const addScheduleBtn = document.getElementById('addScheduleBtn');
+            const refreshBtn = document.getElementById('refreshBtn');
+            const logoutBtn = document.getElementById('logoutBtn');
+            const scheduleModal = document.getElementById('scheduleModal');
+            const modalTitle = document.getElementById('modalTitle');
+            const scheduleForm = document.getElementById('scheduleForm');
+            const cancelBtn = document.getElementById('cancelBtn');
+            const messageDiv = document.getElementById('message');
+
+            // Initialize calendar
+            const calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'dayGridWeek',
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridWeek,dayGridDay'
+                },
+                events: async function(fetchInfo, successCallback, failureCallback) {
+                    try {
+                        const response = await fetch('/api/schedules');
+                        if (!response.ok) throw new Error('Failed to fetch schedules');
+                        
+                        const { data } = await response.json();
+                        const events = data.map(schedule => ({
+                            id: schedule._id,
+                            title: `${schedule.className} (${schedule.instructor})`,
+                            start: `${fetchInfo.start.getFullYear()}-${String(fetchInfo.start.getMonth() + 1).padStart(2, '0')}-${String(fetchInfo.start.getDate()).padStart(2, '0')}T${schedule.startTime}`,
+                            end: `${fetchInfo.start.getFullYear()}-${String(fetchInfo.start.getMonth() + 1).padStart(2, '0')}-${String(fetchInfo.start.getDate()).padStart(2, '0')}T${schedule.endTime}`,
+                            extendedProps: {
+                                className: schedule.className,
+                                instructor: schedule.instructor,
+                                dayOfWeek: schedule.dayOfWeek,
+                                startTime: schedule.startTime,
+                                endTime: schedule.endTime,
+                                maxParticipants: schedule.maxParticipants,
+                                currentParticipants: schedule.currentParticipants
+                            },
+                            backgroundColor: getClassColor(schedule.className),
+                            borderColor: getClassColor(schedule.className),
+                            textColor: '#ffffff'
+                        }));
+                        
+                        successCallback(events);
+                    } catch (error) {
+                        console.error('Error loading events:', error);
+                        showMessage('Failed to load schedule data', 'error');
+                        failureCallback(error);
+                    }
+                },
+                eventClick: function(info) {
+                    const schedule = info.event;
+                    modalTitle.textContent = 'Edit Schedule';
+                    
+                    // Fill form with event data
+                    document.getElementById('scheduleId').value = schedule.id;
+                    document.getElementById('modalClassName').value = schedule.extendedProps.className;
+                    document.getElementById('modalInstructor').value = schedule.extendedProps.instructor;
+                    document.getElementById('modalDayOfWeek').value = schedule.extendedProps.dayOfWeek;
+                    document.getElementById('modalStartTime').value = schedule.extendedProps.startTime;
+                    document.getElementById('modalEndTime').value = schedule.extendedProps.endTime;
+                    document.getElementById('modalMaxParticipants').value = schedule.extendedProps.maxParticipants;
+                    
+                    scheduleModal.style.display = 'block';
+                },
+                eventDidMount: function(info) {
+                    // Add tooltip with class info
+                    const tooltip = `${info.event.extendedProps.className}\n` +
+                                   `Instructor: ${info.event.extendedProps.instructor}\n` +
+                                   `Time: ${info.event.extendedProps.startTime} - ${info.event.extendedProps.endTime}\n` +
+                                   `Participants: ${info.event.extendedProps.currentParticipants}/${info.event.extendedProps.maxParticipants}`;
+                    
+                    info.el.setAttribute('title', tooltip);
+                }
+            });
+
+            calendar.render();
+
+            // Helper function to get color based on class name
+            function getClassColor(className) {
+                const colors = [
+                    '#3498db', '#2ecc71', '#e74c3c', '#9b59b6', 
+                    '#f1c40f', '#1abc9c', '#d35400', '#34495e'
+                ];
+                const index = Math.abs(hashCode(className)) % colors.length;
+                return colors[index];
+            }
+
+            // Simple string hash function
+            function hashCode(str) {
+                let hash = 0;
+                for (let i = 0; i < str.length; i++) {
+                    hash = str.charCodeAt(i) + ((hash << 5) - hash);
+                }
+                return hash;
+            }
+
+            // Show message
+            function showMessage(message, type) {
+                messageDiv.textContent = message;
+                messageDiv.className = type + ' message';
+                messageDiv.style.display = 'block';
+                
+                setTimeout(() => {
+                    messageDiv.style.display = 'none';
+                }, 5000);
+            }
+
+            // Event listeners
+            addScheduleBtn.addEventListener('click', () => {
+                modalTitle.textContent = 'Add New Schedule';
+                scheduleForm.reset();
+                document.getElementById('scheduleId').value = '';
+                scheduleModal.style.display = 'block';
+            });
+
+            refreshBtn.addEventListener('click', () => {
+                calendar.refetchEvents();
+                showMessage('Calendar refreshed', 'success');
+            });
+
+            logoutBtn.addEventListener('click', () => {
+                localStorage.removeItem('authUser');
+                window.location.href = '../login.html';
+            });
+
+            cancelBtn.addEventListener('click', () => {
+                scheduleModal.style.display = 'none';
+            });
+
+            // Close modal when clicking outside
+            window.addEventListener('click', (event) => {
+                if (event.target === scheduleModal) {
+                    scheduleModal.style.display = 'none';
+                }
+            });
+
+            // Form submission
+            scheduleForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                const formData = {
+                    className: document.getElementById('modalClassName').value.trim(),
+                    instructor: document.getElementById('modalInstructor').value.trim(),
+                    dayOfWeek: document.getElementById('modalDayOfWeek').value,
+                    startTime: document.getElementById('modalStartTime').value,
+                    endTime: document.getElementById('modalEndTime').value,
+                    maxParticipants: parseInt(document.getElementById('modalMaxParticipants').value)
+                };
+
+                const scheduleId = document.getElementById('scheduleId').value;
+                const isEdit = !!scheduleId;
+
+                // Client-side validation
+                if (!formData.className || !formData.instructor || !formData.dayOfWeek || 
+                    !formData.startTime || !formData.endTime || !formData.maxParticipants) {
+                    showMessage('Please fill in all fields', 'error');
+                    return;
+                }
+
+                if (formData.startTime >= formData.endTime) {
+                    showMessage('End time must be after start time', 'error');
+                    return;
+                }
+
+                try {
+                    const url = isEdit ? `/api/schedules/${scheduleId}` : '/api/schedules';
+                    const method = isEdit ? 'PUT' : 'POST';
+
+                    const response = await fetch(url, {
+                        method,
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${authUser.token || ''}`
+                        },
+                        body: JSON.stringify(formData)
+                    });
+
+                    const data = await response.json();
+
+                    if (response.ok) {
+                        showMessage(isEdit ? 'Schedule updated successfully!' : 'Schedule added successfully!', 'success');
+                        scheduleModal.style.display = 'none';
+                        calendar.refetchEvents();
+                    } else {
+                        showMessage(data.error || (isEdit ? 'Failed to update schedule' : 'Failed to add schedule'), 'error');
+                        if (data.details) {
+                            console.error('Error details:', data.details);
+                        }
+                    }
+                } catch (err) {
+                    console.error('Error:', err);
+                    showMessage('Network error. Please try again.', 'error');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

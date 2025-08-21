@@ -23,8 +23,12 @@
                     <button class="action-btn" id="manageMembers">Manage Members</button>
                     <button class="action-btn" id="viewReports">View Reports</button>
                     <button class="action-btn" id="systemSettings">System Settings</button>
+                    <button class="action-btn" id="addSchedule">Add Schedule</button>
                     <a href="./add-member.html" class="addMember">Add member</a>
-                    <a href="./admin-mainpage2.html" class="test">mainpag2-testing</a>
+                    <a href="./add-schedule.html" class="addSchedule">Add schedule</a>
+                    <a href="./add-trainer.html" class="addSchedule">Add trainer</a>
+                </div>
+            </div>
                 </div>
             </div>
         </section>
@@ -40,7 +44,7 @@
             // Check valid session (1 hour expiration)
             if (!authUser || (Date.now() - authUser.timestamp > 3600000)) {
                 localStorage.removeItem('authUser');
-                window.location.href = 'login.html';
+                window.location.href = '../login.html';
                 return;
             }
 
@@ -50,7 +54,7 @@
             // Logout handler
             logoutBtn.addEventListener('click', () => {
                 localStorage.removeItem('authUser');
-                window.location.href = 'login.html';
+                window.location.href = '../login.html';
             });
 
             // Button actions (stub functions)
