@@ -324,6 +324,7 @@ app.post('/api/trainers', async (req, res) => {
 });
 
 // Get all trainers
+// Get all trainers
 app.get('/api/trainers', async (req, res) => {
   try {
     const trainers = await Trainer.find().sort({ createdAt: -1 });
