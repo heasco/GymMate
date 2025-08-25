@@ -7,95 +7,98 @@
     <script src='https://cdnjs.cloudflare.com/ajax/libs/fullcalendar/6.1.9/index.global.min.js'></script>
 </head>
 <body>
-    <h2>Add New Class</h2>
-    <form id="classForm">
-        <div class="form-group">
-            <label for="class_name">Class Name:</label>
-            <input type="text" id="class_name" name="class_name" required>
-        </div>
+    <div class="container">
+        <div id="serverStatus" class="server-status">Checking server connection...</div>
         
-        <div class="form-group">
-            <label for="description">Description:</label>
-            <textarea id="description" name="description" rows="3"></textarea>
-        </div>
+        <div id="successMessage" class="success-message"></div>
         
-        <div class="form-group">
-            <label for="trainer_id">Trainer:</label>
-            <select id="trainer_id" name="trainer_id" required>
-                <option value="">Loading trainers...</option>
-            </select>
-            <div id="trainerError" class="error" style="display: none;"></div>
-        </div>
-        
-        <div class="form-group">
-            <label for="capacity">Capacity:</label>
-            <input type="number" id="capacity" name="capacity" min="1" required>
-        </div>
-        
-        <div class="form-group">
-            <label for="schedule_type">Schedule Type:</label>
-            <select id="schedule_type" name="schedule_type" required>
-                <option value="">Select schedule type</option>
-                <option value="one-time">One-time Class</option>
-                <option value="weekly">Weekly Recurring</option>
-                <option value="monthly">Monthly (4 weeks)</option>
-            </select>
-        </div>
+        <div id="formSection" class="section active">
+            <h2>Add New Class</h2>
+            <form id="classForm">
+                <div class="form-group">
+                    <label for="class_name">Class Name:</label>
+                    <input type="text" id="class_name" name="class_name" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="description">Description:</label>
+                    <textarea id="description" name="description" rows="3"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="trainer_id">Trainer:</label>
+                    <select id="trainer_id" name="trainer_id" required>
+                        <option value="">Loading trainers...</option>
+                    </select>
+                    <div id="trainerError" class="error" style="display: none;"></div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="capacity">Capacity:</label>
+                    <input type="number" id="capacity" name="capacity" min="1" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="schedule_type">Schedule Type:</label>
+                    <select id="schedule_type" name="schedule_type" required>
+                        <option value="">Select schedule type</option>
+                        <option value="one-time">One-time Class</option>
+                        <option value="weekly">Weekly Recurring</option>
+                        <option value="monthly">Monthly (4 weeks)</option>
+                    </select>
+                </div>
 
-        <div id="oneTimeSchedule" style="display: none;">
-            <div class="form-group">
-                <label for="class_date">Class Date:</label>
-                <input type="date" id="class_date" name="class_date">
-            </div>
-            <div class="form-group">
-                <label for="one_start_time">Start Time:</label>
-                <input type="time" id="one_start_time" name="one_start_time" min="06:00" max="22:00">
-            </div>
-            <div class="form-group">
-                <label for="one_end_time">End Time:</label>
-                <input type="time" id="one_end_time" name="one_end_time" min="06:00" max="22:00">
-            </div>
-        </div>
+                <div id="oneTimeSchedule" class="section">
+                    <div class="form-group">
+                        <label for="class_date">Class Date:</label>
+                        <input type="date" id="class_date" name="class_date">
+                    </div>
+                    <div class="form-group">
+                        <label for="one_start_time">Start Time:</label>
+                        <input type="time" id="one_start_time" name="one_start_time" min="06:00" max="22:00">
+                    </div>
+                    <div class="form-group">
+                        <label for="one_end_time">End Time:</label>
+                        <input type="time" id="one_end_time" name="one_end_time" min="06:00" max="22:00">
+                    </div>
+                </div>
 
-        <div id="recurringSchedule" style="display: none;">
-            <div class="form-group">
-                <label>Select Days of Week:</label>
-                <div id="daysOfWeek">
-                    <label><input type="checkbox" name="days" value="Monday"> Monday</label>
-                    <label><input type="checkbox" name="days" value="Tuesday"> Tuesday</label>
-                    <label><input type="checkbox" name="days" value="Wednesday"> Wednesday</label>
-                    <label><input type="checkbox" name="days" value="Thursday"> Thursday</label>
-                    <label><input type="checkbox" name="days" value="Friday"> Friday</label>
-                    <label><input type="checkbox" name="days" value="Saturday"> Saturday</label>
-                    <label><input type="checkbox" name="days" value="Sunday"> Sunday</label>
-                </div>
-            </div>
-            <div class="form-group">
-                <label for="start_time">Start Time:</label>
-                <input type="time" id="start_time" name="start_time" min="06:00" max="22:00">
-            </div>
-            <div class="form-group">
-                <label for="end_time">End Time:</label>
-                <input type="time" id="end_time" name="end_time" min="06:00" max="22:00">
-            </div>
-            <div id="weeklyOptions" style="display: none;">
-                <div class="form-group">
-                    <label for="start_date">Start Date:</label>
-                    <input type="date" id="start_date" name="start_date">
-                </div>
-                <div class="form-group">
-                    <label for="end_date">End Date (optional):</label>
-                    <input type="date" id="end_date" name="end_date">
-                </div>
-            </div>
-            <div id="monthlyOptions" style="display: none;">
-                <div class="form-group">
-                    <label for="month_start">Month Start Date:</label>
-                    <input type="date" id="month_start" name="month_start">
-                </div>
-                <div class="form-group">
-                    <label>Monthly Schedule Details:</label>
-                    <div id="monthlyScheduleDetails">
+                <div id="recurringSchedule" class="section">
+                    <div class="form-group">
+                        <label>Select Days of Week:</label>
+                        <div class="checkbox-group">
+                            <label><input type="checkbox" name="days" value="Monday"> Monday</label>
+                            <label><input type="checkbox" name="days" value="Tuesday"> Tuesday</label>
+                            <label><input type="checkbox" name="days" value="Wednesday"> Wednesday</label>
+                            <label><input type="checkbox" name="days" value="Thursday"> Thursday</label>
+                            <label><input type="checkbox" name="days" value="Friday"> Friday</label>
+                            <label><input type="checkbox" name="days" value="Saturday"> Saturday</label>
+                            <label><input type="checkbox" name="days" value="Sunday"> Sunday</label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="start_time">Start Time:</label>
+                        <input type="time" id="start_time" name="start_time" min="06:00" max="22:00">
+                    </div>
+                    <div class="form-group">
+                        <label for="end_time">End Time:</label>
+                        <input type="time" id="end_time" name="end_time" min="06:00" max="22:00">
+                    </div>
+                    <div id="weeklyOptions" class="section">
+                        <div class="form-group">
+                            <label for="start_date">Start Date:</label>
+                            <input type="date" id="start_date" name="start_date">
+                        </div>
+                        <div class="form-group">
+                            <label for="end_date">End Date (optional):</label>
+                            <input type="date" id="end_date" name="end_date">
+                        </div>
+                    </div>
+                    <div id="monthlyOptions" class="section">
+                        <div class="form-group">
+                            <label for="month_start">Month Start Date:</label>
+                            <input type="date" id="month_start" name="month_start">
+                        </div>
                         <div class="form-group">
                             <label for="week_of_month">Week of Month:</label>
                             <select id="week_of_month" name="week_of_month">
@@ -110,204 +113,93 @@
                         </div>
                     </div>
                 </div>
+                
+                <div class="form-group">
+                    <label>Schedule Preview:</label>
+                    <div id="schedulePreview">Please select schedule type and complete the information above</div>
+                    <input type="hidden" id="schedule" name="schedule" required>
+                </div>
+                
+                <div class="nav-buttons">
+                    <button type="submit">Add Class</button>
+                    <button type="button" onclick="showScheduleView()">View Schedule Calendar</button>
+                </div>
+            </form>
+        </div>
+
+        <div id="scheduleViewSection" class="section">
+            <h2>Class Schedule Calendar</h2>
+            <div id="calendar"></div>
+            <div class="nav-buttons">
+                <button type="button" onclick="showFormView()">Back to Add Class</button>
             </div>
         </div>
-        
-        <div class="form-group">
-            <label>Schedule Preview:</label>
-            <div id="schedulePreview">Please select schedule type and complete the information above</div>
-            <input type="hidden" id="schedule" name="schedule" required>
-        </div>
-        
-        <button type="submit">Add Class</button>
-        <button type="button" onclick="toggleScheduleView()">View Schedule</button>
-    </form>
-
-    <div id="scheduleViewSection" style="display: none;">
-        <h3>Class Schedule Calendar</h3>
-        <div id="calendar"></div>
-        <button type="button" onclick="toggleScheduleView()">Back to Add Class</button>
     </div>
 
     <script>
-        const SERVER_URL = 'http://localhost:8080';
+        // Server configuration
+        const SERVER_URL = 'https://flex-it-goalsgym-it-project-2.onrender.com';
         let calendar;
         let allClasses = [];
 
-        // Initialize FullCalendar for schedule viewing
-        function initCalendar() {
-            if (calendar) return; // Already initialized
-            
-            const calendarEl = document.getElementById('calendar');
-            calendar = new FullCalendar.Calendar(calendarEl, {
-                initialView: 'timeGridWeek',
-                headerToolbar: {
-                    left: 'prev,next today',
-                    center: 'title',
-                    right: 'dayGridMonth,timeGridWeek,timeGridDay'
-                },
-                height: 500,
-                slotMinTime: '06:00:00',
-                slotMaxTime: '22:00:00',
-                slotDuration: '00:30:00',
-                events: [],
-                eventClick: function(info) {
-                    alert(`Class: ${info.event.title}\nTrainer: ${info.event.extendedProps.trainer}\nCapacity: ${info.event.extendedProps.capacity}\nDescription: ${info.event.extendedProps.description || 'No description'}`);
-                }
-            });
-            
-            calendar.render();
-            loadClassesIntoCalendar();
-        }
+        // Check server connection on load
+        document.addEventListener('DOMContentLoaded', async function() {
+            await checkServerConnection();
+            fetchTrainers();
+            setupEventListeners();
+            setMinimumDates();
+        });
 
-        // Toggle between form and schedule view
-        function toggleScheduleView() {
-            const formSection = document.querySelector('form').parentElement;
-            const scheduleSection = document.getElementById('scheduleViewSection');
-            
-            if (scheduleSection.style.display === 'none') {
-                formSection.style.display = 'none';
-                scheduleSection.style.display = 'block';
-                document.querySelector('h2').textContent = 'Class Schedule';
-                initCalendar();
-            } else {
-                formSection.style.display = 'block';
-                scheduleSection.style.display = 'none';
-                document.querySelector('h2').textContent = 'Add New Class';
-            }
-        }
-
-        // Load all classes into calendar
-        async function loadClassesIntoCalendar() {
-            if (!calendar) return;
-            
+        // Check server connection
+        async function checkServerConnection() {
+            const statusElement = document.getElementById('serverStatus');
             try {
-                const response = await fetch(`${SERVER_URL}/api/classes`);
+                const response = await fetch(`${SERVER_URL}/health`);
                 if (response.ok) {
-                    const result = await response.json();
-                    if (result.success && result.data) {
-                        allClasses = result.data;
-                        calendar.removeAllEvents();
-                        
-                        // Convert classes to calendar events
-                        const events = [];
-                        
-                        allClasses.forEach(classItem => {
-                            const scheduleEvents = parseScheduleToEvents(classItem);
-                            events.push(...scheduleEvents);
-                        });
-                        
-                        calendar.addEventSource(events);
-                    }
+                    statusElement.textContent = 'Connected to server successfully';
+                    statusElement.className = 'server-status server-connected';
+                } else {
+                    throw new Error('Server response not OK');
                 }
             } catch (error) {
-                console.error('Error loading classes:', error);
+                statusElement.textContent = 'Cannot connect to server. Please try again later.';
+                statusElement.className = 'server-status server-disconnected';
+                console.error('Server connection error:', error);
             }
         }
 
-        // Parse schedule string to calendar events
-        function parseScheduleToEvents(classItem) {
-            const events = [];
-            const schedule = classItem.schedule;
-            const today = new Date();
-            const twoMonthsFromNow = new Date();
-            twoMonthsFromNow.setMonth(today.getMonth() + 2);
+        // Setup all event listeners
+        function setupEventListeners() {
+            // Schedule type change
+            document.getElementById('schedule_type').addEventListener('change', toggleScheduleSection);
             
-            if (schedule.startsWith('One-time:')) {
-                // Parse one-time event
-                const match = schedule.match(/One-time: (.+?), (\d{1,2}:\d{2} [AP]M) - (\d{1,2}:\d{2} [AP]M)/);
-                if (match) {
-                    const dateStr = match[1];
-                    const startTime = match[2];
-                    const endTime = match[3];
-                    
-                    const eventDate = new Date(dateStr);
-                    const startDateTime = combineDateAndTime(eventDate, startTime);
-                    const endDateTime = combineDateAndTime(eventDate, endTime);
-                    
-                    events.push({
-                        title: classItem.class_name,
-                        start: startDateTime,
-                        end: endDateTime,
-                        backgroundColor: getRandomColor(),
-                        extendedProps: {
-                            trainer: classItem.trainer_name || 'Unknown',
-                            capacity: classItem.capacity,
-                            description: classItem.description
-                        }
-                    });
-                }
-            } else if (schedule.startsWith('Weekly:') || schedule.startsWith('Monthly')) {
-                // Parse recurring events
-                const timeMatch = schedule.match(/(\d{1,2}:\d{2} [AP]M) - (\d{1,2}:\d{2} [AP]M)/);
-                if (timeMatch) {
-                    const startTime = timeMatch[1];
-                    const endTime = timeMatch[2];
-                    
-                    // Extract days
-                    let daysMatch;
-                    if (schedule.startsWith('Weekly:')) {
-                        daysMatch = schedule.match(/Weekly: (.+?), \d{1,2}:\d{2} [AP]M/);
-                    } else {
-                        daysMatch = schedule.match(/Monthly \(.*?\): (.+?), \d{1,2}:\d{2} [AP]M/);
-                    }
-                    
-                    if (daysMatch) {
-                        const daysStr = daysMatch[1];
-                        const days = daysStr.split(', ').map(d => d.trim());
-                        
-                        // Generate recurring events for the next 2 months
-                        const currentDate = new Date(today);
-                        while (currentDate <= twoMonthsFromNow) {
-                            const dayName = currentDate.toLocaleDateString('en-US', { weekday: 'long' });
-                            
-                            if (days.includes(dayName)) {
-                                const startDateTime = combineDateAndTime(new Date(currentDate), startTime);
-                                const endDateTime = combineDateAndTime(new Date(currentDate), endTime);
-                                
-                                events.push({
-                                    title: classItem.class_name,
-                                    start: startDateTime,
-                                    end: endDateTime,
-                                    backgroundColor: getRandomColor(),
-                                    extendedProps: {
-                                        trainer: classItem.trainer_name || 'Unknown',
-                                        capacity: classItem.capacity,
-                                        description: classItem.description
-                                    }
-                                });
-                            }
-                            
-                            currentDate.setDate(currentDate.getDate() + 1);
-                        }
-                    }
-                }
-            }
+            // One-time schedule listeners
+            document.getElementById('class_date').addEventListener('change', updateSchedulePreview);
+            document.getElementById('one_start_time').addEventListener('change', updateSchedulePreview);
+            document.getElementById('one_end_time').addEventListener('change', updateSchedulePreview);
             
-            return events;
+            // Recurring schedule listeners
+            document.querySelectorAll('input[name="days"]').forEach(checkbox => {
+                checkbox.addEventListener('change', updateSchedulePreview);
+            });
+            document.getElementById('start_time').addEventListener('change', updateSchedulePreview);
+            document.getElementById('end_time').addEventListener('change', updateSchedulePreview);
+            document.getElementById('start_date').addEventListener('change', updateSchedulePreview);
+            document.getElementById('end_date').addEventListener('change', updateSchedulePreview);
+            document.getElementById('month_start').addEventListener('change', updateSchedulePreview);
+            document.getElementById('week_of_month').addEventListener('change', updateSchedulePreview);
+            
+            // Form submission
+            document.getElementById('classForm').addEventListener('submit', handleFormSubmit);
         }
 
-        // Helper function to combine date and time
-        function combineDateAndTime(date, timeStr) {
-            const [time, period] = timeStr.split(' ');
-            const [hours, minutes] = time.split(':');
-            let hour24 = parseInt(hours);
-            
-            if (period === 'PM' && hour24 !== 12) {
-                hour24 += 12;
-            } else if (period === 'AM' && hour24 === 12) {
-                hour24 = 0;
-            }
-            
-            const result = new Date(date);
-            result.setHours(hour24, parseInt(minutes), 0, 0);
-            return result;
-        }
-
-        // Generate random colors for different classes
-        function getRandomColor() {
-            const colors = ['#3788d8', '#4CAF50', '#ff9800', '#e91e63', '#9c27b0', '#00bcd4', '#795548'];
-            return colors[Math.floor(Math.random() * colors.length)];
+        // Set minimum dates to today
+        function setMinimumDates() {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('class_date').setAttribute('min', today);
+            document.getElementById('start_date').setAttribute('min', today);
+            document.getElementById('end_date').setAttribute('min', today);
+            document.getElementById('month_start').setAttribute('min', today);
         }
 
         // Show/hide schedule sections based on type
@@ -319,10 +211,11 @@
             const monthlyOptions = document.getElementById('monthlyOptions');
             
             // Hide all sections first
-            oneTimeSchedule.style.display = 'none';
-            recurringSchedule.style.display = 'none';
-            weeklyOptions.style.display = 'none';
-            monthlyOptions.style.display = 'none';
+            document.querySelectorAll('.section').forEach(section => {
+                if (section.id !== 'formSection' && section.id !== 'scheduleViewSection') {
+                    section.style.display = 'none';
+                }
+            });
             
             // Show relevant section
             if (scheduleType === 'one-time') {
@@ -499,39 +392,8 @@
             }
         }
 
-        // Load trainers when page loads
-        document.addEventListener('DOMContentLoaded', function() {
-            fetchTrainers();
-            
-            // Add event listeners for schedule inputs
-            document.getElementById('schedule_type').addEventListener('change', toggleScheduleSection);
-            
-            // One-time schedule listeners
-            document.getElementById('class_date').addEventListener('change', updateSchedulePreview);
-            document.getElementById('one_start_time').addEventListener('change', updateSchedulePreview);
-            document.getElementById('one_end_time').addEventListener('change', updateSchedulePreview);
-            
-            // Recurring schedule listeners
-            document.querySelectorAll('input[name="days"]').forEach(checkbox => {
-                checkbox.addEventListener('change', updateSchedulePreview);
-            });
-            document.getElementById('start_time').addEventListener('change', updateSchedulePreview);
-            document.getElementById('end_time').addEventListener('change', updateSchedulePreview);
-            document.getElementById('start_date').addEventListener('change', updateSchedulePreview);
-            document.getElementById('end_date').addEventListener('change', updateSchedulePreview);
-            document.getElementById('month_start').addEventListener('change', updateSchedulePreview);
-            document.getElementById('week_of_month').addEventListener('change', updateSchedulePreview);
-            
-            // Set minimum date to today for all date inputs
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('class_date').setAttribute('min', today);
-            document.getElementById('start_date').setAttribute('min', today);
-            document.getElementById('end_date').setAttribute('min', today);
-            document.getElementById('month_start').setAttribute('min', today);
-        });
-
         // Handle form submission
-        document.getElementById('classForm').addEventListener('submit', async function(e) {
+        async function handleFormSubmit(e) {
             e.preventDefault();
             
             const formData = new FormData(e.target);
@@ -572,7 +434,7 @@
                 const responseData = await response.json();
                 
                 if (response.ok) {
-                    alert('Class successfully added!');
+                    showSuccess('Class successfully added!');
                     document.getElementById('classForm').reset();
                     updateSchedulePreview(); // Reset schedule preview
                     fetchTrainers(); // Reload trainer dropdown
@@ -595,7 +457,194 @@
                 console.error('Error:', error);
                 alert(error.message);
             }
-        });
+        }
+
+        // Show success message
+        function showSuccess(message) {
+            const successElement = document.getElementById('successMessage');
+            successElement.textContent = message;
+            successElement.style.display = 'block';
+            
+            // Hide after 5 seconds
+            setTimeout(() => {
+                successElement.style.display = 'none';
+            }, 5000);
+        }
+
+        // Toggle between form and schedule view
+        function showScheduleView() {
+            document.getElementById('formSection').classList.remove('active');
+            document.getElementById('scheduleViewSection').classList.add('active');
+            initCalendar();
+        }
+
+        function showFormView() {
+            document.getElementById('scheduleViewSection').classList.remove('active');
+            document.getElementById('formSection').classList.add('active');
+        }
+
+        // Initialize FullCalendar for schedule viewing
+        function initCalendar() {
+            if (calendar) {
+                calendar.render();
+                loadClassesIntoCalendar();
+                return;
+            }
+            
+            const calendarEl = document.getElementById('calendar');
+            calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'timeGridWeek',
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,timeGridWeek,timeGridDay'
+                },
+                height: 500,
+                slotMinTime: '06:00:00',
+                slotMaxTime: '22:00:00',
+                slotDuration: '00:30:00',
+                events: [],
+                eventClick: function(info) {
+                    alert(`Class: ${info.event.title}\nTrainer: ${info.event.extendedProps.trainer}\nCapacity: ${info.event.extendedProps.capacity}\nDescription: ${info.event.extendedProps.description || 'No description'}`);
+                }
+            });
+            
+            calendar.render();
+            loadClassesIntoCalendar();
+        }
+
+        // Load all classes into calendar
+        async function loadClassesIntoCalendar() {
+            if (!calendar) return;
+            
+            try {
+                const response = await fetch(`${SERVER_URL}/api/classes`);
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.success && result.data) {
+                        allClasses = result.data;
+                        calendar.removeAllEvents();
+                        
+                        // Convert classes to calendar events
+                        const events = [];
+                        
+                        allClasses.forEach(classItem => {
+                            const scheduleEvents = parseScheduleToEvents(classItem);
+                            events.push(...scheduleEvents);
+                        });
+                        
+                        calendar.addEventSource(events);
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading classes:', error);
+            }
+        }
+
+        // Parse schedule string to calendar events
+        function parseScheduleToEvents(classItem) {
+            const events = [];
+            const schedule = classItem.schedule;
+            const today = new Date();
+            const twoMonthsFromNow = new Date();
+            twoMonthsFromNow.setMonth(today.getMonth() + 2);
+            
+            if (schedule.startsWith('One-time:')) {
+                // Parse one-time event
+                const match = schedule.match(/One-time: (.+?), (\d{1,2}:\d{2} [AP]M) - (\d{1,2}:\d{2} [AP]M)/);
+                if (match) {
+                    const dateStr = match[1];
+                    const startTime = match[2];
+                    const endTime = match[3];
+                    
+                    const eventDate = new Date(dateStr);
+                    const startDateTime = combineDateAndTime(eventDate, startTime);
+                    const endDateTime = combineDateAndTime(eventDate, endTime);
+                    
+                    events.push({
+                        title: classItem.class_name,
+                        start: startDateTime,
+                        end: endDateTime,
+                        backgroundColor: getRandomColor(),
+                        extendedProps: {
+                            trainer: classItem.trainer_name || 'Unknown',
+                            capacity: classItem.capacity,
+                            description: classItem.description
+                        }
+                    });
+                }
+            } else if (schedule.startsWith('Weekly:') || schedule.startsWith('Monthly')) {
+                // Parse recurring events
+                const timeMatch = schedule.match(/(\d{1,2}:\d{2} [AP]M) - (\d{1,2}:\d{2} [AP]M)/);
+                if (timeMatch) {
+                    const startTime = timeMatch[1];
+                    const endTime = timeMatch[2];
+                    
+                    // Extract days
+                    let daysMatch;
+                    if (schedule.startsWith('Weekly:')) {
+                        daysMatch = schedule.match(/Weekly: (.+?), \d{1,2}:\d{2} [AP]M/);
+                    } else {
+                        daysMatch = schedule.match(/Monthly \(.*?\): (.+?), \d{1,2}:\d{2} [AP]M/);
+                    }
+                    
+                    if (daysMatch) {
+                        const daysStr = daysMatch[1];
+                        const days = daysStr.split(', ').map(d => d.trim());
+                        
+                        // Generate recurring events for the next 2 months
+                        const currentDate = new Date(today);
+                        while (currentDate <= twoMonthsFromNow) {
+                            const dayName = currentDate.toLocaleDateString('en-US', { weekday: 'long' });
+                            
+                            if (days.includes(dayName)) {
+                                const startDateTime = combineDateAndTime(new Date(currentDate), startTime);
+                                const endDateTime = combineDateAndTime(new Date(currentDate), endTime);
+                                
+                                events.push({
+                                    title: classItem.class_name,
+                                    start: startDateTime,
+                                    end: endDateTime,
+                                    backgroundColor: getRandomColor(),
+                                    extendedProps: {
+                                        trainer: classItem.trainer_name || 'Unknown',
+                                        capacity: classItem.capacity,
+                                        description: classItem.description
+                                    }
+                                });
+                            }
+                            
+                            currentDate.setDate(currentDate.getDate() + 1);
+                        }
+                    }
+                }
+            }
+            
+            return events;
+        }
+
+        // Helper function to combine date and time
+        function combineDateAndTime(date, timeStr) {
+            const [time, period] = timeStr.split(' ');
+            const [hours, minutes] = time.split(':');
+            let hour24 = parseInt(hours);
+            
+            if (period === 'PM' && hour24 !== 12) {
+                hour24 += 12;
+            } else if (period === 'AM' && hour24 === 12) {
+                hour24 = 0;
+            }
+            
+            const result = new Date(date);
+            result.setHours(hour24, parseInt(minutes), 0, 0);
+            return result;
+        }
+
+        // Generate random colors for different classes
+        function getRandomColor() {
+            const colors = ['#3788d8', '#4CAF50', '#ff9800', '#e91e63', '#9c27b0', '#00bcd4', '#795548'];
+            return colors[Math.floor(Math.random() * colors.length)];
+        }
     </script>
 </body>
 </html>
