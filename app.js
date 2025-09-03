@@ -237,6 +237,43 @@ app.post('/api/members', async (req, res) => {
     });
   }
 });
+// Member search endpoint using native MongoDB
+app.get('/api/members/search', async (req, res) => {
+  try {
+    const { query } = req.query;
+    
+    if (!query || query.trim().length < 2) {
+      return res.status(400).json({
+        success: false,
+        error: 'Search query must be at least 2 characters long'
+      });
+    }
+
+    // Use the native MongoDB collection for searching
+    const db = mongoose.connection.db;
+    const membersCollection = db.collection('members');
+    
+    // Search for members by name or memberId
+    const members = await membersCollection.find({
+      $or: [
+        { name: { $regex: query, $options: 'i' } },
+        { memberId: { $regex: query, $options: 'i' } }
+      ]
+    }).limit(10).toArray();
+
+    res.json({
+      success: true,
+      count: members.length,
+      data: members
+    });
+  } catch (err) {
+    console.error('Member search error:', err);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to search members'
+    });
+  }
+});
 //protect routes
 const auth = require('./middleware/auth');
 // Import Trainer model
