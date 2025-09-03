@@ -7,17 +7,21 @@ const bcrypt = require('bcryptjs');
 const cors = require('cors');
 const app = express();
 
+
 // ======================
 // Constants
 // ======================
 const PORT = process.env.PORT || 8080;
+const SERVER_URL = 'https://flex-it-goalsgym-it-project-2.onrender.com';
 const DB_URL = process.env.MONGODB_URI || "mongodb+srv://herodvelasco023:Qn0ihspOECvY5vq2@cluster0.vejigze.mongodb.net/goalsgym?retryWrites=true&w=majority&appName=Cluster0";
 
+// Serve static files from the public directory
+app.use(express.static('public'));
 
 // ======================
 // Middleware
 // ======================
-app.use(cors({
+app.use(cors({  
   origin: '*',
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Added PUT and DELETE
@@ -556,6 +560,378 @@ app.get('/admin/data', async (req, res) => {
     res.json({ data: 'This is protected admin data' });
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+// Import the models
+const Enrollment = require('./models/Enrollment');
+const Feedback = require('./models/Feedback');
+
+// ======================
+// Enrollment Routes
+// ======================
+
+// Enroll member in class (Admin function)
+app.post('/api/enrollments', async (req, res) => {
+  try {
+    const { class_id, member_id } = req.body;
+
+    // Validate required fields
+    if (!class_id || !member_id) {
+      return res.status(400).json({
+        success: false,
+        error: 'Class ID and Member ID are required'
+      });
+    }
+
+    // Check if class exists
+    const classData = await Class.findOne({ class_id });
+    if (!classData) {
+      return res.status(404).json({
+        success: false,
+        error: 'Class not found'
+      });
+    }
+
+    // Check if class is full
+    if (classData.isFull) {
+      return res.status(400).json({
+        success: false,
+        error: 'Class is full'
+      });
+    }
+
+    // Check if member is already enrolled
+    const existingEnrollment = await Enrollment.findOne({ 
+      class_id, 
+      member_id, 
+      status: 'active' 
+    });
+    
+    if (existingEnrollment) {
+      return res.status(409).json({
+        success: false,
+        error: 'Member is already enrolled in this class'
+      });
+    }
+
+    // Create enrollment
+    const enrollment = new Enrollment({
+      class_id,
+      member_id
+    });
+
+    const savedEnrollment = await enrollment.save();
+
+    // Update class enrollment count
+    await Class.findOneAndUpdate(
+      { class_id },
+      { 
+        $inc: { current_enrollment: 1 },
+        $push: { 
+          enrolled_members: { 
+            member_id, 
+            enrollment_date: new Date(),
+            status: 'active'
+          } 
+        }
+      }
+    );
+
+    res.status(201).json({
+      success: true,
+      message: 'Member enrolled successfully',
+      data: savedEnrollment
+    });
+
+  } catch (err) {
+    console.error('Enrollment error:', err);
+    
+    if (err.code === 11000) {
+      return res.status(409).json({
+        success: false,
+        error: 'Member is already enrolled in this class'
+      });
+    }
+    
+    res.status(500).json({
+      success: false,
+      error: 'Failed to enroll member'
+    });
+  }
+});
+
+// Get enrollments for a class
+app.get('/api/classes/:id/enrollments', async (req, res) => {
+  try {
+    const class_id = req.params.id;
+    
+    const enrollments = await Enrollment.find({ class_id })
+      .sort({ enrollment_date: -1 });
+
+    res.json({
+      success: true,
+      count: enrollments.length,
+      data: enrollments
+    });
+  } catch (err) {
+    console.error('Error fetching enrollments:', err);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch enrollments'
+    });
+  }
+});
+
+// Get enrollments for a member
+app.get('/api/members/:id/enrollments', async (req, res) => {
+  try {
+    const member_id = req.params.id;
+    
+    const enrollments = await Enrollment.find({ member_id, status: 'active' })
+      .populate('class_id', 'class_name schedule trainer_id')
+      .sort({ enrollment_date: -1 });
+
+    res.json({
+      success: true,
+      count: enrollments.length,
+      data: enrollments
+    });
+  } catch (err) {
+    console.error('Error fetching member enrollments:', err);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch enrollments'
+    });
+  }
+});
+
+// Cancel enrollment
+app.put('/api/enrollments/:id/cancel', async (req, res) => {
+  try {
+    const enrollment_id = req.params.id;
+    
+    const enrollment = await Enrollment.findOne({ enrollment_id });
+    if (!enrollment) {
+      return res.status(404).json({
+        success: false,
+        error: 'Enrollment not found'
+      });
+    }
+
+    if (enrollment.status === 'cancelled') {
+      return res.status(400).json({
+        success: false,
+        error: 'Enrollment is already cancelled'
+      });
+    }
+
+    enrollment.status = 'cancelled';
+    await enrollment.save();
+
+    // Update class enrollment count
+    await Class.findOneAndUpdate(
+      { class_id: enrollment.class_id },
+      { 
+        $inc: { current_enrollment: -1 },
+        $set: { 
+          'enrolled_members.$[elem].status': 'cancelled' 
+        }
+      },
+      { 
+        arrayFilters: [{ 'elem.member_id': enrollment.member_id }] 
+      }
+    );
+
+    res.json({
+      success: true,
+      message: 'Enrollment cancelled successfully',
+      data: enrollment
+    });
+
+  } catch (err) {
+    console.error('Error cancelling enrollment:', err);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to cancel enrollment'
+    });
+  }
+});
+
+// ======================
+// Feedback Routes
+// ======================
+
+// Submit feedback for a class
+app.post('/api/feedback', async (req, res) => {
+  try {
+    const { class_id, member_id, trainer_id, rating, comment } = req.body;
+
+    // Validate required fields
+    if (!class_id || !member_id || !trainer_id || !rating) {
+      return res.status(400).json({
+        success: false,
+        error: 'Class ID, Member ID, Trainer ID, and Rating are required'
+      });
+    }
+
+    // Validate rating range
+    if (rating < 1 || rating > 5) {
+      return res.status(400).json({
+        success: false,
+        error: 'Rating must be between 1 and 5'
+      });
+    }
+
+    // Check if member is enrolled in the class
+    const enrollment = await Enrollment.findOne({ 
+      class_id, 
+      member_id, 
+      status: 'active' 
+    });
+    
+    if (!enrollment) {
+      return res.status(403).json({
+        success: false,
+        error: 'Member is not enrolled in this class'
+      });
+    }
+
+    // Check if member already submitted feedback for this class
+    const existingFeedback = await Feedback.findOne({ class_id, member_id });
+    if (existingFeedback) {
+      return res.status(409).json({
+        success: false,
+        error: 'Feedback already submitted for this class'
+      });
+    }
+
+    // Create feedback
+    const feedback = new Feedback({
+      class_id,
+      member_id,
+      trainer_id,
+      rating,
+      comment: comment || ''
+    });
+
+    const savedFeedback = await feedback.save();
+
+    // Also add feedback to the class document
+    await Class.findOneAndUpdate(
+      { class_id },
+      {
+        $push: {
+          feedback: {
+            member_id,
+            rating,
+            comment: comment || '',
+            date_submitted: new Date()
+          }
+        }
+      }
+    );
+
+    res.status(201).json({
+      success: true,
+      message: 'Feedback submitted successfully',
+      data: savedFeedback
+    });
+
+  } catch (err) {
+    console.error('Feedback submission error:', err);
+    
+    if (err.code === 11000) {
+      return res.status(409).json({
+        success: false,
+        error: 'Feedback already submitted for this class'
+      });
+    }
+    
+    res.status(500).json({
+      success: false,
+      error: 'Failed to submit feedback'
+    });
+  }
+});
+
+// Get feedback for a class
+app.get('/api/classes/:id/feedback', async (req, res) => {
+  try {
+    const class_id = req.params.id;
+    
+    const feedback = await Feedback.find({ class_id })
+      .sort({ date_submitted: -1 });
+
+    res.json({
+      success: true,
+      count: feedback.length,
+      data: feedback
+    });
+  } catch (err) {
+    console.error('Error fetching feedback:', err);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch feedback'
+    });
+  }
+});
+
+// Get feedback for a trainer
+app.get('/api/trainers/:id/feedback', async (req, res) => {
+  try {
+    const trainer_id = req.params.id;
+    
+    const feedback = await Feedback.find({ trainer_id })
+      .populate('class_id', 'class_name')
+      .sort({ date_submitted: -1 });
+
+    res.json({
+      success: true,
+      count: feedback.length,
+      data: feedback
+    });
+  } catch (err) {
+    console.error('Error fetching trainer feedback:', err);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch feedback'
+    });
+  }
+});
+
+// Get average rating for a trainer
+app.get('/api/trainers/:id/rating', async (req, res) => {
+  try {
+    const trainer_id = req.params.id;
+    
+    const result = await Feedback.aggregate([
+      { $match: { trainer_id } },
+      {
+        $group: {
+          _id: null,
+          averageRating: { $avg: '$rating' },
+          totalFeedback: { $sum: 1 }
+        }
+      }
+    ]);
+
+    const averageRating = result.length > 0 ? result[0].averageRating.toFixed(1) : 0;
+    const totalFeedback = result.length > 0 ? result[0].totalFeedback : 0;
+
+    res.json({
+      success: true,
+      data: {
+        averageRating,
+        totalFeedback
+      }
+    });
+  } catch (err) {
+    console.error('Error calculating trainer rating:', err);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to calculate rating'
+    });
   }
 });
 
