@@ -795,6 +795,82 @@ app.put('/api/enrollments/:id/cancel', async (req, res) => {
   }
 });
 
+// Simple enrollment endpoint
+app.post('/api/classes/:classId/enroll', async (req, res) => {
+  try {
+    const { classId } = req.params;
+    const { member_id } = req.body;
+
+    console.log(`Enrollment request: classId=${classId}, member_id=${member_id}`);
+
+    if (!member_id) {
+      return res.status(400).json({
+        success: false,
+        error: 'Member ID is required'
+      });
+    }
+
+    // Find the class by class_id
+    const classData = await Class.findOne({ class_id: classId });
+    if (!classData) {
+      console.log(`Class not found: ${classId}`);
+      return res.status(404).json({
+        success: false,
+        error: 'Class not found'
+      });
+    }
+
+    // Check if class is full
+    if (classData.current_enrollment >= classData.capacity) {
+      return res.status(400).json({
+        success: false,
+        error: 'Class is full'
+      });
+    }
+
+    // Check if member is already enrolled
+    const alreadyEnrolled = classData.enrolled_members.some(
+      member => member.member_id === member_id && member.status === 'active'
+    );
+
+    if (alreadyEnrolled) {
+      return res.status(409).json({
+        success: false,
+        error: 'Member is already enrolled in this class'
+      });
+    }
+
+    // Add member to class
+    classData.enrolled_members.push({
+      member_id,
+      enrollment_date: new Date(),
+      status: 'active'
+    });
+
+    classData.current_enrollment += 1;
+    await classData.save();
+
+    console.log(`Successfully enrolled member ${member_id} in class ${classId}`);
+
+    res.status(200).json({
+      success: true,
+      message: 'Member enrolled successfully',
+      data: {
+        class_id: classData.class_id,
+        class_name: classData.class_name,
+        member_id: member_id,
+        enrollment_date: new Date()
+      }
+    });
+
+  } catch (err) {
+    console.error('Enrollment error:', err);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to enroll member'
+    });
+  }
+});
 // ======================
 // Feedback Routes
 // ======================
