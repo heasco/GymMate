@@ -25,7 +25,8 @@ const enrollmentSchema = new mongoose.Schema({
     default: 'active'
   }
 }, {
-  timestamps: true
+  timestamps: true,
+  collection: 'Enrollment' // Explicitly set the collection name
 });
 
 // Auto-generate enrollment_id
@@ -49,4 +50,5 @@ enrollmentSchema.index({ class_id: 1, member_id: 1 }, {
   partialFilterExpression: { status: 'active' }
 });
 
-module.exports = mongoose.model('Enrollment', enrollmentSchema);
+// Explicitly set the collection name
+module.exports = mongoose.model('Enrollment', enrollmentSchema, 'Enrollment');
