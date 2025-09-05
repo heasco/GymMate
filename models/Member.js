@@ -78,8 +78,8 @@ MemberSchema.pre('save', async function(next) {
 });
 
 // Create the model (handle potential duplicate models)
-if (mongoose.models.Member) {
-  mongoose.deleteModel('Member');
+if (mongoose.models.Members) {
+  mongoose.deleteModel('Members');
 }
 
-module.exports = mongoose.model('Member', MemberSchema);
+module.exports = mongoose.model('Members', MemberSchema);
