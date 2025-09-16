@@ -68,6 +68,24 @@ const MemberSchema = new mongoose.Schema({
   collection: 'members'
 });
 
+// Calculate end date before validation
+MemberSchema.pre('validate', function(next) {
+  if (this.isModified('joinDate') || this.isModified('type') || this.isModified('duration') || this.isNew) {
+    // Calculate end date based on member type
+    if (this.type === 'monthly') {
+      // For monthly members, add months to join date
+      this.endDate = new Date(this.joinDate);
+      this.endDate.setMonth(this.endDate.getMonth() + this.duration);
+    } else if (this.type === 'combative') {
+      // For combative members, set remaining sessions and end date as 6 months from join date
+      this.remainingSessions = this.duration;
+      this.endDate = new Date(this.joinDate);
+      this.endDate.setMonth(this.endDate.getMonth() + 6); // 6 months validity for combative sessions
+    }
+  }
+  next();
+});
+
 // Auto-generate memberId before saving
 MemberSchema.pre('save', async function(next) {
   if (!this.isNew || this.memberId) return next();
@@ -87,19 +105,6 @@ MemberSchema.pre('save', async function(next) {
     
     // Format as MEM-0001
     this.memberId = `MEM-${String(nextNumber).padStart(4, '0')}`;
-    
-    // Calculate end date based on member type
-    if (this.type === 'monthly') {
-      // For monthly members, add months to join date
-      this.endDate = new Date(this.joinDate);
-      this.endDate.setMonth(this.endDate.getMonth() + this.duration);
-    } else if (this.type === 'combative') {
-      // For combative members, set remaining sessions and end date as 6 months from join date
-      this.remainingSessions = this.duration;
-      this.endDate = new Date(this.joinDate);
-      this.endDate.setMonth(this.endDate.getMonth() + 6); // 6 months validity for combative sessions
-    }
-    
     next();
   } catch (err) {
     next(err);
