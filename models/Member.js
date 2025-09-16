@@ -22,12 +22,27 @@ const MemberSchema = new mongoose.Schema({
     required: true, 
     default: Date.now 
   },
+  endDate: {
+    type: Date,
+    required: true
+  },
+  duration: {
+    // For monthly: number of months, for combative: number of sessions
+    type: Number,
+    required: true,
+    min: [1, 'Duration must be at least 1']
+  },
+  remainingSessions: {
+    // Only for combative members
+    type: Number,
+    default: 0
+  },
   phone: { 
     type: String,
     trim: true,
     validate: {
       validator: function(v) {
-        return /^\+63\d{10}$/.test(v); // Philippine format: +639XXXXXXXXX
+        return !v || /^\+63\d{10}$/.test(v); // Philippine format: +639XXXXXXXXX
       },
       message: props => `${props.value} is not a valid Philippine phone number!`
     }
@@ -38,7 +53,7 @@ const MemberSchema = new mongoose.Schema({
     trim: true,
     validate: {
       validator: function(v) {
-        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+        return !v || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
       },
       message: props => `${props.value} is not a valid email!`
     }
@@ -49,7 +64,8 @@ const MemberSchema = new mongoose.Schema({
     enum: ['active', 'inactive', 'suspended'] 
   }
 }, {
-  timestamps: true
+  timestamps: true,
+  collection: 'members'
 });
 
 // Auto-generate memberId before saving
@@ -71,6 +87,19 @@ MemberSchema.pre('save', async function(next) {
     
     // Format as MEM-0001
     this.memberId = `MEM-${String(nextNumber).padStart(4, '0')}`;
+    
+    // Calculate end date based on member type
+    if (this.type === 'monthly') {
+      // For monthly members, add months to join date
+      this.endDate = new Date(this.joinDate);
+      this.endDate.setMonth(this.endDate.getMonth() + this.duration);
+    } else if (this.type === 'combative') {
+      // For combative members, set remaining sessions and end date as 6 months from join date
+      this.remainingSessions = this.duration;
+      this.endDate = new Date(this.joinDate);
+      this.endDate.setMonth(this.endDate.getMonth() + 6); // 6 months validity for combative sessions
+    }
+    
     next();
   } catch (err) {
     next(err);
@@ -78,8 +107,8 @@ MemberSchema.pre('save', async function(next) {
 });
 
 // Create the model (handle potential duplicate models)
-if (mongoose.models.Members) {
-  mongoose.deleteModel('Members');
+if (mongoose.models.Member) {
+  mongoose.deleteModel('Member');
 }
 
-module.exports = mongoose.model('Members', MemberSchema);
+module.exports = mongoose.model('Member', MemberSchema, 'members');
