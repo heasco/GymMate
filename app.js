@@ -1,4 +1,4 @@
-//This is the main server
+// This is the main server
 
 require('dotenv').config();
 const express = require('express');
@@ -6,7 +6,6 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const cors = require('cors');
 const app = express();
-
 
 // ======================
 // Constants
@@ -24,12 +23,11 @@ app.use(express.static('public'));
 app.use(cors({  
   origin: '*',
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Added PUT and DELETE
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
 
 app.use(express.json({ limit: '10kb' }));
-
 
 // ======================
 // Database Connection
@@ -59,10 +57,10 @@ mongoose.connection.on('error', err => {
 // ======================
 async function initializeAdmin() {
   try {
-    const adminExists = await mongoose.connection.db.collection('admin').countDocuments({ username: 'admin' });
+    const adminExists = await mongoose.connection.db.collection('admins').countDocuments({ username: 'admin' });
     if (!adminExists) {
       const hashedPassword = await bcrypt.hash('admin123', 10);
-      await mongoose.connection.db.collection('admin').insertOne({
+      await mongoose.connection.db.collection('admins').insertOne({
         username: 'admin',
         password: hashedPassword,
         name: 'System Admin',
@@ -78,7 +76,16 @@ async function initializeAdmin() {
 }
 
 // ======================
-// Routes (Routes for Login)
+// Import Models
+// ======================
+const Member = require('./models/Member');
+const Trainer = require('./models/Trainer');
+const Class = require('./models/Classes');
+const Enrollment = require('./models/Enrollment');
+const Feedback = require('./models/Feedback');
+
+// ======================
+// Routes (Login)
 // ======================
 app.post('/login', async (req, res) => {
   try {
@@ -89,7 +96,7 @@ app.post('/login', async (req, res) => {
       return res.status(400).json({ error: 'Username and password required' });
     }
 
-    const admin = await mongoose.connection.db.collection('admin').findOne({ 
+    const admin = await mongoose.connection.db.collection('admins').findOne({ 
       username: username.trim() 
     });
     
@@ -119,12 +126,11 @@ app.post('/login', async (req, res) => {
   }
 });
 
-// Routes for adding member by admin
-const Member = require('./models/Member');
-
+// ======================
+// Member Routes
+// ======================
 
 // Route: Add New Member with Auto-Generated ID
-// ============================================
 app.post('/api/members', async (req, res) => {
   console.log('[Member] Creation request received:', req.body);
 
@@ -133,6 +139,7 @@ app.post('/api/members', async (req, res) => {
     const { 
       name: rawName, 
       type: rawType, 
+      duration,
       joinDate, 
       phone: rawPhone, 
       email: rawEmail 
@@ -145,10 +152,11 @@ app.post('/api/members', async (req, res) => {
     const email = rawEmail?.trim().toLowerCase();
 
     // Validate required fields
-    if (!name || !type) {
+    if (!name || !type || !duration) {
       const errors = {};
       if (!name) errors.name = 'Name is required';
       if (!type) errors.type = 'Member type is required';
+      if (!duration) errors.duration = 'Duration is required';
       return res.status(400).json({ 
         success: false,
         error: 'Validation failed',
@@ -167,10 +175,22 @@ app.post('/api/members', async (req, res) => {
       });
     }
 
-    // Create new member (don't specify memberId - it will be auto-generated)
+    // Validate duration
+    if (duration < 1) {
+      return res.status(400).json({
+        success: false,
+        error: 'Validation failed',
+        details: {
+          duration: 'Duration must be at least 1'
+        }
+      });
+    }
+
+    // Create new member
     const newMember = new Member({
       name,
       type,
+      duration,
       joinDate: joinDate ? new Date(joinDate) : new Date(),
       phone: phone || undefined,
       email: email || undefined
@@ -184,11 +204,14 @@ app.post('/api/members', async (req, res) => {
       success: true,
       message: 'Member created successfully',
       data: {
-        memberId: savedMember.memberId,  // The auto-generated MEM-0001 ID
-        mongoId: savedMember._id,       // The MongoDB _id
+        memberId: savedMember.memberId,
+        mongoId: savedMember._id,
         name: savedMember.name,
         type: savedMember.type,
+        duration: savedMember.duration,
         joinDate: savedMember.joinDate,
+        endDate: savedMember.endDate,
+        remainingSessions: savedMember.remainingSessions,
         phone: savedMember.phone,
         email: savedMember.email
       }
@@ -237,7 +260,8 @@ app.post('/api/members', async (req, res) => {
     });
   }
 });
-// Member search endpoint using native MongoDB
+
+// Member search endpoint
 app.get('/api/members/search', async (req, res) => {
   try {
     const { query } = req.query;
@@ -274,21 +298,15 @@ app.get('/api/members/search', async (req, res) => {
     });
   }
 });
-//protect routes
-const auth = require('./middleware/auth');
-// Import Trainer model
-
 
 // ======================
 // Trainer Routes
 // ======================
-const Trainer = require('./models/Trainer');
 
 // Add new trainer route
 app.post('/api/trainers', async (req, res) => {
   console.log("Incoming trainer data:", req.body);
   try {
-
     const { name, specialization, is_available, assigned_classes } = req.body;
 
     // Validate required fields
@@ -365,7 +383,6 @@ app.post('/api/trainers', async (req, res) => {
 });
 
 // Get all trainers
-// Get all trainers
 app.get('/api/trainers', async (req, res) => {
   try {
     const trainers = await Trainer.find().sort({ createdAt: -1 });
@@ -394,9 +411,6 @@ app.get('/api/trainers/available', async (req, res) => {
     res.status(500).json({ success: false, error: 'Failed to fetch available trainers' });
   }
 });
-
-// Add to your app.js after other model imports
-const Class = require('./models/Classes');
 
 // ======================
 // Class Routes
@@ -589,20 +603,6 @@ app.delete('/api/classes/:id', async (req, res) => {
     res.status(500).json({ success: false, error: 'Failed to delete class' });
   }
 });
-
-// Protected route example
-app.get('/admin/data', async (req, res) => {
-  try {
-    // In a real app, you'd check session/localStorage here
-    res.json({ data: 'This is protected admin data' });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// Import the models
-const Enrollment = require('./models/Enrollment');
-const Feedback = require('./models/Feedback');
 
 // ======================
 // Enrollment Routes
@@ -871,6 +871,7 @@ app.post('/api/classes/:classId/enroll', async (req, res) => {
     });
   }
 });
+
 // ======================
 // Feedback Routes
 // ======================
@@ -1048,9 +1049,14 @@ app.get('/api/trainers/:id/rating', async (req, res) => {
   }
 });
 
-// After all your routes
-const errorHandler = require('./middleware/error');
-app.use(errorHandler);
+// Protected route example
+app.get('/admin/data', async (req, res) => {
+  try {
+    res.json({ data: 'This is protected admin data' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 // Health check endpoint
 app.get('/health', (req, res) => {
@@ -1094,8 +1100,3 @@ process.on('SIGTERM', () => {
     console.log('Server terminated');
   });
 });
-
-// ======================
-// Schedule Routes
-// ======================
-
