@@ -1,5 +1,38 @@
 const mongoose = require('mongoose');
 
+const MembershipSchema = new mongoose.Schema({
+  type: {
+    type: String,
+    required: true,
+    enum: ['monthly', 'combative']
+  },
+  duration: {
+    // For monthly: number of months, for combative: number of sessions
+    type: Number,
+    required: true,
+    min: [1, 'Duration must be at least 1']
+  },
+  startDate: {
+    type: Date,
+    required: true,
+    default: Date.now
+  },
+  endDate: {
+    type: Date,
+    required: true
+  },
+  remainingSessions: {
+    // Only for combative members
+    type: Number,
+    default: 0
+  },
+  status: {
+    type: String,
+    default: 'active',
+    enum: ['active', 'inactive', 'suspended', 'expired']
+  }
+});
+
 const MemberSchema = new mongoose.Schema({
   memberId: {
     type: String,
@@ -11,31 +44,11 @@ const MemberSchema = new mongoose.Schema({
     required: [true, 'Please add a name'],
     trim: true
   },
-  type: { 
-    type: String, 
-    required: true, 
-    enum: ['monthly', 'combative'],
-    default: 'monthly'
-  },
+  memberships: [MembershipSchema],
   joinDate: { 
     type: Date, 
     required: true, 
     default: Date.now 
-  },
-  endDate: {
-    type: Date,
-    required: true
-  },
-  duration: {
-    // For monthly: number of months, for combative: number of sessions
-    type: Number,
-    required: true,
-    min: [1, 'Duration must be at least 1']
-  },
-  remainingSessions: {
-    // Only for combative members
-    type: Number,
-    default: 0
   },
   phone: { 
     type: String,
@@ -68,20 +81,26 @@ const MemberSchema = new mongoose.Schema({
   collection: 'members'
 });
 
-// Calculate end date before validation
+// Calculate end dates before validation
 MemberSchema.pre('validate', function(next) {
-  if (this.isModified('joinDate') || this.isModified('type') || this.isModified('duration') || this.isNew) {
-    // Calculate end date based on member type
-    if (this.type === 'monthly') {
-      // For monthly members, add months to join date
-      this.endDate = new Date(this.joinDate);
-      this.endDate.setMonth(this.endDate.getMonth() + this.duration);
-    } else if (this.type === 'combative') {
-      // For combative members, set remaining sessions and end date as 6 months from join date
-      this.remainingSessions = this.duration;
-      this.endDate = new Date(this.joinDate);
-      this.endDate.setMonth(this.endDate.getMonth() + 6); // 6 months validity for combative sessions
-    }
+  if (this.isModified('memberships') || this.isNew) {
+    this.memberships.forEach(membership => {
+      if (membership.isModified('startDate') || membership.isModified('type') || 
+          membership.isModified('duration') || membership.isNew) {
+        
+        // Calculate end date based on membership type
+        if (membership.type === 'monthly') {
+          // For monthly members, add months to start date
+          membership.endDate = new Date(membership.startDate);
+          membership.endDate.setMonth(membership.endDate.getMonth() + membership.duration);
+        } else if (membership.type === 'combative') {
+          // For combative members, set remaining sessions and end date as 6 months from start date
+          membership.remainingSessions = membership.duration;
+          membership.endDate = new Date(membership.startDate);
+          membership.endDate.setMonth(membership.endDate.getMonth() + 6); // 6 months validity for combative sessions
+        }
+      }
+    });
   }
   next();
 });
