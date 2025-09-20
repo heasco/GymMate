@@ -803,7 +803,7 @@ app.put('/api/enrollments/:id/cancel', async (req, res) => {
   }
 });
 
-// Simple enrollment endpoint
+// Enhanced enrollment endpoint with combative membership check
 app.post('/api/classes/:classId/enroll', async (req, res) => {
   try {
     const { classId } = req.params;
@@ -828,6 +828,38 @@ app.post('/api/classes/:classId/enroll', async (req, res) => {
       });
     }
 
+    // Find the member to check membership type
+    const member = await mongoose.connection.db.collection('members').findOne({
+      $or: [
+        { memberId: member_id },
+        { member_id: member_id },
+        { _id: new mongoose.Types.ObjectId(member_id) }
+      ]
+    });
+
+    if (!member) {
+      return res.status(404).json({
+        success: false,
+        error: 'Member not found'
+      });
+    }
+
+    // Check if member has active combative membership
+    const hasCombativeMembership = member.memberships && 
+      Array.isArray(member.memberships) && 
+      member.memberships.some(m => 
+        m.type === 'combative' && 
+        m.status === 'active' && 
+        new Date(m.endDate) > new Date()
+      );
+    
+    if (!hasCombativeMembership) {
+      return res.status(400).json({
+        success: false,
+        error: 'Cannot enroll: Member must have an active combative membership'
+      });
+    }
+
     // Check if class is full
     if (classData.current_enrollment >= classData.capacity) {
       return res.status(400).json({
@@ -838,7 +870,7 @@ app.post('/api/classes/:classId/enroll', async (req, res) => {
 
     // Check if member is already enrolled
     const alreadyEnrolled = classData.enrolled_members.some(
-      member => member.member_id === member_id && member.status === 'active'
+      enrolledMember => enrolledMember.member_id === member_id && enrolledMember.status === 'active'
     );
 
     if (alreadyEnrolled) {
@@ -851,6 +883,7 @@ app.post('/api/classes/:classId/enroll', async (req, res) => {
     // Add member to class
     classData.enrolled_members.push({
       member_id,
+      member_name: member.name,
       enrollment_date: new Date(),
       status: 'active'
     });
@@ -867,18 +900,120 @@ app.post('/api/classes/:classId/enroll', async (req, res) => {
         class_id: classData.class_id,
         class_name: classData.class_name,
         member_id: member_id,
+        member_name: member.name,
         enrollment_date: new Date()
       }
     });
 
   } catch (err) {
     console.error('Enrollment error:', err);
+    
+    if (err.message && err.message.includes('combative membership')) {
+      return res.status(400).json({
+        success: false,
+        error: 'Cannot enroll: Member must have combative membership'
+      });
+    }
+    
     res.status(500).json({
       success: false,
-      error: 'Failed to enroll member'
+      error: 'Failed to enroll member: ' + err.message
     });
   }
 });
+
+// ======================
+// Enrollment Management Routes
+// ======================
+
+// Get members eligible for enrollment (combative members)
+app.get('/api/combative-members', async (req, res) => {
+  try {
+    const combativeMembers = await mongoose.connection.db.collection('members').find({
+      'memberships.type': 'combative',
+      'memberships.status': 'active'
+    }).toArray();
+
+    res.json({
+      success: true,
+      count: combativeMembers.length,
+      data: combativeMembers
+    });
+  } catch (err) {
+    console.error('Error fetching combative members:', err);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch combative members'
+    });
+  }
+});
+
+// Get enrolled members for a class
+app.get('/api/classes/:id/enrolled-members', async (req, res) => {
+  try {
+    const classData = await Class.findOne({ 
+      $or: [
+        { class_id: req.params.id },
+        { _id: req.params.id }
+      ]
+    });
+    
+    if (!classData) {
+      return res.status(404).json({ success: false, error: 'Class not found' });
+    }
+    
+    res.json({
+      success: true,
+      count: classData.enrolled_members.length,
+      data: classData.enrolled_members
+    });
+  } catch (err) {
+    console.error('Error fetching enrolled members:', err);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch enrolled members'
+    });
+  }
+});
+
+// Remove member from class
+app.delete('/api/classes/:classId/enrollments/:memberId', async (req, res) => {
+  try {
+    const { classId, memberId } = req.params;
+    
+    const classData = await Class.findOne({ class_id: classId });
+    if (!classData) {
+      return res.status(404).json({ success: false, error: 'Class not found' });
+    }
+    
+    // Find the enrollment
+    const enrollmentIndex = classData.enrolled_members.findIndex(
+      enrollment => enrollment.member_id === memberId && enrollment.status === 'active'
+    );
+    
+    if (enrollmentIndex === -1) {
+      return res.status(404).json({ success: false, error: 'Enrollment not found' });
+    }
+    
+    // Update enrollment status to cancelled
+    classData.enrolled_members[enrollmentIndex].status = 'cancelled';
+    classData.current_enrollment -= 1;
+    
+    await classData.save();
+    
+    res.json({
+      success: true,
+      message: 'Member removed from class successfully'
+    });
+  } catch (err) {
+    console.error('Error removing member from class:', err);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to remove member from class'
+    });
+  }
+});
+
 
 // ======================
 // Feedback Routes
