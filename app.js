@@ -803,7 +803,8 @@ app.put('/api/enrollments/:id/cancel', async (req, res) => {
   }
 });
 
-// Enhanced enrollment endpoint with combative membership check
+// enrollment endpoint with combative membership check
+// Enhanced enrollment endpoint with proper ID handling
 app.post('/api/classes/:classId/enroll', async (req, res) => {
   try {
     const { classId } = req.params;
@@ -828,16 +829,28 @@ app.post('/api/classes/:classId/enroll', async (req, res) => {
       });
     }
 
+    // Build query to find member by different ID formats
+    let memberQuery = {};
+    
+    // Check if it's a MongoDB ObjectId (24 character hex string)
+    if (mongoose.Types.ObjectId.isValid(member_id) && 
+        new mongoose.Types.ObjectId(member_id).toString() === member_id) {
+      memberQuery = { _id: new mongoose.Types.ObjectId(member_id) };
+    } 
+    // Check if it's a memberId (like MEM-0001)
+    else if (member_id.startsWith('MEM-')) {
+      memberQuery = { memberId: member_id };
+    }
+    // Fallback to member_id field
+    else {
+      memberQuery = { member_id: member_id };
+    }
+
     // Find the member to check membership type
-    const member = await mongoose.connection.db.collection('members').findOne({
-      $or: [
-        { memberId: member_id },
-        { member_id: member_id },
-        { _id: new mongoose.Types.ObjectId(member_id) }
-      ]
-    });
+    const member = await mongoose.connection.db.collection('members').findOne(memberQuery);
 
     if (!member) {
+      console.log(`Member not found with query:`, memberQuery);
       return res.status(404).json({
         success: false,
         error: 'Member not found'
@@ -870,7 +883,13 @@ app.post('/api/classes/:classId/enroll', async (req, res) => {
 
     // Check if member is already enrolled
     const alreadyEnrolled = classData.enrolled_members.some(
-      enrolledMember => enrolledMember.member_id === member_id && enrolledMember.status === 'active'
+      enrolledMember => {
+        // Compare using the actual member ID from the found member document
+        const enrolledMemberId = enrolledMember.member_id;
+        const currentMemberId = member.memberId || member.member_id || member._id.toString();
+        
+        return enrolledMemberId === currentMemberId && enrolledMember.status === 'active';
+      }
     );
 
     if (alreadyEnrolled) {
@@ -880,9 +899,12 @@ app.post('/api/classes/:classId/enroll', async (req, res) => {
       });
     }
 
+    // Use the actual member ID from the document
+    const actualMemberId = member.memberId || member.member_id || member._id.toString();
+
     // Add member to class
     classData.enrolled_members.push({
-      member_id,
+      member_id: actualMemberId,
       member_name: member.name,
       enrollment_date: new Date(),
       status: 'active'
@@ -891,7 +913,7 @@ app.post('/api/classes/:classId/enroll', async (req, res) => {
     classData.current_enrollment += 1;
     await classData.save();
 
-    console.log(`Successfully enrolled member ${member_id} in class ${classId}`);
+    console.log(`Successfully enrolled member ${actualMemberId} in class ${classId}`);
 
     res.status(200).json({
       success: true,
@@ -899,7 +921,7 @@ app.post('/api/classes/:classId/enroll', async (req, res) => {
       data: {
         class_id: classData.class_id,
         class_name: classData.class_name,
-        member_id: member_id,
+        member_id: actualMemberId,
         member_name: member.name,
         enrollment_date: new Date()
       }
@@ -931,13 +953,30 @@ app.get('/api/combative-members', async (req, res) => {
   try {
     const combativeMembers = await mongoose.connection.db.collection('members').find({
       'memberships.type': 'combative',
-      'memberships.status': 'active'
+      'memberships.status': 'active',
+      'memberships.endDate': { $gt: new Date() } // Only active memberships
+    }).project({
+      memberId: 1,
+      name: 1,
+      phone: 1,
+      email: 1,
+      memberships: 1
     }).toArray();
+
+    // Format the response to include proper member IDs
+    const formattedMembers = combativeMembers.map(member => ({
+      _id: member._id,
+      memberId: member.memberId || member.member_id || member._id.toString(),
+      name: member.name,
+      phone: member.phone,
+      email: member.email,
+      memberships: member.memberships
+    }));
 
     res.json({
       success: true,
-      count: combativeMembers.length,
-      data: combativeMembers
+      count: formattedMembers.length,
+      data: formattedMembers
     });
   } catch (err) {
     console.error('Error fetching combative members:', err);
@@ -948,6 +987,7 @@ app.get('/api/combative-members', async (req, res) => {
   }
 });
 
+// Get enrolled members for a class
 // Get enrolled members for a class
 app.get('/api/classes/:id/enrolled-members', async (req, res) => {
   try {
@@ -964,8 +1004,8 @@ app.get('/api/classes/:id/enrolled-members', async (req, res) => {
     
     res.json({
       success: true,
-      count: classData.enrolled_members.length,
-      data: classData.enrolled_members
+      count: classData.enrolled_members.filter(m => m.status === 'active').length,
+      data: classData.enrolled_members.filter(m => m.status === 'active')
     });
   } catch (err) {
     console.error('Error fetching enrolled members:', err);
@@ -975,7 +1015,6 @@ app.get('/api/classes/:id/enrolled-members', async (req, res) => {
     });
   }
 });
-
 // Remove member from class
 app.delete('/api/classes/:classId/enrollments/:memberId', async (req, res) => {
   try {
@@ -986,9 +1025,13 @@ app.delete('/api/classes/:classId/enrollments/:memberId', async (req, res) => {
       return res.status(404).json({ success: false, error: 'Class not found' });
     }
     
-    // Find the enrollment
+    // Find the enrollment - we need to handle different ID formats
     const enrollmentIndex = classData.enrolled_members.findIndex(
-      enrollment => enrollment.member_id === memberId && enrollment.status === 'active'
+      enrollment => {
+        // Compare using string values to handle different ID formats
+        return enrollment.member_id.toString() === memberId.toString() && 
+               enrollment.status === 'active';
+      }
     );
     
     if (enrollmentIndex === -1) {
