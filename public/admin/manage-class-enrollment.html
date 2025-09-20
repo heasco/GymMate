@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Class Enrollment - Goals Gym</title>
+    <style>
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .section { display: none; margin-bottom: 20px; }
+        .section.active { display: block; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input, select, textarea { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
+        button { padding: 10px 15px; background-color: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background-color: #45a049; }
+        .nav-buttons { margin-top: 20px; display: flex; gap: 10px; }
+        .class-card { border: 1px solid #ddd; padding: 15px; margin-bottom: 15px; border-radius: 5px; }
+        .enrollment-section { margin-top: 20px; }
+        .member-list { max-height: 300px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; margin-top: 10px; }
+        .member-item { padding: 8px; border-bottom: 1px solid #eee; }
+        .member-item:hover { background-color: #f5f5f5; }
+        .enrolled-members { margin-top: 20px; }
+        .enrolled-member { display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px solid #eee; }
+        .remove-btn { color: #ff4444; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Manage Class Enrollment</h1>
+        
+        <div id="classSelection" class="section active">
+            <h2>Select a Class</h2>
+            <div class="form-group">
+                <label for="classSearch">Search Classes:</label>
+                <input type="text" id="classSearch" placeholder="Search by class name...">
+            </div>
+            <div id="classList"></div>
+        </div>
+
+        <div id="enrollmentManagement" class="section">
+            <h2>Manage Enrollment for: <span id="selectedClassName"></span></h2>
+            
+            <div class="class-info">
+                <p><strong>Trainer:</strong> <span id="classTrainer"></span></p>
+                <p><strong>Schedule:</strong> <span id="classSchedule"></span></p>
+                <p><strong>Capacity:</strong> <span id="classCapacity"></span></p>
+                <p><strong>Current Enrollment:</strong> <span id="currentEnrollment"></span></p>
+            </div>
+
+            <div class="enrollment-section">
+                <h3>Add Members to Class</h3>
+                <div class="form-group">
+                    <label for="memberSearch">Search Combative Members:</label>
+                    <input type="text" id="memberSearch" placeholder="Search by name or member ID...">
+                </div>
+                <div id="memberList" class="member-list"></div>
+            </div>
+
+            <div class="enrolled-members">
+                <h3>Currently Enrolled Members</h3>
+                <div id="enrolledMembersList"></div>
+            </div>
+
+            <div class="nav-buttons">
+                <button onclick="showClassSelection()">Back to Class Selection</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SERVER_URL = 'https://flex-it-goalsgym-it-project-2.onrender.com';
+        let selectedClass = null;
+        let allClasses = [];
+        let combativeMembers = [];
+
+        document.addEventListener('DOMContentLoaded', function() {
+            loadClasses();
+            setupEventListeners();
+        });
+
+        function setupEventListeners() {
+            document.getElementById('classSearch').addEventListener('input', filterClasses);
+            document.getElementById('memberSearch').addEventListener('input', filterMembers);
+        }
+
+        async function loadClasses() {
+            try {
+                const response = await fetch(`${SERVER_URL}/api/classes`);
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.success) {
+                        allClasses = result.data;
+                        displayClasses(allClasses);
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading classes:', error);
+                alert('Failed to load classes');
+            }
+        }
+
+        function displayClasses(classes) {
+            const classList = document.getElementById('classList');
+            classList.innerHTML = '';
+
+            if (classes.length === 0) {
+                classList.innerHTML = '<p>No classes found</p>';
+                return;
+            }
+
+            classes.forEach(cls => {
+                const classCard = document.createElement('div');
+                classCard.className = 'class-card';
+                classCard.innerHTML = `
+                    <h3>${cls.class_name}</h3>
+                    <p><strong>Trainer:</strong> ${cls.trainer_name || cls.trainer_id}</p>
+                    <p><strong>Schedule:</strong> ${cls.schedule}</p>
+                    <p><strong>Capacity:</strong> ${cls.current_enrollment || 0}/${cls.capacity}</p>
+                    <button onclick="selectClass('${cls.class_id}')">Manage Enrollment</button>
+                `;
+                classList.appendChild(classCard);
+            });
+        }
+
+        function filterClasses() {
+            const searchTerm = document.getElementById('classSearch').value.toLowerCase();
+            const filteredClasses = allClasses.filter(cls => 
+                cls.class_name.toLowerCase().includes(searchTerm) ||
+                (cls.trainer_name && cls.trainer_name.toLowerCase().includes(searchTerm))
+            );
+            displayClasses(filteredClasses);
+        }
+
+        async function selectClass(classId) {
+            try {
+                // Find the class
+                selectedClass = allClasses.find(cls => cls.class_id === classId);
+                if (!selectedClass) {
+                    const response = await fetch(`${SERVER_URL}/api/classes/${classId}`);
+                    if (response.ok) {
+                        const result = await response.json();
+                        if (result.success) {
+                            selectedClass = result.data;
+                        }
+                    }
+                }
+
+                if (selectedClass) {
+                    // Update UI with class details
+                    document.getElementById('selectedClassName').textContent = selectedClass.class_name;
+                    document.getElementById('classTrainer').textContent = selectedClass.trainer_name || selectedClass.trainer_id;
+                    document.getElementById('classSchedule').textContent = selectedClass.schedule;
+                    document.getElementById('classCapacity').textContent = selectedClass.capacity;
+                    document.getElementById('currentEnrollment').textContent = selectedClass.current_enrollment || 0;
+
+                    // Load enrolled members
+                    await loadEnrolledMembers();
+                    
+                    // Load combative members
+                    await loadCombativeMembers();
+                    
+                    // Switch to enrollment management view
+                    showEnrollmentManagement();
+                }
+            } catch (error) {
+                console.error('Error selecting class:', error);
+                alert('Failed to load class details');
+            }
+        }
+
+        async function loadEnrolledMembers() {
+            try {
+                const response = await fetch(`${SERVER_URL}/api/classes/${selectedClass.class_id}/enrolled-members`);
+                if (response.ok) {
+                    const result = await response.json();
+                    const enrolledList = document.getElementById('enrolledMembersList');
+                    
+                    if (result.success && result.data && result.data.length > 0) {
+                        enrolledList.innerHTML = result.data.map(member => `
+                            <div class="enrolled-member">
+                                <span>${member.member_name} (${member.member_id}) - Joined: ${new Date(member.enrollment_date).toLocaleDateString()}</span>
+                                <span class="remove-btn" onclick="removeMember('${member.member_id}')">Remove</span>
+                            </div>
+                        `).join('');
+                    } else {
+                        enrolledList.innerHTML = '<p>No members enrolled yet</p>';
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading enrolled members:', error);
+            }
+        }
+
+        async function loadCombativeMembers() {
+            try {
+                const response = await fetch(`${SERVER_URL}/api/combative-members`);
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.success) {
+                        combativeMembers = result.data;
+                        displayMembers(combativeMembers);
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading combative members:', error);
+            }
+        }
+
+        function displayMembers(members) {
+            const memberList = document.getElementById('memberList');
+            memberList.innerHTML = '';
+
+            if (members.length === 0) {
+                memberList.innerHTML = '<p>No combative members found</p>';
+                return;
+            }
+
+            members.forEach(member => {
+                // Check if member is already enrolled
+                const isEnrolled = selectedClass.enrolled_members && 
+                    selectedClass.enrolled_members.some(em => 
+                        em.member_id === member.memberId && em.status === 'active'
+                    );
+
+                const memberItem = document.createElement('div');
+                memberItem.className = 'member-item';
+                memberItem.innerHTML = `
+                    <div>
+                        <strong>${member.name}</strong> (${member.memberId})
+                        <br>
+                        <small>Phone: ${member.phone || 'N/A'} | Email: ${member.email || 'N/A'}</small>
+                    </div>
+                    ${isEnrolled ? 
+                        '<span style="color: green;">Already Enrolled</span>' : 
+                        `<button onclick="enrollMember('${member.memberId}', '${member.name}')">Enroll</button>`
+                    }
+                `;
+                memberList.appendChild(memberItem);
+            });
+        }
+
+        function filterMembers() {
+            const searchTerm = document.getElementById('memberSearch').value.toLowerCase();
+            const filteredMembers = combativeMembers.filter(member => 
+                member.name.toLowerCase().includes(searchTerm) ||
+                member.memberId.toLowerCase().includes(searchTerm)
+            );
+            displayMembers(filteredMembers);
+        }
+
+       async function enrollMember(memberId, memberName) {
+    if (selectedClass.current_enrollment >= selectedClass.capacity) {
+        alert('This class is already full');
+        return;
+    }
+
+    try {
+        const response = await fetch(`${SERVER_URL}/api/classes/${selectedClass.class_id}/enroll`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ member_id: memberId })
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+            alert('Member enrolled successfully');
+            // Refresh the lists
+            await loadEnrolledMembers();
+            await loadCombativeMembers();
+        } else {
+            alert(result.error || 'Failed to enroll member');
+        }
+    } catch (error) {
+        console.error('Error enrolling member:', error);
+        alert('Failed to enroll member: ' + error.message);
+    }
+}
+
+        async function removeMember(memberId) {
+    if (!confirm('Are you sure you want to remove this member from the class?')) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`${SERVER_URL}/api/classes/${selectedClass.class_id}/enrollments/${memberId}`, {
+            method: 'DELETE'
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+            alert('Member removed successfully');
+            // Refresh the lists
+            await loadEnrolledMembers();
+            await loadCombativeMembers();
+        } else {
+            alert(result.error || 'Failed to remove member');
+        }
+    } catch (error) {
+        console.error('Error removing member:', error);
+        alert('Failed to remove member: ' + error.message);
+    }
+}
+
+        function showEnrollmentManagement() {
+            document.getElementById('classSelection').classList.remove('active');
+            document.getElementById('enrollmentManagement').classList.add('active');
+        }
+
+        function showClassSelection() {
+            document.getElementById('enrollmentManagement').classList.remove('active');
+            document.getElementById('classSelection').classList.add('active');
+            selectedClass = null;
+        }
+    </script>
+</body>
+</html>
