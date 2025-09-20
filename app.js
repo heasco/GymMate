@@ -131,6 +131,7 @@ app.post('/login', async (req, res) => {
 // ======================
 
 // Route: Add New Member with Auto-Generated ID
+// Route: Add New Member with Auto-Generated ID
 app.post('/api/members', async (req, res) => {
   console.log('[Member] Creation request received:', req.body);
 
@@ -138,8 +139,7 @@ app.post('/api/members', async (req, res) => {
     // Destructure and trim inputs
     const { 
       name: rawName, 
-      type: rawType, 
-      duration,
+      memberships,
       joinDate, 
       phone: rawPhone, 
       email: rawEmail 
@@ -147,16 +147,16 @@ app.post('/api/members', async (req, res) => {
 
     // Clean and validate inputs
     const name = rawName?.trim();
-    const type = rawType?.trim().toLowerCase();
     const phone = rawPhone?.trim();
     const email = rawEmail?.trim().toLowerCase();
 
     // Validate required fields
-    if (!name || !type || !duration) {
+    if (!name || !memberships || !Array.isArray(memberships) || memberships.length === 0) {
       const errors = {};
       if (!name) errors.name = 'Name is required';
-      if (!type) errors.type = 'Member type is required';
-      if (!duration) errors.duration = 'Duration is required';
+      if (!memberships || !Array.isArray(memberships) || memberships.length === 0) {
+        errors.memberships = 'At least one membership is required';
+      }
       return res.status(400).json({ 
         success: false,
         error: 'Validation failed',
@@ -164,33 +164,44 @@ app.post('/api/members', async (req, res) => {
       });
     }
 
-    // Validate member type
-    if (!['monthly', 'combative'].includes(type)) {
-      return res.status(400).json({
-        success: false,
-        error: 'Validation failed',
-        details: {
-          type: 'Member type must be either "monthly" or "combative"'
-        }
-      });
-    }
+    // Validate each membership
+    const validatedMemberships = [];
+    for (const membership of memberships) {
+      const { type, duration } = membership;
+      
+      // Validate membership type
+      if (!type || !['monthly', 'combative'].includes(type)) {
+        return res.status(400).json({
+          success: false,
+          error: 'Validation failed',
+          details: {
+            memberships: 'Each membership must have a valid type (monthly or combative)'
+          }
+        });
+      }
 
-    // Validate duration
-    if (duration < 1) {
-      return res.status(400).json({
-        success: false,
-        error: 'Validation failed',
-        details: {
-          duration: 'Duration must be at least 1'
-        }
+      // Validate duration
+      if (!duration || duration < 1) {
+        return res.status(400).json({
+          success: false,
+          error: 'Validation failed',
+          details: {
+            memberships: 'Each membership must have a valid duration (at least 1)'
+          }
+        });
+      }
+
+      validatedMemberships.push({
+        type,
+        duration,
+        startDate: joinDate ? new Date(joinDate) : new Date()
       });
     }
 
     // Create new member
     const newMember = new Member({
       name,
-      type,
-      duration,
+      memberships: validatedMemberships,
       joinDate: joinDate ? new Date(joinDate) : new Date(),
       phone: phone || undefined,
       email: email || undefined
@@ -207,11 +218,8 @@ app.post('/api/members', async (req, res) => {
         memberId: savedMember.memberId,
         mongoId: savedMember._id,
         name: savedMember.name,
-        type: savedMember.type,
-        duration: savedMember.duration,
+        memberships: savedMember.memberships,
         joinDate: savedMember.joinDate,
-        endDate: savedMember.endDate,
-        remainingSessions: savedMember.remainingSessions,
         phone: savedMember.phone,
         email: savedMember.email
       }
