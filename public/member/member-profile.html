@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>My Profile</title>
   <style>
+    
     :root{
       --bg:#f5f7fb;
       --card:#fff;
@@ -102,31 +103,94 @@
           <div class="avatar" id="avatar">
             <!-- initials fallback -->
             <div>
-              <div style="font-size:20px">RM</div>
-              <small>Trainer</small>
+              <div style="font-size:20px">Matt</div>
+              <small>Member</small>
             </div>
           </div>
           <div>
             <div class="profile-name" id="displayName">Matt Batom Bakal the third</div>
-            <div class="profile-role">Fitness Trainer at flex-it-goalsgym-it-project-2</div>
-            <div class="muted" style="margin-top:8px">6+ Work Experience · 50+ Trained People</div>
-            <div class="muted" style="margin-top:4px">📍 Nungambakkam, Chennai - 06</div>
+            <div class="profile-role">Fitness Member at flex-it-goalsgym-it-project-2</div>
+            <div class="muted" style="margin-top:8px">Newbie Member </div>
+            <div class="muted" style="margin-top:4px">Abanao, Baguio City</div>
           </div>
         </div>
 
         <div class="stat-row">
-          <div class="stat"><strong>6+</strong> Work Experience</div>
-          <div class="stat"><strong>50+</strong> Trained People</div>
+          <div class="stat"><strong>Newbie</strong> Member</div>
+          <div class="stat"><strong>Open</strong> to be trained</div>
         </div>
 
-        <div class="username">@user187523</div>
+        <div class="username">@SampleMatt</div>
 
+        <!--
         <div class="left-actions">
           <button class="btn btn-ghost" id="discardBtn">Discard</button>
           <button class="btn red" id="saveBtn">Save Changes</button>
         </div>
+        -->
       </div>
     </div>
+
+     <!-- RIGHT: personal info form -->
+    <div class="card">
+      <div class="inner">
+        <h3 class="section-title">Personal Info</h3>
+
+        <form id="profileForm" autocomplete="off">
+          <div class="form-grid">
+            <div>
+              <label>Full Name</label>
+              <input name="name" id="fieldName" type="text" value="Matt Batom Bakal the third" />
+            </div>
+
+            <div>
+              <label>Contact Number</label>
+              <input name="contact" id="fieldContact" type="tel" value="9876543210" />
+            </div>
+
+            <div>
+              <label>Designation</label>
+              <input name="designation" id="fieldDesignation" type="text" value="Newbie Member" />
+            </div>
+
+            <div>
+              <label>Email ID</label>
+              <input name="email" id="fieldEmail" type="email" value="SampleMatt" />
+            </div>
+
+            <div>
+              <label>Gender</label>
+              <option>Male</option>
+              <!--
+              <select name="gender" id="fieldGender">
+                
+                <option>Female</option>
+                <option>Other</option>
+              </select>
+              -->
+            </div>
+
+            <div>
+              <label>Location</label>
+              <input name="location" id="fieldLocation" type="text" value="Irisan, Baguio City" />
+            </div>
+
+            <div class="full-width">
+              <label>Bio</label>
+              <textarea name="bio" id="fieldBio">Hey there! Tryinng to build my muscle up!</textarea>
+            </div>
+
+          <!-- 
+          <div class="actions-row">
+            <button type="button" class="btn secondary" id="cancelBtn">Discard</button>
+            <button type="submit" class="btn red" id="submitBtn">Save Changes</button>
+          </div>
+          -->
+        </form>
+
+      </div>
+    </div>
+  </div>
 
     
 
