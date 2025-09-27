@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Member Class Feedback</title>
+  <style>
+    :root{
+      --bg:#f5f7fb; --card:#fff; --muted:#6b7280; --accent:#ef4444; --accent-2:#2f80ed;
+      --radius:12px;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);font-family:Inter,Arial,Helvetica,sans-serif;color:#111827;padding:22px}
+    .page-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+    .page-title{font-size:28px;margin:0}
+    .container{max-width:1100px;margin:0 auto}
+    .grid{display:grid;grid-template-columns:1fr;gap:14px}
+    @media(min-width:880px){ .grid{grid-template-columns:1fr 360px} }
+
+    /* classes list */
+    .list { display:flex;flex-direction:column;gap:12px }
+    .class-card { background:var(--card); border-radius:12px; padding:14px; box-shadow:0 6px 18px rgba(16,24,40,0.06); display:flex; gap:14px; align-items:flex-start; }
+    .class-meta { flex:1 }
+    h3.class-name { margin:0 0 6px 0; font-size:18px }
+    .muted { color:var(--muted); font-size:13px; margin:4px 0 }
+    .pill { display:inline-block; padding:6px 10px; border-radius:999px; background:#f1f5f9; color:var(--muted); font-size:13px; margin-right:8px }
+
+    .capacity { margin-top:10px; font-size:13px; color:var(--muted) }
+    .bar { height:10px; width:180px; background:#f1f5f9; border-radius:8px; overflow:hidden; display:inline-block; vertical-align:middle }
+    .bar > i { display:block; height:100%; background:linear-gradient(90deg,var(--accent-2),#60a5fa); border-radius:8px }
+
+    .actions { display:flex; flex-direction:column; gap:8px; justify-content:center; align-items:flex-end }
+    .btn { padding:8px 12px; border-radius:8px; background:#fff; border:1px solid #e6e9ee; cursor:pointer }
+    .btn.primary { background:var(--accent-2); color:#fff; border-color:var(--accent-2) }
+    .btn.ghost { background:transparent; border:1px dashed #e6e9ee }
+
+    /* right column box */
+    .aside { background:var(--card); padding:14px; border-radius:12px; box-shadow:0 6px 18px rgba(16,24,40,0.06) }
+    .aside h4 { margin:0 0 10px 0 }
+    .empty { text-align:center; color:var(--muted); padding:30px 12px; }
+
+    /* modal */
+    .modal-backdrop { position:fixed; inset:0; background:rgba(0,0,0,0.45); display:flex; align-items:center; justify-content:center; z-index:200; }
+    .modal { width:640px; max-width:94%; background:var(--card); border-radius:12px; padding:16px; box-shadow:0 12px 36px rgba(2,6,23,0.3) }
+    .modal h3{ margin:0 0 8px 0 }
+    textarea { width:100%; min-height:120px; padding:10px; border-radius:8px; border:1px solid #e6e9ee; resize:vertical; font-family:inherit }
+    .modal .footer { display:flex; justify-content:space-between; align-items:center; gap:8px; margin-top:10px }
+
+    .toast { position:fixed; right:20px; bottom:20px; background:#111; color:#fff; padding:10px 14px; border-radius:8px; z-index:300 }
+
+    /* small helper */
+    .small { font-size:13px; color:var(--muted) }
+  </style>
+</head>
+<body>
+  <div class="page-head container">
+    <div>
+      <h1 class="page-title">My Classes</h1>
+      <div class="small">Classes you've enrolled in — send feedback after attending</div>
+    </div>
+    <div>
+      <a href="member-profile.html" class="btn">← Back to Profile</a>
+    </div>
+  </div>
+
+  <main class="container grid">
+    <section>
+      <div id="classesList" class="list"></div>
+      <div id="noClasses" class="empty" style="display:none">You are not enrolled in any classes.</div>
+    </section>
+
+    <aside class="aside">
+      <h4>How to give feedback</h4>
+      <p class="small">Click <strong>Send Feedback</strong> on any class card. A short window will open with a prompt: <em>"What are your thoughts on this class..."</em>. Type your message and click <strong>Send</strong>.</p>
+      <div style="margin-top:12px">
+        <strong>Tips</strong>
+        <ul class="small">
+          <li>Be specific: mention the trainer or session time if relevant.</li>
+          <li>Be constructive: suggestions help improve future classes.</li>
+          <li>Your feedback is anonymous to other members.</li>
+        </ul>
+      </div>
+    </aside>
+  </main>
+
+  <!-- modal container appended by JS -->
+
+  
+</body>
+</html>
