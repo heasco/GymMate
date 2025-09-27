@@ -58,7 +58,7 @@
     .username{color:var(--muted);font-size:13px;margin-top:8px}
 
     .left-actions{display:flex;gap:8px;justify-content:flex-start;margin-top:6px}
-    .btn{padding:8px 12px;border-radius:8px;border:1px solid #e6e9ee;background:#fff;cursor:pointer}
+    .btn{padding:8px 12px;border-radius:8px;border:1px solid #e6e9ee;background:#fff;cursor:pointer;text-decoration:none;color:inherit;display:inline-block}
     .btn.red{background:var(--accent);color:#fff;border-color:var(--accent)}
     .btn.ghost{background:transparent;border:1px dashed #e6e9ee}
 
@@ -92,7 +92,11 @@
       <h1 class="page-title">My Profile</h1>
       <div class="page-sub">Matt Batom Bakal the Third</div>
     </div>
-    <!-- top right area kept empty (no search) per request -->
+
+    <!-- top right area: Class Feedback button (added) -->
+    <div style="display:flex;gap:12px;align-items:center">
+      <a href="member-class-feedback.html" class="btn" title="Class Feedback">Class Feedback</a>
+    </div>
   </div>
 
   <div class="container">
@@ -160,14 +164,11 @@
 
             <div>
               <label>Gender</label>
-              <option>Male</option>
-              <!--
               <select name="gender" id="fieldGender">
-                
+                <option>Male</option>
                 <option>Female</option>
                 <option>Other</option>
               </select>
-              -->
             </div>
 
             <div>
