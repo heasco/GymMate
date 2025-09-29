@@ -84,11 +84,13 @@ router.post('/', asyncHandler(async (req, res) => {
   });
 }));
 
-// GET /api/members/search?q=...
+// GET /api/members/search?q=&type=combative
+//
 router.get('/search', asyncHandler(async (req, res) => {
   const { query, type } = req.query;
+
   if (!query || query.trim().length < 2) {
-    return res.status(400).json({ success:false, error: 'Search query must be at least 2 characters long' });
+    return res.status(400).json({ success: false, error: 'Search query must be at least 2 characters long' });
   }
 
   const db = mongoose.connection.db;
@@ -104,12 +106,13 @@ router.get('/search', asyncHandler(async (req, res) => {
   };
 
   // Only combative members if requested
-  if (type === "combative") {
-    filter.$and.push({ "memberships.type": "combative" });
+  if (type === 'combative') {
+    filter.$and.push({ 'memberships.type': 'combative' });
   }
 
   const members = await db.collection('members').find(filter).limit(10).toArray();
-  res.json({ success:true, count: members.length, data: members });
+
+  res.json({ success: true, count: members.length, data: members });
 }));
 
 
