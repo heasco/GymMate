@@ -4,42 +4,92 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard - GOALS Gym</title>
-    <link rel="stylesheet" href="./admin-mainpage.css">
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: #1a0000;
+            color: #ff0000;
+        }
+        .header {
+            background-color: #ff0000;
+            color: #1a0000;
+            padding: 10px;
+            text-align: center;
+        }
+        .hamburger {
+            font-size: 24px;
+            background: none;
+            border: none;
+            color: #1a0000;
+            cursor: pointer;
+            padding: 10px;
+        }
+        .nav-menu {
+            display: none;
+            background-color: #ff0000;
+            position: absolute;
+            top: 50px;
+            left: 0;
+            width: 200px;
+        }
+        .nav-menu a {
+            display: block;
+            color: #1a0000;
+            padding: 10px;
+            text-decoration: none;
+        }
+        .nav-menu a:hover {
+            background-color: #1a0000;
+            color: #ff0000;
+        }
+        .nav-menu.active {
+            display: block;
+        }
+        .logout-btn {
+            background-color: #1a0000;
+            color: #ff0000;
+            border: 2px solid #ff0000;
+            padding: 5px 10px;
+            cursor: pointer;
+            position: absolute;
+            right: 10px;
+            top: 10px;
+        }
+        .logout-btn:hover {
+            background-color: #ff0000;
+            color: #1a0000;
+        }
+    </style>
 </head>
 <body>
-    <header class="admin-header">
-        <h1>GOALS Gym Admin Dashboard</h1>
+    <div class="header">
+        <button class="hamburger">☰</button>
+        <h1>GOALS Gym Admin</h1>
         <button class="logout-btn" id="logoutBtn">Logout</button>
-    </header>
-    
-    <main class="admin-content">
-        <section id="adminPanel">
-            <h2>Welcome, <span id="adminName"></span>!</h2>
-            <p>You have successfully logged in to the admin panel.</p>
-            
-            <div class="admin-section">
-                <h3>Quick Actions</h3>
-                <div class="action-buttons">
-                    <button class="action-btn" id="manageMembers">Manage Members</button>
-                    <button class="action-btn" id="viewReports">View Reports</button>
-                    <button class="action-btn" id="systemSettings">System Settings</button>
-                    <button class="action-btn" id="addSchedule">Add Schedule</button>
-                    <a href="./add-member.html" class="addMember">Add member</a>
-                    <a href="./add-classes.html" class="addSchedule">Add schedule</a>
-                    <a href="./add-trainer.html" class="addtrainer">Add trainer</a>
-                </div>
-            </div>
-                </div>
-            </div>
-        </section>
-    </main>
+    </div>
+    <nav class="nav-menu">
+        <a href="./add-classes.html">Add Classes</a>
+        <a href="./add-member.html">Add Member</a>
+        <a href="./add-trainer.html">Add Trainer</a>
+        <a href="./manage-enrollment.html">Manage Enrollment</a>
+        <a href="./add-transaction.html">Add Transaction</a>/a>
+        <a href="./view-classes.html">View Classes</a>
+        <a href="./trainer-schedule.html">Trainer Schedule</a>
+        <a href="../login.html">Login</a>
+    </nav>
 
     <script>
-        // Session management
         document.addEventListener('DOMContentLoaded', () => {
-            const authUser = JSON.parse(localStorage.getItem('authUser'));
-            const adminName = document.getElementById('adminName');
+            const hamburger = document.querySelector('.hamburger');
+            const navMenu = document.querySelector('.nav-menu');
             const logoutBtn = document.getElementById('logoutBtn');
+            const authUser = JSON.parse(localStorage.getItem('authUser'));
+
+            // Toggle hamburger menu
+            hamburger.addEventListener('click', () => {
+                navMenu.classList.toggle('active');
+            });
 
             // Check valid session (1 hour expiration)
             if (!authUser || (Date.now() - authUser.timestamp > 3600000)) {
@@ -48,26 +98,10 @@
                 return;
             }
 
-            // Display user info
-            adminName.textContent = authUser.user.name || authUser.user.username;
-
             // Logout handler
             logoutBtn.addEventListener('click', () => {
                 localStorage.removeItem('authUser');
                 window.location.href = '../login.html';
-            });
-
-            // Button actions (stub functions)
-            document.getElementById('manageMembers').addEventListener('click', () => {
-                alert('Manage Members clicked');
-            });
-
-            document.getElementById('viewReports').addEventListener('click', () => {
-                alert('View Reports clicked');
-            });
-
-            document.getElementById('systemSettings').addEventListener('click', () => {
-                alert('System Settings clicked');
             });
         });
     </script>
