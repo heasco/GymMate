@@ -51,6 +51,29 @@ mongoose.connection.on('error', err => {
 });
 
 // ======================
+// Admin Initialization
+// ======================
+async function initializeAdmin() {
+  try {
+    const adminExists = await mongoose.connection.db.collection('admins').countDocuments({ username: 'admin' });
+    if (!adminExists && process.env.NODE_ENV !== 'production') { // Only initialize in non-production
+      const hashedPassword = await bcrypt.hash('admin123', 10);
+      await mongoose.connection.db.collection('admins').insertOne({
+        username: 'admin',
+        password: hashedPassword,
+        name: 'System Admin',
+        phone: '+1234567890',
+        role: 'admin',
+        createdAt: new Date()
+      });
+      console.log('🔑 Default admin created');
+    }
+  } catch (err) {
+    console.error('Admin initialization error:', err);
+  }
+}
+
+// ======================
 // Import Models
 // ======================
 const Admin = require('./models/Admin');
