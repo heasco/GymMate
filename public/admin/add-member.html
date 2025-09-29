@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Add Member</title>
-    </style>
 </head>
 <body>
     <div class="add-member-form">
@@ -63,7 +62,6 @@
     </div>
 
     <script>
-        // Toggle membership details based on checkbox selection
         document.getElementById('monthlyCheckbox').addEventListener('change', function() {
             document.getElementById('monthlyDetails').classList.toggle('hidden', !this.checked);
         });
@@ -72,34 +70,27 @@
             document.getElementById('combativeDetails').classList.toggle('hidden', !this.checked);
         });
 
-        // Set default join date to today
         document.getElementById('joinDate').valueAsDate = new Date();
 
         document.getElementById('memberForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
-            // Validate at least one membership type is selected
             const membershipCheckboxes = document.querySelectorAll('input[name="membershipTypes"]:checked');
             if (membershipCheckboxes.length === 0) {
                 alert('Please select at least one membership type');
                 return;
             }
 
-            // Get and clean phone number
             const rawPhone = document.getElementById('phone').value.trim();
             let formattedPhone = undefined;
             
             if (rawPhone) {
-                // Remove all non-digit characters
                 const digitsOnly = rawPhone.replace(/\D/g, '');
                 
-                // Validate Philippine mobile number format
                 if (digitsOnly.length === 11 && digitsOnly.startsWith('09')) {
-                    // Convert 09 to +639 format
                     formattedPhone = `+63${digitsOnly.substring(1)}`;
                 }
                 else if (digitsOnly.length === 12 && digitsOnly.startsWith('639')) {
-                    // Ensure + prefix
                     formattedPhone = `+${digitsOnly}`;
                 }
                 else {
@@ -110,7 +101,6 @@
                 }
             }
 
-            // Prepare membership data
             const memberships = [];
             
             if (document.getElementById('monthlyCheckbox').checked) {
@@ -137,16 +127,14 @@
                 });
             }
 
-            // Prepare the complete member data
             const memberData = {
                 name: document.getElementById('memberName').value.trim(),
                 memberships: memberships,
                 joinDate: document.getElementById('joinDate').value || new Date().toISOString(),
-                phone: formattedPhone, // Will be undefined if no phone provided
+                phone: formattedPhone,
                 email: document.getElementById('email').value.trim().toLowerCase() || undefined
             };
 
-            // Debug output
             console.log('Submitting:', JSON.stringify(memberData, null, 2));
 
             try {
@@ -154,7 +142,7 @@
                     method: 'POST',
                     headers: { 
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${localStorage.getItem('authToken')}` // If using auth
+                        'Authorization': `Bearer ${localStorage.getItem('authToken')}`
                     },
                     body: JSON.stringify(memberData)
                 });
@@ -172,14 +160,12 @@
                     throw new Error(errorMsg);
                 }
 
-                alert('Member successfully added!');
+                alert(`Member successfully added!\nUsername: ${responseData.data.username}\nTemporary Password: ${responseData.data.tempPassword}\n\nMember should change password upon first login.`);
                 document.getElementById('memberForm').reset();
-                // Reset checkboxes and hide details
                 document.getElementById('monthlyCheckbox').checked = false;
                 document.getElementById('combativeCheckbox').checked = false;
                 document.getElementById('monthlyDetails').classList.add('hidden');
                 document.getElementById('combativeDetails').classList.add('hidden');
-                // Reset join date to today
                 document.getElementById('joinDate').valueAsDate = new Date();
             } catch (error) {
                 console.error('Error:', error);
