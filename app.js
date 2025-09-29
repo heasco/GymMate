@@ -83,6 +83,7 @@ const Trainer = require('./models/Trainer');
 const Class = require('./models/Classes');
 const Enrollment = require('./models/Enrollment');
 const Feedback = require('./models/Feedback');
+const Transaction = require('./models/Transaction');
 
 // ======================
 // Routes (Login)
