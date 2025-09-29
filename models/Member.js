@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
 
 const MembershipSchema = new mongoose.Schema({
   type: {
@@ -7,7 +8,6 @@ const MembershipSchema = new mongoose.Schema({
     enum: ['monthly', 'combative']
   },
   duration: {
-    // For monthly: number of months, for combative: number of sessions
     type: Number,
     required: true,
     min: [1, 'Duration must be at least 1']
@@ -22,7 +22,6 @@ const MembershipSchema = new mongoose.Schema({
     required: true
   },
   remainingSessions: {
-    // Only for combative members
     type: Number,
     default: 0
   },
@@ -44,6 +43,18 @@ const MemberSchema = new mongoose.Schema({
     required: [true, 'Please add a name'],
     trim: true
   },
+  username: {
+    type: String,
+    unique: true,
+    required: true,
+    lowercase: true,
+    trim: true
+  },
+  password: {
+    type: String,
+    required: true,
+    minlength: [6, 'Password must be at least 6 characters']
+  },
   memberships: [MembershipSchema],
   joinDate: { 
     type: Date, 
@@ -55,7 +66,7 @@ const MemberSchema = new mongoose.Schema({
     trim: true,
     validate: {
       validator: function(v) {
-        return !v || /^\+63\d{10}$/.test(v); // Philippine format: +639XXXXXXXXX
+        return !v || /^\+63\d{10}$/.test(v);
       },
       message: props => `${props.value} is not a valid Philippine phone number!`
     }
@@ -72,9 +83,9 @@ const MemberSchema = new mongoose.Schema({
     }
   },
   transactions: {
-  type: String, // transaction_ids
-  default: []
-},
+    type: [String],
+    default: []
+  },
   status: { 
     type: String, 
     default: 'active', 
@@ -85,7 +96,13 @@ const MemberSchema = new mongoose.Schema({
   collection: 'members'
 });
 
-
+// Hash password before saving
+MemberSchema.pre('save', async function(next) {
+  if (this.isModified('password')) {
+    this.password = await bcrypt.hash(this.password, 10);
+  }
+  next();
+});
 
 // Calculate end dates before validation
 MemberSchema.pre('validate', function(next) {
@@ -94,16 +111,13 @@ MemberSchema.pre('validate', function(next) {
       if (membership.isModified('startDate') || membership.isModified('type') || 
           membership.isModified('duration') || membership.isNew) {
         
-        // Calculate end date based on membership type
         if (membership.type === 'monthly') {
-          // For monthly members, add months to start date
           membership.endDate = new Date(membership.startDate);
           membership.endDate.setMonth(membership.endDate.getMonth() + membership.duration);
         } else if (membership.type === 'combative') {
-          // For combative members, set remaining sessions and end date as 6 months from start date
           membership.remainingSessions = membership.duration;
           membership.endDate = new Date(membership.startDate);
-          membership.endDate.setMonth(membership.endDate.getMonth() + 6); // 6 months validity for combative sessions
+          membership.endDate.setMonth(membership.endDate.getMonth() + 6);
         }
       }
     });
@@ -116,19 +130,16 @@ MemberSchema.pre('save', async function(next) {
   if (!this.isNew || this.memberId) return next();
   
   try {
-    // Find the member with highest memberId
     const lastMember = await this.constructor.findOne(
       { memberId: { $exists: true } },
       { memberId: 1 },
       { sort: { memberId: -1 } }
     );
     
-    // Extract the number and increment
     const lastNumber = lastMember ? 
       parseInt(lastMember.memberId.split('-')[1], 10) : 0;
     const nextNumber = lastNumber + 1;
     
-    // Format as MEM-0001
     this.memberId = `MEM-${String(nextNumber).padStart(4, '0')}`;
     next();
   } catch (err) {
@@ -136,7 +147,6 @@ MemberSchema.pre('save', async function(next) {
   }
 });
 
-// Create the model (handle potential duplicate models)
 if (mongoose.models.Member) {
   mongoose.deleteModel('Member');
 }

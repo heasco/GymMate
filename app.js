@@ -223,6 +223,23 @@ app.post('/api/members', async (req, res) => {
       });
     }
 
+    // Split name into first and last
+    const nameParts = name.split(/\s+/);
+    const firstName = nameParts[0].toLowerCase();
+    const lastName = nameParts.slice(1).join('').toLowerCase();
+
+    // Generate username: firstname + lastname (lowercase, no spaces)
+    let username = firstName + lastName;
+    let usernameSuffix = 0;
+    while (await Member.findOne({ username })) {
+      usernameSuffix++;
+      username = firstName + lastName + usernameSuffix;
+    }
+
+    // Generate temporary password: firstname + 4 random digits
+    const randomDigits = Math.floor(1000 + Math.random() * 9000);
+    const tempPassword = firstName + randomDigits;
+
     const validatedMemberships = [];
     for (const membership of memberships) {
       const { type, duration } = membership;
@@ -231,7 +248,9 @@ app.post('/api/members', async (req, res) => {
         return res.status(400).json({
           success: false,
           error: 'Validation failed',
-          details: { memberships: 'Each membership must have a valid type (monthly or combative)' }
+          details: {
+            memberships: 'Each membership must have a valid type (monthly or combative)'
+          }
         });
       }
 
@@ -239,7 +258,9 @@ app.post('/api/members', async (req, res) => {
         return res.status(400).json({
           success: false,
           error: 'Validation failed',
-          details: { memberships: 'Each membership must have a valid duration (at least 1)' }
+          details: {
+            memberships: 'Each membership must have a valid duration (at least 1)'
+          }
         });
       }
 
@@ -258,6 +279,8 @@ app.post('/api/members', async (req, res) => {
 
     const newMember = new Member({
       name,
+      username,
+      password: tempPassword, // Will be hashed in pre-save
       memberships: validatedMemberships,
       joinDate: joinDate ? new Date(joinDate) : new Date(),
       phone: phone || undefined,
@@ -274,6 +297,8 @@ app.post('/api/members', async (req, res) => {
         memberId: savedMember.memberId,
         mongoId: savedMember._id,
         name: savedMember.name,
+        username: savedMember.username,
+        tempPassword, // Return plain temp password for display
         memberships: savedMember.memberships,
         joinDate: savedMember.joinDate,
         phone: savedMember.phone,
@@ -292,7 +317,9 @@ app.post('/api/members', async (req, res) => {
       return res.status(409).json({
         success: false,
         error: 'Duplicate entry',
-        details: { [duplicateField]: errorMessage }
+        details: {
+          [duplicateField]: errorMessage
+        }
       });
     }
 
@@ -309,7 +336,10 @@ app.post('/api/members', async (req, res) => {
     return res.status(500).json({
       success: false,
       error: 'Internal server error',
-      details: process.env.NODE_ENV === 'development' ? { message: err.message, stack: err.stack } : undefined
+      details: process.env.NODE_ENV === 'development' ? {
+        message: err.message,
+        stack: err.stack
+      } : undefined
     });
   }
 });
