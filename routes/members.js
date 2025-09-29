@@ -6,7 +6,7 @@ const Member = require('../models/Member');
 const Enrollment = require('../models/Enrollment');
 
 const router = express.Router();
-
+//
 // POST /api/members  create
 router.post('/', asyncHandler(async (req, res) => {
   console.log('[Member] Creation request received:', req.body);
