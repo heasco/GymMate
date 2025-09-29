@@ -6,6 +6,19 @@
     <title>GOALS Gym Baguio - Professional Fitness Center</title>
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+      /* Small modal overrides that match your dark theme */
+      .modal-backdrop { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(0,0,0,0.6); z-index: 9999; }
+      .modal { width: 420px; max-width: 92%; background: #1b1b1b; color: #fff; padding: 16px; border-radius: 8px; border: 1px solid #333; box-shadow: 0 6px 20px rgba(0,0,0,0.6); }
+      .modal h3 { margin-top: 0; color: #ff3333; }
+      .form-row { display:flex; gap:8px; margin-bottom:10px; }
+      .form-row input { flex:1; padding:8px; border-radius:6px; border:1px solid #333; background:#0f0f0f; color:white; }
+      .btn { padding:8px 12px; border-radius:6px; border:none; cursor:pointer; }
+      .btn.primary { background:#ff3333; color:#fff; font-weight:700; }
+      .btn.ghost { background:transparent; color:#fff; border:1px solid #444; }
+      .small { font-size:13px; color:#ccc; }
+      .login-helper { margin-top:8px; color:#ccc; font-size:13px; }
+    </style>
 </head>
 <body>
     <!-- Header with Logo and Navigation -->
@@ -87,20 +100,21 @@
             <h3>ADMIN LOGIN</h3>
             <div class="divider"></div>
             <p>Access the GOALS Gym management system</p>
-            <a href="login.html" class="business-btn outline">Admin LOGIN HERE</a>
+            <a href="admin-login.html" class="business-btn outline">Admin LOGIN HERE</a>
         </div>
+
         <div class="section-container">
             <h3>TRAINER LOGIN</h3>
-            <div class="divider">
-            <a href="trainer.html" class="business-btn outline">Trainer LOGIN HERE</a>
+            <div class="divider"></div>
+            <a href="trainer-login.html" class="business-btn outline">Trainer LOGIN HERE</a>
         </div>
+
         <div class="section-container">
             <h3>MEMBER LOGIN</h3>
-            <div class="divider">
-                <a href="member.html" class="business-btn outline">LOGIN HERE</a>
-            </div>
+            <div class="divider"></div>
+            <!-- changed: opens modal instead of navigating -->
+            <a href="member-login.html" id="memberLoginBtn" class="business-btn outline">LOGIN HERE</a>
         </div>
-    </section>
     </section>
 
     <!-- Footer -->

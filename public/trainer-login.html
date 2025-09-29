@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trainer Login - GOALS Gym</title>
+    <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+    <div class="login-container">
+        <h1 class="login-title">Trainer Login</h1>
+        <form id="loginForm">
+            <div class="input-group">
+                <label for="username" class="input-label">Username</label>
+                <input type="text" id="username" class="input-field" required autocomplete="username">
+            </div>
+            <div class="input-group">
+                <label for="password" class="input-label">Password</label>
+                <input type="password" id="password" class="input-field" required autocomplete="current-password">
+            </div>
+            <button type="submit" class="login-button">Login</button>
+        </form>
+        <p class="error-message" id="error-message"></p>
+    </div>
+
+    <script>
+        const API_URL = 'https://flex-it-goalsgym-it-project-2.onrender.com';
+        
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const errorElement = document.getElementById('error-message');
+            const submitButton = e.target.querySelector('button[type="submit"]');
+
+            submitButton.disabled = true;
+            submitButton.textContent = 'Logging in...';
+            errorElement.textContent = '';
+
+            try {
+                const response = await fetch(`${API_URL}/api/trainer/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json().catch(() => ({}));
+                    throw new Error(error.message || 'Invalid trainer credentials');
+                }
+
+                const data = await response.json();
+                
+                localStorage.setItem('authUser', JSON.stringify({
+                    user: data.user,
+                    role: 'trainer',
+                    timestamp: Date.now()
+                }));
+                
+                window.location.href = './trainer/trainer-mainpage.html';
+            } catch (err) {
+                errorElement.textContent = err.message.includes('Failed to fetch')
+                    ? 'Server unavailable. Try again later.'
+                    : err.message;
+            } finally {
+                submitButton.disabled = false;
+                submitButton.textContent = 'Login';
+            }
+        });
+
+        document.getElementById('username').focus();
+    </script>
+</body>
+</html>
