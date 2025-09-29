@@ -526,12 +526,17 @@ app.get('/api/classes', async (req, res) => {
 // Get class by ID
 app.get('/api/classes/:id', async (req, res) => {
   try {
-    const classData = await Class.findOne({ 
-      $or: [
-        { class_id: req.params.id },
-        { _id: req.params.id }
-      ]
-    });
+    const id = req.params.id;
+    let query = { class_id: id };
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      query = {
+        $or: [
+          { class_id: id },
+          { _id: new mongoose.Types.ObjectId(id) }
+        ]
+      };
+    }
+    const classData = await Class.findOne(query);
     
     if (!classData) {
       return res.status(404).json({ success: false, error: 'Class not found' });
@@ -550,15 +555,20 @@ app.get('/api/classes/:id', async (req, res) => {
 // Update class
 app.put('/api/classes/:id', async (req, res) => {
   try {
+    const id = req.params.id;
+    let query = { class_id: id };
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      query = {
+        $or: [
+          { class_id: id },
+          { _id: new mongoose.Types.ObjectId(id) }
+        ]
+      };
+    }
     const { class_name, description, schedule, trainer_id, capacity } = req.body;
     
     const updatedClass = await Class.findOneAndUpdate(
-      { 
-        $or: [
-          { class_id: req.params.id },
-          { _id: req.params.id }
-        ]
-      },
+      query,
       { 
         class_name, 
         description, 
@@ -598,12 +608,17 @@ app.put('/api/classes/:id', async (req, res) => {
 // Delete class
 app.delete('/api/classes/:id', async (req, res) => {
   try {
-    const deletedClass = await Class.findOneAndDelete({
-      $or: [
-        { class_id: req.params.id },
-        { _id: req.params.id }
-      ]
-    });
+    const id = req.params.id;
+    let query = { class_id: id };
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      query = {
+        $or: [
+          { class_id: id },
+          { _id: new mongoose.Types.ObjectId(id) }
+        ]
+      };
+    }
+    const deletedClass = await Class.findOneAndDelete(query);
     
     if (!deletedClass) {
       return res.status(404).json({ success: false, error: 'Class not found' });
@@ -997,12 +1012,17 @@ app.get('/api/combative-members', async (req, res) => {
 // Get enrolled members for a class
 app.get('/api/classes/:id/enrolled-members', async (req, res) => {
   try {
-    const classData = await Class.findOne({ 
-      $or: [
-        { class_id: req.params.id },
-        { _id: req.params.id }
-      ]
-    });
+    const id = req.params.id;
+    let query = { class_id: id };
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      query = {
+        $or: [
+          { class_id: id },
+          { _id: new mongoose.Types.ObjectId(id) }
+        ]
+      };
+    }
+    const classData = await Class.findOne(query);
     
     if (!classData) {
       return res.status(404).json({ success: false, error: 'Class not found' });
