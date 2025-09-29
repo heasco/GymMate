@@ -85,7 +85,6 @@ router.post('/', asyncHandler(async (req, res) => {
 }));
 
 // GET /api/members/search?q=&type=combative
-//
 router.get('/search', asyncHandler(async (req, res) => {
   const { query, type } = req.query;
 
@@ -127,3 +126,22 @@ router.get('/:id/enrollments', asyncHandler(async (req, res) => {
 }));
 
 module.exports = router;
+
+// GET /api/combative-members
+router.get('/combative-members', asyncHandler(async (req, res) => {
+  const db = mongoose.connection.db;
+  const today = new Date();
+
+  const members = await db.collection('members').find({
+    'memberships': {
+      $elemMatch: {
+        type: 'combative',
+        status: 'active',
+        endDate: { $gt: today }
+      }
+    }
+  }).toArray();
+
+  res.json({ success: true, count: members.length, data: members });
+}));
+
