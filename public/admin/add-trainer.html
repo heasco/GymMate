@@ -89,13 +89,11 @@
       submitBtn.textContent = 'Adding...';
 
       try {
-        // Prepare specialization
         let specialization = document.getElementById('specialization').value;
         if (specialization === 'Other') {
           specialization = document.getElementById('custom_specialization').value.trim();
         }
 
-        // Parse assigned classes
         const assignedClassesInput = document.getElementById('assigned_classes').value.trim();
         const assignedClasses = assignedClassesInput
           ? assignedClassesInput.split(',').map((cls) => cls.trim()).filter(Boolean)
@@ -137,9 +135,8 @@
           throw new Error(errorMsg);
         }
 
-        alert(`Trainer added successfully!\nTrainer ID: ${responseData.data.trainer_id}\nName: ${responseData.data.name}`);
+        alert(`Trainer added successfully!\nUsername: ${responseData.data.username}\nTemporary Password: ${responseData.data.tempPassword}\n\nTrainer should change password upon first login.\nTrainer ID: ${responseData.data.trainer_id}\nName: ${responseData.data.name}`);
         this.reset();
-        // Reset custom specialization field
         document.getElementById('custom_specialization').style.display = 'none';
         document.getElementById('custom_label').style.display = 'none';
       } catch (err) {
