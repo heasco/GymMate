@@ -20,6 +20,10 @@ const TransactionSchema = new mongoose.Schema({
     enum: ['cash', 'e-wallet', 'bank'],
     required: true
   },
+  payment_date: {
+    type: Date,
+    required: true
+  },
   description: {
     type: String,
     trim: true

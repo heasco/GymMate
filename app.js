@@ -1288,13 +1288,13 @@ app.get('/health', (req, res) => {
 // Add new transaction
 app.post('/api/transactions', async (req, res) => {
   try {
-    const { member_id, amount, payment_method, description } = req.body;
+    const { member_id, amount, payment_method, payment_date, description } = req.body;
 
     // Validate required fields
-    if (!member_id || !amount || !payment_method) {
+    if (!member_id || !amount || !payment_method || !payment_date) {
       return res.status(400).json({
         success: false,
-        error: 'Member ID, amount, and payment method are required'
+        error: 'Member ID, amount, payment method, and payment date are required'
       });
     }
 
@@ -1309,6 +1309,14 @@ app.post('/api/transactions', async (req, res) => {
       return res.status(400).json({
         success: false,
         error: 'Amount must be positive'
+      });
+    }
+
+    const parsedDate = new Date(payment_date);
+    if (isNaN(parsedDate.getTime())) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid payment date format'
       });
     }
 
@@ -1336,6 +1344,7 @@ app.post('/api/transactions', async (req, res) => {
       member_id: member.memberId || member._id.toString(),
       amount,
       payment_method,
+      payment_date: parsedDate,
       description: description?.trim()
     });
 
@@ -1354,6 +1363,7 @@ app.post('/api/transactions', async (req, res) => {
         member_id: savedTransaction.member_id,
         amount: savedTransaction.amount,
         payment_method: savedTransaction.payment_method,
+        payment_date: savedTransaction.payment_date,
         description: savedTransaction.description,
         createdAt: savedTransaction.createdAt
       }
