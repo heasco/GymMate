@@ -1,5 +1,3 @@
-// This is the main server
-
 require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
@@ -20,7 +18,7 @@ app.use(express.static('public'));
 // ======================
 // Middleware
 // ======================
-app.use(cors({  
+app.use(cors({
   origin: '*',
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -58,7 +56,7 @@ mongoose.connection.on('error', err => {
 async function initializeAdmin() {
   try {
     const adminExists = await mongoose.connection.db.collection('admins').countDocuments({ username: 'admin' });
-    if (!adminExists) {
+    if (!adminExists && process.env.NODE_ENV !== 'production') { // Only initialize in non-production
       const hashedPassword = await bcrypt.hash('admin123', 10);
       await mongoose.connection.db.collection('admins').insertOne({
         username: 'admin',
@@ -78,6 +76,7 @@ async function initializeAdmin() {
 // ======================
 // Import Models
 // ======================
+const Admin = require('./models/Admin');
 const Member = require('./models/Member');
 const Trainer = require('./models/Trainer');
 const Class = require('./models/Classes');
@@ -88,30 +87,27 @@ const Transaction = require('./models/Transaction');
 // ======================
 // Routes (Login)
 // ======================
-app.post('/login', async (req, res) => {
+
+// Admin Login
+app.post('/api/admin/login', async (req, res) => {
   try {
     const { username, password } = req.body;
     
-    // Input validation
     if (!username || !password) {
-      return res.status(400).json({ error: 'Username and password required' });
+      return res.status(400).json({ success: false, error: 'Username and password required' });
     }
 
-    const admin = await mongoose.connection.db.collection('admins').findOne({ 
-      username: username.trim() 
-    });
-    
+    const admin = await Admin.findOne({ username: username.trim() });
     if (!admin) {
-      return res.status(401).json({ error: 'Invalid credentials' });
+      return res.status(401).json({ success: false, error: 'Invalid admin credentials' });
     }
 
     const isPasswordValid = await bcrypt.compare(password, admin.password);
     if (!isPasswordValid) {
-      return res.status(401).json({ error: 'Invalid credentials' });
+      return res.status(401).json({ success: false, error: 'Invalid admin credentials' });
     }
 
-    // Successful login - return user data
-    res.json({ 
+    res.json({
       success: true,
       user: {
         id: admin._id,
@@ -120,24 +116,88 @@ app.post('/login', async (req, res) => {
         role: admin.role
       }
     });
-
   } catch (err) {
-    console.error('Login error:', err);
-    res.status(500).json({ error: 'Server error' });
+    console.error('Admin login error:', err);
+    res.status(500).json({ success: false, error: 'Server error' });
+  }
+});
+
+// Member Login
+app.post('/api/member/login', async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    
+    if (!username || !password) {
+      return res.status(400).json({ success: false, error: 'Username and password required' });
+    }
+
+    const member = await Member.findOne({ username: username.trim() });
+    if (!member) {
+      return res.status(401).json({ success: false, error: 'Invalid member credentials' });
+    }
+
+    const isPasswordValid = await bcrypt.compare(password, member.password);
+    if (!isPasswordValid) {
+      return res.status(401).json({ success: false, error: 'Invalid member credentials' });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        id: member._id,
+        memberId: member.memberId,
+        username: member.username,
+        name: member.name,
+        role: 'member'
+      }
+    });
+  } catch (err) {
+    console.error('Member login error:', err);
+    res.status(500).json({ success: false, error: 'Server error' });
+  }
+});
+
+// Trainer Login
+app.post('/api/trainer/login', async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    
+    if (!username || !password) {
+      return res.status(400).json({ success: false, error: 'Username and password required' });
+    }
+
+    const trainer = await Trainer.findOne({ username: username.trim() });
+    if (!trainer) {
+      return res.status(401).json({ success: false, error: 'Invalid trainer credentials' });
+    }
+
+    const isPasswordValid = await bcrypt.compare(password, trainer.password);
+    if (!isPasswordValid) {
+      return res.status(401).json({ success: false, error: 'Invalid trainer credentials' });
+    }
+
+    res.json({
+      success: true,
+      user: {
+        id: trainer._id,
+        username: trainer.username,
+        name: trainer.name,
+        role: 'trainer'
+      }
+    });
+  } catch (err) {
+    console.error('Trainer login error:', err);
+    res.status(500).json({ success: false, error: 'Server error' });
   }
 });
 
 // ======================
 // Member Routes
 // ======================
-
-// Route: Add New Member with Auto-Generated ID
-// Route: Add New Member with Auto-Generated ID
 app.post('/api/members', async (req, res) => {
   console.log('[Member] Creation request received:', req.body);
 
   try {
-    // Destructure and trim inputs
     const { 
       name: rawName, 
       memberships,
@@ -146,12 +206,10 @@ app.post('/api/members', async (req, res) => {
       email: rawEmail 
     } = req.body;
 
-    // Clean and validate inputs
     const name = rawName?.trim();
     const phone = rawPhone?.trim();
     const email = rawEmail?.trim().toLowerCase();
 
-    // Validate required fields
     if (!name || !memberships || !Array.isArray(memberships) || memberships.length === 0) {
       const errors = {};
       if (!name) errors.name = 'Name is required';
@@ -165,48 +223,39 @@ app.post('/api/members', async (req, res) => {
       });
     }
 
-// Validate each membership
-const validatedMemberships = [];
-for (const membership of memberships) {
-  const { type, duration } = membership;
-  
-  // Validate membership type
-  if (!type || !['monthly', 'combative'].includes(type)) {
-    return res.status(400).json({
-      success: false,
-      error: 'Validation failed',
-      details: {
-        memberships: 'Each membership must have a valid type (monthly or combative)'
+    const validatedMemberships = [];
+    for (const membership of memberships) {
+      const { type, duration } = membership;
+      
+      if (!type || !['monthly', 'combative'].includes(type)) {
+        return res.status(400).json({
+          success: false,
+          error: 'Validation failed',
+          details: { memberships: 'Each membership must have a valid type (monthly or combative)' }
+        });
       }
-    });
-  }
 
-  // Validate duration
-  if (!duration || duration < 1) {
-    return res.status(400).json({
-      success: false,
-      error: 'Validation failed',
-      details: {
-        memberships: 'Each membership must have a valid duration (at least 1)'
+      if (!duration || duration < 1) {
+        return res.status(400).json({
+          success: false,
+          error: 'Validation failed',
+          details: { memberships: 'Each membership must have a valid duration (at least 1)' }
+        });
       }
-    });
-  }
 
-  // Calculate startDate and endDate
-  const startDate = joinDate ? new Date(joinDate) : new Date();
-  const endDate = new Date(startDate);
-  endDate.setMonth(endDate.getMonth() + duration); // Assumes duration in months; adjust if needed (e.g., endDate.setDate(endDate.getDate() + duration) for days)
+      const startDate = joinDate ? new Date(joinDate) : new Date();
+      const endDate = new Date(startDate);
+      endDate.setMonth(endDate.getMonth() + duration);
 
-  validatedMemberships.push({
-    type,
-    duration,
-    startDate,
-    endDate,
-    status: 'active' // Set default active status
-  });
-}
+      validatedMemberships.push({
+        type,
+        duration,
+        startDate,
+        endDate,
+        status: 'active'
+      });
+    }
 
-    // Create new member
     const newMember = new Member({
       name,
       memberships: validatedMemberships,
@@ -218,7 +267,6 @@ for (const membership of memberships) {
     const savedMember = await newMember.save();
     console.log(`[Member] Successfully created (MongoID: ${savedMember._id}, MemberID: ${savedMember.memberId})`);
 
-    // Successful response with both IDs
     return res.status(201).json({
       success: true,
       message: 'Member created successfully',
@@ -232,11 +280,9 @@ for (const membership of memberships) {
         email: savedMember.email
       }
     });
-
   } catch (err) {
     console.error('[Member] Creation error:', err);
 
-    // Handle duplicate key errors
     if (err.code === 11000) {
       const duplicateField = Object.keys(err.keyPattern)[0];
       const errorMessage = duplicateField === 'memberId' 
@@ -246,18 +292,13 @@ for (const membership of memberships) {
       return res.status(409).json({
         success: false,
         error: 'Duplicate entry',
-        details: {
-          [duplicateField]: errorMessage
-        }
+        details: { [duplicateField]: errorMessage }
       });
     }
 
-    // Handle validation errors
     if (err.name === 'ValidationError') {
       const errors = {};
-      Object.values(err.errors).forEach(e => {
-        errors[e.path] = e.message;
-      });
+      Object.values(err.errors).forEach(e => { errors[e.path] = e.message; });
       return res.status(400).json({
         success: false,
         error: 'Validation failed',
@@ -265,19 +306,14 @@ for (const membership of memberships) {
       });
     }
 
-    // Generic server error
     return res.status(500).json({
       success: false,
       error: 'Internal server error',
-      details: process.env.NODE_ENV === 'development' ? {
-        message: err.message,
-        stack: err.stack
-      } : undefined
+      details: process.env.NODE_ENV === 'development' ? { message: err.message, stack: err.stack } : undefined
     });
   }
 });
 
-// Member search endpoint
 app.get('/api/members/search', async (req, res) => {
   try {
     const { query } = req.query;
@@ -289,11 +325,9 @@ app.get('/api/members/search', async (req, res) => {
       });
     }
 
-    // Use the native MongoDB collection for searching
     const db = mongoose.connection.db;
     const membersCollection = db.collection('members');
     
-    // Search for members by name or memberId
     const members = await membersCollection.find({
       $or: [
         { name: { $regex: query, $options: 'i' } },
@@ -318,14 +352,11 @@ app.get('/api/members/search', async (req, res) => {
 // ======================
 // Trainer Routes
 // ======================
-
-// Add new trainer route
 app.post('/api/trainers', async (req, res) => {
   console.log("Incoming trainer data:", req.body);
   try {
     const { name, specialization, is_available, assigned_classes } = req.body;
 
-    // Validate required fields
     if (!name || !specialization) {
       const errors = {};
       if (!name) errors.name = 'Name is required';
@@ -338,7 +369,6 @@ app.post('/api/trainers', async (req, res) => {
       });
     }
 
-    // Create trainer instance
     const newTrainer = new Trainer({
       name: name.trim(),
       specialization: specialization.trim(),
@@ -363,7 +393,6 @@ app.post('/api/trainers', async (req, res) => {
         createdAt: savedTrainer.createdAt
       }
     });
-
   } catch (err) {
     console.error("Error in /api/trainers:", err);
 
@@ -398,7 +427,6 @@ app.post('/api/trainers', async (req, res) => {
   }
 });
 
-// Get all trainers
 app.get('/api/trainers', async (req, res) => {
   try {
     const trainers = await Trainer.find().sort({ createdAt: -1 });
@@ -413,7 +441,6 @@ app.get('/api/trainers', async (req, res) => {
   }
 });
 
-// Get available trainers only
 app.get('/api/trainers/available', async (req, res) => {
   try {
     const availableTrainers = await Trainer.findAvailable();
@@ -431,14 +458,11 @@ app.get('/api/trainers/available', async (req, res) => {
 // ======================
 // Class Routes
 // ======================
-
-// Add new class route
 app.post('/api/classes', async (req, res) => {
   console.log("Incoming class data:", req.body);
   try {
     const { class_name, description, schedule, trainer_id, capacity } = req.body;
 
-    // Validate required fields
     if (!class_name || !schedule || !trainer_id || !capacity) {
       const errors = {};
       if (!class_name) errors.class_name = 'Class name is required';
@@ -453,7 +477,6 @@ app.post('/api/classes', async (req, res) => {
       });
     }
 
-    // Create class instance
     const newClass = new Class({
       class_name: class_name.trim(),
       description: description ? description.trim() : '',
@@ -479,7 +502,6 @@ app.post('/api/classes', async (req, res) => {
         createdAt: savedClass.createdAt
       }
     });
-
   } catch (err) {
     console.error("Error in /api/classes:", err);
 
@@ -509,7 +531,6 @@ app.post('/api/classes', async (req, res) => {
   }
 });
 
-// Get all classes
 app.get('/api/classes', async (req, res) => {
   try {
     const classes = await Class.find().sort({ createdAt: -1 });
@@ -524,7 +545,6 @@ app.get('/api/classes', async (req, res) => {
   }
 });
 
-// Get class by ID
 app.get('/api/classes/:id', async (req, res) => {
   try {
     const id = req.params.id;
@@ -553,7 +573,6 @@ app.get('/api/classes/:id', async (req, res) => {
   }
 });
 
-// Update class
 app.put('/api/classes/:id', async (req, res) => {
   try {
     const id = req.params.id;
@@ -606,7 +625,6 @@ app.put('/api/classes/:id', async (req, res) => {
   }
 });
 
-// Delete class
 app.delete('/api/classes/:id', async (req, res) => {
   try {
     const id = req.params.id;
@@ -638,13 +656,10 @@ app.delete('/api/classes/:id', async (req, res) => {
 // ======================
 // Enrollment Routes
 // ======================
-
-// Enroll member in class (Admin function)
 app.post('/api/enrollments', async (req, res) => {
   try {
     const { class_id, member_id } = req.body;
 
-    // Validate required fields
     if (!class_id || !member_id) {
       return res.status(400).json({
         success: false,
@@ -652,7 +667,6 @@ app.post('/api/enrollments', async (req, res) => {
       });
     }
 
-    // Check if class exists
     const classData = await Class.findOne({ class_id });
     if (!classData) {
       return res.status(404).json({
@@ -661,15 +675,13 @@ app.post('/api/enrollments', async (req, res) => {
       });
     }
 
-    // Check if class is full
-    if (classData.isFull) {
+    if (classData.current_enrollment >= classData.capacity) {
       return res.status(400).json({
         success: false,
         error: 'Class is full'
       });
     }
 
-    // Check if member is already enrolled
     const existingEnrollment = await Enrollment.findOne({ 
       class_id, 
       member_id, 
@@ -683,7 +695,6 @@ app.post('/api/enrollments', async (req, res) => {
       });
     }
 
-    // Create enrollment
     const enrollment = new Enrollment({
       class_id,
       member_id
@@ -691,7 +702,6 @@ app.post('/api/enrollments', async (req, res) => {
 
     const savedEnrollment = await enrollment.save();
 
-    // Update class enrollment count
     await Class.findOneAndUpdate(
       { class_id },
       { 
@@ -711,7 +721,6 @@ app.post('/api/enrollments', async (req, res) => {
       message: 'Member enrolled successfully',
       data: savedEnrollment
     });
-
   } catch (err) {
     console.error('Enrollment error:', err);
     
@@ -729,7 +738,6 @@ app.post('/api/enrollments', async (req, res) => {
   }
 });
 
-// Get enrollments for a class
 app.get('/api/classes/:id/enrollments', async (req, res) => {
   try {
     const class_id = req.params.id;
@@ -751,7 +759,6 @@ app.get('/api/classes/:id/enrollments', async (req, res) => {
   }
 });
 
-// Get enrollments for a member
 app.get('/api/members/:id/enrollments', async (req, res) => {
   try {
     const member_id = req.params.id;
@@ -774,7 +781,6 @@ app.get('/api/members/:id/enrollments', async (req, res) => {
   }
 });
 
-// Cancel enrollment
 app.put('/api/enrollments/:id/cancel', async (req, res) => {
   try {
     const enrollment_id = req.params.id;
@@ -797,7 +803,6 @@ app.put('/api/enrollments/:id/cancel', async (req, res) => {
     enrollment.status = 'cancelled';
     await enrollment.save();
 
-    // Update class enrollment count
     await Class.findOneAndUpdate(
       { class_id: enrollment.class_id },
       { 
@@ -816,7 +821,6 @@ app.put('/api/enrollments/:id/cancel', async (req, res) => {
       message: 'Enrollment cancelled successfully',
       data: enrollment
     });
-
   } catch (err) {
     console.error('Error cancelling enrollment:', err);
     res.status(500).json({
@@ -826,8 +830,6 @@ app.put('/api/enrollments/:id/cancel', async (req, res) => {
   }
 });
 
-// enrollment endpoint with combative membership check
-// Enhanced enrollment endpoint with proper ID handling
 app.post('/api/classes/:classId/enroll', async (req, res) => {
   try {
     const { classId } = req.params;
@@ -842,7 +844,6 @@ app.post('/api/classes/:classId/enroll', async (req, res) => {
       });
     }
 
-    // Find the class by class_id
     const classData = await Class.findOne({ class_id: classId });
     if (!classData) {
       console.log(`Class not found: ${classId}`);
@@ -852,24 +853,16 @@ app.post('/api/classes/:classId/enroll', async (req, res) => {
       });
     }
 
-    // Build query to find member by different ID formats
     let memberQuery = {};
-    
-    // Check if it's a MongoDB ObjectId (24 character hex string)
     if (mongoose.Types.ObjectId.isValid(member_id) && 
         new mongoose.Types.ObjectId(member_id).toString() === member_id) {
       memberQuery = { _id: new mongoose.Types.ObjectId(member_id) };
-    } 
-    // Check if it's a memberId (like MEM-0001)
-    else if (member_id.startsWith('MEM-')) {
+    } else if (member_id.startsWith('MEM-')) {
       memberQuery = { memberId: member_id };
-    }
-    // Fallback to member_id field
-    else {
+    } else {
       memberQuery = { member_id: member_id };
     }
 
-    // Find the member to check membership type
     const member = await mongoose.connection.db.collection('members').findOne(memberQuery);
 
     if (!member) {
@@ -880,7 +873,6 @@ app.post('/api/classes/:classId/enroll', async (req, res) => {
       });
     }
 
-    // Check if member has active combative membership
     const hasCombativeMembership = member.memberships && 
       Array.isArray(member.memberships) && 
       member.memberships.some(m => 
@@ -896,7 +888,6 @@ app.post('/api/classes/:classId/enroll', async (req, res) => {
       });
     }
 
-    // Check if class is full
     if (classData.current_enrollment >= classData.capacity) {
       return res.status(400).json({
         success: false,
@@ -904,13 +895,10 @@ app.post('/api/classes/:classId/enroll', async (req, res) => {
       });
     }
 
-    // Check if member is already enrolled
     const alreadyEnrolled = classData.enrolled_members.some(
       enrolledMember => {
-        // Compare using the actual member ID from the found member document
         const enrolledMemberId = enrolledMember.member_id;
         const currentMemberId = member.memberId || member.member_id || member._id.toString();
-        
         return enrolledMemberId === currentMemberId && enrolledMember.status === 'active';
       }
     );
@@ -922,10 +910,8 @@ app.post('/api/classes/:classId/enroll', async (req, res) => {
       });
     }
 
-    // Use the actual member ID from the document
     const actualMemberId = member.memberId || member.member_id || member._id.toString();
 
-    // Add member to class
     classData.enrolled_members.push({
       member_id: actualMemberId,
       member_name: member.name,
@@ -949,7 +935,6 @@ app.post('/api/classes/:classId/enroll', async (req, res) => {
         enrollment_date: new Date()
       }
     });
-
   } catch (err) {
     console.error('Enrollment error:', err);
     
@@ -967,17 +952,12 @@ app.post('/api/classes/:classId/enroll', async (req, res) => {
   }
 });
 
-// ======================
-// Enrollment Management Routes
-// ======================
-
-// Get members eligible for enrollment (combative members)
 app.get('/api/combative-members', async (req, res) => {
   try {
     const combativeMembers = await mongoose.connection.db.collection('members').find({
       'memberships.type': 'combative',
       'memberships.status': 'active',
-      'memberships.endDate': { $gt: new Date() } // Only active memberships
+      'memberships.endDate': { $gt: new Date() }
     }).project({
       memberId: 1,
       name: 1,
@@ -986,7 +966,6 @@ app.get('/api/combative-members', async (req, res) => {
       memberships: 1
     }).toArray();
 
-    // Format the response to include proper member IDs
     const formattedMembers = combativeMembers.map(member => ({
       _id: member._id,
       memberId: member.memberId || member.member_id || member._id.toString(),
@@ -1010,7 +989,6 @@ app.get('/api/combative-members', async (req, res) => {
   }
 });
 
-// Get enrolled members for a class
 app.get('/api/classes/:id/enrolled-members', async (req, res) => {
   try {
     const id = req.params.id;
@@ -1043,7 +1021,6 @@ app.get('/api/classes/:id/enrolled-members', async (req, res) => {
   }
 });
 
-// Remove member from class
 app.delete('/api/classes/:classId/enrollments/:memberId', async (req, res) => {
   try {
     const { classId, memberId } = req.params;
@@ -1053,20 +1030,15 @@ app.delete('/api/classes/:classId/enrollments/:memberId', async (req, res) => {
       return res.status(404).json({ success: false, error: 'Class not found' });
     }
     
-    // Find the enrollment - we need to handle different ID formats
     const enrollmentIndex = classData.enrolled_members.findIndex(
-      enrollment => {
-        // Compare using string values to handle different ID formats
-        return enrollment.member_id.toString() === memberId.toString() && 
-               enrollment.status === 'active';
-      }
+      enrollment => enrollment.member_id.toString() === memberId.toString() && 
+                     enrollment.status === 'active'
     );
     
     if (enrollmentIndex === -1) {
       return res.status(404).json({ success: false, error: 'Enrollment not found' });
     }
     
-    // Update enrollment status to cancelled
     classData.enrolled_members[enrollmentIndex].status = 'cancelled';
     classData.current_enrollment -= 1;
     
@@ -1085,17 +1057,13 @@ app.delete('/api/classes/:classId/enrollments/:memberId', async (req, res) => {
   }
 });
 
-
 // ======================
 // Feedback Routes
 // ======================
-
-// Submit feedback for a class
 app.post('/api/feedback', async (req, res) => {
   try {
     const { class_id, member_id, trainer_id, rating, comment } = req.body;
 
-    // Validate required fields
     if (!class_id || !member_id || !trainer_id || !rating) {
       return res.status(400).json({
         success: false,
@@ -1103,7 +1071,6 @@ app.post('/api/feedback', async (req, res) => {
       });
     }
 
-    // Validate rating range
     if (rating < 1 || rating > 5) {
       return res.status(400).json({
         success: false,
@@ -1111,7 +1078,6 @@ app.post('/api/feedback', async (req, res) => {
       });
     }
 
-    // Check if member is enrolled in the class
     const enrollment = await Enrollment.findOne({ 
       class_id, 
       member_id, 
@@ -1125,7 +1091,6 @@ app.post('/api/feedback', async (req, res) => {
       });
     }
 
-    // Check if member already submitted feedback for this class
     const existingFeedback = await Feedback.findOne({ class_id, member_id });
     if (existingFeedback) {
       return res.status(409).json({
@@ -1134,7 +1099,6 @@ app.post('/api/feedback', async (req, res) => {
       });
     }
 
-    // Create feedback
     const feedback = new Feedback({
       class_id,
       member_id,
@@ -1145,7 +1109,6 @@ app.post('/api/feedback', async (req, res) => {
 
     const savedFeedback = await feedback.save();
 
-    // Also add feedback to the class document
     await Class.findOneAndUpdate(
       { class_id },
       {
@@ -1165,7 +1128,6 @@ app.post('/api/feedback', async (req, res) => {
       message: 'Feedback submitted successfully',
       data: savedFeedback
     });
-
   } catch (err) {
     console.error('Feedback submission error:', err);
     
@@ -1183,7 +1145,6 @@ app.post('/api/feedback', async (req, res) => {
   }
 });
 
-// Get feedback for a class
 app.get('/api/classes/:id/feedback', async (req, res) => {
   try {
     const class_id = req.params.id;
@@ -1205,7 +1166,6 @@ app.get('/api/classes/:id/feedback', async (req, res) => {
   }
 });
 
-// Get feedback for a trainer
 app.get('/api/trainers/:id/feedback', async (req, res) => {
   try {
     const trainer_id = req.params.id;
@@ -1228,7 +1188,6 @@ app.get('/api/trainers/:id/feedback', async (req, res) => {
   }
 });
 
-// Get average rating for a trainer
 app.get('/api/trainers/:id/rating', async (req, res) => {
   try {
     const trainer_id = req.params.id;
@@ -1263,7 +1222,6 @@ app.get('/api/trainers/:id/rating', async (req, res) => {
   }
 });
 
-// Protected route example
 app.get('/admin/data', async (req, res) => {
   try {
     res.json({ data: 'This is protected admin data' });
@@ -1272,7 +1230,6 @@ app.get('/admin/data', async (req, res) => {
   }
 });
 
-// Health check endpoint
 app.get('/health', (req, res) => {
   res.json({ 
     status: 'ok', 
@@ -1281,16 +1238,10 @@ app.get('/health', (req, res) => {
   });
 });
 
-// ======================
-// Transaction Routes
-// ======================
-
-// Add new transaction
 app.post('/api/transactions', async (req, res) => {
   try {
     const { member_id, amount, payment_method, payment_date, description } = req.body;
 
-    // Validate required fields
     if (!member_id || !amount || !payment_method || !payment_date) {
       return res.status(400).json({
         success: false,
@@ -1320,7 +1271,6 @@ app.post('/api/transactions', async (req, res) => {
       });
     }
 
-    // Find member
     let memberQuery = { memberId: member_id };
     if (mongoose.Types.ObjectId.isValid(member_id)) {
       memberQuery = {
@@ -1339,7 +1289,6 @@ app.post('/api/transactions', async (req, res) => {
       });
     }
 
-    // Create transaction
     const newTransaction = new Transaction({
       member_id: member.memberId || member._id.toString(),
       amount,
@@ -1350,7 +1299,6 @@ app.post('/api/transactions', async (req, res) => {
 
     const savedTransaction = await newTransaction.save();
 
-    // Update member's transactions array
     await Member.findByIdAndUpdate(member._id, {
       $push: { transactions: savedTransaction.transaction_id }
     });
@@ -1368,7 +1316,6 @@ app.post('/api/transactions', async (req, res) => {
         createdAt: savedTransaction.createdAt
       }
     });
-
   } catch (err) {
     console.error('Transaction creation error:', err);
     
