@@ -71,6 +71,10 @@ const MemberSchema = new mongoose.Schema({
       message: props => `${props.value} is not a valid email!`
     }
   },
+  transactions: {
+  type: String, // transaction_ids
+  default: []
+},
   status: { 
     type: String, 
     default: 'active', 
@@ -80,6 +84,8 @@ const MemberSchema = new mongoose.Schema({
   timestamps: true,
   collection: 'members'
 });
+
+
 
 // Calculate end dates before validation
 MemberSchema.pre('validate', function(next) {

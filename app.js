@@ -1281,6 +1281,111 @@ app.get('/health', (req, res) => {
 });
 
 // ======================
+// Transaction Routes
+// ======================
+
+// Add new transaction
+app.post('/api/transactions', async (req, res) => {
+  try {
+    const { member_id, amount, payment_method, description } = req.body;
+
+    // Validate required fields
+    if (!member_id || !amount || !payment_method) {
+      return res.status(400).json({
+        success: false,
+        error: 'Member ID, amount, and payment method are required'
+      });
+    }
+
+    if (!['cash', 'e-wallet', 'bank'].includes(payment_method)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid payment method'
+      });
+    }
+
+    if (amount <= 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'Amount must be positive'
+      });
+    }
+
+    // Find member
+    let memberQuery = { memberId: member_id };
+    if (mongoose.Types.ObjectId.isValid(member_id)) {
+      memberQuery = {
+        $or: [
+          { memberId: member_id },
+          { _id: new mongoose.Types.ObjectId(member_id) }
+        ]
+      };
+    }
+    const member = await Member.findOne(memberQuery);
+
+    if (!member) {
+      return res.status(404).json({
+        success: false,
+        error: 'Member not found'
+      });
+    }
+
+    // Create transaction
+    const newTransaction = new Transaction({
+      member_id: member.memberId || member._id.toString(),
+      amount,
+      payment_method,
+      description: description?.trim()
+    });
+
+    const savedTransaction = await newTransaction.save();
+
+    // Update member's transactions array
+    await Member.findByIdAndUpdate(member._id, {
+      $push: { transactions: savedTransaction.transaction_id }
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'Transaction added successfully',
+      data: {
+        transaction_id: savedTransaction.transaction_id,
+        member_id: savedTransaction.member_id,
+        amount: savedTransaction.amount,
+        payment_method: savedTransaction.payment_method,
+        description: savedTransaction.description,
+        createdAt: savedTransaction.createdAt
+      }
+    });
+
+  } catch (err) {
+    console.error('Transaction creation error:', err);
+    
+    if (err.code === 11000) {
+      return res.status(409).json({
+        success: false,
+        error: 'Transaction ID conflict'
+      });
+    }
+    
+    if (err.name === 'ValidationError') {
+      const errors = {};
+      Object.values(err.errors).forEach(e => { errors[e.path] = e.message; });
+      return res.status(400).json({
+        success: false,
+        error: 'Validation failed',
+        details: errors
+      });
+    }
+    
+    res.status(500).json({
+      success: false,
+      error: 'Failed to add transaction'
+    });
+  }
+});
+
+// ======================
 // Error Handling
 // ======================
 app.use((req, res) => {
