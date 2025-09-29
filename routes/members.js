@@ -86,19 +86,32 @@ router.post('/', asyncHandler(async (req, res) => {
 
 // GET /api/members/search?q=...
 router.get('/search', asyncHandler(async (req, res) => {
-  const { query } = req.query;
+  const { query, type } = req.query;
   if (!query || query.trim().length < 2) {
     return res.status(400).json({ success:false, error: 'Search query must be at least 2 characters long' });
   }
+
   const db = mongoose.connection.db;
-  const members = await db.collection('members').find({
-    $or: [
-      { name: { $regex: query, $options: 'i' } },
-      { memberId: { $regex: query, $options: 'i' } }
+  const filter = {
+    $and: [
+      {
+        $or: [
+          { name: { $regex: query, $options: 'i' } },
+          { memberId: { $regex: query, $options: 'i' } }
+        ]
+      }
     ]
-  }).limit(10).toArray();
+  };
+
+  // Only combative members if requested
+  if (type === "combative") {
+    filter.$and.push({ "memberships.type": "combative" });
+  }
+
+  const members = await db.collection('members').find(filter).limit(10).toArray();
   res.json({ success:true, count: members.length, data: members });
 }));
+
 
 // GET /api/members/:id/enrollments
 router.get('/:id/enrollments', asyncHandler(async (req, res) => {
