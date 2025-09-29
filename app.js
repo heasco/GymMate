@@ -164,39 +164,46 @@ app.post('/api/members', async (req, res) => {
       });
     }
 
-    // Validate each membership
-    const validatedMemberships = [];
-    for (const membership of memberships) {
-      const { type, duration } = membership;
-      
-      // Validate membership type
-      if (!type || !['monthly', 'combative'].includes(type)) {
-        return res.status(400).json({
-          success: false,
-          error: 'Validation failed',
-          details: {
-            memberships: 'Each membership must have a valid type (monthly or combative)'
-          }
-        });
+// Validate each membership
+const validatedMemberships = [];
+for (const membership of memberships) {
+  const { type, duration } = membership;
+  
+  // Validate membership type
+  if (!type || !['monthly', 'combative'].includes(type)) {
+    return res.status(400).json({
+      success: false,
+      error: 'Validation failed',
+      details: {
+        memberships: 'Each membership must have a valid type (monthly or combative)'
       }
+    });
+  }
 
-      // Validate duration
-      if (!duration || duration < 1) {
-        return res.status(400).json({
-          success: false,
-          error: 'Validation failed',
-          details: {
-            memberships: 'Each membership must have a valid duration (at least 1)'
-          }
-        });
+  // Validate duration
+  if (!duration || duration < 1) {
+    return res.status(400).json({
+      success: false,
+      error: 'Validation failed',
+      details: {
+        memberships: 'Each membership must have a valid duration (at least 1)'
       }
+    });
+  }
 
-      validatedMemberships.push({
-        type,
-        duration,
-        startDate: joinDate ? new Date(joinDate) : new Date()
-      });
-    }
+  // Calculate startDate and endDate
+  const startDate = joinDate ? new Date(joinDate) : new Date();
+  const endDate = new Date(startDate);
+  endDate.setMonth(endDate.getMonth() + duration); // Assumes duration in months; adjust if needed (e.g., endDate.setDate(endDate.getDate() + duration) for days)
+
+  validatedMemberships.push({
+    type,
+    duration,
+    startDate,
+    endDate,
+    status: 'active' // Set default active status
+  });
+}
 
     // Create new member
     const newMember = new Member({
