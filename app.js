@@ -988,7 +988,6 @@ app.get('/api/combative-members', async (req, res) => {
 });
 
 // Get enrolled members for a class
-// Get enrolled members for a class
 app.get('/api/classes/:id/enrolled-members', async (req, res) => {
   try {
     const classData = await Class.findOne({ 
@@ -1015,6 +1014,7 @@ app.get('/api/classes/:id/enrolled-members', async (req, res) => {
     });
   }
 });
+
 // Remove member from class
 app.delete('/api/classes/:classId/enrollments/:memberId', async (req, res) => {
   try {
