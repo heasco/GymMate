@@ -399,8 +399,28 @@ app.post('/api/trainers', async (req, res) => {
       });
     }
 
+    // Split name into first and last
+    const nameParts = name.trim().split(/\s+/);
+    const firstName = nameParts[0].toLowerCase();
+    const lastName = nameParts.length > 1 ? nameParts[nameParts.length - 1].toLowerCase() : '';
+    const firstLetterLastName = lastName.charAt(0) || '';
+
+    // Generate username: "Trainer" + firstname + first letter of lastname
+    let username = `trainer${firstName}${firstLetterLastName}`;
+    let usernameSuffix = 0;
+    while (await Trainer.findOne({ username })) {
+      usernameSuffix++;
+      username = `trainer${firstName}${firstLetterLastName}${usernameSuffix}`;
+    }
+
+    // Generate temporary password: firstname + 4 random digits
+    const randomDigits = Math.floor(1000 + Math.random() * 9000);
+    const tempPassword = firstName + randomDigits;
+
     const newTrainer = new Trainer({
       name: name.trim(),
+      username,
+      password: tempPassword, // Will be hashed in pre-save
       specialization: specialization.trim(),
       is_available: is_available !== undefined ? Boolean(is_available) : true,
       assigned_classes: Array.isArray(assigned_classes) ? assigned_classes : [],
@@ -416,6 +436,8 @@ app.post('/api/trainers', async (req, res) => {
         trainer_id: savedTrainer.trainer_id,
         mongoId: savedTrainer._id,
         name: savedTrainer.name,
+        username: savedTrainer.username,
+        tempPassword, // Return plain temp password for display
         specialization: savedTrainer.specialization,
         is_available: savedTrainer.is_available,
         assigned_classes: savedTrainer.assigned_classes,
