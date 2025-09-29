@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
 
 // Feedback sub-schema for embedded array
 const FeedbackSchema = new mongoose.Schema({
@@ -37,6 +38,18 @@ const TrainerSchema = new mongoose.Schema({
     required: [true, 'Please add a name'],
     trim: true,
   },
+  username: {
+    type: String,
+    unique: true,
+    required: true,
+    lowercase: true,
+    trim: true
+  },
+  password: {
+    type: String,
+    required: true,
+    minlength: [6, 'Password must be at least 6 characters']
+  },
   specialization: {
     type: String,
     required: [true, 'Please add a specialization'],
@@ -56,10 +69,14 @@ const TrainerSchema = new mongoose.Schema({
   },
 }, {
   timestamps: true,
+  collection: 'trainers'
 });
 
-// Auto-generate trainer_id before saving
-TrainerSchema.pre('save', async function (next) {
+// Hash password before saving
+TrainerSchema.pre('save', async function(next) {
+  if (this.isModified('password')) {
+    this.password = await bcrypt.hash(this.password, 10);
+  }
   if (!this.isNew || this.trainer_id) return next();
 
   try {
@@ -105,7 +122,7 @@ TrainerSchema.statics.findAvailable = function () {
 
 // Clean up any existing model before creating new one
 if (mongoose.models.Trainer) {
-  mongoose.deleteModel('Trainer'); // or: delete mongoose.models.Trainer;
+  mongoose.deleteModel('Trainer');
 }
 
-module.exports = mongoose.model('Trainer', TrainerSchema);
+module.exports = mongoose.model('Trainer', TrainerSchema, 'trainers');
