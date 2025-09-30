@@ -265,4 +265,49 @@ router.patch('/:id/archive', asyncHandler(async (req, res) => {
   });
 }));
 
+// GET /api/members/:id
+router.get('/:id', asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  let query;
+  if (mongoose.Types.ObjectId.isValid(id)) {
+    query = { $or: [{ _id: id }, { memberId: id }, { username: id }] };
+  } else {
+    query = { $or: [{ memberId: id }, { username: id }] };
+  }
+  const member = await Member.findOne(query).lean();
+  if (!member) return res.status(404).json({ success: false, error: 'Member not found' });
+  delete member.password;
+  res.json({ success: true, data: member });
+}));
+
+// PUT /api/members/:id
+router.put('/:id', asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { phone, email } = req.body || {};
+
+  const updates = {};
+  if (typeof phone !== 'undefined') updates.phone = phone;
+  if (typeof email !== 'undefined') updates.email = email;
+
+  // Validation examples (adjust to your schema rules)
+  if (updates.phone && !/^\+63\d{10}$/.test(updates.phone)) {
+    return res.status(400).json({ success: false, error: 'Invalid Philippine phone format. Use +63XXXXXXXXXX' });
+  }
+  if (updates.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(updates.email)) {
+    return res.status(400).json({ success: false, error: 'Invalid email address' });
+  }
+
+  let member;
+  if (mongoose.Types.ObjectId.isValid(id)) {
+    member = await Member.findOneAndUpdate({ $or: [{ _id: id }, { memberId: id }] }, { $set: updates }, { new: true }).lean();
+  } else {
+    member = await Member.findOneAndUpdate({ memberId: id }, { $set: updates }, { new: true }).lean();
+  }
+
+  if (!member) return res.status(404).json({ success: false, error: 'Member not found' });
+  delete member.password;
+  res.json({ success: true, data: member });
+}));
+
+
 module.exports = router;
