@@ -6,8 +6,8 @@ const Member = require('../models/Member');
 const Enrollment = require('../models/Enrollment');
 
 const router = express.Router();
-//
-// POST /api/members  create
+
+// POST /api/members - Create a new member
 router.post('/', asyncHandler(async (req, res) => {
   console.log('[Member] Creation request received:', req.body);
 
@@ -21,10 +21,10 @@ router.post('/', asyncHandler(async (req, res) => {
     const errors = {};
     if (!name) errors.name = 'Name is required';
     if (!memberships || !Array.isArray(memberships) || memberships.length === 0) errors.memberships = 'At least one membership is required';
-    return res.status(400).json({ success:false, error:'Validation failed', details: errors });
+    return res.status(400).json({ success: false, error: 'Validation failed', details: errors });
   }
 
-  // generate username
+  // Generate username
   const nameParts = name.split(/\s+/);
   const firstName = nameParts[0].toLowerCase();
   const lastName = nameParts.slice(1).join('').toLowerCase();
@@ -38,15 +38,15 @@ router.post('/', asyncHandler(async (req, res) => {
   const randomDigits = Math.floor(1000 + Math.random() * 9000);
   const tempPassword = firstName + randomDigits;
 
-  // validate memberships
+  // Validate memberships
   const validatedMemberships = [];
   for (const membership of memberships) {
     const { type, duration } = membership;
     if (!type || !['monthly', 'combative'].includes(type)) {
-      return res.status(400).json({ success:false, error:'Validation failed', details: { memberships: 'Each membership must have a valid type (monthly or combative)'}});
+      return res.status(400).json({ success: false, error: 'Validation failed', details: { memberships: 'Each membership must have a valid type (monthly or combative)' } });
     }
     if (!duration || duration < 1) {
-      return res.status(400).json({ success:false, error:'Validation failed', details: { memberships: 'Each membership must have a valid duration (at least 1)'}});
+      return res.status(400).json({ success: false, error: 'Validation failed', details: { memberships: 'Each membership must have a valid duration (at least 1)' } });
     }
     const startDate = joinDate ? new Date(joinDate) : new Date();
     const endDate = new Date(startDate);
@@ -84,7 +84,7 @@ router.post('/', asyncHandler(async (req, res) => {
   });
 }));
 
-// GET /api/members/search?q=&type=combative
+// GET /api/members/search?q=&type=combative - Search members by query
 router.get('/search', asyncHandler(async (req, res) => {
   const { query, type } = req.query;
 
@@ -114,8 +114,7 @@ router.get('/search', asyncHandler(async (req, res) => {
   res.json({ success: true, count: members.length, data: members });
 }));
 
-
-// GET /api/members/:id/enrollments
+// GET /api/members/:id/enrollments - Get member enrollments
 router.get('/:id/enrollments', asyncHandler(async (req, res) => {
   const member_id = req.params.id;
   const enrollments = await Enrollment.find({ member_id, status: 'active' })
@@ -125,9 +124,7 @@ router.get('/:id/enrollments', asyncHandler(async (req, res) => {
   res.json({ success: true, count: enrollments.length, data: enrollments });
 }));
 
-module.exports = router;
-
-// GET /api/combative-members
+// GET /api/combative-members - Get all combative members
 router.get('/combative-members', asyncHandler(async (req, res) => {
   const db = mongoose.connection.db;
   const today = new Date();
@@ -145,3 +142,111 @@ router.get('/combative-members', asyncHandler(async (req, res) => {
   res.json({ success: true, count: members.length, data: members });
 }));
 
+// GET /api/members?status=active|inactive|suspended - List all members with optional status filter
+router.get('/', asyncHandler(async (req, res) => {
+  const { status } = req.query;
+  const filter = status ? { status: { $in: status.split(',') } } : {};
+  
+  const members = await Member.find(filter).sort({ createdAt: -1 });
+  res.json({ success: true, count: members.length, data: members });
+}));
+
+// PUT /api/members/:id - Update member details
+router.put('/:id', asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { name, phone, email, memberships } = req.body;
+
+  let query = { memberId: id };
+  if (mongoose.Types.ObjectId.isValid(id)) {
+    query = { $or: [{ memberId: id }, { _id: new mongoose.Types.ObjectId(id) }] };
+  }
+
+  const updateData = {};
+  if (name) updateData.name = name.trim();
+  if (phone) updateData.phone = phone.trim();
+  if (email) updateData.email = email.trim().toLowerCase();
+  if (memberships && Array.isArray(memberships)) {
+    const validatedMemberships = memberships.map(m => {
+      const membership = {
+        type: m.type,
+        duration: m.duration,
+        startDate: m.startDate ? new Date(m.startDate) : new Date(),
+        status: m.status || 'active'
+      };
+      if (m.type === 'monthly') {
+        membership.endDate = new Date(membership.startDate);
+        membership.endDate.setMonth(membership.endDate.getMonth() + m.duration);
+      } else if (m.type === 'combative') {
+        membership.remainingSessions = m.duration;
+        membership.endDate = new Date(membership.startDate);
+        membership.endDate.setMonth(membership.endDate.getMonth() + 6);
+      }
+      return membership;
+    });
+    updateData.memberships = validatedMemberships;
+  }
+
+  if (Object.keys(updateData).length === 0) {
+    return res.status(400).json({ success: false, error: 'No valid fields to update' });
+  }
+
+  const updatedMember = await Member.findOneAndUpdate(
+    query,
+    { $set: updateData },
+    { new: true, runValidators: true }
+  );
+
+  if (!updatedMember) {
+    return res.status(404).json({ success: false, error: 'Member not found' });
+  }
+
+  res.json({
+    success: true,
+    message: 'Member updated successfully',
+    data: {
+      memberId: updatedMember.memberId,
+      name: updatedMember.name,
+      phone: updatedMember.phone,
+      email: updatedMember.email,
+      memberships: updatedMember.memberships,
+      status: updatedMember.status
+    }
+  });
+}));
+
+// PATCH /api/members/:id/archive - Archive a member (set status to inactive or suspended)
+router.patch('/:id/archive', asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { status } = req.body;
+
+  if (!['inactive', 'suspended'].includes(status)) {
+    return res.status(400).json({ success: false, error: 'Invalid status. Must be inactive or suspended' });
+  }
+
+  let query = { memberId: id };
+  if (mongoose.Types.ObjectId.isValid(id)) {
+    query = { $or: [{ memberId: id }, { _id: new mongoose.Types.ObjectId(id) }] };
+  }
+
+  const updatedMember = await Member.findOneAndUpdate(
+    query,
+    { $set: { status } },
+    { new: true }
+  );
+
+  if (!updatedMember) {
+    return res.status(404).json({ success: false, error: 'Member not found' });
+  }
+
+  res.json({
+    success: true,
+    message: `Member ${status} successfully`,
+    data: {
+      memberId: updatedMember.memberId,
+      name: updatedMember.name,
+      status: updatedMember.status
+    }
+  });
+}));
+
+module.exports = router;
