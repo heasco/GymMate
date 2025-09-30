@@ -104,7 +104,6 @@ router.get('/search', asyncHandler(async (req, res) => {
     ]
   };
 
-  // Only combative members if requested
   if (type === 'combative') {
     filter.$and.push({ 'memberships.type': 'combative' });
   }
@@ -151,23 +150,22 @@ router.get('/', asyncHandler(async (req, res) => {
   res.json({ success: true, count: members.length, data: members });
 }));
 
-
-// GET /api/members/:id  -> returns single member (by memberId or _id)
+// GET /api/members/:id - Get single member by memberId or _id
 router.get('/:id', asyncHandler(async (req, res) => {
   const { id } = req.params;
-  let query = { memberId: id };
+  let query = { $or: [{ memberId: id }, { username: id }] };
   if (mongoose.Types.ObjectId.isValid(id)) {
-    query = { $or: [{ memberId: id }, { _id: new mongoose.Types.ObjectId(id) }] };
-  } else if (typeof id === 'string' && id.includes('@') === false && id.length === 24) {
-    // extra guard, but primary check above is fine
+    query.$or.push({ _id: new mongoose.Types.ObjectId(id) });
   }
+
   const member = await Member.findOne(query).lean();
   if (!member) return res.status(404).json({ success: false, error: 'Member not found' });
+
+  delete member.password;
   res.json({ success: true, data: member });
 }));
 
-
-// PUT /api/members/:id - Update member details
+// PUT /api/members/:id - Update member details (admin use)
 router.put('/:id', asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { name, phone, email, memberships } = req.body;
@@ -230,6 +228,43 @@ router.put('/:id', asyncHandler(async (req, res) => {
   });
 }));
 
+// PUT /api/members/:id/profile - Update member profile (phone and email only, member use)
+router.put('/:id/profile', asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { phone, email } = req.body || {};
+
+  const updates = {};
+  if (typeof phone !== 'undefined') updates.phone = phone ? phone.trim() : '';
+  if (typeof email !== 'undefined') updates.email = email ? email.trim().toLowerCase() : '';
+
+  if (Object.keys(updates).length === 0) {
+    return res.status(400).json({ success: false, error: 'No valid fields to update' });
+  }
+
+  if (updates.phone && updates.phone !== '' && !/^\+63\d{10}$/.test(updates.phone)) {
+    return res.status(400).json({ success: false, error: 'Invalid Philippine phone format. Use +63XXXXXXXXXX' });
+  }
+  if (updates.email && updates.email !== '' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(updates.email)) {
+    return res.status(400).json({ success: false, error: 'Invalid email address' });
+  }
+
+  let query = { memberId: id };
+  if (mongoose.Types.ObjectId.isValid(id)) {
+    query = { $or: [{ memberId: id }, { _id: new mongoose.Types.ObjectId(id) }] };
+  }
+
+  const member = await Member.findOneAndUpdate(
+    query,
+    { $set: updates },
+    { new: true, runValidators: true }
+  ).lean();
+
+  if (!member) return res.status(404).json({ success: false, error: 'Member not found' });
+
+  delete member.password;
+  res.json({ success: true, message: 'Profile updated successfully', data: member });
+}));
+
 // PATCH /api/members/:id/archive - Archive a member (set status to inactive or suspended)
 router.patch('/:id/archive', asyncHandler(async (req, res) => {
   const { id } = req.params;
@@ -264,50 +299,5 @@ router.patch('/:id/archive', asyncHandler(async (req, res) => {
     }
   });
 }));
-
-// GET /api/members/:id
-router.get('/:id', asyncHandler(async (req, res) => {
-  const { id } = req.params;
-  let query;
-  if (mongoose.Types.ObjectId.isValid(id)) {
-    query = { $or: [{ _id: id }, { memberId: id }, { username: id }] };
-  } else {
-    query = { $or: [{ memberId: id }, { username: id }] };
-  }
-  const member = await Member.findOne(query).lean();
-  if (!member) return res.status(404).json({ success: false, error: 'Member not found' });
-  delete member.password;
-  res.json({ success: true, data: member });
-}));
-
-// PUT /api/members/:id
-router.put('/:id', asyncHandler(async (req, res) => {
-  const { id } = req.params;
-  const { phone, email } = req.body || {};
-
-  const updates = {};
-  if (typeof phone !== 'undefined') updates.phone = phone;
-  if (typeof email !== 'undefined') updates.email = email;
-
-  // Validation examples (adjust to your schema rules)
-  if (updates.phone && !/^\+63\d{10}$/.test(updates.phone)) {
-    return res.status(400).json({ success: false, error: 'Invalid Philippine phone format. Use +63XXXXXXXXXX' });
-  }
-  if (updates.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(updates.email)) {
-    return res.status(400).json({ success: false, error: 'Invalid email address' });
-  }
-
-  let member;
-  if (mongoose.Types.ObjectId.isValid(id)) {
-    member = await Member.findOneAndUpdate({ $or: [{ _id: id }, { memberId: id }] }, { $set: updates }, { new: true }).lean();
-  } else {
-    member = await Member.findOneAndUpdate({ memberId: id }, { $set: updates }, { new: true }).lean();
-  }
-
-  if (!member) return res.status(404).json({ success: false, error: 'Member not found' });
-  delete member.password;
-  res.json({ success: true, data: member });
-}));
-
 
 module.exports = router;
