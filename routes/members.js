@@ -151,16 +151,18 @@ router.get('/', asyncHandler(async (req, res) => {
   res.json({ success: true, count: members.length, data: members });
 }));
 
+
 // GET /api/members/:id  -> returns single member (by memberId or _id)
 router.get('/:id', asyncHandler(async (req, res) => {
   const { id } = req.params;
   let query = { memberId: id };
   if (mongoose.Types.ObjectId.isValid(id)) {
     query = { $or: [{ memberId: id }, { _id: new mongoose.Types.ObjectId(id) }] };
+  } else if (typeof id === 'string' && id.includes('@') === false && id.length === 24) {
+    // extra guard, but primary check above is fine
   }
   const member = await Member.findOne(query).lean();
   if (!member) return res.status(404).json({ success: false, error: 'Member not found' });
-  // For consistency with other responses: return { success: true, data: member }
   res.json({ success: true, data: member });
 }));
 
