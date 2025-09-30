@@ -1,20 +1,250 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta http-equiv="X-UA-Compatible" content="IE=edge">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Document</title>
-    </head>
-    <body>
-        <h1>Member Dashboard</h1>
-        <a href="member-dashboard.html">Member Dashboard</a>
-        <a href="member-profile.html">Member Profile</a>
-        <a href="member-transaction.html">Member Transaction</a>
-        <a href="member-class-feedback.html">Member Class Feedback</a>
-        <a href="member-logout.html">Member Logout</a>
-    </body>
-</html> 
-        <a href="member-logout.html">Member Logout</a>
-    </body>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Member Dashboard - GOALS Gym</title>
+    <link rel="stylesheet" href="/style.css">
+    <style>
+        .dashboard-container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .dashboard-title {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .member-details {
+            margin-bottom: 20px;
+        }
+        .member-details h3 {
+            margin-bottom: 10px;
+        }
+        .member-details p {
+            margin: 5px 0;
+        }
+        .edit-form {
+            display: none;
+            margin-top: 20px;
+        }
+        .edit-form.active {
+            display: block;
+        }
+        .input-group {
+            margin-bottom: 15px;
+        }
+        .input-label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .input-field {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .action-button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            background-color: #4CAF50;
+            color: white;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        .action-button:hover {
+            background-color: #45a049;
+        }
+        .logout-button {
+            background-color: #e91e63;
+        }
+        .logout-button:hover {
+            background-color: #d81b60;
+        }
+        .error-message, .success-message {
+            display: none;
+            padding: 10px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+        .error-message {
+            background-color: #f2dede;
+            color: #a94442;
+        }
+        .success-message {
+            background-color: #dff0d8;
+            color: #3c763d;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <h1 class="dashboard-title">Member Dashboard</h1>
+        <div id="successMessage" class="success-message"></div>
+        <div id="errorMessage" class="error-message"></div>
+        <div class="member-details">
+            <h3>Welcome, <span id="memberName"></span></h3>
+            <p><strong>Membership Types:</strong> <span id="membershipTypes"></span></p>
+            <p><strong>Memberships:</strong></p>
+            <ul id="membershipList"></ul>
+            <p><strong>Phone:</strong> <span id="memberPhone"></span></p>
+            <p><strong>Email:</strong> <span id="memberEmail"></span></p>
+        </div>
+        <div class="nav-buttons">
+            <button class="action-button" onclick="showEditForm()">Edit Profile</button>
+            <button class="action-button logout-button" onclick="logout()">Logout</button>
+        </div>
+        <form id="editProfileForm" class="edit-form">
+            <div class="input-group">
+                <label for="editPhone" class="input-label">Phone (e.g., +639123456789):</label>
+                <input type="text" id="editPhone" name="phone" class="input-field" placeholder="Leave blank to remove">
+            </div>
+            <div class="input-group">
+                <label for="editEmail" class="input-label">Email:</label>
+                <input type="text" id="editEmail" name="email" class="input-field" placeholder="Leave blank to remove">
+            </div>
+            <div class="nav-buttons">
+                <button type="submit" class="action-button">Save Changes</button>
+                <button type="button" class="action-button" onclick="hideEditForm()">Cancel</button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        const API_URL = 'https://flex-it-goalsgym-it-project-2.onrender.com';
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const authUser = JSON.parse(localStorage.getItem('authUser') || '{}');
+            if (!authUser.user || authUser.role !== 'member') {
+                window.location.href = '/member-login.html';
+                return;
+            }
+
+            await loadMemberDetails(authUser.user.memberId);
+        });
+
+        async function loadMemberDetails(memberId) {
+            const errorMessage = document.getElementById('errorMessage');
+            try {
+                const response = await fetch(`${API_URL}/api/members/${memberId}`, {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}`
+                    }
+                });
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.error || 'Failed to load member details');
+                }
+
+                const member = result.data;
+                document.getElementById('memberName').textContent = member.name;
+                document.getElementById('memberPhone').textContent = member.phone || '-';
+                document.getElementById('memberEmail').textContent = member.email || '-';
+
+                const membershipTypes = [...new Set(member.memberships.map(m => m.type))].join(', ') || 'None';
+                document.getElementById('membershipTypes').textContent = membershipTypes;
+
+                const membershipList = document.getElementById('membershipList');
+                membershipList.innerHTML = '';
+                if (member.memberships && member.memberships.length > 0) {
+                    member.memberships.forEach(m => {
+                        const li = document.createElement('li');
+                        const durationLabel = m.type === 'combative' ? `${m.remainingSessions || m.duration} sessions` : `${m.duration} months`;
+                        li.textContent = `${m.type} (${m.status}, ${durationLabel}, ends ${new Date(m.endDate).toLocaleDateString()})`;
+                        membershipList.appendChild(li);
+                    });
+                } else {
+                    const li = document.createElement('li');
+                    li.textContent = 'No active memberships';
+                    membershipList.appendChild(li);
+                }
+            } catch (error) {
+                console.error('Error loading member details:', error);
+                errorMessage.textContent = error.message;
+                errorMessage.style.display = 'block';
+                setTimeout(() => errorMessage.style.display = 'none', 5000);
+            }
+        }
+
+        function showEditForm() {
+            const authUser = JSON.parse(localStorage.getItem('authUser') || '{}');
+            if (!authUser.user) return;
+
+            document.getElementById('editPhone').value = authUser.user.phone || '';
+            document.getElementById('editEmail').value = authUser.user.email || '';
+            document.getElementById('editProfileForm').classList.add('active');
+        }
+
+        function hideEditForm() {
+            document.getElementById('editProfileForm').classList.remove('active');
+        }
+
+        document.getElementById('editProfileForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const authUser = JSON.parse(localStorage.getItem('authUser') || '{}');
+            if (!authUser.user) {
+                window.location.href = '/member-login.html';
+                return;
+            }
+
+            const phone = document.getElementById('editPhone').value.trim();
+            const email = document.getElementById('editEmail').value.trim();
+            const successMessage = document.getElementById('successMessage');
+            const errorMessage = document.getElementById('errorMessage');
+
+            const updates = {};
+            if (phone) updates.phone = phone;
+            if (email) updates.email = email;
+
+            try {
+                const response = await fetch(`${API_URL}/api/members/${authUser.user.memberId}/profile`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}`
+                    },
+                    body: JSON.stringify(updates)
+                });
+                const result = await response.json();
+
+                if (response.ok) {
+                    successMessage.textContent = result.message;
+                    successMessage.style.display = 'block';
+                    setTimeout(() => successMessage.style.display = 'none', 5000);
+
+                    // Update localStorage with new details
+                    authUser.user.phone = result.data.phone || '';
+                    authUser.user.email = result.data.email || '';
+                    localStorage.setItem('authUser', JSON.stringify(authUser));
+
+                    // Refresh displayed details
+                    document.getElementById('memberPhone').textContent = result.data.phone || '-';
+                    document.getElementById('memberEmail').textContent = result.data.email || '-';
+                    hideEditForm();
+                } else {
+                    throw new Error(result.error || 'Failed to update profile');
+                }
+            } catch (error) {
+                console.error('Error updating profile:', error);
+                errorMessage.textContent = error.message;
+                errorMessage.style.display = 'block';
+                setTimeout(() => errorMessage.style.display = 'none', 5000);
+            }
+        });
+
+        function logout() {
+            localStorage.removeItem('authUser');
+            localStorage.removeItem('authToken');
+            window.location.href = '/member-login.html';
+        }
+    </script>
+</body>
 </html>
