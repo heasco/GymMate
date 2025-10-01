@@ -87,6 +87,18 @@ router.delete('/:id', asyncHandler(async (req, res) => {
   res.json({ success:true, message: 'Class deleted successfully' });
 }));
 
+// GET /returns only classes for a given trainer
+router.get('/', asyncHandler(async (req, res) => {
+    const filter = {};
+    if (req.query.trainerid) {
+        filter.trainerid = req.query.trainerid;
+    }
+    // Supports both original and filtered (append your original code after this)
+    const classes = await Class.find(filter).sort({ createdAt: -1 });
+    res.json({ success: true, count: classes.length, data: classes });
+}));
+
+
 // GET /api/classes/:id/enrollments
 router.get('/:id/enrollments', asyncHandler(async (req, res) => {
   const class_id = req.params.id;
