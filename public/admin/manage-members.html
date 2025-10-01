@@ -3,232 +3,109 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Manage Members - Goals Gym</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 20px;
-            background-color: #f4f4f4;
-        }
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-        .server-status {
-            padding: 10px;
-            margin-bottom: 20px;
-            border-radius: 4px;
-        }
-        .server-connected {
-            background-color: #dff0d8;
-            color: #3c763d;
-        }
-        .server-disconnected {
-            background-color: #f2dede;
-            color: #a94442;
-        }
-        .success-message, .error-message {
-            display: none;
-            padding: 10px;
-            margin-bottom: 20px;
-            border-radius: 4px;
-        }
-        .success-message {
-            background-color: #dff0d8;
-            color: #3c763d;
-        }
-        .error-message {
-            background-color: #f2dede;
-            color: #a94442;
-        }
-        .section {
-            display: none;
-            background-color: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        .section.active {
-            display: block;
-        }
-        .form-group {
-            margin-bottom: 15px;
-        }
-        label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-        }
-        select, input[type="text"], input[type="number"], input[type="date"] {
-            width: 100%;
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            box-sizing: border-box;
-        }
-        select {
-            height: 40px;
-        }
-        .nav-buttons {
-            margin-top: 20px;
-        }
-        button {
-            padding: 10px 20px;
-            margin-right: 10px;
-            border: none;
-            border-radius: 4px;
-            color: white;
-            cursor: pointer;
-        }
-        .action-button {
-            background-color: #4CAF50;
-        }
-        .action-button:hover {
-            background-color: #45a049;
-        }
-        .archive-button {
-            background-color: #e91e63;
-        }
-        .archive-button:hover {
-            background-color: #d81b60;
-        }
-        .member-list {
-            margin-top: 20px;
-        }
-        .member-list table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        .member-list th, .member-list td {
-            padding: 10px;
-            border: 1px solid #ddd;
-            text-align: left;
-        }
-        .member-list th {
-            background-color: #f8f8f8;
-        }
-        .search-group {
-            position: relative;
-            display: flex;
-            gap: 10px;
-        }
-        .search-group input {
-            flex: 1;
-        }
-        .autocomplete-suggestions {
-            position: absolute;
-            top: 100%;
-            left: 0;
-            right: 0;
-            background-color: white;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            z-index: 1000;
-            max-height: 200px;
-            overflow-y: auto;
-            display: none;
-        }
-        .autocomplete-suggestion {
-            padding: 8px;
-            cursor: pointer;
-        }
-        .autocomplete-suggestion:hover {
-            background-color: #f0f0f0;
-        }
-        .membership-container {
-            border: 1px solid #ddd;
-            padding: 10px;
-            margin-bottom: 10px;
-            border-radius: 4px;
-        }
-        .membership-container h4 {
-            margin-top: 0;
-        }
-        .add-membership {
-            background-color: #2196F3;
-        }
-        .add-membership:hover {
-            background-color: #1e88e5;
-        }
-    </style>
+    <title>Manage Members - GOALS Gym</title>
+    <link rel="stylesheet" href="./admin-css/admin-mainpage.css">
+    <link rel="stylesheet" href="./admin-css/manage-members.css">
 </head>
 <body>
-    <div class="container">
-        <div id="serverStatus" class="server-status">Checking server connection...</div>
-        <div id="successMessage" class="success-message"></div>
-        <div id="errorMessage" class="error-message"></div>
-
-        <div id="memberListSection" class="section active">
-            <h2>Manage Members</h2>
-            <div class="form-group">
-                <label>Search Members:</label>
-                <div class="search-group">
-                    <input type="text" id="member_search" placeholder="Enter name or member ID">
-                    <div id="autocompleteSuggestions" class="autocomplete-suggestions"></div>
+    <div class="admin-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h2>GOALS Gym Admin</h2>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="./add-classes.html"><span>Add Classes</span></a>
+                <a href="./add-member.html"><span>Add Member</span></a>
+                <a href="./manage-members.html"><span>Manage Member</span></a>
+                <a href="./add-trainer.html"><span>Add Trainer</span></a>
+                <a href="./manage-class-enrollment.html"><span>Manage Enrollment</span></a>
+                <a href="./add-transaction.html"><span>Add Transaction</span></a>
+                <a href="./view-classes.html"><span>View Classes</span></a>
+                <a href="./trainer-schedule.html"><span>Trainer Schedule</span></a>
+            </nav>
+        </aside>
+        <!-- Header -->
+        <header class="header">
+            <button class="menu-toggle" id="menuToggle">☰</button>
+            <h1>Manage Members</h1>
+            <button class="logout-btn" id="logoutBtn">Logout</button>
+        </header>
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="container">
+                <div id="serverStatus" class="server-status">Checking server connection...</div>
+                <div id="successMessage" class="success-message"></div>
+                <div id="errorMessage" class="error-message"></div>
+                <div id="memberListSection" class="section active">
+                    <h2>Manage Members</h2>
+                    <div class="form-group">
+                        <label>Search Members:</label>
+                        <div class="search-group">
+                            <input type="text" id="member_search" placeholder="Enter name or member ID">
+                            <div id="autocompleteSuggestions" class="autocomplete-suggestions"></div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="status_filter">Filter by Status:</label>
+                        <select id="status_filter" name="status_filter">
+                            <option value="">All Statuses</option>
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                            <option value="suspended">Suspended</option>
+                        </select>
+                    </div>
+                    <div id="memberList" class="member-list">
+                        <h3>Members</h3>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Member ID</th>
+                                    <th>Name</th>
+                                    <th>Phone</th>
+                                    <th>Email</th>
+                                    <th>Memberships</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="memberListBody"></tbody>
+                        </table>
+                    </div>
+                    <div class="nav-buttons">
+                        <button type="button" class="action-button" onclick="window.location.href='add-classes.html'">Back to Add Class</button>
+                    </div>
+                </div>
+                <div id="editMemberSection" class="section">
+                    <h2>Edit Member</h2>
+                    <form id="editMemberForm">
+                        <input type="hidden" id="edit_member_id" name="member_id">
+                        <div class="form-group">
+                            <label for="edit_name">Name:</label>
+                            <input type="text" id="edit_name" name="name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="edit_phone">Phone (e.g., +639123456789):</label>
+                            <input type="text" id="edit_phone" name="phone">
+                        </div>
+                        <div class="form-group">
+                            <label for="edit_email">Email:</label>
+                            <input type="text" id="edit_email" name="email">
+                        </div>
+                        <div id="membershipList">
+                            <h3>Memberships</h3>
+                            <div id="membershipsContainer"></div>
+                            <button type="button" class="add-membership" onclick="addMembershipField()">Add New Membership</button>
+                        </div>
+                        <div class="nav-buttons">
+                            <button type="submit" class="action-button">Update Member</button>
+                            <button type="button" class="action-button" onclick="showMemberList()">Back to Member List</button>
+                        </div>
+                    </form>
                 </div>
             </div>
-            <div class="form-group">
-                <label for="status_filter">Filter by Status:</label>
-                <select id="status_filter" name="status_filter">
-                    <option value="">All Statuses</option>
-                    <option value="active">Active</option>
-                    <option value="inactive">Inactive</option>
-                    <option value="suspended">Suspended</option>
-                </select>
-            </div>
-            <div id="memberList" class="member-list">
-                <h3>Members</h3>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Member ID</th>
-                            <th>Name</th>
-                            <th>Phone</th>
-                            <th>Email</th>
-                            <th>Memberships</th>
-                            <th>Status</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="memberListBody"></tbody>
-                </table>
-            </div>
-            <div class="nav-buttons">
-                <button type="button" class="action-button" onclick="window.location.href='add-classes.html'">Back to Add Class</button>
-            </div>
-        </div>
-
-        <div id="editMemberSection" class="section">
-            <h2>Edit Member</h2>
-            <form id="editMemberForm">
-                <input type="hidden" id="edit_member_id" name="member_id">
-                <div class="form-group">
-                    <label for="edit_name">Name:</label>
-                    <input type="text" id="edit_name" name="name" required>
-                </div>
-                <div class="form-group">
-                    <label for="edit_phone">Phone (e.g., +639123456789):</label>
-                    <input type="text" id="edit_phone" name="phone">
-                </div>
-                <div class="form-group">
-                    <label for="edit_email">Email:</label>
-                    <input type="text" id="edit_email" name="email">
-                </div>
-                <div id="membershipList">
-                    <h3>Memberships</h3>
-                    <div id="membershipsContainer"></div>
-                    <button type="button" class="add-membership" onclick="addMembershipField()">Add New Membership</button>
-                </div>
-                <div class="nav-buttons">
-                    <button type="submit" class="action-button">Update Member</button>
-                    <button type="button" class="action-button" onclick="showMemberList()">Back to Member List</button>
-                </div>
-            </form>
-        </div>
+        </main>
     </div>
-
     <script>
         const SERVER_URL = 'https://flex-it-goalsgym-it-project-2.onrender.com';
         let debounceTimeout;

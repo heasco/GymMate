@@ -3,199 +3,97 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Manage Class Enrollment - Goals Gym</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 20px;
-            background-color: #f4f4f4;
-        }
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-        .server-status {
-            padding: 10px;
-            margin-bottom: 20px;
-            border-radius: 4px;
-        }
-        .server-connected {
-            background-color: #dff0d8;
-            color: #3c763d;
-        }
-        .server-disconnected {
-            background-color: #f2dede;
-            color: #a94442;
-        }
-        .success-message {
-            display: none;
-            padding: 10px;
-            margin-bottom: 20px;
-            background-color: #dff0d8;
-            color: #3c763d;
-            border-radius: 4px;
-        }
-        .error-message {
-            display: none;
-            padding: 10px;
-            margin-bottom: 20px;
-            background-color: #f2dede;
-            color: #a94442;
-            border-radius: 4px;
-        }
-        .section {
-            display: none;
-            background-color: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        .section.active {
-            display: block;
-        }
-        .form-group {
-            margin-bottom: 15px;
-        }
-        label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-        }
-        select, input[type="text"], input[type="number"] {
-            width: 100%;
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            box-sizing: border-box;
-        }
-        select {
-            height: 40px;
-        }
-        .nav-buttons {
-            margin-top: 20px;
-        }
-        button {
-            padding: 10px 20px;
-            margin-right: 10px;
-            border: none;
-            border-radius: 4px;
-            background-color: #4CAF50;
-            color: white;
-            cursor: pointer;
-        }
-        button:hover {
-            background-color: #45a049;
-        }
-        .member-list {
-            margin-top: 20px;
-        }
-        .member-list table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        .member-list th, .member-list td {
-            padding: 10px;
-            border: 1px solid #ddd;
-            text-align: left;
-        }
-        .member-list th {
-            background-color: #f8f8f8;
-        }
-        .remove-button {
-            background-color: #e91e63;
-        }
-        .remove-button:hover {
-            background-color: #d81b60;
-        }
-        .search-group {
-            position: relative;
-            display: flex;
-            gap: 10px;
-        }
-        .search-group input {
-            flex: 1;
-        }
-        .autocomplete-suggestions {
-            position: absolute;
-            top: 100%;
-            left: 0;
-            right: 0;
-            background-color: white;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            z-index: 1000;
-            max-height: 200px;
-            overflow-y: auto;
-            display: none;
-        }
-        .autocomplete-suggestion {
-            padding: 8px;
-            cursor: pointer;
-        }
-        .autocomplete-suggestion:hover {
-            background-color: #f0f0f0;
-        }
-    </style>
+    <title>Manage Class Enrollment - GOALS Gym</title>
+    <!-- Reference the admin dashboard CSS and your new enrollment CSS -->
+    <link rel="stylesheet" href="./admin-css/admin-mainpage.css">
+    <link rel="stylesheet" href="./admin-css/manage-class-enrollment.css">
 </head>
 <body>
-    <div class="container">
-        <div id="serverStatus" class="server-status">Checking server connection...</div>
-        <div id="successMessage" class="success-message"></div>
-        <div id="errorMessage" class="error-message"></div>
-
-        <div id="enrollmentSection" class="section active">
-            <h2>Manage Class Enrollment</h2>
-            <div class="form-group">
-                <label for="class_id">Select Class:</label>
-                <select id="class_id" name="class_id" required>
-                    <option value="">Loading classes...</option>
-                </select>
+    <div class="admin-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h2>GOALS Gym Admin</h2>
             </div>
+            <nav class="sidebar-nav">
+                <a href="./add-classes.html"><span>Add Classes</span></a>
+                <a href="./add-member.html"><span>Add Member</span></a>
+                <a href="./manage-members.html"><span>Manage Member</span></a>
+                <a href="./add-trainer.html"><span>Add Trainer</span></a>
+                <a href="./manage-class-enrollment.html"><span>Manage Enrollment</span></a>
+                <a href="./add-transaction.html"><span>Add Transaction</span></a>
+                <a href="./view-classes.html"><span>View Classes</span></a>
+                <a href="./trainer-schedule.html"><span>Trainer Schedule</span></a>
+            </nav>
+        </aside>
 
-            <div class="form-group">
-                <label>Search Combative Members:</label>
-                <div class="search-group">
-                    <input type="text" id="member_search" placeholder="Enter name or member ID">
-                    <div id="autocompleteSuggestions" class="autocomplete-suggestions"></div>
+        <!-- Header -->
+        <header class="header">
+            <button class="menu-toggle" id="menuToggle">☰</button>
+            <h1>Manage Class Enrollment</h1>
+            <button class="logout-btn" id="logoutBtn">Logout</button>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="container">
+                <div id="serverStatus" class="server-status">Checking server connection...</div>
+                <div id="successMessage" class="success-message"></div>
+                <div id="errorMessage" class="error-message"></div>
+
+                <div id="enrollmentSection" class="section active">
+                    <h2>Manage Class Enrollment</h2>
+                    <div class="form-group">
+                        <label for="class_id">Select Class:</label>
+                        <select id="class_id" name="class_id" required>
+                            <option value="">Loading classes...</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Search Combative Members:</label>
+                        <div class="search-group">
+                            <input type="text" id="member_search" placeholder="Enter name or member ID">
+                            <div id="autocompleteSuggestions" class="autocomplete-suggestions"></div>
+                        </div>
+                    </div>
+
+                    <div id="searchResults" class="member-list">
+                        <h3>Available Combative Members</h3>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Member ID</th>
+                                    <th>Name</th>
+                                    <th>Membership Status</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="searchResultsBody"></tbody>
+                        </table>
+                    </div>
+
+                    <div id="enrolledMembers" class="member-list">
+                        <h3>Enrolled Members</h3>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Member ID</th>
+                                    <th>Name</th>
+                                    <th>Enrollment Date</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="enrolledMembersBody"></tbody>
+                        </table>
+                    </div>
+
+                    <div class="nav-buttons">
+                        <button type="button" onclick="window.location.href='add-classes.html'">Back to Add Class</button>
+                    </div>
                 </div>
             </div>
-
-            <div id="searchResults" class="member-list">
-                <h3>Available Combative Members</h3>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Member ID</th>
-                            <th>Name</th>
-                            <th>Membership Status</th>
-                            <th>Action</th>
-                        </tr>
-                    </thead>
-                    <tbody id="searchResultsBody"></tbody>
-                </table>
-            </div>
-
-            <div id="enrolledMembers" class="member-list">
-                <h3>Enrolled Members</h3>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Member ID</th>
-                            <th>Name</th>
-                            <th>Enrollment Date</th>
-                            <th>Action</th>
-                        </tr>
-                    </thead>
-                    <tbody id="enrolledMembersBody"></tbody>
-                </table>
-            </div>
-
-            <div class="nav-buttons">
-                <button type="button" onclick="window.location.href='add-classes.html'">Back to Add Class</button>
-            </div>
-        </div>
+        </main>
     </div>
 
     <script>
@@ -203,6 +101,33 @@
         let debounceTimeout;
 
         document.addEventListener('DOMContentLoaded', async function() {
+            // Ensure authentication like the other dashboard pages
+            const menuToggle = document.getElementById('menuToggle');
+            const sidebar = document.querySelector('.sidebar');
+            const logoutBtn = document.getElementById('logoutBtn');
+            const authUser = JSON.parse(localStorage.getItem('authUser'));
+
+            if (!authUser || (Date.now() - authUser.timestamp > 3600000)) {
+                localStorage.removeItem('authUser');
+                window.location.href = '../admin-login.html';
+                return;
+            }
+
+            menuToggle.addEventListener('click', () => sidebar.classList.toggle('collapsed'));
+            logoutBtn.addEventListener('click', () => {
+                localStorage.removeItem('authUser');
+                window.location.href = '../admin-login.html';
+            });
+            document.addEventListener('click', (e) => {
+                if (window.innerWidth <= 768 && !sidebar.contains(e.target) && !menuToggle.contains(e.target)) {
+                    sidebar.classList.remove('collapsed');
+                }
+            });
+            sidebar.addEventListener('transitionend', () => {
+                document.body.style.overflow = (window.innerWidth <= 768 && sidebar.classList.contains('collapsed')) ? 'hidden' : 'auto';
+            });
+
+            // Your original initialization
             await checkServerConnection();
             await fetchClasses();
             setupSearchListener();

@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enroll Members - Goals Gym</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f7f9;
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        h1, h2, h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .section {
+            margin-bottom: 25px;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+        
+        input[type="text"], input[type="tel"], input[type="email"], select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        
+        button:hover {
+            background-color: #2980b9;
+        }
+        
+        button:disabled {
+            background-color: #95a5a6;
+            cursor: not-allowed;
+        }
+        
+        .search-results {
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            max-height: 200px;
+            overflow-y: auto;
+            margin-top: 5px;
+        }
+        
+        .member-result, .class-result {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+        }
+        
+        .member-result:hover, .class-result:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .member-info, .class-info {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 15px;
+        }
+        
+        .member-info p, .class-info p {
+            margin-bottom: 8px;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 10px;
+            color: #7f8c8d;
+        }
+        
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+        }
+        
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+        }
+        
+        .server-status {
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            text-align: center;
+            font-weight: bold;
+        }
+        
+        .server-connected {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        
+        .server-disconnected {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        
+        .step-indicator {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        
+        .step {
+            text-align: center;
+            flex: 1;
+            padding: 10px;
+            position: relative;
+        }
+        
+        .step:not(:last-child):after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            right: 0;
+            width: 100%;
+            height: 2px;
+            background-color: #ddd;
+            z-index: 1;
+        }
+        
+        .step-number {
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            background-color: #ddd;
+            color: white;
+            border-radius: 50%;
+            line-height: 30px;
+            margin-bottom: 5px;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .step.active .step-number {
+            background-color: #3498db;
+        }
+        
+        .step-title {
+            font-size: 14px;
+            color: #7f8c8d;
+        }
+        
+        .step.active .step-title {
+            color: #3498db;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Enroll Members in Classes</h1>
+        
+        <div id="serverStatus" class="server-status">Checking server connection...</div>
+        
+        <div id="successMessage" class="success hidden"></div>
+        <div id="errorMessage" class="error hidden"></div>
+        
+        <div class="step-indicator">
+            <div class="step active" id="step1">
+                <div class="step-number">1</div>
+                <div class="step-title">Select Member</div>
+            </div>
+            <div class="step" id="step2">
+                <div class="step-number">2</div>
+                <div class="step-title">Select Class</div>
+            </div>
+            <div class="step" id="step3">
+                <div class="step-number">3</div>
+                <div class="step-title">Enroll</div>
+            </div>
+        </div>
+        
+        <!-- Member Selection Section -->
+        <div class="card section">
+            <h2>Step 1: Select Member</h2>
+            <div class="form-group">
+                <label for="memberSearch">Search for Member:</label>
+                <input type="text" id="memberSearch" placeholder="Type member name or ID...">
+                <div id="searchResults" class="search-results hidden"></div>
+                <div id="searchLoading" class="loading hidden">Searching...</div>
+            </div>
+            
+            <div id="selectedMember" class="member-info hidden">
+                <h3>Selected Member</h3>
+                <p><strong>Name:</strong> <span id="memberName"></span></p>
+                <p><strong>ID:</strong> <span id="memberId"></span></p>
+                <p><strong>Email:</strong> <span id="memberEmail"></span></p>
+                <p><strong>Membership:</strong> <span id="memberType"></span></p>
+                <button onclick="clearMemberSelection()">Change Member</button>
+            </div>
+        </div>
+        
+        <!-- Class Selection Section -->
+        <div class="card section">
+            <h2>Step 2: Select Class</h2>
+            <div class="form-group">
+                <label for="classSelect">Choose Class:</label>
+                <select id="classSelect" disabled>
+                    <option value="">Please select a member first</option>
+                </select>
+                <div id="classLoading" class="loading hidden">Loading classes...</div>
+            </div>
+            
+            <div id="selectedClass" class="class-info hidden">
+                <h3>Selected Class</h3>
+                <p><strong>Class:</strong> <span id="className"></span></p>
+                <p><strong>Schedule:</strong> <span id="classSchedule"></span></p>
+                <p><strong>Trainer:</strong> <span id="classTrainer"></span></p>
+                <p><strong>Capacity:</strong> <span id="classCapacity"></span></p>
+                <p><strong>Current Enrollment:</strong> <span id="classEnrollment"></span></p>
+            </div>
+        </div>
+        
+        <!-- Enrollment Action Section -->
+        <div class="card section">
+            <h2>Step 3: Enroll Member</h2>
+            <div id="enrollmentAction">
+                <p>Please select a member and class first.</p>
+                <button id="enrollButton" disabled onclick="enrollMember()">Enroll Member in Class</button>
+            </div>
+            
+            <div id="enrollmentResult" class="hidden">
+                <h3>Enrollment Result</h3>
+                <div id="resultMessage"></div>
+                <button onclick="resetForm()">Enroll Another Member</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SERVER_URL = 'https://flex-it-goalsgym-it-project-2.onrender.com';
+        let selectedMember = null;
+        let selectedClass = null;
+        let allClasses = [];
+        let searchTimeout = null;
+
+        document.addEventListener('DOMContentLoaded', async function() {
+            await checkServerConnection();
+            setupEventListeners();
+        });
+
+        async function checkServerConnection() {
+            const statusElement = document.getElementById('serverStatus');
+            try {
+                const response = await fetch(`${SERVER_URL}/health`);
+                if (response.ok) {
+                    statusElement.textContent = 'Connected to server successfully';
+                    statusElement.className = 'server-status server-connected';
+                } else {
+                    throw new Error('Server response not OK');
+                }
+            } catch (error) {
+                statusElement.textContent = 'Cannot connect to server. Please try again later.';
+                statusElement.className = 'server-status server-disconnected';
+            }
+        }
+
+        function setupEventListeners() {
+            // Member search with debounce
+            document.getElementById('memberSearch').addEventListener('input', function(e) {
+                clearTimeout(searchTimeout);
+                const query = e.target.value.trim();
+                
+                if (query.length < 2) {
+                    hideSearchResults();
+                    return;
+                }
+                
+                document.getElementById('searchLoading').classList.remove('hidden');
+                
+                searchTimeout = setTimeout(async () => {
+                    await searchMembers(query);
+                }, 300);
+            });
+
+            // Class selection change
+            document.getElementById('classSelect').addEventListener('change', function(e) {
+                const classId = e.target.value;
+                selectClass(classId);
+            });
+
+            // Click outside to close search results
+            document.addEventListener('click', function(e) {
+                if (!e.target.closest('#memberSearch') && !e.target.closest('#searchResults')) {
+                    hideSearchResults();
+                }
+            });
+        }
+
+        async function searchMembers(query) {
+            try {
+                const response = await fetch(`${SERVER_URL}/api/members/search?query=${encodeURIComponent(query)}`);
+                const resultsDiv = document.getElementById('searchResults');
+                document.getElementById('searchLoading').classList.add('hidden');
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    
+                    if (result.success && result.data && result.data.length > 0) {
+                        resultsDiv.innerHTML = '';
+                        result.data.forEach(member => {
+                            const div = document.createElement('div');
+                            div.className = 'member-result';
+                            
+                            // Handle different field names from MongoDB collection
+                            const memberId = member.memberId || member.member_id || 'N/A';
+                            const name = member.name || 'Unknown';
+                            const email = member.email || 'No email';
+                            
+                            // Handle membership types
+                            let membershipTypes = 'No membership';
+                            if (member.memberships && Array.isArray(member.memberships)) {
+                                membershipTypes = member.memberships.map(m => m.type).join(', ');
+                            } else if (member.type) {
+                                membershipTypes = member.type;
+                            }
+                            
+                            div.innerHTML = `
+                                <strong>${name}</strong> (${memberId})<br>
+                                <small>${email} • ${membershipTypes}</small>
+                            `;
+                            div.onclick = () => selectMember(member);
+                            resultsDiv.appendChild(div);
+                        });
+                        resultsDiv.classList.remove('hidden');
+                    } else {
+                        resultsDiv.innerHTML = '<div class="member-result">No members found</div>';
+                        resultsDiv.classList.remove('hidden');
+                    }
+                } else {
+                    throw new Error('Search failed');
+                }
+            } catch (error) {
+                console.error('Search error:', error);
+                showError('Failed to search members');
+                hideSearchResults();
+            }
+        }
+
+        function hideSearchResults() {
+            document.getElementById('searchResults').classList.add('hidden');
+            document.getElementById('searchLoading').classList.add('hidden');
+        }
+
+        function selectMember(member) {
+            console.log('Raw member object:', member);
+            
+            selectedMember = member;
+            
+            // Enhanced member ID detection - check multiple possible field names
+            const memberId = member.memberId || member.member_id || member._id || member.id || 'N/A';
+            const name = member.name || member.fullName || member.memberName || 'Unknown';
+            const email = member.email || member.emailAddress || 'No email';
+            
+            // Handle membership types
+            let membershipTypes = 'No membership';
+            if (member.memberships && Array.isArray(member.memberships)) {
+                membershipTypes = member.memberships.map(m => m.type).join(', ');
+            } else if (member.type) {
+                membershipTypes = member.type;
+            }
+            
+            console.log('Extracted - ID:', memberId, 'Name:', name);
+            
+            if (memberId === 'N/A') {
+                showError('Selected member does not have a valid ID. Please choose a different member.');
+                return;
+            }
+            
+            // Update UI
+            document.getElementById('memberName').textContent = name;
+            document.getElementById('memberId').textContent = memberId;
+            document.getElementById('memberEmail').textContent = email;
+            document.getElementById('memberType').textContent = membershipTypes;
+            document.getElementById('selectedMember').classList.remove('hidden');
+            
+            // Hide search results
+            hideSearchResults();
+            document.getElementById('memberSearch').value = '';
+            
+            // Enable class selection and load classes
+            document.getElementById('classSelect').disabled = false;
+            loadClasses();
+            
+            // Update step indicator
+            document.getElementById('step1').classList.add('active');
+            document.getElementById('step2').classList.add('active');
+            document.getElementById('step3').classList.remove('active');
+        }
+
+        function clearMemberSelection() {
+            selectedMember = null;
+            document.getElementById('selectedMember').classList.add('hidden');
+            document.getElementById('classSelect').disabled = true;
+            document.getElementById('classSelect').innerHTML = '<option value="">Please select a member first</option>';
+            document.getElementById('selectedClass').classList.add('hidden');
+            document.getElementById('enrollButton').disabled = true;
+            
+            // Update step indicator
+            document.getElementById('step2').classList.remove('active');
+            document.getElementById('step3').classList.remove('active');
+        }
+
+        async function loadClasses() {
+            const classSelect = document.getElementById('classSelect');
+            document.getElementById('classLoading').classList.remove('hidden');
+            
+            try {
+                const response = await fetch(`${SERVER_URL}/api/classes`);
+                if (response.ok) {
+                    const result = await response.json();
+                    
+                    if (result.success && result.data && result.data.length > 0) {
+                        allClasses = result.data;
+                        classSelect.innerHTML = '<option value="">Select a class</option>';
+                        
+                        result.data.forEach(cls => {
+                            const option = document.createElement('option');
+                            option.value = cls.class_id;
+                            option.textContent = `${cls.class_name} (${cls.schedule}) - ${cls.current_enrollment || 0}/${cls.capacity}`;
+                            classSelect.appendChild(option);
+                        });
+                    } else {
+                        classSelect.innerHTML = '<option value="">No classes available</option>';
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading classes:', error);
+                classSelect.innerHTML = '<option value="">Error loading classes</option>';
+                showError('Failed to load classes');
+            } finally {
+                document.getElementById('classLoading').classList.add('hidden');
+            }
+        }
+
+        function selectClass(classId) {
+            if (!classId) {
+                document.getElementById('selectedClass').classList.add('hidden');
+                document.getElementById('enrollButton').disabled = true;
+                selectedClass = null;
+                return;
+            }
+            
+            selectedClass = allClasses.find(cls => cls.class_id === classId);
+            
+            if (selectedClass) {
+                document.getElementById('className').textContent = selectedClass.class_name;
+                document.getElementById('classSchedule').textContent = selectedClass.schedule;
+                document.getElementById('classTrainer').textContent = selectedClass.trainer_id;
+                document.getElementById('classCapacity').textContent = selectedClass.capacity;
+                document.getElementById('classEnrollment').textContent = `${selectedClass.current_enrollment || 0}/${selectedClass.capacity}`;
+                document.getElementById('selectedClass').classList.remove('hidden');
+                document.getElementById('enrollButton').disabled = false;
+                
+                // Update step indicator
+                document.getElementById('step3').classList.add('active');
+            }
+        }
+
+        async function enrollMember() {
+    if (!selectedMember || !selectedClass) {
+        showError('Please select both a member and a class');
+        return;
+    }
+    
+    // Enhanced member ID extraction - check multiple possible field names
+    const memberId = selectedMember.memberId || selectedMember.member_id || 
+                    selectedMember._id || selectedMember.id;
+    
+    if (!memberId) {
+        showError('Could not determine member ID. Please select a different member.');
+        return;
+    }
+    
+    try {
+        document.getElementById('enrollButton').disabled = true;
+        document.getElementById('enrollButton').textContent = 'Enrolling...';
+        
+        console.log('Enrolling member:', {
+            class_id: selectedClass.class_id,
+            member_id: memberId,
+            member_object: selectedMember
+        });
+        
+        const response = await fetch(`${SERVER_URL}/api/classes/${selectedClass.class_id}/enroll`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ 
+                member_id: memberId.toString() // Ensure it's a string
+            })
+        });
+        
+        const result = await response.json();
+        console.log('Enrollment response:', result);
+        
+        if (response.ok && result.success) {
+            showEnrollmentResult('success', `Successfully enrolled ${selectedMember.name} in ${selectedClass.class_name}`);
+            // Refresh class info to show updated enrollment count
+            loadClasses();
+        } else {
+            // Enhanced error handling
+            if (result.error && result.error.includes('already enrolled')) {
+                showEnrollmentResult('error', `Cannot enroll: ${selectedMember.name} is already enrolled in ${selectedClass.class_name}`);
+            } else if (result.error && result.error.includes('full')) {
+                showEnrollmentResult('error', `Cannot enroll: ${selectedClass.class_name} is already full`);
+            } else if (result.error && result.error.includes('not found')) {
+                showEnrollmentResult('error', `Cannot enroll: ${selectedClass.class_name} was not found`);
+            } else if (result.error && result.error.includes('Member ID')) {
+                showEnrollmentResult('error', `Cannot enroll: Invalid member ID format`);
+            } else if (result.error && result.error.includes('combative membership')) {
+                showEnrollmentResult('error', `Cannot enroll: Member must have an active combative membership`);
+            } else {
+                showEnrollmentResult('error', result.error || 'Enrollment failed');
+            }
+        }
+    } catch (error) {
+        console.error('Enrollment error:', error);
+        showEnrollmentResult('error', 'Failed to enroll member: ' + error.message);
+    } finally {
+        document.getElementById('enrollButton').disabled = false;
+        document.getElementById('enrollButton').textContent = 'Enroll Member in Class';
+    }
+}
+
+        function showEnrollmentResult(type, message) {
+            const resultDiv = document.getElementById('resultMessage');
+            resultDiv.className = type; // Add 'success' or 'error' class
+            resultDiv.textContent = message;
+            
+            document.getElementById('enrollmentAction').classList.add('hidden');
+            document.getElementById('enrollmentResult').classList.remove('hidden');
+        }
+
+        function resetForm() {
+            selectedMember = null;
+            selectedClass = null;
+            
+            // Reset UI
+            document.getElementById('selectedMember').classList.add('hidden');
+            document.getElementById('classSelect').disabled = true;
+            document.getElementById('classSelect').innerHTML = '<option value="">Please select a member first</option>';
+            document.getElementById('selectedClass').classList.add('hidden');
+            document.getElementById('enrollmentResult').classList.add('hidden');
+            document.getElementById('enrollmentAction').classList.remove('hidden');
+            document.getElementById('enrollButton').disabled = true;
+            document.getElementById('memberSearch').value = '';
+            
+            // Reset step indicator
+            document.getElementById('step1').classList.add('active');
+            document.getElementById('step2').classList.remove('active');
+            document.getElementById('step3').classList.remove('active');
+            
+            hideMessages();
+        }
+
+        function showError(message) {
+            const element = document.getElementById('errorMessage');
+            element.textContent = message;
+            element.classList.remove('hidden');
+            setTimeout(() => { element.classList.add('hidden'); }, 5000);
+        }
+
+        function showSuccess(message) {
+            const element = document.getElementById('successMessage');
+            element.textContent = message;
+            element.classList.remove('hidden');
+            setTimeout(() => { element.classList.add('hidden'); }, 5000);
+        }
+
+        function hideMessages() {
+            document.getElementById('errorMessage').classList.add('hidden');
+            document.getElementById('successMessage').classList.add('hidden');
+        }
+    </script>
+</body>
+</html>

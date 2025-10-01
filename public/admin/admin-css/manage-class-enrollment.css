@@ -1,0 +1,176 @@
+/* public/admin/admin-css/manage-class-enrollment.css */
+
+.container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.server-status {
+    padding: 10px;
+    margin-bottom: 20px;
+    border-radius: 4px;
+    font-weight: bold;
+    text-align: center;
+}
+
+.server-connected {
+    background-color: #28a745;
+    color: #ffffff;
+}
+
+.server-disconnected {
+    background-color: #dc3545;
+    color: #ffffff;
+}
+
+.success-message {
+    display: none;
+    background-color: #28a745;
+    color: #ffffff;
+    padding: 10px;
+    margin-bottom: 20px;
+    border-radius: 4px;
+}
+
+.error-message {
+    display: none;
+    background-color: #dc3545;
+    color: #ffffff;
+    padding: 10px;
+    margin-bottom: 20px;
+    border-radius: 4px;
+}
+
+.section {
+    background-color: #2d2d2d;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 25px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.section.active {
+    display: block;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+label {
+    color: #cccccc;
+    font-weight: 600;
+    margin-bottom: 5px;
+    display: block;
+}
+
+select, input[type="text"], input[type="number"] {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #444444;
+    border-radius: 4px;
+    font-size: 16px;
+    background-color: #3a3a3a;
+    color: #ffffff;
+    margin-bottom: 5px;
+}
+
+select {
+    height: 40px;
+}
+
+.nav-buttons {
+    margin-top: 20px;
+}
+
+button {
+    background-color: #ff0000;
+    color: #ffffff;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 4px;
+    font-size: 16px;
+    margin-right: 10px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+button:hover {
+    background-color: #cc0000;
+}
+
+.remove-button {
+    background-color: #e91e63;
+}
+
+.remove-button:hover {
+    background-color: #d81b60;
+}
+
+.member-list {
+    margin-top: 20px;
+    color: #cccccc;
+}
+
+.member-list table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: #3a3a3a;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.member-list th, .member-list td {
+    padding: 10px;
+    border: 1px solid #444444;
+    text-align: left;
+}
+
+.member-list th {
+    background-color: #4a4a4a;
+    color: #ff0000;
+    font-weight: bold;
+}
+
+.autocomplete-suggestions {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background-color: #3a3a3a;
+    border: 1px solid #444444;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    z-index: 1000;
+    max-height: 200px;
+    overflow-y: auto;
+    display: none;
+    color: #cccccc;
+}
+
+.autocomplete-suggestion {
+    padding: 8px;
+    cursor: pointer;
+}
+
+.autocomplete-suggestion:hover {
+    background-color: #4a4a4a;
+}
+
+.search-group {
+    position: relative;
+    display: flex;
+    gap: 10px;
+}
+
+.search-group input {
+    flex: 1;
+}
+
+/* Optional: Hide number arrows (chrome only) */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
