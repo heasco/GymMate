@@ -49,6 +49,8 @@
             border-radius: 4px;
             box-sizing: border-box;
         }
+
+        /* Buttons */
         .action-button {
             padding: 10px 20px;
             border: none;
@@ -67,6 +69,20 @@
         .logout-button:hover {
             background-color: #d81b60;
         }
+
+        /* Nav buttons layout: center and spaced evenly */
+        .nav-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+        /* remove extra right margin inside nav containers */
+        .nav-buttons .action-button {
+            margin-right: 0;
+        }
+
         .error-message, .success-message {
             display: none;
             padding: 10px;
@@ -98,6 +114,10 @@
         </div>
         <div class="nav-buttons">
             <button class="action-button" onclick="showEditForm()">Edit Profile</button>
+
+            <!-- New Classes button (no function yet) -->
+            <button class="action-button" id="classesButton" type="button">Classes</button>
+
             <button class="action-button logout-button" onclick="logout()">Logout</button>
         </div>
         <form id="editProfileForm" class="edit-form">
