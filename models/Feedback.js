@@ -10,17 +10,23 @@ const feedbackSchema = new mongoose.Schema({
     date_submitted: { type: Date, default: Date.now }
 }, { timestamps: true });
 
-const FeedbackModel = mongoose.models.Feedback || mongoose.model('Feedback', feedbackSchema);
 
-// Always use the pre("validate") hook instead of pre("save"),
-feedbackSchema.pre('validate', async function(next) {
+let FeedbackModel;
+try {
+    FeedbackModel = mongoose.model('Feedback');
+} catch (e) {
+    FeedbackModel = mongoose.model('Feedback', feedbackSchema);
+}
+
+// IMPORTANT: Use FeedbackModel in the hook, and pre('validate') so it's before required validation!
+feedbackSchema.pre('validate', async function (next) {
     if (this.isNew && !this.feedback_id) {
         try {
             const count = await FeedbackModel.countDocuments();
             this.feedback_id = `FB-${(count + 1).toString().padStart(4, '0')}`;
             next();
-        } catch (error) {
-            next(error);
+        } catch (err) {
+            next(err);
         }
     } else {
         next();
