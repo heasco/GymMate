@@ -35,18 +35,25 @@ router.post('/', asyncHandler(async (req, res) => {
 }));
 
 // GET feedback for a class (anonymized for trainers/members)
-router.get('/class/:classid', async (req, res) => {
-    const { classid } = req.params;
+// GET feedback for a class (anonymized for trainers/members and full detail for admin)
+
+router.get('/class/:id', asyncHandler(async (req, res) => {
+    const class_id = req.params.id;
+
+    let feedbacks = await Feedback.find({ class_id }).lean();
+
     const isAdmin = !!req.query.admin;
-    let feedbacks = await Feedback.find({ class_id: classid }).lean();
+
     if (!isAdmin) {
         feedbacks = feedbacks.map(f => {
-            const { member_id, ...rest } = f; // fix typo if needed
+            const { member_id, ...rest } = f;
             return { ...rest };
         });
     }
+
     res.json({ success: true, data: feedbacks });
-});
+}));
+
 
 
 // GET all feedback (only for admin, show member names)
@@ -61,12 +68,7 @@ router.get('/member/:memberid', async (req, res) => {
     res.json({ success: true, feedbacks });
 });
 
-// GET all feedback for a class, with full detail for admin
-router.get('/class/:class_id', asyncHandler(async (req, res) => {
-  const class_id = req.params.class_id;
-  const feedbacks = await Feedback.find({ class_id }).lean();
-  res.json({ success: true, data: feedbacks });
-}));
+
 
 // DELETE feedback by feedback_id (for admin)
 router.delete('/:feedback_id', asyncHandler(async (req, res) => {
