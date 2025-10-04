@@ -125,17 +125,18 @@ router.get('/:id/enrolled-members', asyncHandler(async (req, res) => {
   res.json({ success:true, count: classData.enrolled_members.filter(m => m.status === 'active').length, data: classData.enrolled_members.filter(m => m.status === 'active') });
 }));
 
-// GET /api/classes/member/:memberid/enrolled
-router.get('/member/:memberid/enrolled', asyncHandler(async (req, res) => {
-    const memberId = req.params.memberid;
-    // Find all classes where the enrolledmembers array contains this member with status 'active'
+// GET /api/classes/member/:memberId/enrolled
+router.get('/member/:memberId/enrolled', asyncHandler(async (req, res) => {
+    const memberId = req.params.memberId;
+    // Find all classes where the enrolled_members array contains this member (status active)
     const classes = await Class.find({ 
-        'enrolledmembers': { 
-            $elemMatch: { memberid: memberId, status: 'active' }
+        'enrolled_members': { 
+            $elemMatch: { member_id: memberId, status: 'active' }
         }
     });
     res.json({ success: true, count: classes.length, data: classes });
 }));
+
 
 
 // DELETE /api/classes/:classId/enrollments/:memberId
