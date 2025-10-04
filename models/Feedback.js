@@ -10,11 +10,13 @@ const feedbackSchema = new mongoose.Schema({
     date_submitted: { type: Date, default: Date.now }
 }, { timestamps: true });
 
-// ---- USE models.Feedback below for registration/lookup ----
-feedbackSchema.pre('save', async function(next) {
-    if (this.isNew) {
+const FeedbackModel = mongoose.models.Feedback || mongoose.model('Feedback', feedbackSchema);
+
+// Always use the pre("validate") hook instead of pre("save"),
+feedbackSchema.pre('validate', async function(next) {
+    if (this.isNew && !this.feedback_id) {
         try {
-            const count = await mongoose.models.Feedback.countDocuments();
+            const count = await FeedbackModel.countDocuments();
             this.feedback_id = `FB-${(count + 1).toString().padStart(4, '0')}`;
             next();
         } catch (error) {
@@ -27,4 +29,4 @@ feedbackSchema.pre('save', async function(next) {
 
 feedbackSchema.index({ class_id: 1, member_id: 1 }, { unique: true });
 
-module.exports = mongoose.models.Feedback || mongoose.model('Feedback', feedbackSchema);
+module.exports = FeedbackModel;
