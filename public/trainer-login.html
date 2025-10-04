@@ -53,7 +53,7 @@
                 const data = await response.json();
                 
                 localStorage.setItem('authUser', JSON.stringify({
-                    user: data.user,
+                    user: data.data,
                     role: 'trainer',
                     timestamp: Date.now()
                 }));
