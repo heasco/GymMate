@@ -34,22 +34,20 @@ router.post('/', asyncHandler(async (req, res) => {
     res.status(201).json({ success: true, message: 'Feedback submitted successfully', data: savedFeedback });
 }));
 
-
-
 // GET feedback for a class (anonymized for trainers/members)
 router.get('/class/:classid', async (req, res) => {
     const { classid } = req.params;
-    // If query 'admin' is true, show member names. If not, hide member names
     const isAdmin = !!req.query.admin;
-    let feedbacks = await Feedback.find({ classid }).lean();
+    let feedbacks = await Feedback.find({ class_id: classid }).lean();
     if (!isAdmin) {
         feedbacks = feedbacks.map(f => {
-            const { memberid, ...rest } = f; // remove memberid
+            const { member_id, ...rest } = f; // fix typo if needed
             return { ...rest };
         });
     }
-    res.json({ success: true, feedbacks });
+    res.json({ success: true, data: feedbacks });
 });
+
 
 // GET all feedback (only for admin, show member names)
 router.get('/admin/all', async (req, res) => {
