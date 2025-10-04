@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Send Class Feedback - GOALS Gym</title>
+    <link rel="stylesheet" href="member-css/send-class-feedback.css">
+</head>
+<body>
+    <div class="container">
+        <h1 class="form-title">Send Feedback to a Class</h1>
+        <div id="memberGreet" class="form-group" style="margin-bottom:24px;">
+            Welcome, <span id="memberName"></span>!
+        </div>
+        <div class="section active">
+            <form id="feedbackForm">
+                <div class="form-group">
+                    <label for="classSelect">Select Class</label>
+                    <select id="classSelect" name="classId" required>
+                        <option value="">-- Select your class --</option>
+                        <!-- Classes will be dynamically loaded here -->
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="rating">Rating</label>
+                    <select id="rating" name="rating" required>
+                        <option value="">-- Select a rating --</option>
+                        <option value="1">1 - Poor</option>
+                        <option value="2">2 - Fair</option>
+                        <option value="3">3 - Good</option>
+                        <option value="4">4 - Very Good</option>
+                        <option value="5">5 - Excellent</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="feedbackText">Your Feedback</label>
+                    <textarea id="feedbackText" name="feedback" placeholder="Type your feedback here..." required></textarea>
+                </div>
+                <p class="anonymous-tip">
+                    Your feedback will be <strong>anonymous</strong> to other members and trainers, but viewable by the admin.
+                </p>
+                <div class="nav-buttons">
+                    <button type="submit">Send Feedback</button>
+                </div>
+                <div id="feedbackStatus" class="success-message" style="display: none;"></div>
+            </form>
+        </div>
+    </div>
+    <script>
+        const SERVER_URL = "https://flex-it-goalsgym-it-project-2.onrender.com"; 
+
+        // Save loaded classes for trainer_id look-up
+        window.loadedClasses = [];
+
+        function loadMemberName() {
+            const authUser = JSON.parse(localStorage.getItem('authUser'));
+            if (authUser && authUser.user && authUser.user.name) {
+                document.getElementById('memberName').textContent = authUser.user.name;
+            } else {
+                document.getElementById('memberName').textContent = "Member";
+            }
+        }
+
+        async function loadUserClasses() {
+            const classSelect = document.getElementById("classSelect");
+            classSelect.innerHTML = "<option value=''>-- Loading your classes... --</option>";
+            try {
+                const authUser = JSON.parse(localStorage.getItem('authUser'));
+                const memberId = authUser && authUser.user && (authUser.user.memberId || authUser.user.member_id || authUser.user._id);
+                const token = localStorage.getItem('authToken');
+                const response = await fetch(`${SERVER_URL}/api/classes/member/${memberId}/enrolled`, {
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${token}`
+                    }
+                });
+                const data = await response.json();
+                if (data.success && Array.isArray(data.data) && data.data.length > 0) {
+                    window.loadedClasses = data.data; // Save for later
+                    classSelect.innerHTML = "<option value=''>-- Select your class --</option>";
+                    data.data.forEach(cls => {
+                        const option = document.createElement("option");
+                        option.value = cls._id;
+                        option.textContent = `${cls.class_name || "Unknown"} (${cls.schedule || "No schedule"})`;
+                        classSelect.appendChild(option);
+                    });
+                } else {
+                    classSelect.innerHTML = "<option value=''>No attended classes found</option>";
+                }
+            } catch (err) {
+                classSelect.innerHTML = "<option value=''>Failed to load classes</option>";
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", function() {
+            loadMemberName();
+            loadUserClasses();
+
+            document.getElementById("feedbackForm").addEventListener("submit", async function(e) {
+                e.preventDefault();
+                const feedbackStatus = document.getElementById("feedbackStatus");
+                feedbackStatus.style.display = "none";
+
+                // Collect form values
+                const classId = document.getElementById("classSelect").value;
+                const rating = document.getElementById("rating").value;
+                const comment = document.getElementById("feedbackText").value.trim();
+                const authUser = JSON.parse(localStorage.getItem('authUser'));
+                const memberId = authUser && authUser.user && (authUser.user.memberId || authUser.user.member_id || authUser.user._id);
+                const selectedClass = window.loadedClasses.find(cls => cls._id === classId);
+                const trainerId = selectedClass ? selectedClass.trainer_id : "";
+
+                if (!classId || !comment || !trainerId || !rating) {
+                    feedbackStatus.textContent = "Please select a class, provide a rating, and write your feedback.";
+                    feedbackStatus.style.display = "block";
+                    feedbackStatus.className = "error";
+                    return;
+                }
+
+                try {
+                    const token = localStorage.getItem('authToken');
+                    const response = await fetch(`${SERVER_URL}/api/feedback`, {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "Authorization": `Bearer ${token}`
+                        },
+                        body: JSON.stringify({
+                            class_id: classId,
+                            member_id: memberId,
+                            trainer_id: trainerId,
+                            rating: parseInt(rating),
+                            comment
+                        })
+                    });
+                    const data = await response.json();
+                    if (response.ok && data.success) {
+                        feedbackStatus.textContent = "Thank you for your feedback!";
+                        feedbackStatus.style.display = "block";
+                        feedbackStatus.className = "success-message";
+                        document.getElementById("feedbackForm").reset();
+                    } else {
+                        throw new Error(data.error || data.message || "Failed to send feedback.");
+                    }
+                } catch (err) {
+                    feedbackStatus.textContent = err.message || "Failed to send feedback.";
+                    feedbackStatus.style.display = "block";
+                    feedbackStatus.className = "error";
+                }
+            });
+        });
+    </script>
+</body>
+</html>

@@ -63,5 +63,21 @@ router.get('/member/:memberid', async (req, res) => {
     res.json({ success: true, feedbacks });
 });
 
+// GET all feedback for a class, with full detail for admin
+router.get('/class/:class_id', asyncHandler(async (req, res) => {
+  const class_id = req.params.class_id;
+  const feedbacks = await Feedback.find({ class_id }).lean();
+  res.json({ success: true, data: feedbacks });
+}));
+
+// DELETE feedback by feedback_id (for admin)
+router.delete('/:feedback_id', asyncHandler(async (req, res) => {
+  const feedback_id = req.params.feedback_id;
+  const deleted = await Feedback.findOneAndDelete({ feedback_id: feedback_id });
+  if (!deleted) return res.status(404).json({ success: false, error: 'Feedback not found' });
+  res.json({ success: true, message: 'Feedback deleted successfully' });
+}));
+
+
 
 module.exports = router;
