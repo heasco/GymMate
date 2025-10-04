@@ -1,4 +1,3 @@
-// Feedback.js
 const mongoose = require('mongoose');
 
 const feedbackSchema = new mongoose.Schema({
@@ -11,7 +10,7 @@ const feedbackSchema = new mongoose.Schema({
     date_submitted: { type: Date, default: Date.now }
 }, { timestamps: true });
 
-// Auto-generate feedback_id
+// ---- USE models.Feedback below for registration/lookup ----
 feedbackSchema.pre('save', async function(next) {
     if (this.isNew) {
         try {
@@ -26,7 +25,6 @@ feedbackSchema.pre('save', async function(next) {
     }
 });
 
-// Prevent duplicate feedback from same member for same class
 feedbackSchema.index({ class_id: 1, member_id: 1 }, { unique: true });
 
 module.exports = mongoose.models.Feedback || mongoose.model('Feedback', feedbackSchema);
