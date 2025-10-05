@@ -52,7 +52,7 @@ app.use('/api/members', memberRoutes);
 app.use('/api/trainers', trainerRoutes);
 app.use('/api/classes', classRoutes);
 app.use('/api/enrollments', enrollmentRoutes);
-app.use('/api/feedback', feedbackRoutes);
+app.use('/api/feedbacks', feedbackRoutes);
 app.use('/api/transactions', transactionRoutes);
 
 app.use('/health', healthRoutes);
