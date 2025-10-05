@@ -130,3 +130,8 @@ summary:hover { background-color: #444444; }
     color: #7f8c8d;
     padding: 10px;
 }
+
+.feedback-list { margin-top: 8px; margin-bottom: 12px; padding-left: 20px; color: #fff; }
+.feedback-list li { background: #313131; margin-bottom: 7px; border-radius: 6px; padding: 8px;}
+.delete-feedback-btn { background: #ff4545; color: #fff; border: none; padding: 5px 12px; border-radius: 4px; font-size: 14px; cursor: pointer;}
+.delete-feedback-btn:hover { background: #d70000;}

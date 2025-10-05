@@ -119,7 +119,7 @@
 
                 try {
                     const token = localStorage.getItem('authToken');
-                    const response = await fetch(`${SERVER_URL}/api/feedback`, {
+                    const response = await fetch(`${SERVER_URL}/api/feedbacks`, {
                         method: "POST",
                         headers: {
                             "Content-Type": "application/json",
