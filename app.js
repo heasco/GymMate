@@ -8,7 +8,7 @@ const memberRoutes = require('./routes/members');
 const trainerRoutes = require('./routes/trainers');
 const classRoutes = require('./routes/classes');
 const enrollmentRoutes = require('./routes/enrollments');
-const feedbackRoutes = require('./routes/feedback');
+const feedbackRoutes = require('./routes/feedbacks');
 const transactionRoutes = require('./routes/transactions');
 const healthRoutes = require('./routes/health');
 

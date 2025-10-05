@@ -88,4 +88,31 @@ router.get('/:id/rating', asyncHandler(async (req, res) => {
   res.json({ success:true, data: { averageRating, totalFeedback } });
 }));
 
+// POST /api/trainers/update-profile
+router.post('/update-profile', asyncHandler(async (req, res) => {
+  const { trainer_id, name, username, currentPassword, newPassword } = req.body;
+  const trainer = await Trainer.findOne({
+    $or: [{ trainer_id }, { _id: trainer_id }]
+  });
+  if (!trainer) return res.status(404).json({ success: false, error: 'Trainer not found' });
+  const match = await bcrypt.compare(currentPassword, trainer.password);
+  if (!match) {
+    return res.status(401).json({ success: false, error: 'Incorrect current password.' });
+  }
+  if (name) trainer.name = name.trim();
+  if (username && username !== trainer.username) {
+    const existing = await Trainer.findOne({ username: username.trim().toLowerCase(), _id: { $ne: trainer._id } });
+    if (existing) {
+      return res.status(409).json({ success: false, error: 'Username is already taken.' });
+    }
+    trainer.username = username.trim().toLowerCase();
+  }
+  if (newPassword) {
+    trainer.password = newPassword;
+  }
+  await trainer.save();
+  res.json({ success: true, message: 'Trainer profile updated.' });
+}));
+
+
 module.exports = router;
