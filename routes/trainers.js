@@ -91,10 +91,18 @@ router.get('/:id/rating', asyncHandler(async (req, res) => {
 // POST /api/trainers/update-profile
 router.post('/update-profile', asyncHandler(async (req, res) => {
   const { trainer_id, name, username, currentPassword, newPassword } = req.body;
-  const trainer = await Trainer.findOne({
-    $or: [{ trainer_id }, { _id: trainer_id }]
-  });
+
+  let trainer;
+  if (mongoose.Types.ObjectId.isValid(trainer_id)) {
+    trainer = await Trainer.findOne({
+      $or: [{ trainer_id }, { _id: trainer_id }]
+    });
+  } else {
+    trainer = await Trainer.findOne({ trainer_id });
+  }
+
   if (!trainer) return res.status(404).json({ success: false, error: 'Trainer not found' });
+
   const match = await bcrypt.compare(currentPassword, trainer.password);
   if (!match) {
     return res.status(401).json({ success: false, error: 'Incorrect current password.' });
