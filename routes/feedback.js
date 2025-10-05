@@ -38,7 +38,7 @@ router.post('/', asyncHandler(async (req, res) => {
 router.get('/class/:id', asyncHandler(async (req, res) => {
     const class_id = req.params.id;
 
-    let feedbacks = await Feedback.find({ class_id }).lean();
+    let feedbacks = await Feedback.find({ class_id: classid }).lean();
 
     const isAdmin = !!req.query.admin;
 
