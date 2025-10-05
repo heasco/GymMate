@@ -1,4 +1,6 @@
 const express = require('express');
+const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
 const asyncHandler = require('../middleware/asyncHandler');
 const Trainer = require('../models/Trainer');
 const Feedback = require('../models/Feedback');
