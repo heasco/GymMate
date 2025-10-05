@@ -92,8 +92,9 @@ router.get('/:id/rating', asyncHandler(async (req, res) => {
 
 // POST /api/trainers/update-profile
 router.post('/update-profile', asyncHandler(async (req, res) => {
-  const { trainer_id, name, username, currentPassword, newPassword } = req.body;
+  const { trainer_id, username, phone, email, currentPassword, newPassword } = req.body;
 
+  // Find by either Mongo ObjectId or trainer_id
   let trainer;
   if (mongoose.Types.ObjectId.isValid(trainer_id)) {
     trainer = await Trainer.findOne({
@@ -105,11 +106,13 @@ router.post('/update-profile', asyncHandler(async (req, res) => {
 
   if (!trainer) return res.status(404).json({ success: false, error: 'Trainer not found' });
 
+  // Check password
   const match = await bcrypt.compare(currentPassword, trainer.password);
   if (!match) {
     return res.status(401).json({ success: false, error: 'Incorrect current password.' });
   }
-  if (name) trainer.name = name.trim();
+
+  // Update username (if changed)
   if (username && username !== trainer.username) {
     const existing = await Trainer.findOne({ username: username.trim().toLowerCase(), _id: { $ne: trainer._id } });
     if (existing) {
@@ -117,9 +120,28 @@ router.post('/update-profile', asyncHandler(async (req, res) => {
     }
     trainer.username = username.trim().toLowerCase();
   }
+
+  // Update email
+  if (typeof email !== 'undefined' && email !== trainer.email) {
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.status(400).json({ success: false, error: 'Invalid email address' });
+    }
+    trainer.email = email ? email.trim().toLowerCase() : '';
+  }
+
+  // Update phone
+  if (typeof phone !== 'undefined' && phone !== trainer.phone) {
+    if (phone && phone !== '' && !/^\+63\d{10}$/.test(phone)) {
+      return res.status(400).json({ success: false, error: 'Invalid Philippine phone format. Use +63XXXXXXXXXX' });
+    }
+    trainer.phone = phone ? phone.trim() : '';
+  }
+
+  // Update password (if provided)
   if (newPassword) {
     trainer.password = newPassword;
   }
+
   await trainer.save();
   res.json({ success: true, message: 'Trainer profile updated.' });
 }));
