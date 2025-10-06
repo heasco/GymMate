@@ -135,3 +135,60 @@ summary:hover { background-color: #444444; }
 .feedback-list li { background: #313131; margin-bottom: 7px; border-radius: 6px; padding: 8px;}
 .delete-feedback-btn { background: #ff4545; color: #fff; border: none; padding: 5px 12px; border-radius: 4px; font-size: 14px; cursor: pointer;}
 .delete-feedback-btn:hover { background: #d70000;}
+
+.enrollment-filters {
+  display: flex;
+  align-items: center;
+  margin: 10px 0 12px;
+  gap: 6px;
+}
+
+.btn-filter, .btn-next3 {
+  background: #ff0000;
+  color: #fff;
+  border: none;
+  padding: 6px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.btn-filter:hover, .btn-next3:hover { background: #cc0000; }
+
+.session-group { margin: 8px 0 14px; }
+.session-date { margin-bottom: 6px; color: #ff0000; }
+
+.badge {
+  display: inline-block;
+  padding: 2px 6px;
+  font-size: 12px;
+  border-radius: 10px;
+  margin-left: 6px;
+}
+.badge.scheduled { background: #17a2b8; color: #fff; }
+.badge.attended  { background: #28a745; color: #fff; }
+.badge.missed    { background: #ffc107; color: #000; }
+.badge.cancelled { background: #dc3545; color: #fff; }
+
+.members-list {
+  list-style: disc;
+  margin: 6px 0 0 20px;
+}
+
+.loading {
+  color: #ccc;
+}
+
+.no-members {
+  color: #ccc;
+}
+
+.error {
+  color: #ff6b6b;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .enrollment-filters {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+}
