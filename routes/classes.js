@@ -137,6 +137,52 @@ router.get('/member/:memberId/enrolled', asyncHandler(async (req, res) => {
     res.json({ success: true, count: classes.length, data: classes });
 }));
 
+// GET /api/classes/:id/schedule - Get class schedule details for enrollment
+router.get('/:id/schedule', asyncHandler(async (req, res) => {
+  const classId = req.params.id;
+  
+  const classData = await Class.findOne({ class_id: classId });
+  if (!classData) {
+    return res.status(404).json({
+      success: false,
+      error: 'Class not found'
+    });
+  }
+
+  // Parse schedule to return available time slots
+  const schedule = classData.schedule;
+  const timeSlots = parseScheduleToTimeSlots(schedule);
+  
+  res.json({
+    success: true,
+    data: {
+      class_id: classData.class_id,
+      class_name: classData.class_name,
+      schedule: classData.schedule,
+      time_slots: timeSlots
+    }
+  });
+}));
+
+// Helper function to parse schedule
+function parseScheduleToTimeSlots(schedule) {
+  // This is a basic implementation - you might want to make it more sophisticated
+  const timeMatch = schedule.match(/(\d{1,2}:\d{2}\s*[AP]M)\s*-\s*(\d{1,2}:\d{2}\s*[AP]M)/);
+  if (timeMatch) {
+    return [`${timeMatch[1]} - ${timeMatch[2]}`];
+  }
+  
+  // Default time slots
+  return [
+    '9:00 AM - 10:00 AM',
+    '10:00 AM - 11:00 AM',
+    '11:00 AM - 12:00 PM',
+    '2:00 PM - 3:00 PM',
+    '3:00 PM - 4:00 PM',
+    '4:00 PM - 5:00 PM'
+  ];
+}
+
 
 
 // DELETE /api/classes/:classId/enrollments/:memberId
