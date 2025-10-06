@@ -1,9 +1,31 @@
 const express = require('express');
+const mongoose = require('mongoose');
 const asyncHandler = require('../middleware/asyncHandler');
 const Enrollment = require('../models/Enrollment');
 const Class = require('../models/Classes');
 const Member = require('../models/Member');
+
 const router = express.Router();
+
+// Helper: resolve member by either custom memberId (e.g., MEM-0008) or Mongo _id
+async function findMemberByFlexibleId(id) {
+  if (!id) return null;
+
+  // If it's a valid ObjectId, try that first
+  if (mongoose.Types.ObjectId.isValid(id)) {
+    const byObjectId = await Member.findOne({ _id: new mongoose.Types.ObjectId(id) });
+    if (byObjectId) return byObjectId;
+  }
+
+  // Fallback to memberId, and then username (optional)
+  const byMemberId = await Member.findOne({ memberId: id });
+  if (byMemberId) return byMemberId;
+
+  const byUsername = await Member.findOne({ username: id.toLowerCase() });
+  if (byUsername) return byUsername;
+
+  return null;
+}
 
 // POST /api/enrollments - Create new session enrollment
 router.post('/', asyncHandler(async (req, res) => {
@@ -17,33 +39,28 @@ router.post('/', asyncHandler(async (req, res) => {
     });
   }
 
-  // Check if class exists
+  // Check class
   const classData = await Class.findOne({ class_id });
   if (!classData) {
-    return res.status(404).json({
-      success: false,
-      error: 'Class not found'
-    });
+    return res.status(404).json({ success: false, error: 'Class not found' });
+  }
+  if (classData.current_enrollment >= classData.capacity) {
+    return res.status(400).json({ success: false, error: 'Class is full' });
   }
 
-  // Check if member exists and has combative membership
-  const member = await Member.findOne({ 
-    $or: [{ memberId: member_id }, { _id: member_id }]
-  });
-  
+  // Resolve member by either memberId or _id, normalize to canonical member.memberId
+  const member = await findMemberByFlexibleId(member_id);
   if (!member) {
-    return res.status(404).json({
-      success: false,
-      error: 'Member not found'
-    });
+    return res.status(404).json({ success: false, error: 'Member not found' });
   }
+  const canonicalMemberId = member.memberId;
 
-  // Check if member has active combative membership with remaining sessions
-  const activeCombativeMembership = member.memberships.find(m => 
-    m.type === 'combative' && 
-    m.status === 'active' && 
+  // Verify active combative membership with remaining sessions
+  const activeCombativeMembership = member.memberships?.find(m =>
+    m.type === 'combative' &&
+    m.status === 'active' &&
     new Date(m.endDate) > new Date() &&
-    m.remainingSessions > 0
+    (typeof m.remainingSessions === 'number' ? m.remainingSessions : 0) > 0
   );
 
   if (!activeCombativeMembership) {
@@ -53,14 +70,13 @@ router.post('/', asyncHandler(async (req, res) => {
     });
   }
 
-  // Check if member is already enrolled for this specific date and time
+  // Prevent duplicate booking for same class+member+date
   const existingEnrollment = await Enrollment.findOne({
     class_id,
-    member_id: member.memberId,
+    member_id: canonicalMemberId,
     session_date: new Date(session_date),
     status: 'active'
   });
-
   if (existingEnrollment) {
     return res.status(409).json({
       success: false,
@@ -68,31 +84,32 @@ router.post('/', asyncHandler(async (req, res) => {
     });
   }
 
-  // Create enrollment
+  // Create enrollment document
   const enrollment = new Enrollment({
     class_id,
-    member_id: member.memberId,
-    member_name: member_name || member.name,
+    member_id: canonicalMemberId,            // store canonical string ID
+    member_name: member_name || member.name, // redundancy for reporting
     session_date: new Date(session_date),
     session_time,
-    attendance_status: 'scheduled'
+    attendance_status: 'scheduled',
+    status: 'active'
   });
 
   const savedEnrollment = await enrollment.save();
 
-  // Deduct one session from member's combative membership
-  activeCombativeMembership.remainingSessions -= 1;
+  // Deduct one session
+  activeCombativeMembership.remainingSessions = (activeCombativeMembership.remainingSessions || 0) - 1;
   await member.save();
 
-  // Update class enrollment count (optional - for general tracking)
+  // Update class counters and embedded list (optional, for dashboard views)
   await Class.findOneAndUpdate(
     { class_id },
     {
       $inc: { current_enrollment: 1 },
       $push: {
         enrolled_members: {
-          member_id: member.memberId,
-          member_name: member.name,
+          member_id: canonicalMemberId,
+          member_name: member.name || '',
           enrollment_date: new Date(),
           status: 'active'
         }
@@ -100,7 +117,7 @@ router.post('/', asyncHandler(async (req, res) => {
     }
   );
 
-  res.status(201).json({
+  return res.status(201).json({
     success: true,
     message: 'Member enrolled for session successfully',
     data: savedEnrollment,
@@ -108,36 +125,35 @@ router.post('/', asyncHandler(async (req, res) => {
   });
 }));
 
-// GET /api/enrollments/member/:memberId - Get member's upcoming sessions
+// GET /api/enrollments/member/:memberId - Member’s upcoming sessions
 router.get('/member/:memberId', asyncHandler(async (req, res) => {
   const memberId = req.params.memberId;
-  
+
   const enrollments = await Enrollment.find({
     member_id: memberId,
     status: 'active',
     session_date: { $gte: new Date() }
   })
-  .populate('class_id', 'class_name schedule trainer_name')
+  // Do NOT .populate('class_id') if class_id is a string; remove populate if not using ObjectId ref
   .sort({ session_date: 1 });
 
-  res.json({
+  return res.json({
     success: true,
     count: enrollments.length,
     data: enrollments
   });
 }));
 
-// GET /api/enrollments/class/:classId - Get class session enrollments
+// GET /api/enrollments/class/:classId - Class session enrollments
 router.get('/class/:classId', asyncHandler(async (req, res) => {
   const classId = req.params.classId;
-  
+
   const enrollments = await Enrollment.find({
     class_id: classId,
     status: 'active'
-  })
-  .sort({ session_date: 1, member_name: 1 });
+  }).sort({ session_date: 1, member_name: 1 });
 
-  res.json({
+  return res.json({
     success: true,
     count: enrollments.length,
     data: enrollments
@@ -147,40 +163,37 @@ router.get('/class/:classId', asyncHandler(async (req, res) => {
 // PUT /api/enrollments/:id/cancel - Cancel enrollment and refund session
 router.put('/:id/cancel', asyncHandler(async (req, res) => {
   const enrollmentId = req.params.id;
-  
-  const enrollment = await Enrollment.findOne({ 
-    $or: [{ enrollment_id: enrollmentId }, { _id: enrollmentId }]
-  });
+
+  // Resolve enrollment by enrollment_id (string) or _id (ObjectId)
+  let enrollment = null;
+  if (mongoose.Types.ObjectId.isValid(enrollmentId)) {
+    enrollment = await Enrollment.findOne({ _id: new mongoose.Types.ObjectId(enrollmentId) });
+  }
+  if (!enrollment) {
+    enrollment = await Enrollment.findOne({ enrollment_id: enrollmentId });
+  }
 
   if (!enrollment) {
-    return res.status(404).json({
-      success: false,
-      error: 'Enrollment not found'
-    });
+    return res.status(404).json({ success: false, error: 'Enrollment not found' });
   }
 
   if (enrollment.status === 'cancelled') {
-    return res.status(400).json({
-      success: false,
-      error: 'Enrollment is already cancelled'
-    });
+    return res.status(400).json({ success: false, error: 'Enrollment is already cancelled' });
   }
 
-  // Update enrollment status
+  // Update enrollment state
   enrollment.status = 'cancelled';
   enrollment.cancelled_at = new Date();
   enrollment.attendance_status = 'cancelled';
   await enrollment.save();
 
-  // Refund session to member if not attended
+  // Refund if not attended
   if (enrollment.attendance_status !== 'attended') {
     const member = await Member.findOne({ memberId: enrollment.member_id });
     if (member) {
-      const activeCombativeMembership = member.memberships.find(m => 
-        m.type === 'combative' && m.status === 'active'
-      );
+      const activeCombativeMembership = member.memberships?.find(m => m.type === 'combative' && m.status === 'active');
       if (activeCombativeMembership) {
-        activeCombativeMembership.remainingSessions += 1;
+        activeCombativeMembership.remainingSessions = (activeCombativeMembership.remainingSessions || 0) + 1;
         await member.save();
       }
     }
@@ -188,7 +201,7 @@ router.put('/:id/cancel', asyncHandler(async (req, res) => {
     await enrollment.save();
   }
 
-  // Update class enrollment count
+  // Decrement class counter and mark embedded entry as cancelled
   await Class.findOneAndUpdate(
     { class_id: enrollment.class_id },
     {
@@ -198,7 +211,7 @@ router.put('/:id/cancel', asyncHandler(async (req, res) => {
     { arrayFilters: [{ 'elem.member_id': enrollment.member_id }] }
   );
 
-  res.json({
+  return res.json({
     success: true,
     message: 'Enrollment cancelled successfully',
     data: enrollment,
@@ -218,15 +231,17 @@ router.put('/:id/attendance', asyncHandler(async (req, res) => {
     });
   }
 
-  const enrollment = await Enrollment.findOne({ 
-    $or: [{ enrollment_id: enrollmentId }, { _id: enrollmentId }]
-  });
+  // Resolve enrollment by either _id or enrollment_id
+  let enrollment = null;
+  if (mongoose.Types.ObjectId.isValid(enrollmentId)) {
+    enrollment = await Enrollment.findOne({ _id: new mongoose.Types.ObjectId(enrollmentId) });
+  }
+  if (!enrollment) {
+    enrollment = await Enrollment.findOne({ enrollment_id: enrollmentId });
+  }
 
   if (!enrollment) {
-    return res.status(404).json({
-      success: false,
-      error: 'Enrollment not found'
-    });
+    return res.status(404).json({ success: false, error: 'Enrollment not found' });
   }
 
   enrollment.attendance_status = attendance_status;
@@ -234,14 +249,12 @@ router.put('/:id/attendance', asyncHandler(async (req, res) => {
     enrollment.attended_at = new Date();
     enrollment.status = 'completed';
   } else if (attendance_status === 'missed') {
-    // Optionally refund missed sessions
+    // Refund missed session
     const member = await Member.findOne({ memberId: enrollment.member_id });
     if (member) {
-      const activeCombativeMembership = member.memberships.find(m => 
-        m.type === 'combative' && m.status === 'active'
-      );
+      const activeCombativeMembership = member.memberships?.find(m => m.type === 'combative' && m.status === 'active');
       if (activeCombativeMembership) {
-        activeCombativeMembership.remainingSessions += 1;
+        activeCombativeMembership.remainingSessions = (activeCombativeMembership.remainingSessions || 0) + 1;
         await member.save();
       }
     }
@@ -250,7 +263,7 @@ router.put('/:id/attendance', asyncHandler(async (req, res) => {
 
   await enrollment.save();
 
-  res.json({
+  return res.json({
     success: true,
     message: `Attendance marked as ${attendance_status}`,
     data: enrollment
