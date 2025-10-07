@@ -46,116 +46,137 @@
             </form>
         </div>
     </div>
-    <script>
-        const SERVER_URL = "https://flex-it-goalsgym-it-project-2.onrender.com";
+   <script>
+    const SERVER_URL = "https://flex-it-goalsgym-it-project-2.onrender.com";
+    window.loadedClasses = [];
 
-        // Save loaded classes for trainer_id look-up
-        window.loadedClasses = [];
-
-        function loadMemberName() {
-            const authUser = JSON.parse(localStorage.getItem('authUser'));
-            if (authUser && authUser.user && authUser.user.name) {
-                document.getElementById('memberName').textContent = authUser.user.name;
-            } else {
-                document.getElementById('memberName').textContent = "Member";
-            }
+    function loadMemberName() {
+        const authUser = JSON.parse(localStorage.getItem('authUser'));
+        if (authUser && authUser.user && authUser.user.name) {
+            document.getElementById('memberName').textContent = authUser.user.name;
+        } else {
+            document.getElementById('memberName').textContent = "Member";
         }
+    }
 
-        async function loadUserClasses() {
-            const classSelect = document.getElementById("classSelect");
-            classSelect.innerHTML = "<option value=''>-- Loading your classes... --</option>";
+    async function loadUserClasses() {
+        const classSelect = document.getElementById("classSelect");
+        classSelect.innerHTML = "<option value=''>-- Loading your classes... --</option>";
+        try {
+            const authUser = JSON.parse(localStorage.getItem('authUser'));
+            const memberId = authUser && authUser.user && (authUser.user.memberId || authUser.user.member_id || authUser.user._id);
+            const token = localStorage.getItem('authToken');
+            // Fetch enrollments for this member
+            const response = await fetch(`${SERVER_URL}/api/enrollments/member/${memberId}`, {
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                }
+            });
+            const data = await response.json();
+            if (!data.success || !Array.isArray(data.data) || data.data.length === 0) {
+                classSelect.innerHTML = "<option value=''>No enrolled classes found</option>";
+                return;
+            }
+            // For each enrollment, fetch the Class document
+            const classDetails = await Promise.all(data.data.map(async (enroll) => {
+                // Use the generic class_id string
+                const classId = enroll.class_id || enroll.classid;
+                let classData, schedule = "", trainer_id = "", class_name = "";
+                try {
+                    const classRes = await fetch(`${SERVER_URL}/api/classes/${classId}`, {
+                        headers: { "Authorization": `Bearer ${token}` }
+                    });
+                    const classJson = await classRes.json();
+                    if (classJson && classJson.data) {
+                        classData = classJson.data;
+                        class_name = classData.class_name || classData.classname || classId;
+                        schedule = classData.schedule || "";
+                        trainer_id = classData.trainer_id || classData.trainerid || "";
+                    }
+                } catch {}
+                return {
+                    class_id: classId,
+                    class_name,
+                    schedule,
+                    trainer_id,
+                    sessiondate: enroll.sessiondate
+                };
+            }));
+
+            window.loadedClasses = classDetails;
+            classSelect.innerHTML = "<option value=''>-- Select your class --</option>";
+            classDetails.forEach(cls => {
+                const option = document.createElement("option");
+                option.value = cls.class_id;
+                option.textContent = `${cls.class_name} (${cls.schedule})${cls.sessiondate ? " - " + (new Date(cls.sessiondate)).toLocaleDateString() : ""}`;
+                option.dataset.trainerId = cls.trainer_id;
+                classSelect.appendChild(option);
+            });
+        } catch (err) {
+            classSelect.innerHTML = "<option value=''>Failed to load classes</option>";
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+        loadMemberName();
+        loadUserClasses();
+
+        document.getElementById("feedbackForm").addEventListener("submit", async function(e) {
+            e.preventDefault();
+            const feedbackStatus = document.getElementById("feedbackStatus");
+            feedbackStatus.style.display = "none";
+            feedbackStatus.className = "success-message";
+
+            const classId = document.getElementById("classSelect").value;
+            const rating = document.getElementById("rating").value;
+            const comment = document.getElementById("feedbackText").value.trim();
+            const authUser = JSON.parse(localStorage.getItem('authUser'));
+            const memberId = authUser && authUser.user && (authUser.user.memberId || authUser.user.member_id || authUser.user._id);
+
+            // Retrieve class/trainer info from loadedClasses using generic class_id
+            const selectedClass = window.loadedClasses.find(cls => cls.class_id === classId);
+            const trainerId = selectedClass ? selectedClass.trainer_id : "";
+
+            if (!classId || !comment || !trainerId || !rating) {
+                feedbackStatus.textContent = "Please select a class, provide a rating, and write your feedback.";
+                feedbackStatus.style.display = "block";
+                feedbackStatus.className = "error";
+                return;
+            }
+
             try {
-                const authUser = JSON.parse(localStorage.getItem('authUser'));
-                const memberId = authUser && authUser.user && (authUser.user.memberId || authUser.user.member_id || authUser.user._id);
                 const token = localStorage.getItem('authToken');
-                // New endpoint to fetch by enrollment:
-                const response = await fetch(`${SERVER_URL}/api/enrollments/member/${memberId}`, {
+                const response = await fetch(`${SERVER_URL}/api/feedbacks`, {
+                    method: "POST",
                     headers: {
                         "Content-Type": "application/json",
                         "Authorization": `Bearer ${token}`
-                    }
+                    },
+                    body: JSON.stringify({
+                        class_id: classId,
+                        member_id: memberId,
+                        trainer_id: trainerId,
+                        rating: parseInt(rating),
+                        comment
+                    })
                 });
                 const data = await response.json();
-                if (data.success && Array.isArray(data.data) && data.data.length > 0) {
-                    window.loadedClasses = data.data; // Save for trainer data lookup
-                    classSelect.innerHTML = "<option value=''>-- Select your class --</option>";
-                    data.data.forEach(enroll => {
-                        // Show both class info and date for clarity
-                        const option = document.createElement("option");
-                        option.value = enroll.class_id || enroll.classid || enroll._id;
-                        option.textContent = `${enroll.class_name || enroll.classid || "Unknown"} (${enroll.sessiondate ? new Date(enroll.sessiondate).toLocaleDateString() : "No date"})`;
-                        option.dataset.trainerId = enroll.trainer_id || enroll.trainerid || "";
-                        classSelect.appendChild(option);
-                    });
+                if (response.ok && data.success) {
+                    feedbackStatus.textContent = "Thank you for your feedback!";
+                    feedbackStatus.style.display = "block";
+                    feedbackStatus.className = "success-message";
+                    document.getElementById("feedbackForm").reset();
                 } else {
-                    classSelect.innerHTML = "<option value=''>No enrolled classes found</option>";
+                    throw new Error(data.error || data.message || "Failed to send feedback.");
                 }
             } catch (err) {
-                classSelect.innerHTML = "<option value=''>Failed to load classes</option>";
+                feedbackStatus.textContent = err.message || "Failed to send feedback.";
+                feedbackStatus.style.display = "block";
+                feedbackStatus.className = "error";
             }
-        }
-
-        document.addEventListener("DOMContentLoaded", function() {
-            loadMemberName();
-            loadUserClasses();
-
-            document.getElementById("feedbackForm").addEventListener("submit", async function(e) {
-                e.preventDefault();
-                const feedbackStatus = document.getElementById("feedbackStatus");
-                feedbackStatus.style.display = "none";
-                feedbackStatus.className = "success-message";
-
-                const classId = document.getElementById("classSelect").value;
-                const rating = document.getElementById("rating").value;
-                const comment = document.getElementById("feedbackText").value.trim();
-                const authUser = JSON.parse(localStorage.getItem('authUser'));
-                const memberId = authUser && authUser.user && (authUser.user.memberId || authUser.user.member_id || authUser.user._id);
-
-                // Get the matching enrollment for trainer_id lookup
-                const selectedEnrollment = window.loadedClasses.find(enroll =>
-                    (enroll.class_id || enroll.classid || enroll._id) === classId
-                );
-                const trainerId = selectedEnrollment ? (selectedEnrollment.trainer_id || selectedEnrollment.trainerid || "") : "";
-
-                if (!classId || !comment || !trainerId || !rating) {
-                    feedbackStatus.textContent = "Please select a class, provide a rating, and write your feedback.";
-                    feedbackStatus.style.display = "block";
-                    feedbackStatus.className = "error";
-                    return;
-                }
-
-                try {
-                    const token = localStorage.getItem('authToken');
-                    const response = await fetch(`${SERVER_URL}/api/feedbacks`, {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json",
-                            "Authorization": `Bearer ${token}`
-                        },
-                        body: JSON.stringify({
-                            class_id: classId,
-                            member_id: memberId,
-                            trainer_id: trainerId,
-                            rating: parseInt(rating),
-                            comment
-                        })
-                    });
-                    const data = await response.json();
-                    if (response.ok && data.success) {
-                        feedbackStatus.textContent = "Thank you for your feedback!";
-                        feedbackStatus.style.display = "block";
-                        feedbackStatus.className = "success-message";
-                        document.getElementById("feedbackForm").reset();
-                    } else {
-                        throw new Error(data.error || data.message || "Failed to send feedback.");
-                    }
-                } catch (err) {
-                    feedbackStatus.textContent = err.message || "Failed to send feedback.";
-                    feedbackStatus.style.display = "block";
-                    feedbackStatus.className = "error";
-                }
-            });
         });
-    </script>
+    });
+</script>
 </body>
 </html>
