@@ -8,32 +8,35 @@ const Class = require('../models/Classes');
 const router = express.Router();
 
 // POST /api/feedbacks
+// POST /api/feedbacks
 router.post('/', asyncHandler(async (req, res) => {
-    const { class_id, member_id, trainer_id, rating, comment } = req.body;
-    if (!class_id || !member_id || !trainer_id || !rating) {
-        return res.status(400).json({ success: false, error: 'Class ID, Member ID, Trainer ID, and Rating are required' });
-    }
-    if (rating < 1 || rating > 5) {
-        return res.status(400).json({ success: false, error: 'Rating must be between 1 and 5' });
-    }
+    const { class_id, member_id, trainer_id, rating, comment } = req.body;
+    if (!class_id || !member_id || !trainer_id || !rating) {
+        return res.status(400).json({ success: false, error: 'Class ID, Member ID, Trainer ID, and Rating are required' });
+    }
+    if (rating < 1 || rating > 5) {
+        return res.status(400).json({ success: false, error: 'Rating must be between 1 and 5' });
+    }
 
-const isEnrolled = await Enrollment.findOne({ class_id, member_id });
-// For more restrictions, add: , status: 'active'
-if (!isEnrolled) return res.status(403).json({ success:false, error:'Member is not enrolled in this class' });
+    // Check enrollment using the generic class_id
+    const isEnrolled = await Enrollment.findOne({ class_id, member_id });
+    if (!isEnrolled) return res.status(403).json({ success:false, error:'Member is not enrolled in this class' });
 
+    // Uniqueness check by class_id and member_id (always generic string)
+    const existingFeedback = await Feedback.findOne({ class_id, member_id });
+    if (existingFeedback) return res.status(409).json({ success: false, error: 'Feedback already submitted for this class' });
 
-    const existingFeedback = await Feedback.findOne({ class_id, member_id });
-    if (existingFeedback) return res.status(409).json({ success: false, error: 'Feedback already submitted for this class' });
+    // Save feedback using generic class_id (not ObjectId)
+    const feedback = new Feedback({ class_id, member_id, trainer_id, rating, comment: comment || '' });
+    const savedFeedback = await feedback.save();
 
-    const feedback = new Feedback({ class_id, member_id, trainer_id, rating, comment: comment || '' });
-    const savedFeedback = await feedback.save();
+    // Also push to the Class (you must match by class_id not _id!)
+    await Class.updateOne(
+        { class_id }, // This is the main fix: use class_id, not _id
+        { $push: { feedback: { member_id, rating, comment: comment || '', date_submitted: new Date() } } }
+    );
 
-    // Optional: also push to class feedback array for quick lookup
-    await Class.updateOne({ _id: class_id },
-        { $push: { feedback: { member_id, rating, comment: comment || '', date_submitted: new Date() } } }
-    );
-
-    res.status(201).json({ success: true, message: 'Feedback submitted successfully', data: savedFeedback });
+    res.status(201).json({ success: true, message: 'Feedback submitted successfully', data: savedFeedback });
 }));
 
 // GET /api/feedbacks/class/:id
