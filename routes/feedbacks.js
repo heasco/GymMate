@@ -17,8 +17,10 @@ router.post('/', asyncHandler(async (req, res) => {
         return res.status(400).json({ success: false, error: 'Rating must be between 1 and 5' });
     }
 
-    const classDoc = await Class.findOne({ _id: class_id, 'enrolled_members': { $elemMatch: { member_id, status: 'active' } } });
-    if (!classDoc) return res.status(403).json({ success:false, error:'Member is not enrolled in this class' });
+const isEnrolled = await Enrollment.findOne({ class_id, member_id });
+// For more restrictions, add: , status: 'active'
+if (!isEnrolled) return res.status(403).json({ success:false, error:'Member is not enrolled in this class' });
+
 
     const existingFeedback = await Feedback.findOne({ class_id, member_id });
     if (existingFeedback) return res.status(409).json({ success: false, error: 'Feedback already submitted for this class' });
