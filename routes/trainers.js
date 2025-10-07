@@ -4,7 +4,7 @@ const bcrypt = require('bcryptjs');
 const asyncHandler = require('../middleware/asyncHandler');
 const Trainer = require('../models/Trainer');
 const Feedback = require('../models/Feedback');
-const transporter = require('../utils/nodemailer'); // <-- ADD THIS LINE
+const transporter = require('../utils/nodemailer');
 
 const router = express.Router();
 
@@ -36,12 +36,12 @@ GOALS Gym Team
 
 // POST /api/trainers
 router.post('/', asyncHandler(async (req, res) => {
-  const { name, specialization, is_available, assigned_classes, email } = req.body;
+  const { name, specialization, is_available, assigned_classes, email, send_email } = req.body; // <-- add send_email!
   if (!name || !specialization) {
     const errors = {};
     if (!name) errors.name = 'Name is required';
     if (!specialization) errors.specialization = 'Specialization is required';
-    return res.status(400).json({ success:false, error:'Validation failed', details: errors });
+    return res.status(400).json({ success: false, error: 'Validation failed', details: errors });
   }
 
   const nameParts = name.trim().split(/\s+/);
@@ -66,26 +66,31 @@ router.post('/', asyncHandler(async (req, res) => {
     specialization: specialization.trim(),
     is_available: is_available !== undefined ? Boolean(is_available) : true,
     assigned_classes: Array.isArray(assigned_classes) ? assigned_classes : [],
-    email: email ? email.trim().toLowerCase() : undefined, // save email too!
+    email: email ? email.trim().toLowerCase() : undefined,
   });
 
   const savedTrainer = await newTrainer.save();
 
-  // --- SEND EMAIL after saving
-  try {
-    await sendTrainerWelcomeEmail({
-      name: savedTrainer.name,
-      email: savedTrainer.email,
-      username: savedTrainer.username,
-      tempPassword
-    });
-  } catch (err) {
-    console.error('Error sending trainer welcome email:', err);
-    // Don't fail creation just because email fails!
+  // --- ONLY send email if send_email is true (from frontend) ---
+  if (send_email) {
+    try {
+      await sendTrainerWelcomeEmail({
+        name: savedTrainer.name,
+        email: savedTrainer.email,
+        username: savedTrainer.username,
+        tempPassword
+      });
+      console.log('Email sent successfully');
+    } catch (err) {
+      console.error('Error sending trainer welcome email:', err);
+      // Don't fail creation just because email fails!
+    }
+  } else {
+    console.log('Email sending skipped (send_email = false)');
   }
 
   res.status(201).json({
-    success:true, message:'Trainer created successfully',
+    success: true, message: 'Trainer created successfully',
     data: {
       trainer_id: savedTrainer.trainer_id,
       mongoId: savedTrainer._id,
@@ -104,18 +109,18 @@ router.post('/', asyncHandler(async (req, res) => {
 // (All your other routes unchanged)
 router.get('/', asyncHandler(async (req, res) => {
   const trainers = await Trainer.find().sort({ createdAt: -1 });
-  res.json({ success:true, count: trainers.length, data: trainers });
+  res.json({ success: true, count: trainers.length, data: trainers });
 }));
 
 router.get('/available', asyncHandler(async (req, res) => {
   const availableTrainers = await Trainer.findAvailable();
-  res.json({ success:true, count: availableTrainers.length, data: availableTrainers });
+  res.json({ success: true, count: availableTrainers.length, data: availableTrainers });
 }));
 
 router.get('/:id/feedback', asyncHandler(async (req, res) => {
   const trainer_id = req.params.id;
-  const feedback = await Feedback.find({ trainer_id }).populate('class_id', 'class_name').sort({ date_submitted:-1 });
-  res.json({ success:true, count: feedback.length, data: feedback });
+  const feedback = await Feedback.find({ trainer_id }).populate('class_id', 'class_name').sort({ date_submitted: -1 });
+  res.json({ success: true, count: feedback.length, data: feedback });
 }));
 
 router.get('/:id/rating', asyncHandler(async (req, res) => {
@@ -126,7 +131,7 @@ router.get('/:id/rating', asyncHandler(async (req, res) => {
   ]);
   const averageRating = result.length > 0 ? result[0].averageRating.toFixed(1) : 0;
   const totalFeedback = result.length > 0 ? result[0].totalFeedback : 0;
-  res.json({ success:true, data: { averageRating, totalFeedback } });
+  res.json({ success: true, data: { averageRating, totalFeedback } });
 }));
 
 router.post('/update-profile', asyncHandler(async (req, res) => {
