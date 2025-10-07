@@ -4,12 +4,39 @@ const bcrypt = require('bcryptjs');
 const asyncHandler = require('../middleware/asyncHandler');
 const Trainer = require('../models/Trainer');
 const Feedback = require('../models/Feedback');
+const transporter = require('../utils/nodemailer'); // <-- ADD THIS LINE
 
 const router = express.Router();
 
+// Helper: send new trainer email
+async function sendTrainerWelcomeEmail({ name, email, username, tempPassword }) {
+  if (!email) return; // Skip sending if no email
+  const subject = 'Welcome to GOALS Gym - Trainer Account Details';
+  const text = `
+Hi ${name},
+
+You have been added as a trainer at GOALS Gym.
+Your account details are:
+
+Username: ${username}
+Temporary Password: ${tempPassword}
+
+Please log in and change your password as soon as possible.
+
+Best,
+GOALS Gym Team
+  `;
+  await transporter.sendMail({
+    from: `"GOALS Gym Admin" <${process.env.EMAIL_USER}>`,
+    to: email,
+    subject,
+    text,
+  });
+}
+
 // POST /api/trainers
 router.post('/', asyncHandler(async (req, res) => {
-  const { name, specialization, is_available, assigned_classes } = req.body;
+  const { name, specialization, is_available, assigned_classes, email } = req.body;
   if (!name || !specialization) {
     const errors = {};
     if (!name) errors.name = 'Name is required';
@@ -39,9 +66,24 @@ router.post('/', asyncHandler(async (req, res) => {
     specialization: specialization.trim(),
     is_available: is_available !== undefined ? Boolean(is_available) : true,
     assigned_classes: Array.isArray(assigned_classes) ? assigned_classes : [],
+    email: email ? email.trim().toLowerCase() : undefined, // save email too!
   });
 
   const savedTrainer = await newTrainer.save();
+
+  // --- SEND EMAIL after saving
+  try {
+    await sendTrainerWelcomeEmail({
+      name: savedTrainer.name,
+      email: savedTrainer.email,
+      username: savedTrainer.username,
+      tempPassword
+    });
+  } catch (err) {
+    console.error('Error sending trainer welcome email:', err);
+    // Don't fail creation just because email fails!
+  }
+
   res.status(201).json({
     success:true, message:'Trainer created successfully',
     data: {
@@ -59,26 +101,23 @@ router.post('/', asyncHandler(async (req, res) => {
   });
 }));
 
-// GET /api/trainers
+// (All your other routes unchanged)
 router.get('/', asyncHandler(async (req, res) => {
   const trainers = await Trainer.find().sort({ createdAt: -1 });
   res.json({ success:true, count: trainers.length, data: trainers });
 }));
 
-// GET /api/trainers/available
 router.get('/available', asyncHandler(async (req, res) => {
   const availableTrainers = await Trainer.findAvailable();
   res.json({ success:true, count: availableTrainers.length, data: availableTrainers });
 }));
 
-// GET /api/trainers/:id/feedback
 router.get('/:id/feedback', asyncHandler(async (req, res) => {
   const trainer_id = req.params.id;
   const feedback = await Feedback.find({ trainer_id }).populate('class_id', 'class_name').sort({ date_submitted:-1 });
   res.json({ success:true, count: feedback.length, data: feedback });
 }));
 
-// GET /api/trainers/:id/rating
 router.get('/:id/rating', asyncHandler(async (req, res) => {
   const trainer_id = req.params.id;
   const result = await Feedback.aggregate([
@@ -90,7 +129,6 @@ router.get('/:id/rating', asyncHandler(async (req, res) => {
   res.json({ success:true, data: { averageRating, totalFeedback } });
 }));
 
-// POST /api/trainers/update-profile
 router.post('/update-profile', asyncHandler(async (req, res) => {
   const { trainer_id, username, phone, email, currentPassword, newPassword } = req.body;
 
@@ -145,6 +183,5 @@ router.post('/update-profile', asyncHandler(async (req, res) => {
   await trainer.save();
   res.json({ success: true, message: 'Trainer profile updated.' });
 }));
-
 
 module.exports = router;

@@ -45,6 +45,14 @@ const TrainerSchema = new mongoose.Schema({
     lowercase: true,
     trim: true
   },
+    email: {
+    type: String,
+    required: true,
+    trim: true,
+    lowercase: true,
+    unique: true,
+    match: [/^[^\s@]+@[^\s@]+\.[^\s@]+$/, 'Email is invalid']
+  },
   password: {
     type: String,
     required: true,
