@@ -84,6 +84,24 @@ router.put('/:id', asyncHandler(async (req, res) => {
 }));
 
 
+// GET /api/trainers/search?query=...
+router.get('/search', asyncHandler(async (req, res) => {
+  const query = req.query.query?.toLowerCase() || "";
+  if (!query) {
+    // Return all trainers if no query given
+    const trainers = await Trainer.find().sort({ createdAt: -1 });
+    return res.json({ success: true, data: trainers });
+  }
+  const trainers = await Trainer.find({
+    $or: [
+      { trainer_id: { $regex: query, $options: "i" } },
+      { name: { $regex: query, $options: "i" } }
+    ]
+  });
+  res.json({ success: true, data: trainers });
+}));
+
+
 // POST /api/trainers
 router.post('/', asyncHandler(async (req, res) => {
   const { name, specialization, is_available, assigned_classes, email, send_email } = req.body;
