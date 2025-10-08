@@ -4,13 +4,13 @@ const bcrypt = require('bcryptjs');
 const asyncHandler = require('../middleware/asyncHandler');
 const Trainer = require('../models/Trainer');
 const Feedback = require('../models/Feedback');
-const transporter = require('../utils/nodemailer');
+const resend = require('../utils/resend'); // <-- USE THIS
 
 const router = express.Router();
 
 // Helper: send new trainer email
 async function sendTrainerWelcomeEmail({ name, email, username, tempPassword }) {
-  if (!email) return; // Skip sending if no email
+  if (!email) return;
   const subject = 'Welcome to GOALS Gym - Trainer Account Details';
   const text = `
 Hi ${name},
@@ -26,8 +26,8 @@ Please log in and change your password as soon as possible.
 Best,
 GOALS Gym Team
   `;
-  await transporter.sendMail({
-    from: `"GOALS Gym Admin" <${process.env.EMAIL_USER}>`,
+  await resend.emails.send({
+    from: 'GOALS Gym <onboarding@resend.dev>', // You can set your own sender if verified
     to: email,
     subject,
     text,
@@ -36,7 +36,7 @@ GOALS Gym Team
 
 // POST /api/trainers
 router.post('/', asyncHandler(async (req, res) => {
-  const { name, specialization, is_available, assigned_classes, email, send_email } = req.body; // <-- add send_email!
+  const { name, specialization, is_available, assigned_classes, email, send_email } = req.body;
   if (!name || !specialization) {
     const errors = {};
     if (!name) errors.name = 'Name is required';
@@ -80,9 +80,9 @@ router.post('/', asyncHandler(async (req, res) => {
         username: savedTrainer.username,
         tempPassword
       });
-      console.log('Email sent successfully');
+      console.log('Email sent via Resend');
     } catch (err) {
-      console.error('Error sending trainer welcome email:', err);
+      console.error('Error sending trainer welcome email via Resend:', err);
       // Don't fail creation just because email fails!
     }
   } else {
