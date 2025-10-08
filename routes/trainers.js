@@ -27,7 +27,7 @@ Best,
 GOALS Gym Team
   `;
   await resend.emails.send({
-    from: 'GOALS Gym <onboarding@resend.dev>', // You can set your own sender if verified
+    from: 'GOALS Gym <admin@goalsgymbaguio.run.place>', // You can set your own sender if verified
     to: email,
     subject,
     text,
