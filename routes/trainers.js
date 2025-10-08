@@ -150,10 +150,12 @@ router.post('/update-profile', asyncHandler(async (req, res) => {
   if (!trainer) return res.status(404).json({ success: false, error: 'Trainer not found' });
 
   // Check password
-  const match = await bcrypt.compare(currentPassword, trainer.password);
-  if (!match) {
-    return res.status(401).json({ success: false, error: 'Incorrect current password.' });
-  }
+if (typeof currentPassword === 'string' && currentPassword.length > 0) {
+    const match = await bcrypt.compare(currentPassword, trainer.password);
+    if (!match) {
+      return res.status(401).json({ success: false, error: 'Incorrect current password.' });
+    }
+}
 
   // Update username (if changed)
   if (username && username !== trainer.username) {
