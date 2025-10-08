@@ -34,6 +34,56 @@ GOALS Gym Team
   });
 }
 
+// PUT /api/trainers/:id
+router.put('/:id', asyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  // Try by MongoDB _id or by trainer_id
+  let trainer;
+  if (mongoose.Types.ObjectId.isValid(id)) {
+    trainer = await Trainer.findById(id);
+  }
+  if (!trainer) {
+    trainer = await Trainer.findOne({ trainer_id: id });
+  }
+  if (!trainer) {
+    return res.status(404).json({ success: false, error: "Trainer not found." });
+  }
+
+  // Accept both is_available (snake_case) and isavailable (camelCase) for frontend flexibility
+  // If either is present, update availability
+  if (typeof req.body.is_available !== "undefined") {
+    trainer.is_available = req.body.is_available;
+  } else if (typeof req.body.isavailable !== "undefined") {
+    trainer.is_available = req.body.isavailable;
+  }
+
+  // Update fields if provided (do not override if omitted)
+  if (typeof req.body.name === "string") trainer.name = req.body.name.trim();
+  if (typeof req.body.email === "string") trainer.email = req.body.email.trim().toLowerCase();
+  if (typeof req.body.specialization === "string") trainer.specialization = req.body.specialization.trim();
+
+  // Save the updated trainer
+  await trainer.save();
+
+  res.json({
+    success: true,
+    message: "Trainer updated successfully.",
+    data: {
+      trainer_id: trainer.trainer_id,
+      mongoId: trainer._id,
+      name: trainer.name,
+      specialization: trainer.specialization,
+      email: trainer.email,
+      is_available: trainer.is_available,
+      assigned_classes: trainer.assigned_classes,
+      updatedAt: trainer.updatedAt,
+      feedback_received: trainer.feedback_received
+    }
+  });
+}));
+
+
 // POST /api/trainers
 router.post('/', asyncHandler(async (req, res) => {
   const { name, specialization, is_available, assigned_classes, email, send_email } = req.body;
