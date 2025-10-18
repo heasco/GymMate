@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trainer Dashboard - GOALS Gym</title>
+    <link rel="stylesheet" href="../admin/admin-css/admin-mainpage.css">
+    <link rel="stylesheet" href="./trainer-mainpage.css">
+</head>
+<body>
+    <div class="admin-container">
+        <!-- Sidebar, optional for trainers -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h2>GOALS Gym Trainer</h2>
+            </div>
+            <nav class="sidebar-nav">
+      <li><a href="trainer-mainpage.html">Dashboard</a></li>
+      <li><a href="view-and-change-schedule.html" class="active">My Classes/Schedule</a></li>
+      <li><a href="trainer-profile.html">Profile</a></li>
+      <li><a href="trainer-feedback.html">Feedback</a></li>
+            </nav>
+        </aside>
+        <header class="header">
+            <button class="menu-toggle" id="menuToggle">☰</button>
+            <h1>Trainer Dashboard</h1>
+            <button class="logout-btn" id="logoutBtn">Logout</button>
+        </header>
+        <main class="main-content">
+            <div class="trainer-greeting">
+                <h2>Welcome, <span id="trainerName">Trainer</span>!</h2>
+                <div class="specialization" id="specialization"></div>
+            </div>
+            <div class="section">
+                <h3>Your Schedule</h3>
+                <div id="scheduleLoading" class="loading">Loading schedule...</div>
+                <div id="trainerSchedule"></div>
+                
+            </div>
+        </main>
+    </div>
+    <script>
+        const API_URL = 'https://flex-it-goalsgym-it-project-2.onrender.com';
+
+        document.addEventListener('DOMContentLoaded', async function() {
+            // Sidebar and logout logic
+            const menuToggle = document.getElementById('menuToggle');
+            const sidebar = document.querySelector('.sidebar');
+            const logoutBtn = document.getElementById('logoutBtn');
+            const authUser = JSON.parse(localStorage.getItem('authUser'));
+
+            if (!authUser || !authUser.user || authUser.role !== "trainer" || (Date.now() - authUser.timestamp > 3600000)) {
+                localStorage.removeItem('authUser');
+                window.location.href = '../trainer-login.html';
+                return;
+            }
+
+            menuToggle.addEventListener('click', () => sidebar.classList.toggle('collapsed'));
+            logoutBtn.addEventListener('click', () => {
+                localStorage.removeItem('authUser');
+                window.location.href = '../trainer-login.html';
+            });
+
+            // Display trainer name and specialization
+            document.getElementById('trainerName').textContent = authUser.user.name;
+            if (authUser.user.specialization)
+                document.getElementById('specialization').textContent = `Specialization: ${authUser.user.specialization}`;
+
+            // Fetch trainer schedule
+            try {
+                const scheduleDiv = document.getElementById('trainerSchedule');
+                const loading = document.getElementById('scheduleLoading');
+                const trainerId = authUser.user.trainerid || authUser.user.trainer_id || authUser.user.id;
+                const resp = await fetch(`${API_URL}/api/classes?trainerid=${encodeURIComponent(trainerId)}`);
+                let classes = [];
+                if (resp.ok) {
+                    const data = await resp.json();
+                    classes = data.data || [];
+                }
+                loading.style.display = 'none';
+
+                if (classes.length === 0) {
+                    scheduleDiv.innerHTML = '<div class="no-classes">No assigned classes or schedule found.</div>';
+                } else {
+                    let html = '<table class="schedule-table"><thead><tr><th>Class Name</th><th>Schedule</th><th>Capacity</th></tr></thead><tbody>';
+                    for (const c of classes) {
+                        html += `<tr>
+                            <td>${c.classname || c.class_name}</td>
+                            <td>${c.schedule}</td>
+                            <td>${c.capacity || '-'}</td>
+                        </tr>`;
+                    }
+                    html += '</tbody></table>';
+                    scheduleDiv.innerHTML = html;
+                }
+            } catch (err) {
+                document.getElementById('scheduleLoading').style.display = 'none';
+                document.getElementById('trainerSchedule').innerHTML = '<div class="error">Failed to load schedule.</div>';
+            }
+        });
+    </script>
+</body>
+</html>

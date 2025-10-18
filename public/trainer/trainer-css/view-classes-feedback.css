@@ -1,0 +1,105 @@
+:root {
+    --primary: #125fbe;
+    --secondary: #0a365e;
+    --accent: #f4f4f6;
+    --error: #e74c3c;
+    --success: #27ae60;
+}
+
+body {
+    background: var(--accent);
+    font-family: 'Segoe UI', Arial, sans-serif;
+}
+
+.class-card {
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 6px #0001;
+    padding: 24px 28px;
+    margin-bottom: 36px;
+    transition: box-shadow 0.2s;
+}
+
+.class-card header h3 {
+    margin: 0 0 6px 0;
+    color: var(--primary);
+    font-size: 1.3em;
+}
+
+.class-card .schedule, .class-card .summary {
+    color: var(--secondary);
+    font-size: 1em;
+    margin-bottom: 5px;
+}
+
+.class-card .class-feedback-list {
+    margin: 18px 0 0 0;
+}
+
+.feedback-list {
+    list-style: disc inside;
+    margin: 12px 0 0 0;
+    padding: 0;
+}
+
+.feedback-list li {
+    border-bottom: 1px solid #eaeaea;
+    padding: 10px 5px 8px 2px;
+    margin-bottom: 3px;
+    color: #222;
+    font-size: 1em;
+}
+
+.feedback-list .meta {
+    color: #666;
+    font-size: 0.93em;
+    margin-top: 2px;
+}
+
+.no-feedbacks, .no-classes {
+    background: #faedf4;
+    color: #b35c7e;
+    padding: 10px 20px;
+    border-radius: 5px;
+    margin-top: 10px;
+}
+
+.filter-buttons {
+    margin-bottom: 28px;
+    display: flex;
+    gap: 18px;
+}
+
+.filter-buttons button {
+    background: var(--primary);
+    color: #fff;
+    padding: 9px 28px;
+    border: none;
+    border-radius: 5px;
+    font-size: 1.01em;
+    cursor: pointer;
+    outline: none;
+    transition: background 0.15s;
+}
+
+.filter-buttons button:hover,
+.filter-buttons button.active {
+    background: var(--secondary);
+}
+
+.feedback-rating-filter select {
+  background: #232329;
+  color: #fff;
+  padding: 7px 18px;
+  border-radius: 7px;
+  border: 1.5px solid #474747;
+  font-size: 1rem;
+  font-family: inherit;
+  margin-right: 12px;
+}
+.feedback-rating-filter label {
+  color:#fff;
+  margin-right:8px;
+  font-weight:600;
+}
+

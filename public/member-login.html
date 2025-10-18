@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Member Login - GOALS Gym</title>
+  <link rel="stylesheet" href="/style.css" />
+  <style>
+    /* local styles for the classes UI */
+    .login-container { max-width:700px; margin:28px auto; padding:18px; }
+    .logged-in-panel { border:1px solid #e6e6e6; padding:12px; border-radius:8px; background:#fafafa; margin-top:12px; display:flex; justify-content:space-between; align-items:center; gap:12px; }
+    .classes-panel { max-width:800px; margin:18px auto; padding:12px; border:1px solid #e0e0e0; border-radius:8px; background:#fff; }
+    .classes-header { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:8px; }
+    .classes-list { margin-top:8px; }
+    .class-card { margin:8px 0; padding:10px; border-radius:6px; background:#f9f9f9; box-shadow:0 1px 2px rgba(0,0,0,0.03); }
+    .class-summary { font-weight:700; }
+    .class-meta { font-size:0.9rem; color:#444; margin-top:6px; }
+    .small-muted { font-size:0.85rem; color:#666; }
+    .loading { font-style:italic; color:#666; }
+    .error { color:crimson; margin-top:8px; }
+    .btn { padding:8px 10px; border-radius:6px; border:1px solid #ccc; background:#fff; cursor:pointer; }
+    .btn-primary { background:#1976d2; color:#fff; border-color:#1359a2; }
+    .btn-ghost { background:transparent; border-color:#bbb; }
+    .controls { display:flex; gap:8px; align-items:center; }
+    .hide { display:none !important; }
+  </style>
+</head>
+<body>
+  <div class="login-container">
+    <h1 class="login-title">Member Login</h1>
+
+    <!-- Login form (shown when not logged in) -->
+    <form id="loginForm" aria-hidden="false">
+      <div class="input-group">
+        <label for="username" class="input-label">Username</label>
+        <input type="text" id="username" class="input-field" required autocomplete="username" />
+      </div>
+      <div class="input-group">
+        <label for="password" class="input-label">Password</label>
+        <input type="password" id="password" class="input-field" required autocomplete="current-password" />
+      </div>
+      <div style="margin-top:10px;">
+        <button type="submit" class="btn btn-primary">Login</button>
+        <button type="button" id="loginStayBtn" class="btn btn-ghost" title="Login and stay on this page to view classes">Login & stay</button>
+      </div>
+    </form>
+
+    <p class="error-message" id="error-message" style="color:crimson"></p>
+    <p class="info-message">Forgot your password? Contact admin to reset.</p>
+
+    <!-- Logged-in view (shown when authUser exists) -->
+    <div id="loggedInPanel" class="logged-in-panel hide" aria-live="polite">
+      <div>
+        <div id="welcomeText" style="font-weight:700">Welcome, member</div>
+        <div class="small-muted" id="memberInfo"></div>
+      </div>
+      <div class="controls">
+        <button id="classesBtn" class="btn btn-primary">Classes</button>
+        <button id="dashboardBtn" class="btn">Dashboard</button>
+        <button id="logoutBtn" class="btn">Logout</button>
+      </div>
+    </div>
+
+    <!-- Classes panel (can be toggled) -->
+    <div id="classesPanel" class="classes-panel hide" aria-live="polite">
+      <div class="classes-header">
+        <h2 style="margin:0">Available Classes</h2>
+        <div>
+          <button id="hideClassesBtn" class="btn">Close</button>
+        </div>
+      </div>
+
+      <div style="margin-bottom:8px;">
+        <input id="classSearch" placeholder="Search classes (name, schedule, trainer)..." style="width:62%;padding:6px;border-radius:4px;border:1px solid #ccc" />
+        <button id="refreshClasses" class="btn" style="margin-left:8px">Refresh</button>
+      </div>
+
+      <div id="classesLoading" class="loading hide">Loading classes...</div>
+      <div id="classesError" class="error hide"></div>
+      <div id="classesList" class="classes-list"></div>
+    </div>
+
+  </div>
+
+  <script>
+    // API root - keep your existing URL
+    const API_URL = 'https://flex-it-goalsgym-it-project-2.onrender.com';
+
+    // Elements
+    const loginForm = document.getElementById('loginForm');
+    const usernameInput = document.getElementById('username');
+    const passwordInput = document.getElementById('password');
+    const errorElement = document.getElementById('error-message');
+    const loginStayBtn = document.getElementById('loginStayBtn');
+
+    const loggedInPanel = document.getElementById('loggedInPanel');
+    const welcomeText = document.getElementById('welcomeText');
+    const memberInfo = document.getElementById('memberInfo');
+    const classesBtn = document.getElementById('classesBtn');
+    const dashboardBtn = document.getElementById('dashboardBtn');
+    const logoutBtn = document.getElementById('logoutBtn');
+
+    const classesPanel = document.getElementById('classesPanel');
+    const hideClassesBtn = document.getElementById('hideClassesBtn');
+    const classesLoading = document.getElementById('classesLoading');
+    const classesError = document.getElementById('classesError');
+    const classesListEl = document.getElementById('classesList');
+    const classSearchInput = document.getElementById('classSearch');
+    const refreshBtn = document.getElementById('refreshClasses');
+
+    let cachedClasses = [];
+    let stayAfterLogin = false; // controls whether to redirect after login or stay and show UI
+
+    // Check if user is already logged in (localStorage authUser)
+    function getAuthUser() {
+      try {
+        const raw = localStorage.getItem('authUser');
+        if (!raw) return null;
+        return JSON.parse(raw);
+      } catch (e) {
+        return null;
+      }
+    }
+
+    function showLoggedInUI(userObj) {
+      // hide login form
+      loginForm.classList.add('hide');
+      errorElement.textContent = '';
+
+      const user = userObj && userObj.user ? userObj.user : {};
+      const displayName = user.fullname || user.name || user.username || 'Member';
+      welcomeText.textContent = `Welcome, ${displayName}`;
+      memberInfo.textContent = `Username: ${user.username || 'N/A'} | Role: member`;
+
+      loggedInPanel.classList.remove('hide');
+      // optionally automatically open classes panel (commented)
+      // classesPanel.classList.remove('hide');
+    }
+
+    function showLoginUI() {
+      loginForm.classList.remove('hide');
+      loggedInPanel.classList.add('hide');
+      classesPanel.classList.add('hide');
+    }
+
+    function setAuthUser(obj) {
+      localStorage.setItem('authUser', JSON.stringify(obj));
+    }
+
+    function clearAuthUser() {
+      localStorage.removeItem('authUser');
+    }
+
+    // On page load decide which UI to show
+    (function init() {
+      const auth = getAuthUser();
+      if (auth && auth.role === 'member') {
+        showLoggedInUI(auth);
+      } else {
+        showLoginUI();
+      }
+      usernameInput.focus();
+    })();
+
+    // Login form submit (default behaviour: perform login and show logged-in UI)
+    loginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      await performLogin(false);
+    });
+
+    // "Login & stay" button - login and keep on page showing classes UI
+    loginStayBtn.addEventListener('click', async () => {
+      stayAfterLogin = true;
+      await performLogin(true);
+      stayAfterLogin = false;
+    });
+
+    async function performLogin(stay) {
+      errorElement.textContent = '';
+      const u = usernameInput.value.trim();
+      const p = passwordInput.value;
+      if (!u || !p) {
+        errorElement.textContent = 'Please enter username and password.';
+        return;
+      }
+
+      const submitBtn = loginForm.querySelector('button[type="submit"]');
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Logging in...';
+      try {
+        const resp = await fetch(`${API_URL}/api/member/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: u, password: p })
+        });
+
+        if (!resp.ok) {
+          const errJson = await resp.json().catch(() => ({}));
+          throw new Error(errJson.error || 'Invalid member credentials');
+        }
+
+        const data = await resp.json();
+
+        // Save auth info
+        const authObject = {
+          user: data.data,
+          role: 'member',
+          timestamp: Date.now()
+        };
+        setAuthUser(authObject);
+
+        // Show logged-in UI
+        showLoggedInUI(authObject);
+
+        // If user chose to stay on the page or we want to remain (per your request),
+        // show the classes panel directly so they can press "Classes" immediately.
+        if (stay) {
+          // automatically open classes UI
+          await fetchAndRenderClasses();
+          classesPanel.classList.remove('hide');
+        } else {
+          // default behavior previously was to redirect to dashboard.
+          // To keep your original flow but let members view classes here easily,
+          // we still show the logged-in UI and do NOT force redirect.
+          // If you prefer redirecting instead, uncomment the next line:
+          // window.location.href = './member/member-dashboard.html';
+        }
+
+      } catch (err) {
+        errorElement.textContent = err.message.includes('Failed to fetch') ? 'Server unavailable. Try again later.' : err.message;
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Login';
+      }
+    }
+
+    // Logout
+    logoutBtn.addEventListener('click', () => {
+      clearAuthUser();
+      showLoginUI();
+    });
+
+    // Dashboard button - preserve previous behavior (redirect to dashboard)
+    dashboardBtn.addEventListener('click', () => {
+      window.location.href = './member/member-dashboard.html';
+    });
+
+    // Classes button - only visible/active when logged in (we control visibility via loggedInPanel)
+    classesBtn.addEventListener('click', async () => {
+      classesPanel.classList.remove('hide');
+      await fetchAndRenderClasses();
+    });
+
+    hideClassesBtn.addEventListener('click', () => {
+      classesPanel.classList.add('hide');
+    });
+
+    refreshBtn.addEventListener('click', () => {
+      fetchAndRenderClasses();
+    });
+
+    classSearchInput.addEventListener('input', () => {
+      renderClasses(filterClasses(classSearchInput.value.trim()));
+    });
+
+    // --- Fetch & render classes (same endpoint your admin uses) ---
+    async function fetchAndRenderClasses() {
+      classesError.classList.add('hide');
+      classesLoading.classList.remove('hide');
+      classesListEl.innerHTML = '';
+
+      try {
+        const resp = await fetch(`${API_URL}/api/classes`);
+        if (!resp.ok) throw new Error('Failed to load classes (server returned ' + resp.status + ')');
+        const json = await resp.json();
+        if (!json.success) throw new Error(json.error || 'Failed to load classes');
+
+        cachedClasses = json.data || [];
+        renderClasses(cachedClasses);
+      } catch (err) {
+        classesError.classList.remove('hide');
+        classesError.textContent = err.message || 'Unknown error loading classes';
+      } finally {
+        classesLoading.classList.add('hide');
+      }
+    }
+
+    function filterClasses(query) {
+      if (!query) return cachedClasses;
+      const q = query.toLowerCase();
+      return cachedClasses.filter(c => {
+        return (c.class_name || '').toLowerCase().includes(q) ||
+               (c.schedule || '').toLowerCase().includes(q) ||
+               (String(c.trainer_name || '')).toLowerCase().includes(q) ||
+               (String(c.trainer_id || '')).toLowerCase().includes(q);
+      });
+    }
+
+    function renderClasses(list) {
+      classesListEl.innerHTML = '';
+      if (!list || list.length === 0) {
+        classesListEl.innerHTML = '<div class="small-muted">No classes found.</div>';
+        return;
+      }
+
+      list.forEach(cls => {
+        const id = cls.class_id || cls._id || '';
+        const card = document.createElement('div');
+        card.className = 'class-card';
+
+        const summary = document.createElement('div');
+        summary.className = 'class-summary';
+        summary.textContent = `${cls.class_name || 'Unnamed Class'} — ${cls.schedule || 'Schedule TBA'}`;
+
+        const meta = document.createElement('div');
+        meta.className = 'class-meta';
+        const trainerDisplay = cls.trainer_name ? `${cls.trainer_name} (${cls.trainer_id || 'id N/A'})` : (cls.trainer_id || 'Trainer N/A');
+        meta.innerHTML = `
+          <div><strong>Trainer:</strong> ${escapeHtml(trainerDisplay)}</div>
+          <div class="small-muted">Enrollment: ${cls.current_enrollment || 0} / ${cls.capacity || '—'}</div>
+        `;
+
+        const desc = document.createElement('div');
+        desc.style.marginTop = '8px';
+        desc.innerHTML = `<div>${(cls.description && cls.description.length > 0) ? escapeHtml(cls.description) : '<em>No description provided</em>'}</div>`;
+
+        // Enrolled count helper (calls optional endpoint)
+        const enrolledBtn = document.createElement('button');
+        enrolledBtn.textContent = 'Show enrolled members (count)';
+        enrolledBtn.className = 'btn';
+        enrolledBtn.style.marginTop = '10px';
+        enrolledBtn.addEventListener('click', async () => {
+          enrolledBtn.disabled = true;
+          const prev = enrolledBtn.textContent;
+          enrolledBtn.textContent = 'Loading...';
+          try {
+            const r = await fetch(`${API_URL}/api/classes/${encodeURIComponent(id)}/enrolled-members`);
+            if (!r.ok) throw new Error('Failed');
+            const js = await r.json();
+            const count = js.count || (js.data && js.data.length) || 0;
+            enrolledBtn.textContent = `Enrolled members: ${count}`;
+          } catch (err) {
+            enrolledBtn.textContent = 'Error loading';
+            console.error(err);
+            setTimeout(() => { enrolledBtn.disabled = false; enrolledBtn.textContent = prev; }, 1500);
+          }
+        });
+
+        card.appendChild(summary);
+        card.appendChild(meta);
+        card.appendChild(desc);
+        card.appendChild(enrolledBtn);
+
+        classesListEl.appendChild(card);
+      });
+    }
+
+    function escapeHtml(raw) {
+      return String(raw)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+  </script>
+</body>
+</html>

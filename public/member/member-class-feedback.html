@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Member Class Feedback</title>
+  <style>
+    :root{
+      --bg:#f5f7fb; --card:#fff; --muted:#6b7280; --accent:#ef4444; --accent-2:#2f80ed;
+      --radius:12px;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);font-family:Inter,Arial,Helvetica,sans-serif;color:#111827;padding:22px}
+    .page-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+    .page-title{font-size:28px;margin:0}
+    .container{max-width:1100px;margin:0 auto}
+    .grid{display:grid;grid-template-columns:1fr;gap:14px}
+    @media(min-width:880px){ .grid{grid-template-columns:1fr 360px} }
+
+    /* classes list */
+    .list { display:flex;flex-direction:column;gap:12px }
+    .class-card { background:var(--card); border-radius:12px; padding:14px; box-shadow:0 6px 18px rgba(16,24,40,0.06); display:flex; gap:14px; align-items:flex-start; }
+    .class-meta { flex:1 }
+    h3.class-name { margin:0 0 6px 0; font-size:18px }
+    .muted { color:var(--muted); font-size:13px; margin:4px 0 }
+    .pill { display:inline-block; padding:6px 10px; border-radius:999px; background:#f1f5f9; color:var(--muted); font-size:13px; margin-right:8px }
+
+    .capacity { margin-top:10px; font-size:13px; color:var(--muted) }
+    .bar { height:10px; width:180px; background:#f1f5f9; border-radius:8px; overflow:hidden; display:inline-block; vertical-align:middle }
+    .bar > i { display:block; height:100%; background:linear-gradient(90deg,var(--accent-2),#60a5fa); border-radius:8px }
+
+    .actions { display:flex; flex-direction:column; gap:8px; justify-content:center; align-items:flex-end }
+    .btn { padding:8px 12px; border-radius:8px; background:#fff; border:1px solid #e6e9ee; cursor:pointer }
+    .btn.primary { background:var(--accent-2); color:#fff; border-color:var(--accent-2) }
+    .btn.ghost { background:transparent; border:1px dashed #e6e9ee }
+
+    /* right column box */
+    .aside { background:var(--card); padding:14px; border-radius:12px; box-shadow:0 6px 18px rgba(16,24,40,0.06) }
+    .aside h4 { margin:0 0 10px 0 }
+    .empty { text-align:center; color:var(--muted); padding:30px 12px; }
+
+    /* modal */
+    .modal-backdrop { position:fixed; inset:0; background:rgba(0,0,0,0.45); display:flex; align-items:center; justify-content:center; z-index:200; }
+    .modal { width:640px; max-width:94%; background:var(--card); border-radius:12px; padding:16px; box-shadow:0 12px 36px rgba(2,6,23,0.3) }
+    .modal h3{ margin:0 0 8px 0 }
+    textarea { width:100%; min-height:120px; padding:10px; border-radius:8px; border:1px solid #e6e9ee; resize:vertical; font-family:inherit }
+    .modal .footer { display:flex; justify-content:space-between; align-items:center; gap:8px; margin-top:10px }
+
+    .toast { position:fixed; right:20px; bottom:20px; background:#111; color:#fff; padding:10px 14px; border-radius:8px; z-index:300 }
+
+    /* small helper */
+    .small { font-size:13px; color:var(--muted) }
+  </style>
+</head>
+<body>
+  <div class="page-head container">
+    <div>
+      <h1 class="page-title">My Classes</h1>
+      <div class="small">Classes you've enrolled in — send feedback after attending</div>
+    </div>
+    <div>
+      <a href="member-profile.html" class="btn">← Back to Profile</a>
+    </div>
+  </div>
+
+  <main class="container grid">
+    <section>
+      <div id="classesList" class="list"></div>
+      <div id="noClasses" class="empty" style="display:none">You are not enrolled in any classes.</div>
+    </section>
+
+    <aside class="aside">
+      <h4>How to give feedback</h4>
+      <p class="small">Click <strong>Send Feedback</strong> on any class card. A short window will open with a prompt: <em>"What are your thoughts on this class..."</em>. Type your message and click <strong>Send</strong>.</p>
+      <div style="margin-top:12px">
+        <strong>Tips</strong>
+        <ul class="small">
+          <li>Be specific: mention the trainer or session time if relevant.</li>
+          <li>Be constructive: suggestions help improve future classes.</li>
+          <li>Your feedback is anonymous to other members.</li>
+        </ul>
+      </div>
+    </aside>
+  </main>
+
+  <!-- modal container appended by JS -->
+
+  <script>
+    // sample data (replace with real data or fetch from API)
+    const classes = [
+      {
+        id: 'c1',
+        name: 'Aqua Class',
+        trainer: 'Juan',
+        schedule: 'Weekly: Tue, Thu, Sat — 10:00 AM - 12:00 PM',
+        enrolled: 0,
+        capacity: 12
+      },
+      {
+        id: 'c2',
+        name: 'HIIT Express',
+        trainer: 'Liza',
+        schedule: 'Weekly: Mon, Wed, Fri — 06:00 AM - 07:00 AM',
+        enrolled: 8,
+        capacity: 12
+      },
+      {
+        id: 'c3',
+        name: 'Yoga Flow',
+        trainer: 'Maya',
+        schedule: 'Weekly: Sun — 08:00 AM - 09:30 AM',
+        enrolled: 12,
+        capacity: 12
+      }
+    ];
+
+    function renderClasses() {
+      const list = document.getElementById('classesList');
+      list.innerHTML = '';
+      if(!classes || classes.length === 0){
+        document.getElementById('noClasses').style.display = 'block';
+        return;
+      } else {
+        document.getElementById('noClasses').style.display = 'none';
+      }
+
+      classes.forEach(c => {
+        const percent = Math.round((c.enrolled / Math.max(1,c.capacity)) * 100);
+        const card = document.createElement('div');
+        card.className = 'class-card';
+        card.innerHTML = `
+          <div class="class-meta">
+            <h3 class="class-name">${escape(c.name)}</h3>
+            <div class="muted">Trainer: <strong>${escape(c.trainer)}</strong></div>
+            <div class="muted">${escape(c.schedule)}</div>
+            <div class="capacity">
+              <span style="margin-right:10px">${c.enrolled}/${c.capacity}</span>
+              <span class="bar"><i style="width:${percent}%"></i></span>
+              <span style="margin-left:8px" class="small">${percent}% full</span>
+            </div>
+          </div>
+          <div class="actions">
+            <button class="btn ghost" onclick="viewClass('${c.id}')">View</button>
+            <button class="btn primary" onclick="openFeedback('${c.id}')">Send Feedback</button>
+          </div>
+        `;
+        list.appendChild(card);
+      });
+    }
+
+    function viewClass(id){
+      const c = classes.find(x=>x.id===id);
+      if(!c) return alert('Class not found');
+      // small details view modal
+      showModal(`
+        <h3>${escape(c.name)}</h3>
+        <div class="small" style="margin-top:8px"><strong>Trainer:</strong> ${escape(c.trainer)}</div>
+        <div class="small" style="margin-top:6px"><strong>Schedule:</strong> ${escape(c.schedule)}</div>
+        <div class="small" style="margin-top:6px"><strong>Capacity:</strong> ${c.enrolled}/${c.capacity}</div>
+        <div style="margin-top:12px" class="small">Click Send Feedback to leave a note or comment about this class.</div>
+        <div style="display:flex;justify-content:flex-end;margin-top:12px">
+          <button class="btn" onclick="closeModal()">Close</button>
+          <button class="btn primary" style="margin-left:8px" onclick="openFeedback('${c.id}')">Send Feedback</button>
+        </div>
+      `, { noCloseOnBackdrop:true });
+    }
+
+    function openFeedback(id){
+      const c = classes.find(x=>x.id===id);
+      if(!c) return;
+      showModal(`
+        <h3>Feedback — ${escape(c.name)}</h3>
+        <div class="small" style="margin:8px 0 12px 0">Trainer: ${escape(c.trainer)} · ${escape(c.schedule)}</div>
+        <form id="feedbackForm">
+          <label class="small">What are your thoughts on this class?</label>
+          <textarea name="message" placeholder="What are your thoughts on this class..."></textarea>
+          <div class="modal-footer" style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">
+            <div class="small" id="charCount">0 / 1000</div>
+            <div style="display:flex;gap:8px">
+              <button type="button" class="btn" onclick="closeModal()">Cancel</button>
+              <button type="submit" class="btn primary">Send</button>
+            </div>
+          </div>
+        </form>
+      `, {
+        onSubmit: (formData) => {
+          // formData = { message: '...' }
+          // For now the behavior is Simple client-only 
+          // replace with fetch() to persist to server which is hindi ko pa alam paanu hahah patulong Herod
+          const payload = {
+            classId: id,
+            message: formData.message,
+            timestamp: (new Date()).toISOString()
+          };
+          console.log('FEEDBACK SEND (UI-only):', payload);
+          closeModal();
+          toast('Thank you! Your feedback was sent (UI-only).');
+        }
+      });
+      // wire char count
+      setTimeout(()=>{
+        const ta = document.querySelector('.modal textarea');
+        const cc = document.getElementById('charCount');
+        if(!ta || !cc) return;
+        ta.addEventListener('input', ()=> cc.textContent = `${ta.value.length} / 1000`);
+      },50);
+    }
+
+    // Modal utility
+    function showModal(html, opts={}) {
+      closeModal();
+      const bd = document.createElement('div');
+      bd.className = 'modal-backdrop';
+      bd.innerHTML = `<div class="modal">${html}</div>`;
+      bd.addEventListener('click', (e)=> { if(e.target === bd && !opts.noCloseOnBackdrop) closeModal(); });
+      document.body.appendChild(bd);
+
+      // wire form submit if present
+      if(typeof opts.onSubmit === 'function') {
+        const form = bd.querySelector('form');
+        if(form){
+          form.addEventListener('submit', (ev)=>{
+            ev.preventDefault();
+            const data = {};
+            new FormData(form).forEach((v,k)=> data[k] = v);
+            // basic validation
+            if(!data.message || data.message.trim().length < 5){
+              alert('Please enter at least a short message (5+ characters).');
+              return;
+            }
+            opts.onSubmit(data);
+          });
+        }
+      }
+    }
+    function closeModal(){ const m = document.querySelector('.modal-backdrop'); if(m) m.remove(); }
+    function toast(msg, ms=2200){ const t = document.createElement('div'); t.className='toast'; t.textContent = msg; document.body.appendChild(t); setTimeout(()=>t.remove(),ms); }
+    function escape(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+    // initial render
+    renderClasses();
+  </script>
+</body>
+</html>

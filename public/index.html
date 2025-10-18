@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GOALS Gym Baguio - Professional Fitness Center</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+      /* Small modal overrides that match your dark theme */
+      .modal-backdrop { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(0,0,0,0.6); z-index: 9999; }
+      .modal { width: 420px; max-width: 92%; background: #1b1b1b; color: #fff; padding: 16px; border-radius: 8px; border: 1px solid #333; box-shadow: 0 6px 20px rgba(0,0,0,0.6); }
+      .modal h3 { margin-top: 0; color: #ff3333; }
+      .form-row { display:flex; gap:8px; margin-bottom:10px; }
+      .form-row input { flex:1; padding:8px; border-radius:6px; border:1px solid #333; background:#0f0f0f; color:white; }
+      .btn { padding:8px 12px; border-radius:6px; border:none; cursor:pointer; }
+      .btn.primary { background:#ff3333; color:#fff; font-weight:700; }
+      .btn.ghost { background:transparent; color:#fff; border:1px solid #444; }
+      .small { font-size:13px; color:#ccc; }
+      .login-helper { margin-top:8px; color:#ccc; font-size:13px; }
+    </style>
+</head>
+<body>
+    <!-- Header with Logo and Navigation -->
+    <header class="business-header">
+        <div class="header-container">
+            <div class="logo-container">
+                <h1>GOALS GYM</h1>
+                <p>Baguio's Premier Fitness Center</p>
+            </div>
+            <nav class="business-nav">
+                <a href="#home" class="active">Home</a>
+                <a href="#facilities">Facilities</a>
+                <a href="#programs">Programs</a>
+                <a href="#about">About</a>
+                <a href="#contact">Contact</a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section id="home" class="business-hero">
+        <div class="hero-content">
+            <h2>TRANSFORM YOUR BODY</h2>
+            <p>At GOALS Gym, we provide world-class training facilities and personalized programs to help you achieve your fitness goals. Our certified trainers will guide you every step of the way.</p>
+            <a href="#membership" class="business-btn">GET STARTED TODAY</a>
+        </div>
+    </section>
+
+    <!-- Facilities Section -->
+    <section id="facilities" class="business-section">
+        <div class="section-container">
+            <h3>OUR FACILITIES</h3>
+            <div class="divider"></div>
+            <div class="facilities-grid">
+                <div class="facility-card">
+                    <div class="facility-icon">🏋️</div>
+                    <h4>Weight Training</h4>
+                    <p>Premium strength equipment from leading brands</p>
+                </div>
+                <div class="facility-card">
+                    <div class="facility-icon">🏃</div>
+                    <h4>Cardio Zone</h4>
+                    <p>State-of-the-art treadmills, bikes, and rowers</p>
+                </div>
+                <div class="facility-card">
+                    <div class="facility-icon">🧘</div>
+                    <h4>Group Classes</h4>
+                    <p>Yoga, HIIT, spin, and specialty classes</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Programs Section -->
+    <section id="programs" class="business-section dark-section">
+        <div class="section-container">
+            <h3>TRAINING PROGRAMS</h3>
+            <div class="divider"></div>
+            <div class="programs-list">
+                <div class="program-item">
+                    <h4>Personal Training</h4>
+                    <p>1-on-1 customized workout plans with certified trainers</p>
+                </div>
+                <div class="program-item">
+                    <h4>Nutrition Planning</h4>
+                    <p>Meal plans tailored to your fitness objectives</p>
+                </div>
+                <div class="program-item">
+                    <h4>Body Transformation</h4>
+                    <p>12-week intensive program with guaranteed results</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Admin,trainer and member Login Section -->
+    <section class="business-section">
+        <div class="section-container">
+            <h3>ADMIN LOGIN</h3>
+            <div class="divider"></div>
+            <p>Access the GOALS Gym management system</p>
+            <a href="admin-login.html" class="business-btn outline">Admin LOGIN HERE</a>
+        </div>
+
+        <div class="section-container">
+            <h3>TRAINER LOGIN</h3>
+            <div class="divider"></div>
+            <a href="trainer-login.html" class="business-btn outline">Trainer LOGIN HERE</a>
+        </div>
+
+        <div class="section-container">
+            <h3>MEMBER LOGIN</h3>
+            <div class="divider"></div>
+            <!-- changed: opens modal instead of navigating -->
+            <a href="member-login.html" id="memberLoginBtn" class="business-btn outline">LOGIN HERE</a>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="business-footer">
+        <div class="footer-container">
+            <div class="footer-info">
+                <h4>GOALS GYM BAGUIO</h4>
+                <p>123 Fitness Street, Baguio City</p>
+                <p>(074) 123-4567</p>
+                <p>info@goalsgymbaguio.com</p>
+            </div>
+            <div class="footer-copyright">
+                <p>&copy; 2025 GOALS Gym Baguio. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

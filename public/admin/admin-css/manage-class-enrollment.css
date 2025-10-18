@@ -1,0 +1,351 @@
+/* public/admin/admin-css/manage-class-enrollment.css */
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.server-status {
+    padding: 10px;
+    margin-bottom: 20px;
+    border-radius: 4px;
+    font-weight: bold;
+    text-align: center;
+}
+
+.server-connected {
+    background-color: #28a745;
+    color: #ffffff;
+}
+
+.server-disconnected {
+    background-color: #dc3545;
+    color: #ffffff;
+}
+
+.success-message {
+    display: none;
+    background-color: #28a745;
+    color: #ffffff;
+    padding: 10px;
+    margin-bottom: 20px;
+    border-radius: 4px;
+}
+
+.error-message {
+    display: none;
+    background-color: #dc3545;
+    color: #ffffff;
+    padding: 10px;
+    margin-bottom: 20px;
+    border-radius: 4px;
+}
+
+.section {
+    background-color: #2d2d2d;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 25px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.section.active {
+    display: block;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+label {
+    color: #cccccc;
+    font-weight: 600;
+    margin-bottom: 5px;
+    display: block;
+}
+
+select, input[type="text"], input[type="number"], input[type="date"] {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #444444;
+    border-radius: 4px;
+    font-size: 16px;
+    background-color: #3a3a3a;
+    color: #ffffff;
+    margin-bottom: 5px;
+}
+
+select {
+    height: 40px;
+}
+
+/* Session Details Styling */
+.session-details {
+    background-color: #3a3a3a;
+    padding: 20px;
+    border-radius: 8px;
+    margin-top: 20px;
+}
+
+.session-details h3 {
+    color: #ff0000;
+    margin-bottom: 20px;
+}
+
+.session-form-group {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.time-slots {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.time-slot {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    background-color: #2d2d2d;
+    border-radius: 4px;
+    border: 2px solid #444444;
+    transition: all 0.3s;
+}
+
+.time-slot:hover {
+    border-color: #ff0000;
+}
+
+.time-slot input[type="radio"] {
+    margin-right: 10px;
+    width: auto;
+}
+
+.time-slot input[type="radio"]:checked + label {
+    color: #ff0000;
+    font-weight: bold;
+}
+
+.time-slot-label {
+    color: #cccccc;
+    margin: 0;
+    cursor: pointer;
+}
+
+.selected-member-info {
+    background-color: #2d2d2d;
+    padding: 15px;
+    border-radius: 8px;
+    margin-top: 20px;
+}
+
+.selected-member-info h4 {
+    color: #ff0000;
+    margin-bottom: 10px;
+}
+
+.next-session-btn {
+    background-color: #28a745;
+    color: #ffffff;
+    padding: 12px 20px;
+    border: none;
+    border-radius: 4px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.next-session-btn:hover {
+    background-color: #1e7e34;
+}
+
+.nav-buttons {
+    margin-top: 20px;
+    display: flex;
+    gap: 10px;
+}
+
+button {
+    background-color: #ff0000;
+    color: #ffffff;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 4px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+button:hover {
+    background-color: #cc0000;
+}
+
+button:disabled {
+    background-color: #666666;
+    color: #999999;
+    cursor: not-allowed;
+}
+
+.enroll-btn {
+    background-color: #28a745;
+    min-width: 200px;
+}
+
+.enroll-btn:hover:not(:disabled) {
+    background-color: #1e7e34;
+}
+
+.clear-btn {
+    background-color: #6c757d;
+}
+
+.clear-btn:hover {
+    background-color: #545b62;
+}
+
+.remove-button {
+    background-color: #e91e63;
+    font-size: 12px;
+    padding: 5px 10px;
+    margin-right: 5px;
+}
+
+.remove-button:hover {
+    background-color: #d81b60;
+}
+
+.attend-button {
+    background-color: #28a745;
+    font-size: 12px;
+    padding: 5px 10px;
+}
+
+.attend-button:hover {
+    background-color: #1e7e34;
+}
+
+.member-list {
+    margin-top: 20px;
+    color: #cccccc;
+}
+
+.member-list h3 {
+    color: #ff0000;
+    margin-bottom: 15px;
+}
+
+.member-list table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: #3a3a3a;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.member-list th, .member-list td {
+    padding: 10px;
+    border: 1px solid #444444;
+    text-align: left;
+}
+
+.member-list th {
+    background-color: #4a4a4a;
+    color: #ff0000;
+    font-weight: bold;
+}
+
+.autocomplete-suggestions {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background-color: #3a3a3a;
+    border: 1px solid #444444;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    z-index: 1000;
+    max-height: 200px;
+    overflow-y: auto;
+    display: none;
+    color: #cccccc;
+}
+
+.autocomplete-suggestion {
+    padding: 8px;
+    cursor: pointer;
+}
+
+.autocomplete-suggestion:hover {
+    background-color: #4a4a4a;
+}
+
+.search-group {
+    position: relative;
+    display: flex;
+    gap: 10px;
+}
+
+.search-group input {
+    flex: 1;
+}
+
+/* Status badges */
+.status-badge {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.status-badge.scheduled {
+    background-color: #17a2b8;
+    color: white;
+}
+
+.status-badge.attended {
+    background-color: #28a745;
+    color: white;
+}
+
+.status-badge.missed {
+    background-color: #ffc107;
+    color: black;
+}
+
+.status-badge.cancelled {
+    background-color: #dc3545;
+    color: white;
+}
+
+/* Optional: Hide number arrows (chrome only) */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .session-form-group {
+        grid-template-columns: 1fr;
+    }
+    
+    .time-slots {
+        grid-template-columns: 1fr;
+    }
+    
+    .nav-buttons {
+        flex-direction: column;
+    }
+    
+    .nav-buttons button {
+        width: 100%;
+        margin-bottom: 10px;
+    }
+}

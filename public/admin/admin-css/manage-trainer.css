@@ -1,0 +1,35 @@
+/* Reuse the visual style from manage-members.css */
+@import url('manage-members.css');
+
+/* Add/override as needed for trainer management */
+
+#trainerList .action-button {
+  background-color: #06911d;
+  color: #fff;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+#trainerList .action-button:hover {
+  background-color: #058115;
+}
+
+#editTrainerSection .nav-buttons {
+  margin-top: 20px;
+}
+
+#editTrainerSection .action-button {
+  margin-right: 10px;
+  background-color: #06911d;
+}
+
+#editTrainerSection .action-button:hover {
+  background-color: #058115;
+}
+
+/* Additional tweaks for trainer form */
+#editTrainerSection .form-group {
+  margin-bottom: 16px;
+}

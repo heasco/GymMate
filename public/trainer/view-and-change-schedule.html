@@ -1,0 +1,159 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trainer - View and Change Schedule - GOALS Gym</title>
+    <link rel="stylesheet" href="../admin/admin-css/admin-mainpage.css">
+    <link rel="stylesheet" href="./trainer-css/view-and-change-schedule.css">
+</head>
+<body>
+    <div class="admin-container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h2>GOALS Gym Trainer</h2>
+            </div>
+            <nav class="sidebar-nav">
+                <li><a href="trainer-mainpage.html">Dashboard</a></li>
+                <li><a href="view-and-change-schedule.html" class="active">My Classes/Schedule</a></li>
+                <li><a href="trainer-profile.html">Profile</a></li>
+                <li><a href="trainer-feedback.html">Feedback</a></li>
+            </nav>
+        </aside>
+
+        <header class="header">
+            <button class="menu-toggle" id="menuToggle">☰</button>
+            <h1>My Classes and Schedule</h1>
+            <button class="logout-btn" id="logoutBtn">Logout</button>
+        </header>
+
+        <main class="main-content">
+            <div class="container">
+                <div class="trainer-greeting">
+                    <h2>Welcome, <span id="trainerName">Trainer</span>!</h2>
+                </div>
+                <div id="scheduleLoading" class="loading">Loading your classes...</div>
+                <div id="classesList"></div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const SERVER_URL = 'https://flex-it-goalsgym-it-project-2.onrender.com';
+        let trainerClasses = [];
+        let trainerId = null;
+
+        function updateTrainerName() {
+            const authUser = JSON.parse(localStorage.getItem('authUser'));
+            if (authUser && authUser.user && authUser.user.name)
+                document.getElementById('trainerName').textContent = authUser.user.name;
+        }
+
+        // Renders the trainer's classes with editable schedule
+        function renderClasses(classes) {
+            const classesList = document.getElementById('classesList');
+            if (!classes || classes.length === 0) {
+                classesList.innerHTML = '<div class="no-classes">No classes assigned to you.</div>';
+                return;
+            }
+
+            let html = '';
+            for (const cls of classes) {
+                html += `
+                    <div class="class-card">
+                        <h3>${cls.class_name}</h3>
+                        <p>${cls.description || "No description"}</p>
+                        <p>Capacity: ${cls.capacity} | Enrolled: ${cls.current_enrollment}</p>
+                        <p>Trainer ID: ${cls.trainer_id}</p>
+                        <label for="schedule-${cls.class_id}">Current Schedule:</label>
+                        <input type="text" id="schedule-${cls.class_id}" value="${cls.schedule || ''}">
+                        <button onclick="updateSchedule('${cls.class_id}')" class="save-btn">Save Changes</button>
+                    </div>
+                `;
+            }
+            classesList.innerHTML = html;
+        }
+
+        // Fetch classes assigned to the trainer using the filter
+async function fetchTrainerClasses() {
+    document.getElementById('scheduleLoading').style.display = "block";
+    document.getElementById('classesList').innerHTML = "";
+
+    const authUser = JSON.parse(localStorage.getItem('authUser'));
+    trainerId = authUser.user.trainerid || authUser.user.trainer_id || authUser.user.id || authUser.user._id;
+
+    try {
+        const response = await fetch(`${SERVER_URL}/api/classes`);
+        if (!response.ok) throw new Error("Failed to fetch classes");
+
+        const result = await response.json();
+        const allClasses = result.data || [];
+
+        // ✅ Filter classes by trainer ID (front-end)
+        trainerClasses = allClasses.filter(cls => cls.trainer_id === trainerId);
+
+        if (trainerClasses.length === 0) {
+            document.getElementById('classesList').innerHTML = '<div class="no-classes">No classes assigned to you.</div>';
+        } else {
+            renderClasses(trainerClasses);
+        }
+    } catch (err) {
+        console.error('Error fetching trainer classes:', err);
+        document.getElementById('classesList').innerHTML = '<div class="error">Failed to load classes</div>';
+    } finally {
+        document.getElementById('scheduleLoading').style.display = "none";
+    }
+}
+
+
+        // Update schedule for a specific class
+        async function updateSchedule(classId) {
+            const newSchedule = document.getElementById(`schedule-${classId}`).value.trim();
+            if (!newSchedule) {
+                alert('Schedule cannot be empty.');
+                return;
+            }
+
+            const resp = await fetch(`${SERVER_URL}/api/classes/${classId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ schedule: newSchedule })
+            });
+
+            if (resp.ok) {
+                const data = await resp.json();
+                alert('Schedule updated successfully!');
+                // Update local data
+                const cls = trainerClasses.find(c => c.class_id === classId);
+                if (cls) cls.schedule = newSchedule;
+                renderClasses(trainerClasses);
+            } else {
+                const errorData = await resp.json();
+                alert(`Error updating schedule: ${errorData.error || 'Unknown error'}`);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Sidebar and logout logic
+            const menuToggle = document.getElementById('menuToggle');
+            const sidebar = document.querySelector('.sidebar');
+            const logoutBtn = document.getElementById('logoutBtn');
+
+            const authUser = JSON.parse(localStorage.getItem('authUser'));
+            if (!authUser || !authUser.user || authUser.role !== "trainer" || (Date.now() - authUser.timestamp > 3600000)) {
+                localStorage.removeItem('authUser');
+                window.location.href = '../trainer-login.html';
+                return;
+            }
+
+            menuToggle.addEventListener('click', () => sidebar.classList.toggle('collapsed'));
+            logoutBtn.addEventListener('click', () => {
+                localStorage.removeItem('authUser');
+                window.location.href = '../trainer-login.html';
+            });
+
+            updateTrainerName();
+            fetchTrainerClasses();
+        });
+    </script>
+</body>
+</html>
