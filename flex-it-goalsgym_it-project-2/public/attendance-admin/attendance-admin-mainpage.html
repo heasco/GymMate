@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Attendance - Admin</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #23272f; color: #fafafa; }
+    .main-box { width: 500px; margin: 32px auto; background: #252738; border-radius: 10px; padding: 28px; box-shadow: 0 6px 24px #2226  }
+    .cam-box { text-align:center; background: #181a1f; border-radius: 7px; padding: 10px; margin-bottom: 18px; }
+    .msg, .log-status { text-align: center; margin-top: 15px; font-size: 1.2em; }
+    .attendance-log { margin-top: 24px; background: #181a1f; border-radius: 6px; padding: 10px; max-height: 190px; overflow: auto; font-size: .98em; }
+    #attendanceSelectionModal {
+      display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+      background: rgba(20,20,20,0.8); align-items: center; justify-content: center; z-index: 9999;
+    }
+    #attendanceSelectionModal > div {
+      background: #2d2d2d; border-radius: 10px; padding: 40px; box-shadow: 0 8px 40px #111; color: white; text-align: center;
+    }
+    #modalButtons button {
+      margin: 10px; padding: 12px 32px; font-weight: 600; border: none; border-radius: 6px;
+      cursor: pointer; background: #ffd700; color: black; font-size: 1.1em;
+    }
+  </style>
+</head>
+<body>
+  <div class="main-box">
+    <h2>Attendance - Admin Panel</h2>
+    <div class="cam-box">
+      <video id="camera" width="420" height="340" autoplay style="border-radius:8px;border:1.2px solid #555"></video>
+      <canvas id="snapshot" width="420" height="340" style="display:none"></canvas>
+    </div>
+    <div class="msg" id="msg"></div>
+    <div class="log-status" id="logStatus"></div>
+    <div class="attendance-log" id="attendanceLog"></div>
+  </div>
+  <div id="attendanceSelectionModal">
+    <div>
+      <h3>Attendance Type</h3>
+      <div id="modalButtons"></div>
+    </div>
+  </div>
+<script>
+  const camera = document.getElementById('camera');
+  const snapshot = document.getElementById('snapshot');
+  const msg = document.getElementById('msg');
+  const logStatus = document.getElementById('logStatus');
+  const attendanceLog = document.getElementById('attendanceLog');
+  const modal = document.getElementById('attendanceSelectionModal');
+  const modalButtons = document.getElementById('modalButtons');
+  let lastFaceId = null, lastEvent = null, lastDetectedTime = 0;
+
+  // Track shown panel per member per day
+  const attendedTodayMap = {};
+  function getTodayKey() {
+    const d = new Date();
+    return d.getFullYear() + '-' + (d.getMonth()+1) + '-' + d.getDate();
+  }
+
+  // --- NEW: Fetch attendance logs from backend and show ---
+  async function fetchTodayAttendanceLogs() {
+    try {
+      const resp = await fetch('http://localhost:8080/api/attendance/logs/today');
+      const data = await resp.json();
+      if (data.success && Array.isArray(data.logs)) {
+        const lines = data.logs.map(log => {
+          const type = log.logType || log.attendedType || log.type || "event";
+          const name = log.memberId && (log.memberId.name || log.memberId.memberId || log.memberId) || "Unknown";
+          const t = new Date(log.timestamp);
+          return `[${t.toLocaleTimeString()}] ${name}: ${type}`;
+        });
+        attendanceLog.textContent = lines.join('\n');
+      } else {
+        attendanceLog.textContent = "Could not load logs";
+      }
+    } catch (err) {
+      attendanceLog.textContent = "Error loading logs: " + err;
+    }
+  }
+
+  navigator.mediaDevices.getUserMedia({ video: true })
+    .then(function(stream) { camera.srcObject = stream; })
+    .catch(function(err) { msg.textContent = "Camera access error: " + err });
+
+  async function detectFaceAndLog() {
+    snapshot.getContext('2d').drawImage(camera, 0, 0, snapshot.width, snapshot.height);
+    const blob = await new Promise(resolve => snapshot.toBlob(resolve, 'image/jpeg', 0.92));
+    const fd = new FormData();
+    fd.append('image', blob, 'current.jpg');
+    try {
+      const resp = await fetch('http://localhost:5001/api/verify-face', { method: 'POST', body: fd });
+      const data = await resp.json();
+      if (data && data.status === 'success' && data.faceId) {
+        if (lastFaceId !== data.faceId || Date.now() - lastDetectedTime > 5000) {
+          lastFaceId = data.faceId;
+          lastDetectedTime = Date.now();
+          fetch(`http://localhost:8080/api/members/${data.faceId}`)
+            .then(r => r.json())
+            .then(memberRes => {
+              let displayName = data.faceId;
+              if (memberRes && memberRes.success && memberRes.data && memberRes.data.name) {
+                displayName = memberRes.data.name;
+              }
+              logAttendance(data.faceId, displayName);
+            })
+            .catch(() => {
+              logAttendance(data.faceId, data.faceId);
+            });
+        }
+      } else {
+        msg.textContent = "No known face detected";
+        lastFaceId = null;
+        setTimeout(() => { msg.textContent = ''; }, 5000);
+      }
+    } catch (e) {
+      msg.textContent = "Error contacting backend: " + e;
+      setTimeout(() => { msg.textContent = ''; }, 5000);
+    }
+  }
+
+  async function logAttendance(faceId, displayName) {
+    try {
+      const resp = await fetch('http://localhost:8080/api/attendance/log', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ faceId })
+      });
+      const data = await resp.json();
+
+      const todayKey = getTodayKey();
+      if (
+        data.success && data.requiresSelection && data.data && data.data.options
+      ) {
+        if (!attendedTodayMap[faceId] || attendedTodayMap[faceId] !== todayKey) {
+          showAttendanceModal(data.data.options, data.data.classOptions, faceId, displayName);
+          attendedTodayMap[faceId] = todayKey;
+        }
+        return;
+      }
+      if (data.success && data.alreadyLoggedIn) {
+        logStatus.textContent = `Welcome: ${data.data.memberName}\nYou are already logged in (within 30 min)`;
+        setTimeout(() => { logStatus.textContent = ''; }, 5000);
+        fetchTodayAttendanceLogs();
+        return;
+      } else if (data.success && data.logged === "login") {
+        logStatus.textContent = `Welcome: ${data.data.memberName}\nYou have now logged in`;
+        setTimeout(() => { logStatus.textContent = ''; }, 5000);
+        fetchTodayAttendanceLogs();
+      } else if (data.success && data.logged === "logout") {
+        logStatus.textContent = `Logged: logout for ${data.data.memberName} at ${(new Date()).toLocaleTimeString()}`;
+        setTimeout(() => { logStatus.textContent = ''; }, 5000);
+        fetchTodayAttendanceLogs();
+      } else if (data.success && data.logged) {
+        logStatus.textContent = `Logged: ${data.logged} for ${data.data.memberName} at ${(new Date()).toLocaleTimeString()}`;
+        setTimeout(() => { logStatus.textContent = ''; }, 5000);
+        fetchTodayAttendanceLogs();
+      } else if (data.error){
+        logStatus.textContent = "Attendance error: " + (data.error || "Unknown error");
+      } else {
+        logStatus.textContent = "Attendance error: Unknown error (no status received)";
+        console.log('Attendance API result:', data);
+      }
+    } catch (err) {
+      logStatus.textContent = "Network error: " + err;
+    }
+  }
+
+  function showAttendanceModal(options, classOptions, faceId, displayName) {
+    let btns = '';
+    options.forEach(type => {
+      btns += `<button onclick="selectAttendanceType('${type}')">${type.toUpperCase()}</button>`;
+    });
+    modalButtons.innerHTML = btns;
+    modal.dataset.faceId = faceId;
+    modal.dataset.displayName = displayName;
+    modal.dataset.classOptions = JSON.stringify(classOptions || []);
+    modal.style.display = 'flex';
+  }
+  window.selectAttendanceType = function(type) {
+    const faceId = modal.dataset.faceId;
+    const displayName = modal.dataset.displayName;
+    const classOptions = JSON.parse(modal.dataset.classOptions || "[]");
+    let classId = null;
+    if ((type === "combative" || type === "both") && classOptions.length) {
+      classId = classOptions[0];
+    }
+    modal.style.display = 'none';
+    logAttendanceWithType(faceId, displayName, type, classId);
+  };
+  async function logAttendanceWithType(faceId, displayName, attendedType, classId) {
+    try {
+      const resp = await fetch('http://localhost:8080/api/attendance/log', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ faceId, attendedType, classId })
+      });
+      const data = await resp.json();
+      if (data.success && data.alreadyLoggedIn) {
+        logStatus.textContent = `Welcome: ${data.data.memberName}\nYou are already logged in (within 30 min)`;
+        setTimeout(() => { logStatus.textContent = ''; }, 5000);
+        fetchTodayAttendanceLogs();
+        return;
+      } else {
+        logStatus.textContent = "Attendance error: " + (data.error || "Unknown error");
+      }
+      fetchTodayAttendanceLogs();
+    } catch (err) {
+      logStatus.textContent = "Network error: " + err;
+      fetchTodayAttendanceLogs();
+    }
+  }
+
+  // Call on page load, and regularly auto-refresh logs
+  fetchTodayAttendanceLogs();
+  setInterval(fetchTodayAttendanceLogs, 5000); // Refresh logs every 5 seconds
+
+  setInterval(detectFaceAndLog, 2500);
+</script>
+</body>
+</html>
