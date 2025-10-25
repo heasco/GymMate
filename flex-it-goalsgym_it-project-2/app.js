@@ -1,9 +1,8 @@
 require('dotenv').config();
+
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
-
-
 const authRoutes = require('./routes/auth');
 const memberRoutes = require('./routes/members');
 const trainerRoutes = require('./routes/trainers');
@@ -12,16 +11,14 @@ const enrollmentRoutes = require('./routes/enrollments');
 const feedbackRoutes = require('./routes/feedbacks');
 const transactionRoutes = require('./routes/transactions');
 const healthRoutes = require('./routes/health');
-const attendanceRoutes = require('./routes/attendance'); 
-
-
-
+const attendanceRoutes = require('./routes/attendance');
 const errorHandler = require('./middleware/errorHandler');
 const initAdmin = require('./utils/initAdmin');
+const { initEnrollmentAutoUpdate } = require('./jobs/enrollmentAutoUpdate'); // ADD THIS LINE
+
 console.log('Routes mounted.');
 
 const app = express();
-
 const PORT = process.env.PORT || 8080;
 const DB_URL = process.env.MONGODB_URI;
 
@@ -37,11 +34,21 @@ mongoose.connect(DB_URL, {
 
 mongoose.connection.on('connected', async () => {
   console.log('MongoDB connected');
+  
   // create default admin if none exists
   try {
     await initAdmin();
   } catch (err) {
     console.error('initAdmin error', err);
+  }
+
+  // Initialize enrollment auto-update job
+  // ADD THIS BLOCK
+  try {
+    initEnrollmentAutoUpdate();
+    console.log('Enrollment auto-update job initialized');
+  } catch (err) {
+    console.error('Enrollment auto-update initialization error:', err);
   }
 });
 
@@ -60,7 +67,6 @@ app.use('/api/enrollments', enrollmentRoutes);
 app.use('/api/feedbacks', feedbackRoutes);
 app.use('/api/transactions', transactionRoutes);
 app.use('/api/attendance', attendanceRoutes); // mounts /api/attendancelog etc.
-
 app.use('/health', healthRoutes);
 
 // 404 + error handler
@@ -68,7 +74,7 @@ app.use((req, res) => res.status(404).json({ error: 'Not found' }));
 app.use(errorHandler);
 
 const server = app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`Server running on port ${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
 });
 
