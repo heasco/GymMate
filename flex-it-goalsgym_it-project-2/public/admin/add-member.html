@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Add Member - GOALS Gym</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+  <link rel="stylesheet" href="./admin-css/add-member.css">
+  <script src="https://kit.fontawesome.com/1d0b8c9b1d.js" crossorigin="anonymous"></script>
+  <style>
+    #facePane {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      top: 0; left: 0; width: 100vw; height: 100vh;
+      background-color: rgba(20,20,20,0.8);
+      align-items: center;
+      justify-content: center;
+    }
+    .face-modal {
+      background-color: #282828;
+      padding: 2em;
+      border-radius: 12px;
+      box-shadow: 2px 2px 20px #0a0a0a70;
+      max-width: 650px;
+      min-width: 390px;
+      color: #fff;
+    }
+    .face-capture-area {
+      position: relative;
+      display: flex;
+      justify-content: center;
+      margin-top: 1.2em;
+    }
+    .face-center-box {
+      border: 2px solid #ffdc57;
+      position: absolute;
+      width: 220px; height: 220px;
+      top: 100px; left: 50%; transform: translateX(-50%);
+      z-index: 2;
+      pointer-events: none;
+    }
+    #snapshot { background: #000; }
+  </style>
+</head>
+<body>
+  <div class="admin-container">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <h2>GOALS Gym Admin</h2>
+      </div>
+      <nav class="sidebar-nav">
+                <a href="./admin-mainpage.html"><span>Dashboard</span></a>
+                <a href="./add-classes.html"><span>Add Classes</span></a>
+                <a href="./add-member.html"  class="active"><span>Add Member</span></a>
+                <a href="./manage-members.html"><span>Manage Member</span></a>
+                <a href="./add-trainer.html"><span>Add Trainer</span></a>
+                <a href="./manage-trainer.html"><span>Manage Trainer</span></a>
+                <a href="./manage-class-enrollment.html"><span>Manage Enrollment</span></a>
+                <a href="./add-transaction.html"><span>Add Transaction</span></a>
+                <a href="./view-classes-and-feedback.html"><span>View Classes</span></a>
+                <a href="./trainer-schedule-management.html"><span>Trainer Schedule Management</span></a>
+      </nav>
+    </aside>
+    <header class="header">
+      <button class="menu-toggle" id="menuToggle">☰</button>
+      <h1>Add Member</h1>
+      <button class="logout-btn" id="logoutBtn">Logout</button>
+    </header>
+    <main class="main-content">
+      <h2 class="title is-4 mt-2 mb-5">Add New Member</h2>
+      <form id="memberForm" class="box" style="max-width:600px; margin:auto;">
+        <div class="field">
+          <label class="label" for="memberName">Full Name *</label>
+          <div class="control">
+            <input class="input" type="text" id="memberName" name="memberName" required>
+          </div>
+        </div>
+        <div class="field">
+          <label class="label">Membership Type(s) *</label>
+          <div class="control">
+            <label class="checkbox mr-4">
+              <input type="checkbox" id="monthlyCheckbox" name="membershipTypes" value="monthly"> Monthly Gym Membership
+            </label>
+            <label class="checkbox">
+              <input type="checkbox" id="combativeCheckbox" name="membershipTypes" value="combative"> Combative Sports Membership
+            </label>
+          </div>
+        </div>
+        <div class="field is-grouped" id="monthlyDetails" style="display:none;">
+          <div class="control">
+            <label class="label is-small" for="monthlyDuration">Duration (months):</label>
+            <input class="input is-small" type="number" id="monthlyDuration" name="monthlyDuration" min="1" value="1">
+          </div>
+        </div>
+        <div class="field is-grouped" id="combativeDetails" style="display:none;">
+          <div class="control">
+            <label class="label is-small" for="combativeSessions">Number of Sessions:</label>
+            <input class="input is-small" type="number" id="combativeSessions" name="combativeSessions" min="1" value="12">
+          </div>
+        </div>
+        <div class="field">
+          <label class="label" for="joinDate">Join Date *</label>
+          <div class="control">
+            <input class="input" type="date" id="joinDate" name="joinDate" required>
+          </div>
+        </div>
+        <div class="field">
+          <label class="label" for="phone">Phone Number</label>
+          <div class="control">
+            <input class="input" type="tel" id="phone" name="phone">
+          </div>
+        </div>
+        <div class="field">
+          <label class="label" for="email">Email</label>
+          <div class="control">
+            <input class="input" type="email" id="email" name="email">
+          </div>
+        </div>
+        <!-- FACIAL RECOGNITION ENROLLMENT -->
+        <div class="field">
+          <label class="label">Facial Recognition Enrollment</label>
+          <div class="fp-controls">
+            <input type="hidden" id="faceEnrolled" name="faceEnrolled" />
+            <button type="button" class="button is-warning is-light" id="openFacePaneBtn">
+              <span class="icon"><i class="fas fa-user-check"></i></span>
+              <span>Capture Face</span>
+            </button>
+            <span id="faceStatus" class="fp-status-message"></span>
+          </div>
+        </div>
+        <div class="field mt-4">
+          <button type="submit" class="button is-danger">Add Member</button>
+        </div>
+      </form>
+      <div id="message" class="notification is-hidden mt-4"></div>
+    </main>
+  </div>
+  <div id="facePane">
+    <div class="face-modal">
+      <h3 class="is-size-5 has-text-weight-bold has-text-white has-text-centered">Facial Enrollment</h3>
+      <div class="face-capture-area">
+        <video id="camera" autoplay width="560" height="420"></video>
+        <canvas id="snapshot" width="560" height="420" style="display:none"></canvas>
+        <div class="face-center-box"></div>
+      </div>
+      <div style="display:flex;justify-content:center;gap:10px;margin-top:1em;">
+        <button type="button" class="button is-info" id="captureFaceBtn">Capture Photo</button>
+        <button type="button" class="button" id="confirmFaceBtn" disabled>Confirm & Save</button>
+        <button type="button" class="button" id="closeFacePaneBtn">Close</button>
+      </div>
+      <div id="faceResultMsg" class="has-text-warning has-text-centered" style="margin-top:1em;"></div>
+    </div>
+  </div>
+  <script>
+  document.addEventListener('DOMContentLoaded', () => {
+    // Membership toggles and join date default
+    const memberForm = document.getElementById('memberForm');
+    document.getElementById('monthlyCheckbox').addEventListener('change', function() {
+      document.getElementById('monthlyDetails').style.display = this.checked ? "flex" : "none";
+    });
+    document.getElementById('combativeCheckbox').addEventListener('change', function() {
+      document.getElementById('combativeDetails').style.display = this.checked ? "flex" : "none";
+    });
+    document.getElementById('joinDate').valueAsDate = new Date();
+
+    // ---- FACE ENROLL STATE ----
+    let faceImageBlob = null; // Holds captured image until Add Member submit
+    let faceSuccessfullyCaptured = false;
+
+    memberForm.addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const btn = memberForm.querySelector('button[type="submit"]');
+      btn.disabled = true;
+      btn.textContent = 'Adding...';
+      const memberships = [];
+      if (document.getElementById('monthlyCheckbox').checked) {
+        memberships.push({ type: 'monthly', duration: parseInt(document.getElementById('monthlyDuration').value) });
+      }
+      if (document.getElementById('combativeCheckbox').checked) {
+        memberships.push({ type: 'combative', duration: parseInt(document.getElementById('combativeSessions').value) });
+      }
+      if (memberships.length === 0) {
+        errorMsg("Please select at least one membership type");
+        btn.disabled = false; btn.textContent = 'Add Member';
+        return;
+      }
+
+      // Use FormData for image + text fields together
+      const formData = new FormData();
+      formData.append('name', document.getElementById('memberName').value.trim());
+      formData.append('joinDate', document.getElementById('joinDate').value || new Date().toISOString().split('T')[0]);
+      formData.append('phone', document.getElementById('phone').value.trim() || '');
+      formData.append('email', document.getElementById('email').value.trim() || '');
+      formData.append('faceEnrolled', faceSuccessfullyCaptured ? 'yes' : 'no');
+      formData.append('memberships', JSON.stringify(memberships));
+      if (faceImageBlob) {
+        formData.append('faceImage', faceImageBlob, 'face.jpg');
+      }
+
+      try {
+        const response = await fetch('http://localhost:8080/api/members', {
+          method: 'POST',
+          body: formData
+        });
+        const responseData = await response.json();
+        if (!response.ok) throw new Error(responseData.error || 'Submission failed');
+        successMsg("Member added!", responseData);
+        memberForm.reset();
+        faceSuccessfullyCaptured = false;
+        faceImageBlob = null;
+        document.getElementById('monthlyDetails').style.display = "none";
+        document.getElementById('combativeDetails').style.display = "none";
+        document.getElementById('faceStatus').textContent = "";
+        document.getElementById('faceStatus').className = "fp-status-message";
+      } catch (error) {
+        errorMsg(error.message || 'Error submitting form!');
+      } finally {
+        btn.disabled = false; btn.textContent = 'Add Member';
+      }
+    });
+
+    // ------------ FACIAL ENROLLMENT MODAL ----------
+    const openFacePaneBtn = document.getElementById('openFacePaneBtn');
+    const facePane = document.getElementById('facePane');
+    const camera = document.getElementById('camera');
+    const snapshot = document.getElementById('snapshot');
+    const captureFaceBtn = document.getElementById('captureFaceBtn');
+    const confirmFaceBtn = document.getElementById('confirmFaceBtn');
+    const closeFacePaneBtn = document.getElementById('closeFacePaneBtn');
+    const faceResultMsg = document.getElementById('faceResultMsg');
+    const faceStatus = document.getElementById('faceStatus');
+
+    openFacePaneBtn.addEventListener('click', () => {
+      facePane.style.display = "flex";
+      faceImageBlob = null;
+      faceSuccessfullyCaptured = false;
+      faceResultMsg.textContent = "Allow camera access and center your face in the yellow box.";
+      confirmFaceBtn.disabled = true;
+      camera.style.display = "block";
+      snapshot.style.display = "none";
+      navigator.mediaDevices.getUserMedia({ video: true })
+        .then(stream => { camera.srcObject = stream; })
+        .catch(err => { faceResultMsg.textContent = "Camera error: " + err; });
+    });
+
+    captureFaceBtn.addEventListener('click', () => {
+      if (!camera.srcObject) {
+        faceResultMsg.textContent = "No camera stream!";
+        return;
+      }
+      const context = snapshot.getContext('2d');
+      context.clearRect(0, 0, snapshot.width, snapshot.height);
+      context.drawImage(camera, 0, 0, snapshot.width, snapshot.height);
+      camera.srcObject.getTracks().forEach(track => track.stop());
+      camera.style.display = "none";
+      snapshot.style.display = "block";
+      snapshot.toBlob(function(blob) {
+        faceImageBlob = blob;
+        faceResultMsg.textContent = "Face photo captured. Click Confirm to enroll.";
+        confirmFaceBtn.disabled = false;
+      }, 'image/jpeg', 0.92);
+    });
+
+    // "Confirm & Save" does NOT POST to Flask directly anymore, just closes the modal and flags success
+    confirmFaceBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (!faceImageBlob) {
+        faceResultMsg.textContent = "No face image captured!";
+        return;
+      }
+      faceSuccessfullyCaptured = true;
+      faceStatus.textContent = "Face ready to save!";
+      faceStatus.className = "fp-status-message is-success";
+      facePane.style.display = "none";
+      setTimeout(() => {
+        camera.style.display = "block";
+        snapshot.style.display = "none";
+        confirmFaceBtn.disabled = true;
+      }, 1000);
+    });
+
+    closeFacePaneBtn.addEventListener('click', () => {
+      if (camera.srcObject) camera.srcObject.getTracks().forEach(track => track.stop());
+      camera.style.display = "block";
+      snapshot.style.display = "none";
+      facePane.style.display = "none";
+      confirmFaceBtn.disabled = true;
+      faceImageBlob = null;
+      faceSuccessfullyCaptured = false;
+      faceResultMsg.textContent = "";
+    });
+
+    function errorMsg(msg) {
+      const d = document.getElementById("message");
+      d.textContent = msg; d.className = "notification is-danger";
+      d.classList.remove("is-hidden");
+      setTimeout(() => { d.classList.add("is-hidden"); }, 5000);
+    }
+    function successMsg(msg, data) {
+      const d = document.getElementById("message");
+      d.textContent = msg + (data && data.data && data.data.username ? ("\nUsername: "+data.data.username) : "");
+      d.className = "notification is-success";
+      d.classList.remove("is-hidden");
+      setTimeout(() => { d.classList.add("is-hidden"); }, 3500);
+    }
+  });
+  </script>
+</body>
+</html>

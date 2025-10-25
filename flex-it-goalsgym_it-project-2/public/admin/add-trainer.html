@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Add Trainer | GOALS Gym</title>
+  <link rel="stylesheet" href="./admin-css/add-trainer.css">
+</head>
+<body>
+  <div class="admin-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <h2>GOALS Gym Admin</h2>
+      </div>
+      <nav class="sidebar-nav">
+                <a href="./admin-mainpage.html"><span>Dashboard</span></a>
+                <a href="./add-classes.html"><span>Add Classes</span></a>
+                <a href="./add-member.html"><span>Add Member</span></a>
+                <a href="./manage-members.html"><span>Manage Member</span></a>
+                <a href="./add-trainer.html" class="active"><span>Add Trainer</span></a>
+                <a href="./manage-trainer.html"><span>Manage Trainer</span></a>
+                <a href="./manage-class-enrollment.html"><span>Manage Enrollment</span></a>
+                <a href="./add-transaction.html"><span>Add Transaction</span></a>
+                <a href="./view-classes-and-feedback.html"><span>View Classes</span></a>
+                <a href="./trainer-schedule-management.html"><span>Trainer Schedule Management</span></a>
+      </nav>
+    </aside>
+
+    <!-- Header -->
+    <header class="header">
+      <button class="menu-toggle" id="menuToggle">☰</button>
+      <h1>Add Trainer</h1>
+      <button class="logout-btn" id="logoutBtn">Logout</button>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <h2>Add New Trainer</h2>
+      <form id="trainerForm" class="trainer-form">
+        <div class="form-group">
+          <label for="name">Full Name *</label>
+          <input type="text" id="name" name="name" required />
+        </div>
+
+        <div class="form-group">
+          <label for="email">Email Address *</label>
+          <input type="email" id="email" name="email" required placeholder="trainer@example.com" />
+        </div>
+
+        <div class="form-group">
+          <label for="specialization">Specialization *</label>
+          <select id="specialization" name="specialization" required>
+            <option value="">Select Specialization</option>
+            <option value="Boxing">Boxing</option>
+            <option value="Kickboxing">Kickboxing</option>
+            <option value="Weight Training">Weight Training</option>
+            <option value="Cardio">Cardio</option>
+            <option value="Yoga">Yoga</option>
+            <option value="Pilates">Pilates</option>
+            <option value="CrossFit">CrossFit</option>
+            <option value="Personal Training">Personal Training</option>
+            <option value="Group Fitness">Group Fitness</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="custom_specialization" id="custom_label" style="display: none;">Custom Specialization *</label>
+          <input
+            type="text"
+            id="custom_specialization"
+            name="custom_specialization"
+            style="display: none;"
+            placeholder="Enter custom specialization"
+          />
+        </div>
+
+        <div class="form-group">
+          <div class="checkbox-group">
+            <input type="checkbox" id="is_available" name="is_available" checked />
+            <label for="is_available">Currently Available</label>
+          </div>
+          <div class="form-note">Check if the trainer is available for new assignments</div>
+        </div>
+
+        <div class="form-group">
+          <label for="assigned_classes">Assigned Classes (Optional):</label>
+          <textarea
+            id="assigned_classes"
+            name="assigned_classes"
+            rows="3"
+            placeholder="Enter class IDs separated by commas (e.g., CLS-001, CLS-002)"
+          ></textarea>
+          <div class="form-note">Leave empty if no classes are assigned yet</div>
+        </div>
+
+        <div class="form-group">
+          <label>Send email to trainer?</label>
+          <div>
+            <label><input type="radio" name="send_email" value="yes" checked> Yes</label>
+            <label><input type="radio" name="send_email" value="no"> No</label>
+          </div>
+        </div>
+
+        <button type="submit" class="add-trainer-button">Add Trainer</button>
+      </form>
+    </main>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const menuToggle = document.getElementById('menuToggle');
+      const sidebar = document.querySelector('.sidebar');
+      const logoutBtn = document.getElementById('logoutBtn');
+      const authUser = JSON.parse(localStorage.getItem('authUser'));
+
+      menuToggle.addEventListener('click', () => {
+        sidebar.classList.toggle('collapsed');
+      });
+
+      if (!authUser || (Date.now() - authUser.timestamp > 3600000)) {
+        localStorage.removeItem('authUser');
+        window.location.href = '../admin-login.html';
+        return;
+      }
+
+      logoutBtn.addEventListener('click', () => {
+        localStorage.removeItem('authUser');
+        window.location.href = '../admin-login.html';
+      });
+
+      document.addEventListener('click', (e) => {
+        if (window.innerWidth <= 768 && !sidebar.contains(e.target) && !menuToggle.contains(e.target)) {
+          sidebar.classList.remove('collapsed');
+        }
+      });
+
+      sidebar.addEventListener('transitionend', () => {
+        if (window.innerWidth <= 768 && sidebar.classList.contains('collapsed')) {
+          document.body.style.overflow = 'hidden';
+        } else {
+          document.body.style.overflow = 'auto';
+        }
+      });
+
+      document.getElementById('specialization').addEventListener('change', function () {
+        const customField = document.getElementById('custom_specialization');
+        const customLabel = document.getElementById('custom_label');
+        if (this.value === 'Other') {
+          customField.style.display = 'block';
+          customLabel.style.display = 'block';
+          customField.required = true;
+        } else {
+          customField.style.display = 'none';
+          customLabel.style.display = 'none';
+          customField.required = false;
+          customField.value = '';
+        }
+      });
+
+      document.getElementById('trainerForm').addEventListener('submit', async function (e) {
+        e.preventDefault();
+        const submitBtn = document.querySelector('.add-trainer-button');
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Adding...';
+
+        try {
+          let specialization = document.getElementById('specialization').value;
+          if (specialization === 'Other') {
+            specialization = document.getElementById('custom_specialization').value.trim();
+          }
+          const assignedClassesInput = document.getElementById('assigned_classes').value.trim();
+          const assignedClasses = assignedClassesInput
+            ? assignedClassesInput.split(',').map((cls) => cls.trim()).filter(Boolean)
+            : [];
+          const email = document.getElementById('email').value.trim();
+          const sendEmailVal = document.querySelector('input[name="send_email"]:checked').value;
+          const send_email = (sendEmailVal === "yes");
+
+          const trainerData = {
+            name: document.getElementById('name').value.trim(),
+            email: email,
+            specialization: specialization,
+            is_available: document.getElementById('is_available').checked,
+            assigned_classes: assignedClasses,
+            send_email: send_email
+          };
+
+          const response = await fetch('http://localhost:8080/api/trainers', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${localStorage.getItem('authToken') || ''}`,
+            },
+            body: JSON.stringify(trainerData),
+          });
+
+          const responseData = await response.json();
+
+          if (!response.ok) {
+            let errorMsg = 'Failed to add trainer';
+            if (responseData.details) {
+              errorMsg +=
+                ':\n' +
+                Object.entries(responseData.details)
+                  .filter(([_, value]) => value)
+                  .map(([field, error]) => `• ${field}: ${error}`)
+                  .join('\n');
+            } else if (responseData.error) {
+              errorMsg = responseData.error;
+            }
+            throw new Error(errorMsg);
+          }
+
+          let emailMsg = '';
+          if (send_email) {
+            emailMsg = 'An email was sent to the trainer.\n';
+          } else {
+            emailMsg = 'No email was sent to the trainer. Please provide the credentials manually.\n';
+          }
+
+          alert(`Trainer added successfully!\nUsername: ${responseData.data.username}\nTemporary Password: ${responseData.data.tempPassword}\n${emailMsg}Trainer should change password upon first login.\nTrainer ID: ${responseData.data.trainer_id}\nName: ${responseData.data.name}`);
+          this.reset();
+          document.getElementById('custom_specialization').style.display = 'none';
+          document.getElementById('custom_label').style.display = 'none';
+        } catch (err) {
+          console.error('Error:', err);
+          alert(`Error: ${err.message}`);
+        } finally {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Add Trainer';
+        }
+      });
+    });
+  </script>
+</body>
+</html>
