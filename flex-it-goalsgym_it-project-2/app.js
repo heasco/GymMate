@@ -3,6 +3,7 @@ require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+
 const authRoutes = require('./routes/auth');
 const memberRoutes = require('./routes/members');
 const trainerRoutes = require('./routes/trainers');
@@ -12,9 +13,12 @@ const feedbackRoutes = require('./routes/feedbacks');
 const transactionRoutes = require('./routes/transactions');
 const healthRoutes = require('./routes/health');
 const attendanceRoutes = require('./routes/attendance');
+
 const errorHandler = require('./middleware/errorHandler');
 const initAdmin = require('./utils/initAdmin');
-const { initEnrollmentAutoUpdate } = require('./jobs/enrollmentAutoUpdate'); // ADD THIS LINE
+
+const { initEnrollmentAutoUpdate } = require('./jobs/enrollmentAutoUpdate'); 
+const { initMembershipExpiryReminder } = require('./jobs/membershipExpiryReminder'); // ADDED
 
 console.log('Routes mounted.');
 
@@ -43,12 +47,19 @@ mongoose.connection.on('connected', async () => {
   }
 
   // Initialize enrollment auto-update job
-  // ADD THIS BLOCK
   try {
     initEnrollmentAutoUpdate();
     console.log('Enrollment auto-update job initialized');
   } catch (err) {
     console.error('Enrollment auto-update initialization error:', err);
+  }
+
+  // Initialize membership expiry reminder job (ADDED)
+  try {
+    initMembershipExpiryReminder();
+    console.log('Membership expiry reminder job initialized');
+  } catch (err) {
+    console.error('Membership expiry reminder initialization error:', err);
   }
 });
 
