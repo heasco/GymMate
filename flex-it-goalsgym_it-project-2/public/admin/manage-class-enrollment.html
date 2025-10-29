@@ -3,648 +3,300 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Manage Class Enrollment - GOALS Gym</title>
-    <link rel="stylesheet" href="./admin-css/admin-mainpage.css">
+    <title>Manage Class Enrollment - Admin</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="./admin-css/manage-class-enrollment.css">
 </head>
-<body>
-    <div class="admin-container">
-        <!-- Sidebar -->
-        <aside class="sidebar">
-            <div class="sidebar-header">
-                <h2>GOALS Gym Admin</h2>
+<body class="bg-dark text-light">
+    <div id="sidebar" class="sidebar collapsed">
+        <div class="sidebar-header">
+            <div class="sidebar-brand">
+                <i class="fas fa-dumbbell me-2"></i>Goals Gym
             </div>
-            <nav class="sidebar-nav">
-                <a href="./admin-mainpage.html"><span>Dashboard</span></a>
-                <a href="./add-classes.html"><span>Add Classes</span></a>
-                <a href="./add-member.html"><span>Add Member</span></a>
-                <a href="./manage-members.html"><span>Manage Member</span></a>
-                <a href="./add-trainer.html"><span>Add Trainer</span></a>
-                <a href="./manage-trainer.html"><span>Manage Trainer</span></a>
-                <a href="./manage-class-enrollment.html" class="active"><span>Manage Enrollment</span></a>
-                <a href="./add-transaction.html"><span>Add Transaction</span></a>
-                <a href="./view-classes-and-feedback.html"><span>View Classes</span></a>
-                <a href="./trainer-schedule-management.html"><span>Trainer Schedule Management</span></a>
-            </nav>
-        </aside>
-
-        <!-- Header -->
-        <header class="header">
-            <button class="menu-toggle" id="menuToggle"></button>
-            <h1>Manage Class Enrollment</h1>
-            <button class="logout-btn" id="logoutBtn">Logout</button>
-        </header>
-
-        <!-- Main Content -->
-        <main class="main-content">
-            <div class="container">
-                <div id="serverStatus" class="server-status">Checking server connection...</div>
-                <div id="successMessage" class="success-message"></div>
-                <div id="errorMessage" class="error-message"></div>
-
-                <!-- Enrollment Section -->
-                <div id="enrollmentSection" class="section active">
-                    <h2>Enroll Member in Session</h2>
-                    
-                    <div class="form-group">
-                        <label for="classId">Select Class</label>
-                        <select id="classId" name="classId" required>
-                            <option value="">Loading classes...</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Search Combative Members</label>
-                        <div class="search-group">
-                            <input type="text" id="memberSearch" placeholder="Enter name or member ID">
-                            <div id="autocompleteSuggestions" class="autocomplete-suggestions"></div>
-                        </div>
-                    </div>
-
-                    <!-- Session Date and Time Selection -->
-                    <div class="session-details" id="sessionDetails" style="display: none;">
-                        <h3>Session Details</h3>
-                        <div class="session-form-group">
-                            <div class="form-group">
-                                <label for="sessionDate">Session Date</label>
-                                <input type="date" id="sessionDate" name="sessionDate" required>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label>Available Time Slots</label>
-                                <div id="timeSlots" class="time-slots">
-                                    <!-- Time slots will be populated based on class schedule -->
-                                </div>
-                            </div>
-
-                            <div class="form-group">
-                                <label>Or Schedule Next Available Session</label>
-                                <button type="button" id="nextSessionBtn" class="next-session-btn">
-                                    Schedule Next Available Session
-                                </button>
-                            </div>
-                        </div>
-
-                        <div class="selected-member-info" id="selectedMemberInfo" style="display: none;">
-                            <h4>Selected Member</h4>
-                            <div id="memberDetails"></div>
-                            <div id="remainingSessions"></div>
-                        </div>
-
-                        <div class="nav-buttons">
-                            <button type="button" id="enrollBtn" class="enroll-btn" disabled>
-                                Enroll Member
-                            </button>
-                            <button type="button" id="clearBtn" class="clear-btn">
-                                Clear Selection
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Search Results -->
-                    <div id="searchResults" class="member-list">
-                        <h3>Available Combative Members</h3>
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Member ID</th>
-                                    <th>Name</th>
-                                    <th>Remaining Sessions</th>
-                                    <th>Action</th>
-                                </tr>
-                            </thead>
-                            <tbody id="searchResultsBody"></tbody>
-                        </table>
-                    </div>
-
-                    <!-- Enrolled Sessions -->
-                    <div id="enrolledSessions" class="member-list">
-                        <h3>Scheduled Sessions for Selected Class</h3>
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Member ID</th>
-                                    <th>Name</th>
-                                    <th>Session Date</th>
-                                    <th>Session Time</th>
-                                    <th>Status</th>
-                                    <th>Action</th>
-                                </tr>
-                            </thead>
-                            <tbody id="enrolledSessionsBody"></tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <div class="nav-buttons">
-                    <button type="button" onclick="window.location.href='./add-classes.html'">
-                        Back to Add Class
-                    </button>
-                </div>
+            <button class="btn btn-link text-white toggle-sidebar" onclick="toggleSidebar()">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+        
+        <div class="user-profile">
+            <div class="user-avatar">
+                <i class="fas fa-user"></i>
             </div>
-        </main>
+            <div class="user-info">
+                <div class="user-name" id="userName">Admin User</div>
+                <div class="user-role">Administrator</div>
+            </div>
+            <div class="dropdown">
+                <i class="fas fa-chevron-down ms-2 cursor-pointer" onclick="toggleDropdown(this)"></i>
+                <ul class="dropdown-menu">
+                    <li class="dropdown-item" onclick="editProfile()">Edit Profile</li>
+                    <li class="dropdown-item" onclick="changePassword()">Change Password</li>
+                    <li class="dropdown-item" onclick="logout()">Logout</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="sidebar-search">
+            <input type="text" class="form-control search-input" placeholder="Search...">
+        </div>
+        
+        <ul class="sidebar-menu">
+            <li class="menu-item">
+                <a href="./admin-mainpage.html">
+                    <i class="fas fa-tachometer-alt menu-icon"></i>
+                    <span>Dashboard</span>
+                </a>
+            </li>
+            <li class="menu-item">
+                <a href="./add-classes.html">
+                    <i class="fas fa-chalkboard-teacher menu-icon"></i>
+                    <span>Add Classes</span>
+                </a>
+            </li>
+            <li class="menu-item">
+                <a href="./add-member.html">
+                    <i class="fas fa-user-plus menu-icon"></i>
+                    <span>Add Member</span>
+                </a>
+            </li>
+            <li class="menu-item">
+                <a href="./manage-members.html">
+                    <i class="fas fa-users menu-icon"></i>
+                    <span>Manage Member</span>
+                </a>
+            </li>
+            <li class="menu-item">
+                <a href="./add-trainer.html">
+                    <i class="fas fa-user-tie menu-icon"></i>
+                    <span>Add Trainer</span>
+                </a>
+            </li>
+            <li class="menu-item">
+                <a href="./manage-trainer.html">
+                    <i class="fas fa-user-tie menu-icon"></i>
+                    <span>Manage Trainer</span>
+                </a>
+            </li>
+            <li class="menu-item active">
+                <a href="./manage-class-enrollment.html">
+                    <i class="fas fa-clipboard-list menu-icon"></i>
+                    <span>Manage Enrollment</span>
+                </a>
+            </li>
+            <li class="menu-item">
+                <a href="./add-transaction.html">
+                    <i class="fas fa-credit-card menu-icon"></i>
+                    <span>Add Transaction</span>
+                </a>
+            </li>
+            <li class="menu-item">
+                <a href="./view-classes-and-feedback.html">
+                    <i class="fas fa-eye menu-icon"></i>
+                    <span>View Classes</span>
+                </a>
+            </li>
+            <li class="menu-item">
+                <a href="./trainer-schedule-management.html">
+                    <i class="fas fa-calendar-alt menu-icon"></i>
+                    <span>Trainer Schedule Management</span>
+                </a>
+            </li>
+            <li class="menu-item" onclick="logout()">
+                <i class="fas fa-sign-out-alt menu-icon"></i>
+                <span>Logout</span>
+            </li>
+        </ul>
     </div>
 
+    <!-- Toggle Button (Hamburger - Hides when Sidebar Expanded) -->
+    <button class="toggle-btn" onclick="toggleSidebar()">
+        <i class="fas fa-bars"></i>
+    </button>
+
+    <div class="main-content">
+        <header class="bg-secondary text-white p-3 mb-4 rounded">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2><i class="fas fa-user-graduate me-2"></i>Manage Class Enrollment</h2>
+                <div id="serverStatus" class="alert alert-success d-none">Connected to server</div>
+            </div>
+            <div id="successMessage" class="alert alert-success d-none mt-2">
+                <div class="message-body">Success message</div>
+            </div>
+            <div id="errorMessage" class="alert alert-danger d-none mt-2">
+                <div id="errorText">Error message</div>
+            </div>
+        </header>
+
+        <!-- List View Tab -->
+        <ul class="nav nav-tabs" id="enrollTabs">
+            <li class="nav-item">
+                <a class="nav-link active" id="listTab" data-bs-toggle="tab" href="#listView"><i class="fas fa-list me-1"></i>List View</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" id="calendarTab" data-bs-toggle="tab" href="#calendarView"><i class="fas fa-calendar me-1"></i>Calendar View</a>
+            </li>
+        </ul>
+
+        <div class="tab-content">
+            <!-- List View -->
+            <div class="tab-pane fade show active" id="listView">
+                <div class="row mt-4">
+                    <div class="col-md-6">
+                        <h4>Select Class</h4>
+                        <select id="classSelect" class="form-select mb-3">
+                            <option value="">Select a class</option>
+                        </select>
+                        <div id="sessionDetailsSection" class="d-none">
+                            <label for="sessionDate" class="form-label">Session Date</label>
+                            <input type="date" id="sessionDate" class="form-control mb-2">
+                            <div id="timeSlots" class="mb-2"></div>
+                            <select id="sessionTime" class="form-select" style="display:none;">
+                                <option value="">Select Time</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <h4>Search Members</h4>
+                        <input type="text" id="memberSearch" class="form-control mb-3" placeholder="Search members...">
+                        <div id="autocompleteSuggestions" class="position-absolute bg-dark border" style="z-index: 1000; display:none; max-height: 200px; overflow-y: auto;"></div>
+                    </div>
+                </div>
+
+                <h5 class="mt-4">Available Members (Remaining Sessions > 0)</h5>
+                <div class="table-responsive">
+                    <table class="table table-dark table-striped">
+                        <thead>
+                            <tr>
+                                <th><input type="checkbox" id="selectAllMembers"></th>
+                                <th>Member ID</th>
+                                <th>Name</th>
+                                <th>Remaining Sessions</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="membersTableBody">
+                            <tr><td colspan="5" class="text-center">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <button id="addToBulkBtn" class="btn btn-success mb-3" disabled><i class="fas fa-cart-plus me-2"></i>Add Selected to Cart</button>
+
+                <h5 class="mt-4">Scheduled Sessions</h5>
+                <div class="table-responsive">
+                    <table class="table table-dark table-striped">
+                        <thead>
+                            <tr>
+                                <th>Member ID</th>
+                                <th>Name</th>
+                                <th>Session Date</th>
+                                <th>Session Time</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="sessionsTableBody">
+                            <tr><td colspan="6" class="text-center">No sessions yet.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Calendar View -->
+            <div class="tab-pane fade" id="calendarView">
+                <div class="row mt-4">
+                    <div class="col-md-6">
+                        <label for="calendarMonth" class="form-label">Select Month</label>
+                        <input type="month" id="calendarMonth" class="form-control mb-3">
+                        <h5 id="calendarTitle" class="mb-3">October 2025</h5>
+                        <table class="table table-dark">
+                            <thead>
+                                <tr>
+                                    <th>Sun</th><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th>
+                                </tr>
+                            </thead>
+                            <tbody id="calendarBody">
+                                <tr><td colspan="7" class="text-center">Loading calendar...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <div id="datePanel" class="card bg-secondary p-3 d-none">
+                            <h6 id="panelTitle" class="card-title">Selected Date: -</h6>
+                            <select id="panelMemberSelect" class="form-select mb-2" multiple>
+                                <option value="">Select Members</option>
+                            </select>
+                            <button id="addPanelToCartBtn" class="btn btn-info" disabled>Add Selection to Cart</button>
+                            <div id="classDetails" class="mt-3"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bulk Enrollment Cart -->
+        <div id="bulkEnrollPanel" class="card bg-secondary mt-4 d-none">
+            <div class="card-header bg-danger text-white">
+                <h5><i class="fas fa-shopping-cart me-2"></i>Bulk Enrollment Cart</h5>
+                <button id="clearCartBtn" class="btn btn-sm btn-outline-light float-end" onclick="clearCart()">Clear Cart</button>
+            </div>
+            <ul id="bulkEnrollList" class="list-group list-group-flush">
+                <!-- Items will be added here by JS -->
+            </ul>
+            <div id="emptyCartMsg" class="text-center text-muted p-3">
+                Your cart is empty. Add members above!
+            </div>
+            <div class="card-footer">
+                <button id="confirmBulkBtn" class="btn btn-success" disabled onclick="confirmBulkEnroll()">
+                    <i class="fas fa-save me-2"></i>Bulk Enroll
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Custom JS -->
+    <script src="./admin-js/manage-class-enrollment.js"></script>
+    <!-- Sidebar JS Functions (Updated for Toggle Hiding) -->
     <script>
-        const SERVER_URL = 'http://localhost:8080';
-        let debounceTimeout;
-        let selectedMember = null;
-        let selectedClass = null;
-
-        document.addEventListener('DOMContentLoaded', async function() {
-            // Authentication check
-            const menuToggle = document.getElementById('menuToggle');
-            const sidebar = document.querySelector('.sidebar');
-            const logoutBtn = document.getElementById('logoutBtn');
-            
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const toggleBtn = document.querySelector('.toggle-btn');
+            sidebar.classList.toggle('collapsed');
+            if (sidebar.classList.contains('collapsed')) {
+                toggleBtn.style.display = 'block'; // Show hamburger when collapsed
+            } else {
+                toggleBtn.style.display = 'none'; // Hide when expanded
+            }
+        }
+        function toggleDropdown(element) {
+            const dropdown = element.nextElementSibling;
+            dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+        }
+        function toggleDropdownMenu(element) {
+            const dropdown = element.parentElement.querySelector('.dropdown-menu');
+            dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+        }
+        function navigateTo(page) {
+            window.location.href = page;
+        }
+        function editProfile() { alert('Edit profile functionality'); }
+        function changePassword() { alert('Change password functionality'); }
+        function systemSettings() { alert('System settings'); }
+        function userManagement() { alert('User management'); }
+        function logout() {
+            localStorage.removeItem('authUser');
+            window.location.href = 'login.html';
+        }
+        // Load user info on init
+        document.addEventListener('DOMContentLoaded', function() {
             const authUser = JSON.parse(localStorage.getItem('authUser'));
-            if (!authUser || Date.now() - authUser.timestamp > 3600000) {
-                localStorage.removeItem('authUser');
-                window.location.href = '../admin-login.html';
-                return;
+            if (authUser) {
+                document.getElementById('userName').textContent = authUser.name || 'Admin User';
             }
-
-            menuToggle.addEventListener('click', () => {
-                sidebar.classList.toggle('collapsed');
-            });
-
-            logoutBtn.addEventListener('click', () => {
-                localStorage.removeItem('authUser');
-                window.location.href = '../admin-login.html';
-            });
-
-            // Initialize page
-            await checkServerConnection();
-            await fetchClasses();
-            setupEventListeners();
-            setMinimumDate();
+            // Active state already set in HTML for Manage Enrollment
         });
-
-        async function checkServerConnection() {
-            const statusElement = document.getElementById('serverStatus');
-            try {
-                const response = await fetch(`${SERVER_URL}/health`);
-                if (response.ok) {
-                    statusElement.textContent = 'Connected to server successfully';
-                    statusElement.className = 'server-status server-connected';
-                } else {
-                    throw new Error('Server response not OK');
-                }
-            } catch (error) {
-                statusElement.textContent = 'Cannot connect to server. Please try again later.';
-                statusElement.className = 'server-status server-disconnected';
-                console.error('Server connection error:', error);
-            }
-        }
-
-        async function fetchClasses() {
-            const classSelect = document.getElementById('classId');
-            try {
-                const response = await fetch(`${SERVER_URL}/api/classes`, {
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${localStorage.getItem('authToken')}`
-                    }
-                });
-
-                if (response.ok) {
-                    const result = await response.json();
-                    if (result.success && result.data && result.data.length > 0) {
-                        classSelect.innerHTML = '<option value="">Select a class</option>';
-                        result.data.forEach(cls => {
-                            const option = document.createElement('option');
-                            option.value = cls.class_id;
-                            option.textContent = `${cls.class_name} - ${cls.schedule}`;
-                            option.dataset.schedule = cls.schedule;
-                            classSelect.appendChild(option);
-                        });
-                    } else {
-                        classSelect.innerHTML = '<option value="">No classes available</option>';
-                    }
-                } else {
-                    classSelect.innerHTML = '<option value="">Error loading classes</option>';
-                }
-            } catch (error) {
-                console.error('Error fetching classes:', error);
-                classSelect.innerHTML = '<option value="">Error loading classes</option>';
-            }
-        }
-
-        function setupEventListeners() {
-            const searchInput = document.getElementById('memberSearch');
-            const classSelect = document.getElementById('classId');
-            const sessionDate = document.getElementById('sessionDate');
-            const nextSessionBtn = document.getElementById('nextSessionBtn');
-            const enrollBtn = document.getElementById('enrollBtn');
-            const clearBtn = document.getElementById('clearBtn');
-
-            searchInput.addEventListener('input', debounce(searchMembers, 300));
-            classSelect.addEventListener('change', onClassChange);
-            sessionDate.addEventListener('change', generateTimeSlots);
-            nextSessionBtn.addEventListener('click', scheduleNextSession);
-            enrollBtn.addEventListener('click', enrollMember);
-            clearBtn.addEventListener('click', clearSelection);
-        }
-
-        function setMinimumDate() {
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('sessionDate').setAttribute('min', today);
-        }
-
-        function debounce(func, wait) {
-            return function(...args) {
-                clearTimeout(debounceTimeout);
-                debounceTimeout = setTimeout(() => func.apply(this, args), wait);
-            };
-        }
-
-        async function searchMembers() {
-            const query = document.getElementById('memberSearch').value.trim();
-            const resultsBody = document.getElementById('searchResultsBody');
-            const suggestions = document.getElementById('autocompleteSuggestions');
-            
-            suggestions.innerHTML = '';
-            suggestions.style.display = 'none';
-            resultsBody.innerHTML = '';
-
-            if (query.length < 2) return;
-
-            try {
-                const response = await fetch(`${SERVER_URL}/api/members/search?query=${encodeURIComponent(query)}&type=combative`, {
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${localStorage.getItem('authToken')}`
-                    }
-                });
-
-                const result = await response.json();
-                if (result.success && result.data && result.data.length > 0) {
-                    // Show autocomplete suggestions
-                    suggestions.style.display = 'block';
-                    result.data.forEach(member => {
-                        const activeCombative = member.memberships.find(m => 
-                            m.type === 'combative' && m.status === 'active' && 
-                            new Date(m.endDate) > new Date()
-                        );
-                        const remainingSessions = activeCombative ? activeCombative.remainingSessions : 0;
-
-                        if (remainingSessions > 0) {
-                            const suggestion = document.createElement('div');
-                            suggestion.className = 'autocomplete-suggestion';
-                            suggestion.textContent = `${member.name} (${member.memberId}) - ${remainingSessions} sessions left`;
-                            suggestion.onclick = () => selectMember(member);
-                            suggestions.appendChild(suggestion);
-
-                            const row = document.createElement('tr');
-                            row.innerHTML = `
-                                <td>${member.memberId}</td>
-                                <td>${member.name}</td>
-                                <td>${remainingSessions}</td>
-                                <td><button onclick="selectMember(${JSON.stringify(member).replace(/"/g, '&quot;')})">Select</button></td>
-                            `;
-                            resultsBody.appendChild(row);
-                        }
-                    });
-                } else {
-                    resultsBody.innerHTML = '<tr><td colspan="4">No combative members found with remaining sessions</td></tr>';
-                }
-            } catch (error) {
-                console.error('Error searching members:', error);
-                resultsBody.innerHTML = '<tr><td colspan="4">Error loading members</td></tr>';
-            }
-        }
-
-        function selectMember(member) {
-            selectedMember = member;
-            const sessionDetails = document.getElementById('sessionDetails');
-            const memberInfo = document.getElementById('selectedMemberInfo');
-            const memberDetails = document.getElementById('memberDetails');
-            const remainingSessions = document.getElementById('remainingSessions');
-            const suggestions = document.getElementById('autocompleteSuggestions');
-
-            // Hide suggestions
-            suggestions.style.display = 'none';
-            document.getElementById('memberSearch').value = `${member.name} (${member.memberId})`;
-
-            // Show session details
-            sessionDetails.style.display = 'block';
-            memberInfo.style.display = 'block';
-
-            // Display member info
-            const activeCombative = member.memberships.find(m => 
-                m.type === 'combative' && m.status === 'active' && 
-                new Date(m.endDate) > new Date()
-            );
-            const sessionsLeft = activeCombative ? activeCombative.remainingSessions : 0;
-
-            memberDetails.innerHTML = `
-                <strong>${member.name}</strong><br>
-                Member ID: ${member.memberId}<br>
-                Email: ${member.email || 'N/A'}<br>
-                Phone: ${member.phone || 'N/A'}
-            `;
-            
-            remainingSessions.innerHTML = `
-                <strong>Remaining Sessions: ${sessionsLeft}</strong>
-                ${sessionsLeft === 0 ? '<span style="color: red;">No sessions remaining!</span>' : ''}
-            `;
-
-            updateEnrollButton();
-        }
-
-        function onClassChange() {
-            const classSelect = document.getElementById('classId');
-            selectedClass = classSelect.value;
-            
-            if (selectedClass) {
-                const option = classSelect.options[classSelect.selectedIndex];
-                const schedule = option.dataset.schedule;
-                
-                generateTimeSlots();
-                loadClassSessions();
-                updateEnrollButton();
-            }
-        }
-
-        function generateTimeSlots() {
-            const classSelect = document.getElementById('classId');
-            const sessionDate = document.getElementById('sessionDate').value;
-            const timeSlotsContainer = document.getElementById('timeSlots');
-
-            if (!selectedClass || !sessionDate) {
-                timeSlotsContainer.innerHTML = '';
-                return;
-            }
-
-            const option = classSelect.options[classSelect.selectedIndex];
-            const schedule = option.dataset.schedule;
-            
-            // Parse schedule to generate time slots
-            // This is a simplified version - you might need more complex parsing
-            const timeSlots = parseScheduleToTimeSlots(schedule, new Date(sessionDate));
-            
-            timeSlotsContainer.innerHTML = '';
-            timeSlots.forEach((slot, index) => {
-                const radio = document.createElement('input');
-                radio.type = 'radio';
-                radio.name = 'timeSlot';
-                radio.value = slot;
-                radio.id = `slot${index}`;
-                radio.addEventListener('change', updateEnrollButton);
-
-                const label = document.createElement('label');
-                label.htmlFor = `slot${index}`;
-                label.textContent = slot;
-                label.className = 'time-slot-label';
-
-                const div = document.createElement('div');
-                div.className = 'time-slot';
-                div.appendChild(radio);
-                div.appendChild(label);
-                
-                timeSlotsContainer.appendChild(div);
-            });
-        }
-
-        function parseScheduleToTimeSlots(schedule, date) {
-            // Simple parsing - you might need to make this more robust
-            const dayName = date.toLocaleDateString('en-US', { weekday: 'long' });
-            
-            // Extract time information from schedule
-            const timeMatch = schedule.match(/(\d{1,2}:\d{2}\s*[AP]M)\s*-\s*(\d{1,2}:\d{2}\s*[AP]M)/);
-            if (timeMatch) {
-                return [`${timeMatch[1]} - ${timeMatch[2]}`];
-            }
-            
-            // Default time slots if parsing fails
-            return [
-                '9:00 AM - 10:00 AM',
-                '10:00 AM - 11:00 AM',
-                '11:00 AM - 12:00 PM',
-                '2:00 PM - 3:00 PM',
-                '3:00 PM - 4:00 PM',
-                '4:00 PM - 5:00 PM'
-            ];
-        }
-
-        function scheduleNextSession() {
-            // Find the next available session based on class schedule
-            const today = new Date();
-            const nextWeek = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
-            
-            document.getElementById('sessionDate').value = nextWeek.toISOString().split('T')[0];
-            generateTimeSlots();
-            
-            // Auto-select first time slot
-            const firstSlot = document.querySelector('input[name="timeSlot"]');
-            if (firstSlot) {
-                firstSlot.checked = true;
-                updateEnrollButton();
-            }
-        }
-
-        function updateEnrollButton() {
-            const enrollBtn = document.getElementById('enrollBtn');
-            const hasClass = selectedClass;
-            const hasMember = selectedMember;
-            const hasDate = document.getElementById('sessionDate').value;
-            const hasTimeSlot = document.querySelector('input[name="timeSlot"]:checked');
-            
-            const canEnroll = hasClass && hasMember && hasDate && hasTimeSlot;
-            
-            enrollBtn.disabled = !canEnroll;
-            enrollBtn.textContent = canEnroll ? 'Enroll Member' : 'Complete all fields to enroll';
-        }
-
-        async function enrollMember() {
-            const sessionDate = document.getElementById('sessionDate').value;
-            const selectedTimeSlot = document.querySelector('input[name="timeSlot"]:checked');
-            
-            if (!selectedClass || !selectedMember || !sessionDate || !selectedTimeSlot) {
-                showError('Please complete all fields');
-                return;
-            }
-
-            try {
-                const response = await fetch(`${SERVER_URL}/api/enrollments`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${localStorage.getItem('authToken')}`
-                    },
-                    body: JSON.stringify({
-                        class_id: selectedClass,
-                        member_id: selectedMember.memberId,
-                        member_name: selectedMember.name,
-                        session_date: sessionDate,
-                        session_time: selectedTimeSlot.value
-                    })
-                });
-
-                const result = await response.json();
-                
-                if (response.ok) {
-                    showSuccess(`Member enrolled successfully! Remaining sessions: ${result.remaining_sessions}`);
-                    clearSelection();
-                    loadClassSessions();
-                } else {
-                    showError(result.error || 'Failed to enroll member');
-                }
-            } catch (error) {
-                console.error('Error enrolling member:', error);
-                showError('Network error: ' + error.message);
-            }
-        }
-
-        async function loadClassSessions() {
-            const enrolledSessionsBody = document.getElementById('enrolledSessionsBody');
-            
-            if (!selectedClass) {
-                enrolledSessionsBody.innerHTML = '<tr><td colspan="6">Please select a class</td></tr>';
-                return;
-            }
-
-            try {
-                const response = await fetch(`${SERVER_URL}/api/enrollments/class/${selectedClass}`, {
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${localStorage.getItem('authToken')}`
-                    }
-                });
-
-                const result = await response.json();
-                enrolledSessionsBody.innerHTML = '';
-
-                if (result.success && result.data && result.data.length > 0) {
-                    result.data.forEach(enrollment => {
-                        const row = document.createElement('tr');
-                        const sessionDate = new Date(enrollment.session_date).toLocaleDateString();
-                        const statusBadge = getStatusBadge(enrollment.attendance_status);
-                        
-                        row.innerHTML = `
-                            <td>${enrollment.member_id}</td>
-                            <td>${enrollment.member_name}</td>
-                            <td>${sessionDate}</td>
-                            <td>${enrollment.session_time}</td>
-                            <td>${statusBadge}</td>
-                            <td>
-                                <button class="remove-button" onclick="cancelEnrollment('${enrollment._id || enrollment.enrollment_id}')">
-                                    Cancel
-                                </button>
-                                ${enrollment.attendance_status === 'scheduled' ? 
-                                    `<button class="attend-button" onclick="markAttendance('${enrollment._id || enrollment.enrollment_id}', 'attended')">
-                                        Mark Attended
-                                    </button>` : ''
-                                }
-                            </td>
-                        `;
-                        enrolledSessionsBody.appendChild(row);
-                    });
-                } else {
-                    enrolledSessionsBody.innerHTML = '<tr><td colspan="6">No scheduled sessions</td></tr>';
-                }
-            } catch (error) {
-                console.error('Error loading class sessions:', error);
-                enrolledSessionsBody.innerHTML = '<tr><td colspan="6">Error loading sessions</td></tr>';
-            }
-        }
-
-        function getStatusBadge(status) {
-            const badges = {
-                'scheduled': '<span class="status-badge scheduled">Scheduled</span>',
-                'attended': '<span class="status-badge attended">Attended</span>',
-                'missed': '<span class="status-badge missed">Missed</span>',
-                'cancelled': '<span class="status-badge cancelled">Cancelled</span>'
-            };
-            return badges[status] || status;
-        }
-
-        async function cancelEnrollment(enrollmentId) {
-            if (!confirm('Are you sure you want to cancel this enrollment?')) return;
-
-            try {
-                const response = await fetch(`${SERVER_URL}/api/enrollments/${enrollmentId}/cancel`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${localStorage.getItem('authToken')}`
-                    }
-                });
-
-                const result = await response.json();
-                
-                if (response.ok) {
-                    showSuccess(result.message + (result.refund_processed ? ' Session refunded.' : ''));
-                    loadClassSessions();
-                } else {
-                    showError(result.error || 'Failed to cancel enrollment');
-                }
-            } catch (error) {
-                console.error('Error canceling enrollment:', error);
-                showError('Network error: ' + error.message);
-            }
-        }
-
-        async function markAttendance(enrollmentId, status) {
-            try {
-                const response = await fetch(`${SERVER_URL}/api/enrollments/${enrollmentId}/attendance`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${localStorage.getItem('authToken')}`
-                    },
-                    body: JSON.stringify({ attendance_status: status })
-                });
-
-                const result = await response.json();
-                
-                if (response.ok) {
-                    showSuccess(result.message);
-                    loadClassSessions();
-                } else {
-                    showError(result.error || 'Failed to mark attendance');
-                }
-            } catch (error) {
-                console.error('Error marking attendance:', error);
-                showError('Network error: ' + error.message);
-            }
-        }
-
-        function clearSelection() {
-            selectedMember = null;
-            selectedClass = null;
-            
-            document.getElementById('memberSearch').value = '';
-            document.getElementById('classId').value = '';
-            document.getElementById('sessionDate').value = '';
-            document.getElementById('sessionDetails').style.display = 'none';
-            document.getElementById('selectedMemberInfo').style.display = 'none';
-            document.getElementById('timeSlots').innerHTML = '';
-            document.getElementById('searchResultsBody').innerHTML = '';
-            document.getElementById('enrolledSessionsBody').innerHTML = '';
-            document.getElementById('autocompleteSuggestions').style.display = 'none';
-            
-            updateEnrollButton();
-        }
-
-        function showSuccess(message) {
-            const successElement = document.getElementById('successMessage');
-            successElement.textContent = message;
-            successElement.style.display = 'block';
-            setTimeout(() => successElement.style.display = 'none', 5000);
-        }
-
-        function showError(message) {
-            const errorElement = document.getElementById('errorMessage');
-            errorElement.textContent = message;
-            errorElement.style.display = 'block';
-            setTimeout(() => errorElement.style.display = 'none', 5000);
-        }
-
-        // Make functions globally available
-        window.selectMember = selectMember;
-        window.cancelEnrollment = cancelEnrollment;
-        window.markAttendance = markAttendance;
     </script>
 </body>
 </html>
