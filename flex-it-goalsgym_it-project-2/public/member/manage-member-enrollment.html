@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Manage Enrollments - GOALS Gym</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css" />
+<link rel="stylesheet" href="./member-css/manage-member-enrollment.css"/>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar" aria-label="Left navigation">
+    <div class="brand">
+      <div class="logo">G</div>
+      <div>
+        <h2>GOALS Gym</h2>
+        <div style="font-size:12px;opacity:0.9;">Member portal</div>
+      </div>
+    </div>
+    <nav class="nav" role="navigation">
+      <a href="./member-dashboard.html">Dashboard</a>
+      <a href="./member-classes.html">Schedule</a>
+      <a href="./manage-member-enrollment.html" style="background:rgba(255,255,255,0.06);">Enroll</a>
+      <a href="./member-profile.html">Profile</a>
+      <a href="#" id="sidebarLogout">Logout</a>
+    </nav>
+  </aside>
+  <main class="main">
+    <div class="topbar">
+      <div>
+        <h1>Manage Enrollments</h1>
+        <div class="small">Select classes and dates to enroll. You have <span id="remainingSessions">0</span> sessions remaining.</div>
+      </div>
+    </div>
+    
+    <!-- Session Counter -->
+    <div class="card" style="margin-bottom:18px;">
+      <div class="card-head">Remaining Sessions</div>
+      <div class="card-body" style="text-align:center;">
+        <div class="session-counter">
+          <span id="remainingSessions">Please Select one or Multiple Classes</span>
+        </div>
+        <div class="small" id="membershipInfo">Loading membership...</div>
+      </div>
+    </div>
+    
+    <!-- View Toggle -->
+    <div class="view-tabs" style="margin-bottom:20px;">
+      <button class="view-tab active" id="tabCalendar" onclick="switchView('calendar')">Calendar View</button>
+      <button class="view-tab" id="tabList" onclick="switchView('list')">List View</button>
+    </div>
+    
+    <!-- Calendar View -->
+    <div id="calendarView" class="card">
+      <div class="card-head">Class Calendar</div>
+      <div class="card-body">
+        <div class="calendar-header">
+          <button class="btn btn-ghost" onclick="prevMonth()">‹</button>
+          <span id="currentMonthDisplay">Loading...</span>
+          <button class="btn btn-ghost" onclick="nextMonth()">›</button>
+        </div>
+        <div id="calendarContainer" class="calendar-container">
+          <div class="calendar-empty">Loading calendar...</div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- List View -->
+    <div id="listView" class="card" style="display:none;">
+      <div class="card-head">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <span>Available Classes</span>
+          <input type="text" id="classSearch" placeholder="Search classes..." style="padding:6px 10px;border-radius:4px;border:1px solid #ddd;width:200px;">
+        </div>
+      </div>
+      <div class="card-body">
+        <div id="classesGrid" class="columns is-multiline"></div>
+      </div>
+      <!-- Enrollment Cart Section -->
+<div id="enrollmentCart" class="enrollment-cart">
+  <div class="cart-header">
+    <h3>Selected Enrollments</h3>
+  </div>
+  <div class="cart-items">
+    <div id="cartContent">
+      <p>No selections yet</p>
+    </div>
+  </div>
+  <div class="cart-actions">
+    <button class="btn btn-primary" onclick="confirmAllEnrollments()" id="confirmCartBtn" disabled>
+      Confirm All Enrollments
+    </button>
+  </div>
+</div>
+
+    </div>
+  </main>
+</div>
+
+<script src="./member-js/manage-member-enrollment.js"> </script>
+</body>
+</html>

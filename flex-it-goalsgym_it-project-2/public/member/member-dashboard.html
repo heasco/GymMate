@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Dashboard - GOALS Gym</title>
+<link rel="stylesheet" href="/style.css"/>
+<style>
+  :root{ --nav-bg:#12335a; --nav-accent:#0b2a45; --card-head:#0e3b63; --muted:#9aa6b2; --accent:#f6b33a; }
+  html,body {height:100%; margin:0; font-family: "Segoe UI", Roboto, system-ui, Arial; background:#f2f4f7; color:#222;}
+  .app { display:flex; min-height:100vh; gap:18px;}
+  .sidebar { width:240px; background:linear-gradient(180deg,var(--nav-bg),var(--nav-accent)); color:#fff; padding:18px 12px; box-shadow: 2px 0 6px rgba(0,0,0,0.08);}
+  .brand {display:flex; align-items:center; gap:10px; margin-bottom:18px;}
+  .brand .logo { width:44px; height:44px; background:#fff2; border-radius:6px; display:flex; align-items:center; justify-content:center; font-weight:700; color:#fff; font-size:18px;}
+  .brand h2 { font-size:18px; margin:0; letter-spacing:0.2px;}
+  .nav { margin-top:12px; display:flex; flex-direction:column; gap:8px;}
+  .nav a { color:rgba(255,255,255,0.95); text-decoration:none; padding:10px 12px; border-radius:6px; display:block; font-size:14px;}
+  .nav a:hover { background:rgba(255,255,255,0.06);}
+  .main { flex:1; padding:20px 28px;}
+  .topbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;}
+  .topbar h1 { margin:0; font-size:22px; color:#0e2740; }
+  .badge { background:#eef; padding:5px 10px; border-radius:9px; font-weight:600; color:#0e2740; font-size:15px;}
+  .row { display:flex; gap:25px; flex-wrap: wrap;}
+  .dashboard-card { flex:1 1 390px; background:#fff; border-radius:12px; margin-bottom:26px; box-shadow:0 2px 8px #0001; min-width:300px;}
+  .dashboard-card .hd { background:var(--card-head); color:#fff; font-weight:600; font-size:16px; padding:14px 18px; border-radius:12px 12px 0 0;}
+  .dashboard-card .body { padding:16px 18px 24px 18px; }
+  .member-list { margin:10px 0 0 0; padding:0; list-style:none;}
+  .member-list li { padding:8px 0; }
+  .card-stat-label{color:#516889; font-size:15px;}
+  .card-stat-value{font-size:22px; font-weight:700;}
+  .dashboard-section {margin-bottom:18px;}
+  .dashboard-section-title {font-size:16px; color:#265c9b; font-weight:600; margin-bottom:6px;}
+  .table {width:100%; border-collapse:collapse;}
+  .table th, .table td {padding:8px 10px; border-bottom:1px solid #eef; text-align:left;}
+  .table th{background:#f8fafd; color:#546b7a;}
+  .error { color:crimson; }
+  @media (max-width:880px){
+    .sidebar{display:none}
+    .main{padding:14px}
+    .row{flex-direction:column;gap:0;}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar" aria-label="Left navigation">
+    <div class="brand">
+      <div class="logo">G</div>
+      <div>
+        <h2>GOALS Gym</h2>
+        <div style="font-size:12px;opacity:0.9;">Member portal</div>
+      </div>
+    </div>
+    <nav class="nav" role="navigation">
+      <a href="./member-dashboard.html" style="background:rgba(255,255,255,0.06);">Dashboard</a>
+      <a href="./member-classes.html">Schedule</a>
+      <a href="./manage-member-enrollment.html">Enroll</a>
+      <a href="./member-profile.html">Profile</a>
+      <a href="#" id="sidebarLogout">Logout</a>
+    </nav>
+  </aside>
+  <main class="main">
+    <div class="topbar">
+      <h1>Hello, <span id="dashboardName">...</span></h1>
+      <span id="dashboardMemberId" class="badge"></span>
+    </div>
+    <div class="row">
+      <!-- Personal/Session info -->
+      <div class="dashboard-card">
+        <div class="hd">Membership Overview</div>
+        <div class="body">
+          <div class="dashboard-section">
+            <div class="dashboard-section-title">Membership Types</div>
+            <ul id="membershipTypes" class="member-list"><li>Loading...</li></ul>
+          </div>
+          <div class="dashboard-section">
+            <span class="card-stat-label">Remaining combative sessions</span><br>
+            <span id="remainingCombSessions" class="card-stat-value badge">—</span>
+          </div>
+        </div>
+      </div>
+      <!-- Recent Enrollments -->
+      <div class="dashboard-card">
+        <div class="hd">Recent Classes</div>
+        <div class="body">
+          <table class="table" id="recentClassesTable">
+            <thead>
+              <tr>
+                <th>Class</th><th>Day</th><th>Date</th><th>Status</th>
+              </tr>
+            </thead>
+            <tbody><tr><td colspan="4" style="color:#999;font-style:italic;">Loading class enrollments...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="row">
+      <!-- Attendance summary -->
+      <div class="dashboard-card" style="max-width:480px;">
+        <div class="hd">Profile & Contact</div>
+        <div class="body" id="profileInfo">
+          <div><b>Email:</b> <span id="infoEmail"></span></div>
+          <div><b>Phone:</b> <span id="infoPhone"></span></div>
+        </div>
+      </div>
+      <!-- Quick Links -->
+      <div class="dashboard-card" style="max-width:480px;">
+        <div class="hd">Quick Links</div>
+        <div class="body">
+          <a href="./member-classes.html" class="btn btn-primary" style="margin:6px 0 12px 0">Manage Classes</a><br>
+          <a href="./member-profile.html" class="btn btn-primary" style="margin:8px 0 0 0">Edit Profile</a>
+        </div>
+      </div>
+    </div>
+    <div class="error" id="error" style="display:none;"></div>
+  </main>
+</div>
+<script>
+const API_URL = 'http://localhost:8080';
+const $ = id => document.getElementById(id);
+function getAuth(){ try { return JSON.parse(localStorage.getItem('authUser') || 'null'); } catch(e){ return null; } }
+function memberIdFromAuth(){ const a=getAuth(); if(!a||!a.user) return null; const u=a.user; return u.memberId||u.member_id||u._id||u.id||null; }
+function logout(){ localStorage.removeItem('authUser'); window.location.href = '../member-login.html'; }
+
+document.addEventListener('DOMContentLoaded', () => {
+  if ($('sidebarLogout')) $('sidebarLogout').addEventListener('click', e => { e.preventDefault(); logout(); });
+  loadDashboard();
+});
+
+// Loads everything at once, only updates UI once, avoids flicker!
+async function loadDashboard(){
+  const memberId = memberIdFromAuth();
+  if (!memberId) return logout();
+
+  // Pre-reserve content to avoid flicker
+  $("dashboardName").textContent = "Member";
+  $("dashboardMemberId").textContent = memberId;
+  $("membershipTypes").innerHTML = `<li>Loading...</li>`;
+  $("recentClassesTable").querySelector('tbody').innerHTML = `<tr><td colspan="4" style="color:#999;">Loading class enrollments...</td></tr>`;
+  $("remainingCombSessions").textContent = "…";
+  $("infoEmail").textContent = "…";
+  $("infoPhone").textContent = "…";
+  $("error").style.display = "none";
+
+  try{
+    // get all data before updating UI
+    // Member profile
+    const memberRes = await fetch(`${API_URL}/api/members/${encodeURIComponent(memberId)}`);
+    if (!memberRes.ok) throw new Error("Failed to load member");
+    const member = (await memberRes.json()).data;
+
+    $("dashboardName").textContent = member.name || member.username || "Member";
+    $("dashboardMemberId").textContent = member.memberId || memberId;
+    $("infoEmail").textContent = member.email || "—";
+    $("infoPhone").textContent = member.phone || "—";
+
+   // Memberships
+let comb_sess = "—";
+const memberships = member.memberships || [];
+$("membershipTypes").innerHTML = memberships.length ?
+  memberships.map(m => `<li>
+    <span style="font-weight:600;">${(m.type||"—").charAt(0).toUpperCase()+m.type.slice(1)}</span>
+    <span style="color:#6a7bbd;">(valid until ${m.endDate ? new Date(m.endDate).toLocaleDateString():"—"})</span>
+    ${(m.remaining_sessions !== undefined) ? `&nbsp;·&nbsp;<span style="color:#bb7500;">${m.remaining_sessions} left</span>` : ''}
+  </li>`).join("") :
+  `<li>No active memberships.</li>`;
+memberships.forEach(m => {
+  if((m.type||"").toLowerCase().includes("combative")) {
+    // Prefer remaining_sessions, then remaining, only if value is a number or string digits
+    if (m.remainingSessions !== undefined && m.remainingSessions !== null && !isNaN(parseInt(m.remainingSessions))) 
+      comb_sess = parseInt(m.remainingSessions);
+    else if (m.remaining !== undefined && m.remaining !== null && !isNaN(parseInt(m.remaining)))
+      comb_sess = parseInt(m.remaining);
+  }
+});
+$("remainingCombSessions").textContent = (comb_sess !== "—" ? comb_sess : "0");
+
+    // Recent classes
+    const enrollRes = await fetch(`${API_URL}/api/enrollments/member/${encodeURIComponent(memberId)}`);
+    let rows = "";
+    if (enrollRes.ok) {
+      const enrolls = (await enrollRes.json()).data || [];
+      rows = enrolls.slice(0,6).map(en => `<tr>
+        <td>${en.class_id?.class_name || en.class_name || "Class"}</td>
+        <td>${en.session_day || ""}</td>
+        <td>${en.session_date ? new Date(en.session_date).toLocaleDateString() : ""}</td>
+        <td>${en.attendance_status || en.status || "—"}</td>
+      </tr>`).join("");
+    }
+    if (!rows) rows = `<tr><td colspan="4" style="color:#999;">No class enrollments yet.</td></tr>`;
+    $("recentClassesTable").querySelector('tbody').innerHTML = rows;
+  }
+  catch(e){
+    $("error").style.display = "";
+    $("error").textContent = (e.message || "Problem loading dashboard.") + ". Try re-logging in.";
+  }
+}
+</script>
+</body>
+</html>
