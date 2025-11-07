@@ -25,6 +25,28 @@ let currentCalendarDate = new Date();
 // Used for "projected" value when items are in cart
 let tempRemainingSessions = 0;
 
+// ---------- Date helpers ----------
+function parseYMDToLocal(dateStr) {
+  if (!dateStr || typeof dateStr !== 'string') return null;
+  const parts = dateStr.split('-').map(Number);
+  if (parts.length !== 3) return null;
+  const [y, m, d] = parts;
+  return new Date(y, m - 1, d);
+}
+function dateToYMD(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+function isPastDate(dateStr) {
+  const d = parseYMDToLocal(dateStr);
+  if (!d) return false;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return d < today;
+}
+
 // ========== API FETCH ==========
 async function timedFetch(url, name) {
   console.time(name);
@@ -35,16 +57,39 @@ async function timedFetch(url, name) {
 
 // ========== TOAST HELPER ==========
 function showToast(message, type = 'info') {
-  // Simple alert for now; replace with Toastify or similar if needed
-  const className = type === 'error' ? 'error' : type === 'success' ? 'success' : 'info';
-  alert(`${className.toUpperCase()}: ${message}`);
+  try {
+    const containerId = 'toastContainer';
+    let container = document.getElementById(containerId);
+    if (!container) {
+      container = document.createElement('div');
+      container.id = containerId;
+      container.style.position = 'fixed';
+      container.style.right = '20px';
+      container.style.bottom = '20px';
+      container.style.zIndex = 99999;
+      document.body.appendChild(container);
+    }
+    const el = document.createElement('div');
+    el.className = `toast ${type}`;
+    el.textContent = message;
+    el.style.marginTop = '8px';
+    el.style.padding = '10px 14px';
+    el.style.borderRadius = '8px';
+    el.style.boxShadow = '0 2px 8px rgba(0,0,0,0.12)';
+    el.style.background = (type === 'success' ? '#198754' : (type === 'error' ? '#dc3545' : (type === 'warning' ? '#f6c23e' : '#0d6efd')));
+    el.style.color = (type === 'warning' ? '#333' : '#fff');
+    container.appendChild(el);
+    setTimeout(() => { el.style.opacity = '0'; el.style.transform = 'translateY(8px)'; }, 3000);
+    setTimeout(() => { if (el.parentNode) el.parentNode.removeChild(el); }, 3350);
+  } catch (err) {
+    alert(`${type.toUpperCase()}: ${message}`);
+  }
   console.log(`${type.toUpperCase()}: ${message}`);
 }
 
 function showLoadingState(show = true) {
   const btn = $('confirmCartBtn');
   if (btn) btn.disabled = show;
-  // Add spinner if you have one: document.getElementById('loading')?.style.display = show ? 'block' : 'none';
 }
 
 // ========== DOM READY ==========
@@ -79,20 +124,14 @@ async function loadInitialData() {
       enrollmentsPromise.catch(err => { console.error('Enrollments load failed:', err); return { success: false, data: [] }; })
     ]);
 
-    // Robust parsing for memberInfo
-    console.log('Raw Member Response:', memberData); // DEBUG: See full backend response
     memberInfo = (memberData && memberData.success && memberData.data) ? memberData.data : memberData || null;
-    console.log('Parsed memberInfo:', { hasMemberships: !!memberInfo?.memberships, membershipsLength: memberInfo?.memberships?.length, sampleMembership: memberInfo?.memberships?.[0] }); // DEBUG
-
-    // Ensure classes/enrollments are arrays
     availableClasses = Array.isArray(classesData?.data) ? classesData.data : (Array.isArray(classesData) ? classesData : []);
     memberEnrollments = Array.isArray(enrollmentsData?.data) ? enrollmentsData.data : (Array.isArray(enrollmentsData) ? enrollmentsData : []);
 
-    // Update UI after load
     updateSessionCounter(false, 0);
     renderCalendarGrid();
     renderListView();
-    updateCartDisplay(); // Ensure cart shows
+    updateCartDisplay();
   } catch (err) {
     console.error('loadInitialData Error:', err);
     showErrorState('Failed to load data. Check console and backend.');
@@ -120,7 +159,6 @@ function getCurrentSessionPeriod() {
   return { start, end };
 }
 
-// Calculate & display real remaining sessions based on DB, or "projected" if cart present
 function updateSessionCounter(forceCart = false, tempOffset = 0) {
   const remainingSessionSpan = $('remainingSessions');
   const memInfoSpan = $('membershipInfo');
@@ -136,14 +174,11 @@ function updateSessionCounter(forceCart = false, tempOffset = 0) {
   let memberships = memberInfo.memberships || [];
   if (!Array.isArray(memberships)) memberships = [];
 
-  // ALWAYS prioritize combative as "active session-count" for this context
-  // Shows the most recent active combative plan (or, fallback=0)
   const combative = memberships
     .filter(m => m.type && m.type.toLowerCase() === 'combative' && (m.status || '').toLowerCase() === 'active')
     .sort((a, b) => new Date(b.startDate) - new Date(a.startDate))[0];
 
   if (!combative) {
-    // No combative membership
     if (remainingSessionSpan) remainingSessionSpan.textContent = '0';
     if (memInfoSpan) memInfoSpan.textContent = 'No active combative membership';
     realRemainingSessions = 0;
@@ -151,11 +186,9 @@ function updateSessionCounter(forceCart = false, tempOffset = 0) {
     return;
   }
 
-  // Use remainingSessions directly (net current after backend deductions; fallback 0 if missing)
   realRemainingSessions = Math.max(0, combative.remainingSessions || 0);
-  const totalSessionsPerMonth = combative.sessionsPerMonth || null;  // Optional: For display if available
+  const totalSessionsPerMonth = combative.sessionsPerMonth || null;
 
-  // UI/Projection
   if (forceCart && enrollCart.length > 0) {
     tempRemainingSessions = Math.max(0, realRemainingSessions - enrollCart.length + tempOffset);
     if (remainingSessionSpan) {
@@ -176,19 +209,28 @@ function updateSessionCounter(forceCart = false, tempOffset = 0) {
     if (memInfoSpan) memInfoSpan.textContent = infoText;
   }
 
-  // Button state: Enable if cart non-empty AND real sessions cover full cart (temp is display-only)
   const confirmBtn = $('confirmCartBtn');
   if (confirmBtn) {
     const canConfirm = enrollCart.length > 0 && realRemainingSessions >= enrollCart.length;
     confirmBtn.disabled = !canConfirm;
     confirmBtn.textContent = enrollCart.length > 0 ? `Confirm All (${enrollCart.length})` : 'Confirm All Enrollments';
   }
+
+  // Also update calendar confirm button when present
+  const confirmBtnCalendar = $('confirmCartBtnCalendar');
+  if (confirmBtnCalendar) {
+    const canConfirm = enrollCart.length > 0 && realRemainingSessions >= enrollCart.length;
+    confirmBtnCalendar.disabled = !canConfirm;
+    confirmBtnCalendar.textContent = enrollCart.length > 0 ? `Confirm All (${enrollCart.length})` : 'Confirm All Enrollments';
+  }
 }
+
 // ========== CALENDAR VIEW ==========
 function initializeCalendarView() {
   renderCalendarGrid();
   renderCalendarNavigation();
   updateCalendarTitle();
+  ensureCalendarCartContainer(); // create calendar cart area if missing
 }
 function renderCalendarGrid() {
   const container = $('calendarContainer');
@@ -213,13 +255,17 @@ function renderCalendarGrid() {
   for (let day = 1; day <= daysInMonth; day++) {
     const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     const isToday = dateStr === new Date().toISOString().split('T')[0];
+    const past = isPastDate(dateStr);
     const dayClasses = getClassesForDate(dateStr);
     let classChips = '';
     if (dayClasses.length > 0) {
-      classChips = dayClasses.slice(0, 2).map(cls => `<div class="class-chip">${escapeHtml(cls.class_name || 'Class')}</div>`).join('');
-      if (dayClasses.length > 2) classChips += `<div class="class-chip">+${dayClasses.length - 2} more</div>`;
+      classChips = dayClasses.slice(0, 2).map(cls => {
+        const title = escapeHtml(cls.class_name || cls.class_title || 'Class');
+        return `<div class="class-chip ${past ? 'past' : ''}" title="${title}">${title}</div>`;
+      }).join('');
+      if (dayClasses.length > 2) classChips += `<div class="class-chip ${past ? 'past' : ''}">+${dayClasses.length - 2} more</div>`;
     }
-    html += `<div class="calendar-cell${isToday ? ' calendar-cell-today' : ''}" data-date="${dateStr}">
+    html += `<div class="calendar-cell${isToday ? ' calendar-cell-today' : ''}${past ? ' calendar-cell-past' : ''}" data-date="${dateStr}" data-past="${past ? '1' : '0'}">
       <div class="calendar-day-number">${day}</div>
       <div class="calendar-day-content"><div class="calendar-day-classes">${classChips}</div></div></div>`;
     cellIndex++;
@@ -231,7 +277,13 @@ function renderCalendarGrid() {
   }
   html += '</div>';
   container.innerHTML = html;
-  document.addEventListener('click', handleCalendarClick, true);  // Use capture to avoid conflicts
+  // Use capture to avoid conflicts
+  document.removeEventListener('click', handleCalendarClick, true);
+  document.addEventListener('click', handleCalendarClick, true);
+
+  // Ensure calendar cart exists and update it
+  ensureCalendarCartContainer();
+  updateCartDisplay();
 }
 function renderCalendarNavigation() {
   $('prevMonth')?.addEventListener('click', previousMonth);
@@ -241,17 +293,66 @@ function handleCalendarClick(event) {
   const cell = event.target.closest('.calendar-cell');
   if (!cell || cell.classList.contains('calendar-cell-empty')) return;
   const dateStr = cell.getAttribute('data-date');
+  if (!dateStr) return;
+  if (isPastDate(dateStr)) {
+    showToast('This date has already passed — enrollment is disabled for past dates.', 'warning');
+    return;
+  }
   const dayClasses = getClassesForDate(dateStr);
   showDayModal(dateStr, dayClasses);
 }
 function getClassesForDate(dateStr) {
-  const dayName = new Date(dateStr).toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
+  let dayNameFull = '';
+  let dayNameShort = '';
+  try {
+    const tmp = new Date(dateStr);
+    dayNameFull = tmp.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
+    dayNameShort = dayNameFull.slice(0, 3);
+  } catch (e) {
+    dayNameFull = '';
+    dayNameShort = '';
+  }
+
   return availableClasses.filter(cls => {
-    const schedule = (cls.schedule || '').toLowerCase();
-    if (schedule.match(/monday|tuesday|wednesday|thursday|friday|saturday|sunday/)) {
-      return schedule.includes(dayName.substring(0, 3));
+    if (Array.isArray(cls.sessions) && cls.sessions.length) {
+      for (const s of cls.sessions) {
+        const sDate = s?.date || s?.sessiondate || s?.session_date || s?.sessionDate;
+        if (!sDate) continue;
+        if (String(sDate).startsWith(dateStr) || String(sDate) === dateStr) return true;
+      }
+      return false;
     }
-    return true;
+
+    if (Array.isArray(cls.dates) && cls.dates.length) {
+      if (cls.dates.some(dt => String(dt).startsWith(dateStr) || String(dt) === dateStr)) return true;
+      return false;
+    }
+    if (Array.isArray(cls.session_dates) && cls.session_dates.length) {
+      if (cls.session_dates.some(dt => String(dt).startsWith(dateStr) || String(dt) === dateStr)) return true;
+      return false;
+    }
+
+    if (cls.sessiondate && (String(cls.sessiondate).startsWith(dateStr) || String(cls.sessiondate) === dateStr)) return true;
+    if (cls.date && (String(cls.date).startsWith(dateStr) || String(cls.date) === dateStr)) return true;
+
+    if (typeof cls.schedule === 'string' && cls.schedule.trim().length > 0) {
+      const schedule = cls.schedule.toLowerCase();
+      const weekdays = ['monday','tuesday','wednesday','thursday','friday','saturday','sunday'];
+      const mentionsWeekday = weekdays.some(w => schedule.includes(w) || schedule.includes(w.slice(0,3)));
+      if (mentionsWeekday) {
+        if (dayNameFull && (schedule.includes(dayNameFull) || schedule.includes(dayNameShort))) {
+          return true;
+        }
+        return false;
+      }
+      if (schedule.includes(dateStr) || schedule.includes(dateStr.replace(/-/g, '/'))) return true;
+      if (schedule.match(/\d{1,2}:\d{2}/)) return true;
+    }
+
+    const hasSchedulingProps = cls.sessions || cls.dates || cls.session_dates || cls.sessiondate || cls.date || cls.schedule;
+    if (!hasSchedulingProps) return true;
+
+    return false;
   });
 }
 function showDayModal(dateStr, classes) {
@@ -259,6 +360,7 @@ function showDayModal(dateStr, classes) {
   const formattedDate = date.toLocaleDateString('en-US', {
     weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
   });
+  const past = isPastDate(dateStr);
   let modalContent = `
     <div class="day-modal">
       <div class="day-modal-header">
@@ -272,14 +374,19 @@ function showDayModal(dateStr, classes) {
       </div>
       <div class="day-modal-content">
   `;
+  if (past) {
+    modalContent += `<div class="past-note">This date has passed — enrollment disabled for this day.</div>`;
+  }
   if (classes.length === 0) {
     modalContent += '<div class="no-classes">No classes scheduled for this date</div>';
   } else {
     classes.forEach(cls => {
-      const classId = cls.class_id || cls._id;
-      const className = cls.class_name || 'Unnamed Class';
+      const classId = cls.class_id || cls._id || cls.id || '';
+      const className = cls.class_name || cls.class_title || 'Unnamed Class';
       const trainer = cls.trainer_name || cls.trainer_id || 'TBD';
       const schedule = cls.schedule || 'Schedule TBD';
+      const disabledAttr = past ? 'disabled' : '';
+      const btnText = past ? 'Date passed' : 'Select Time';
       modalContent += `
         <div class="class-selection">
          <div class="class-info">
@@ -288,8 +395,8 @@ function showDayModal(dateStr, classes) {
            <div class="class-schedule">${escapeHtml(schedule)}</div>
          </div>
          <div class="class-times">
-           <button class="select-time-btn" data-class="${classId}" data-class-name="${escapeHtml(className)}">
-             Select Time
+           <button class="select-time-btn" data-class="${escapeHtml(classId)}" data-class-name="${escapeHtml(className)}" data-date="${escapeHtml(dateStr)}" ${disabledAttr}>
+             ${escapeHtml(btnText)}
            </button>
          </div>
         </div>
@@ -320,19 +427,25 @@ function showDayModal(dateStr, classes) {
   const timeBtns = modal.querySelectorAll('.select-time-btn');
   timeBtns.forEach(btn => {
     btn.addEventListener('click', function () {
+      if (this.disabled) return;
       const classId = this.dataset.class;
       const className = this.dataset.className;
-      showTimeSelectionModal(classId, className, dateStr);
+      const dateFor = this.dataset.date;
+      showTimeSelectionModal(classId, className, dateFor);
     });
   });
 }
 function showTimeSelectionModal(classId, className, dateStr) {
-  const cls = availableClasses.find(c => c.class_id === classId || c._id === classId);  // Assuming frontend data has class_id
+  if (isPastDate(dateStr)) {
+    showToast('Cannot select time: this date has already passed.', 'error');
+    return;
+  }
+  const cls = availableClasses.find(c => c.class_id === classId || c._id === classId || c.id === classId);
   if (!cls) {
     alert('Class not found');
     return;
   }
-  const timeSlots = generateTimeSlots(cls.schedule);
+  const timeSlots = generateTimeSlots(cls.schedule || cls);
   let modalContent = `
     <div class="time-modal">
       <div class="time-modal-header">
@@ -342,17 +455,17 @@ function showTimeSelectionModal(classId, className, dateStr) {
       <div class="time-modal-content">
   `;
   timeSlots.forEach(timeSlot => {
-    // Fixed: Check enrollment.classid (backend returns no underscores)
     const isEnrolled = memberEnrollments.some(enrollment => {
-      const enDate = new Date(enrollment.sessiondate);  // Backend key: sessiondate
-      return enrollment.classid === classId &&  // Backend key: classid
-        enDate.toISOString().split('T')[0] === dateStr &&
-        enrollment.sessiontime === timeSlot;  // Backend key: sessiontime
+      const enDate = enrollment.sessiondate || enrollment.session_date || enrollment.date || '';
+      const enTime = enrollment.sessiontime || enrollment.session_time || enrollment.time || '';
+      return (String(enDate).startsWith(dateStr) || enDate === dateStr) &&
+        (enrollment.classid === classId || enrollment.class_id === classId || enrollment.classid === classId) &&
+        String(enTime) === String(timeSlot);
     });
     modalContent += `
       <div class="time-slot-item ${isEnrolled ? 'disabled' : ''}" 
            data-class="${classId}" data-date="${dateStr}" data-time="${timeSlot}">
-        <div class="time-slot-label">${timeSlot}</div>
+        <div class="time-slot-label">${escapeHtml(timeSlot)}</div>
         <button class="select-enrollment-btn" ${isEnrolled ? 'disabled' : ''}>
           ${isEnrolled ? 'Already Enrolled' : 'Add to Cart'}
         </button>
@@ -394,6 +507,11 @@ function showTimeSelectionModal(classId, className, dateStr) {
 
 // ========== CART MANAGEMENT ==========
 function addToEnrollmentCart(classId, dateStr, timeSlot, className) {
+  if (isPastDate(dateStr)) {
+    showToast('Cannot add to cart: selected date has already passed.', 'error');
+    return;
+  }
+
   const existing = enrollCart.find(item =>
     item.classId === classId &&
     item.date === dateStr &&
@@ -405,7 +523,6 @@ function addToEnrollmentCart(classId, dateStr, timeSlot, className) {
     return;
   }
 
-  updateSessionCounter(false, 0);
   if (realRemainingSessions < 1) {
     showToast(`No sessions left. Real remaining: ${realRemainingSessions}. Contact admin.`, 'error');
     return;
@@ -430,91 +547,88 @@ function addToEnrollmentCart(classId, dateStr, timeSlot, className) {
 }
 
 function updateCartDisplay() {
-  const cartContainer = $('enrollmentCart');
-  const cartContent = $('cartContent');
-  const confirmBtn = $('confirmCartBtn');
+  // Render to both list cart and calendar cart (if present)
+  const cartContainerList = $('enrollmentCart');
+  const cartContentList = $('cartContent');
+  const confirmBtnList = $('confirmCartBtn');
 
-  if (cartContainer) cartContainer.style.display = "block";
+  const cartContainerCalendar = $('enrollmentCartCalendar');
+  const cartContentCalendar = $('cartContentCalendar');
+  const confirmBtnCalendar = $('confirmCartBtnCalendar');
 
-  console.log('Cart Update (Temp):', enrollCart.map(i => ({ class: i.className, date: i.date, time: i.time })));
+  // Always show cart container(s) if present
+  if (cartContainerList) cartContainerList.style.display = "block";
+  if (cartContainerCalendar) cartContainerCalendar.style.display = "block";
 
   if (enrollCart.length === 0) {
-    if (cartContent) cartContent.innerHTML = '<p>No temporary selections. Add from calendar or list.</p>';
-    if (confirmBtn) {
-      confirmBtn.disabled = true;
-      confirmBtn.textContent = 'Confirm All Enrollments';
+    if (cartContentList) cartContentList.innerHTML = '<p>No temporary selections. Add from calendar or list.</p>';
+    if (cartContentCalendar) cartContentCalendar.innerHTML = '<p>No temporary selections. Add from calendar or list.</p>';
+    if (confirmBtnList) {
+      confirmBtnList.disabled = true;
+      confirmBtnList.textContent = 'Confirm All Enrollments';
+    }
+    if (confirmBtnCalendar) {
+      confirmBtnCalendar.disabled = true;
+      confirmBtnCalendar.textContent = 'Confirm All Enrollments';
     }
     updateSessionCounter(false, 0);
     return;
   }
 
+  // Build cart HTML
   let html = '';
   enrollCart.forEach((item, index) => {
     const dateObj = new Date(item.date);
     const dayOfWeek = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
     const formattedDate = dateObj.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
     html += `
-      <div class="cart-item">
+      <div class="cart-item" data-index="${index}">
         <div class="cart-item-info">
           <strong>${escapeHtml(item.className)}</strong><br>
           <small>${dayOfWeek}, ${formattedDate} at ${escapeHtml(item.time)} (Temporary)</small>
         </div>
-        <button type="button" class="cart-item-remove" onclick="removeFromCart(${index})" title="Remove (+1 session)">✕</button>
+        <button type="button" class="cart-item-remove" data-index="${index}" title="Remove (+1 session)">✕</button>
       </div>
     `;
   });
-  if (cartContent) cartContent.innerHTML = html;
 
+  if (cartContentList) cartContentList.innerHTML = html;
+  if (cartContentCalendar) cartContentCalendar.innerHTML = html;
+
+  // Wire remove buttons (for both containers)
+  document.querySelectorAll('.cart-item-remove').forEach(btn => {
+    btn.removeEventListener('click', handleCartRemoveClick);
+    btn.addEventListener('click', handleCartRemoveClick);
+  });
+
+  // Update confirm buttons state and text
   updateSessionCounter(true, 0);
-  if (confirmBtn) {
-    confirmBtn.disabled = tempRemainingSessions < enrollCart.length || realRemainingSessions < enrollCart.length;
-    confirmBtn.textContent = `Confirm All (${enrollCart.length})`;
+
+  if (confirmBtnList) {
+    confirmBtnList.disabled = tempRemainingSessions < enrollCart.length || realRemainingSessions < enrollCart.length;
+    confirmBtnList.textContent = `Confirm All (${enrollCart.length})`;
+  }
+  if (confirmBtnCalendar) {
+    confirmBtnCalendar.disabled = tempRemainingSessions < enrollCart.length || realRemainingSessions < enrollCart.length;
+    confirmBtnCalendar.textContent = `Confirm All (${enrollCart.length})`;
   }
 }
 
-function updateCartDisplay() {
-  const cartContainer = $('enrollmentCart');
-  const cartContent = $('cartContent');
-  const confirmBtn = $('confirmCartBtn');
+function handleCartRemoveClick(e) {
+  const idx = Number(e.currentTarget.dataset.index);
+  if (!isNaN(idx)) removeFromCart(idx);
+}
 
-  // Always show cart
-  if (cartContainer) cartContainer.style.display = "block";
+function removeFromCart(index) {
+  if (index < 0 || index >= enrollCart.length) return;
 
-  console.log('Cart Update (Temp):', enrollCart.map(i => ({ class: i.className, date: i.date, time: i.time })));
+  enrollCart.splice(index, 1);
+  updateCartDisplay();
+
+  updateSessionCounter(true, 1);
 
   if (enrollCart.length === 0) {
-    if (cartContent) cartContent.innerHTML = '<p>No temporary selections. Add from calendar or list.</p>';
-    if (confirmBtn) {
-      confirmBtn.disabled = true;
-      confirmBtn.textContent = 'Confirm All Enrollments';
-    }
-    updateSessionCounter(false, 0); // Show real (no projection)
-    return;
-  }
-
-  // Render full details: class + day + date + time
-  let html = '';
-  enrollCart.forEach((item, index) => {
-    const dateObj = new Date(item.date);
-    const dayOfWeek = dateObj.toLocaleDateString('en-US', { weekday: 'long' }); // e.g., "Monday"
-    const formattedDate = dateObj.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }); // e.g., "Oct 22, 2025"
-    html += `
-      <div class="cart-item">
-        <div class="cart-item-info">
-          <strong>${escapeHtml(item.className)}</strong><br>
-          <small>${dayOfWeek}, ${formattedDate} at ${escapeHtml(item.time)} (Temporary)</small>
-        </div>
-        <button type="button" class="cart-item-remove" onclick="removeFromCart(${index})" title="Remove (+1 session)">✕</button>
-      </div>
-    `;
-  });
-  if (cartContent) cartContent.innerHTML = html;
-
-  // Project on screen if cart non-empty
-  updateSessionCounter(true, 0);
-  if (confirmBtn) {
-    confirmBtn.disabled = tempRemainingSessions < enrollCart.length || realRemainingSessions < enrollCart.length;
-    confirmBtn.textContent = `Confirm All (${enrollCart.length})`;
+    updateSessionCounter(false, 0);
   }
 }
 
@@ -524,11 +638,11 @@ async function enrollSingleItem(item) {
   if (!memberId) throw new Error('Not authenticated');
 
   const body = {
-    classid: item.classId,        // Backend expects 'classid' (string ID like 'CLS-0002')
-    memberid: memberId,           // Backend expects 'memberid' (string ID like 'MEM-0001')
-    sessiondate: item.date,       // Backend expects 'sessiondate' ('YYYY-MM-DD' string)
-    sessiontime: item.time,       // Backend expects 'sessiontime' (string like '9:00 AM - 10:00 AM')
-    membername: memberInfo?.name || 'Unknown'  // Backend expects 'membername'
+    classid: item.classId,
+    memberid: memberId,
+    sessiondate: item.date,
+    sessiontime: item.time,
+    membername: memberInfo?.name || 'Unknown'
   };
 
   const response = await fetch(`${API_URL}/api/enrollments`, {
@@ -548,7 +662,7 @@ async function enrollSingleItem(item) {
   const data = await response.json();
   if (!data.success) throw new Error(data.error || 'Enrollment failed');
 
-  return data;  // { success: true, data: { enrollment_id: "ENR-0003" }, remainingsessions: 5 } - Note: no underscore
+  return data;
 }
 
 // Main: Confirm all enrollments in cart (bulk via looping)
@@ -568,7 +682,6 @@ async function confirmAllEnrollments() {
       return;
     }
 
-    // Sequential loop: Process one-by-one to avoid backend race on remainingSessions deduction
     let successful = 0;
     let failures = [];
     let lastRemaining = realRemainingSessions;
@@ -577,11 +690,9 @@ async function confirmAllEnrollments() {
       const item = enrollCart[index];
       try {
         const result = await enrollSingleItem(item);
-        console.log(`Enrollment ${index + 1} success: ${result.data.enrollment_id || 'ENR-XXXX'}, remainingsessions: ${result.remainingSessions}`);
         successful++;
-        lastRemaining = result.remainingsessions || lastRemaining - 1;  // Update from backend response (no underscore)
+        lastRemaining = result.remainingsessions || lastRemaining - 1;
       } catch (error) {
-        console.error(`Enrollment ${index + 1} failed:`, error.message, item);
         failures.push({ index, item, error: error.message });
       }
     }
@@ -589,13 +700,12 @@ async function confirmAllEnrollments() {
     tempRemainingSessions = lastRemaining - (totalItems - successful);
 
     if (successful === totalItems) {
-      enrollCart = [];  // Clear cart on full success
+      enrollCart = [];
       updateCartDisplay();
       showToast(`All ${totalItems} enrollments successful! Sessions left: ${tempRemainingSessions}`, 'success');
-      await loadMemberEnrollments();  // Refetch to sync real data
+      await loadMemberEnrollments();
       updateSessionCounter(false, 0);
     } else if (successful > 0) {
-      // Partial success: Remove only successful items from cart
       const successIndices = [];
       for (let i = 0; i < totalItems; i++) {
         if (!failures.find(f => f.index === i)) successIndices.push(i);
@@ -603,7 +713,7 @@ async function confirmAllEnrollments() {
       successIndices.reverse().forEach(idx => enrollCart.splice(idx, 1));
       updateCartDisplay();
       const errorMsg = failures.map(f => `Item ${f.index + 1} (${f.item.className || f.item.classId}): ${f.error}`).join('\n');
-      showToast(`${successful}/${totalItems} successful (cart updated). Errors:\n${errorMsg}`, 'partial');  // Or 'warning'
+      showToast(`${successful}/${totalItems} successful (cart updated). Errors:\n${errorMsg}`, 'warning');
     } else {
       const errorMsg = failures.map(f => `Item ${f.index + 1} (${f.item.className || f.item.classId}): ${f.error}`).join('\n');
       showToast(`No enrollments successful. Errors:\n${errorMsg}`, 'error');
@@ -628,27 +738,12 @@ async function loadMemberEnrollments() {
       timedFetch(`${API_URL}/api/enrollments/member/${encodeURIComponent(memberId)}`, 'Reload Enrollments').then(r => r.json()),
       timedFetch(`${API_URL}/api/members/${encodeURIComponent(memberId)}`, 'Reload Member').then(r => r.json())
     ]);
-    // Backend returns enrollments with keys like classid, memberid (no underscores)
     memberEnrollments = Array.isArray(enrollmentsData?.data) ? enrollmentsData.data : (Array.isArray(enrollmentsData) ? enrollmentsData : []);
     memberInfo = (memberData && memberData.success && memberData.data) ? memberData.data : memberData || null;
     updateSessionCounter(false, 0);
   } catch (err) {
     console.error('Reload failed:', err);
     showToast('Failed to reload data', 'error');
-  }
-}
-
-function removeFromCart(index) {
-  if (index < 0 || index >= enrollCart.length) return;
-
-  enrollCart.splice(index, 1);
-  updateCartDisplay();
-
-  updateSessionCounter(true, 1);
-
-  console.log('Removed from cart. Projected sessions +1.');
-  if (enrollCart.length === 0) {
-    updateSessionCounter(false, 0);
   }
 }
 
@@ -801,7 +896,11 @@ function setupEventListeners() {
   const listTab = document.getElementById('tabList');
   const confirmBtn = $('confirmCartBtn');
   if (calendarTab) {
-    calendarTab.addEventListener('click', () => switchView('calendar'));
+    calendarTab.addEventListener('click', () => {
+      switchView('calendar');
+      ensureCalendarCartContainer();
+      updateCartDisplay();
+    });
   }
   if (listTab) {
     listTab.addEventListener('click', () => switchView('list'));
@@ -809,6 +908,7 @@ function setupEventListeners() {
   if (confirmBtn) {
     confirmBtn.addEventListener('click', confirmAllEnrollments);
   }
+  // calendar confirm button listener created in ensureCalendarCartContainer when it gets created
   document.addEventListener('click', function (e) {
     if (e.target.classList.contains('modal-overlay')) {
       closeModal('dayModal');
@@ -826,6 +926,7 @@ function switchView(view) {
     document.getElementById('tabCalendar').classList.add('active');
     document.getElementById('tabList').classList.remove('active');
     renderCalendarGrid();
+    ensureCalendarCartContainer();
   } else {
     calendarView.style.display = 'none';
     listView.style.display = 'block';
@@ -843,6 +944,36 @@ function nextMonth() {
   renderCalendarGrid();
 }
 
+// ========== HELPERS TO CREATE CALENDAR CART AREA ==========
+function ensureCalendarCartContainer() {
+  const calendarView = document.getElementById('calendarView');
+  if (!calendarView) return;
+  if (document.getElementById('enrollmentCartCalendar')) return;
+
+  // create a container similar to your list view cart
+  const container = document.createElement('div');
+  container.id = 'enrollmentCartCalendar';
+  container.className = 'enrollment-cart-calendar';
+  container.innerHTML = `
+    <div class="cart-header">
+      <h4>Enrollment Cart</h4>
+    </div>
+    <div id="cartContentCalendar" class="cart-content">
+      <p>No temporary selections. Add from calendar or list.</p>
+    </div>
+    <div class="cart-actions" style="text-align:right; margin-top:8px;">
+      <button id="confirmCartBtnCalendar" class="btn btn-primary">Confirm All Enrollments</button>
+    </div>
+  `;
+  calendarView.appendChild(container);
+
+  // wire confirm button
+  const confirmBtnCalendar = document.getElementById('confirmCartBtnCalendar');
+  if (confirmBtnCalendar) {
+    confirmBtnCalendar.addEventListener('click', confirmAllEnrollments);
+  }
+}
+
 // ========== TIME SLOT FOR CLASS ==========
 function generateTimeSlots(schedule) {
   const timeSlotRanges = [];
@@ -854,6 +985,11 @@ function generateTimeSlots(schedule) {
     }
     const matches = schedule.match(/\d{1,2}:\d{2}\s?[AP]M/g);
     if (matches) return matches;
+  }
+  if (schedule && typeof schedule === 'object') {
+    if (Array.isArray(schedule.time_slots) && schedule.time_slots.length) {
+      return schedule.time_slots.map(String);
+    }
   }
   return ['03:00 PM - 04:00 PM'];
 }

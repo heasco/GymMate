@@ -164,6 +164,57 @@ html,body {height:100%; margin:0; font-family: "Segoe UI", Roboto, system-ui, Ar
   .calendar-class { font-size:9px; padding:2px 4px; }
 }
 
+/* --- Calendar cart container (calendar view bottom) --- */
+.enrollment-cart-calendar {
+  margin-top: 18px;
+  padding-top: 12px;
+  border-top: 1px solid #eee;
+  background: #fff;
+}
+
+/* reuse cart item styling similar to list view */
+.enrollment-cart-calendar .cart-header h4 {
+  margin: 0 0 8px 0;
+  font-size: 16px;
+}
+.cart-content .cart-item,
+#cartContentCalendar .cart-item,
+#cartContent .cart-item {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:8px 6px;
+  border-bottom:1px solid #f2f2f2;
+}
+.cart-item-info small { color:#666; }
+.cart-item-remove {
+  background:transparent;
+  border:0;
+  font-size:16px;
+  cursor:pointer;
+  padding:6px;
+  color:#777;
+}
+.cart-item-remove:hover { color:#000; }
+
+/* confirm button align */
+.enrollment-cart-calendar .cart-actions {
+  margin-top:10px;
+}
+
+/* If both cart containers exist, keep consistent spacing */
+#enrollmentCart, #enrollmentCartCalendar {
+  box-shadow: none;
+  background: transparent;
+}
+
+/* Mobile: keep stacked and readable */
+@media (max-width: 640px) {
+  .enrollment-cart-calendar { padding: 8px 4px; }
+  .cart-item-info { font-size: 13px; }
+}
+
+
 /* Enrollment Cart Styles */
 .enrollment-cart {
   background: #fff;
@@ -371,6 +422,92 @@ html,body {height:100%; margin:0; font-family: "Segoe UI", Roboto, system-ui, Ar
   text-align: right;
 }
 
+/* Visual for the past dates of the Calendar View */
+.calendar-cell.calendar-cell-past {
+  background-color: #fafafa;
+  border: 1px solid #eee;
+  opacity: 0.95;
+  cursor: not-allowed;
+}
+
+/* Lighter Number for the Past Dates in the Calendar View*/
+.calendar-cell.calendar-cell-past .calendar-day-number {
+  color: #9b9b9b;
+}
+
+/* class chips (small label inside calendar) */
+.calendar-day-classes { display:flex; gap:6px; flex-wrap:wrap; margin-top:6px; }
+.class-chip {
+  padding: 4px 6px;
+  border-radius: 6px;
+  font-size: 12px;
+  background: rgba(13,110,253,0.08);
+  color: #0d6efd;
+  border: 1px solid rgba(13,110,253,0.12);
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  max-width:100%;
+}
+
+/* muted look for past-date class chips */
+.class-chip.past {
+  background: transparent;
+  border-color: transparent;
+  color: #bdbdbd !important;
+  opacity: 0.85;
+}
+
+/* +N more chip */
+.calendar-class-more {
+  background: transparent;
+  border: 1px dashed #ddd;
+  color: #666;
+}
+
+/* disable button visuals */
+.select-time-btn[disabled],
+.select-enrollment-btn[disabled],
+.time-slot-item.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Past note inside modals */
+.past-note { font-weight:600; color:#8b0000; margin-bottom:8px; }
+
+/* Modal container tweaks if you need them (keeps consistent site look) */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 99990;
+  background: rgba(0,0,0,0.35);
+}
+.modal-container {
+  background: #fff;
+  border-radius: 8px;
+  padding: 12px;
+  width: 90%;
+  max-width: 720px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+}
+
+/* Toast styles */
+#toastContainer .toast {
+  transition: all 0.25s ease;
+}
+
+/* Small responsive adjustments */
+@media (max-width: 640px) {
+  .class-chip { font-size: 11px; padding: 3px 5px; }
+  .modal-container { width: 95%; padding: 10px; }
+}
+
+
+
 /* Calendar Grid Styles */
 .calendar-nav-btn {
   background: none;
@@ -541,6 +678,5 @@ html,body {height:100%; margin:0; font-family: "Segoe UI", Roboto, system-ui, Ar
     margin-bottom: 8px;
   }
 
-
-
 }
+
