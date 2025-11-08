@@ -10,6 +10,7 @@ let currentView = 'list';
 let selectedDate = null;
 const dayOfWeekNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
+
 document.addEventListener('DOMContentLoaded', async function() {
   console.log('=== INIT START ===');
   // Auth Check (Optional - Skip if No Login)
@@ -23,27 +24,33 @@ document.addEventListener('DOMContentLoaded', async function() {
   if (menuToggle) menuToggle.addEventListener('click', () => sidebar.classList.toggle('collapsed'));
   if (logoutBtn) logoutBtn.addEventListener('click', () => { localStorage.removeItem('authUser'); window.location.href = '../admin-login.html'; });
 
+
   // Init: Simple Fetches
   await checkServerConnection();
   await Promise.all([fetchClasses(), fetchMembers('')]);
   setupEventListeners();
 
+
   const calendarMonth = document.getElementById('calendarMonth');
   if (calendarMonth) calendarMonth.value = new Date().toISOString().slice(0, 7);
   else console.warn('calendarMonth not found');
 
+
   generateCalendar();
   updateBulkEnrollDisplay();
   switchView('list');
+
 
   // Default date to today for list view
   const sessionDateInput = document.getElementById('sessionDate');
   if (sessionDateInput) sessionDateInput.value = new Date().toISOString().split('T')[0];
   else console.warn('sessionDate input not found');
 
+
   console.log('=== INIT COMPLETE ===');
   domCheck(); // Run diagnostic
 });
+
 
 // DOM Diagnostic: Check All Expected Elements
 function domCheck() {
@@ -57,26 +64,28 @@ function domCheck() {
   console.log('=== DOM CHECK END ===');
 }
 
+
 async function checkServerConnection() {
   const statusElement = document.getElementById('serverStatus');
   try {
     const response = await fetch(`${SERVER_URL}/health`);
     const isConnected = response.ok;
     if (statusElement) {
-      statusElement.className = `alert ${isConnected ? 'alert-success server-connected' : 'alert-danger server-disconnected'}`;
+      statusElement.className = `server-status ${isConnected ? 'server-connected' : 'server-disconnected'}`;
       statusElement.textContent = isConnected ? 'Connected to server successfully' : 'Cannot connect to server. Please try again later.';
-      statusElement.classList.remove('d-none');
+      statusElement.style.display = 'block';
     }
     console.log('Server check:', isConnected ? 'OK' : 'Failed');
   } catch (error) {
     if (statusElement) {
-      statusElement.className = 'alert alert-danger server-disconnected';
+      statusElement.className = 'server-status server-disconnected';
       statusElement.textContent = 'Cannot connect to server. Please try again later.';
-      statusElement.classList.remove('d-none');
+      statusElement.style.display = 'block';
     }
     console.error('Server connection error:', error);
   }
 }
+
 
 async function fetchClasses() {
   const classSelect = document.getElementById('classSelect');
@@ -118,11 +127,13 @@ async function fetchClasses() {
   updateSingleButtons();
 }
 
+
 // STRICT: Only ACTIVE members with combative sessions available
 async function fetchMembers(query = '') {
   const tbody = document.getElementById('membersTableBody');
   if (tbody) tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Loading members...</td></tr>';
   else console.error('membersTableBody not found');
+
 
   try {
     // Pull only active from server to avoid mixing inactive
@@ -140,8 +151,10 @@ async function fetchMembers(query = '') {
     const result = await response.json();
     const rawMembers = Array.isArray(result.data) ? result.data : [];
 
+
     // Keep all active for client-side search
     allMembers = rawMembers;
+
 
     // Apply strict eligibility + optional query
     const eligible = strictFilterEligibleMembers(allMembers, query);
@@ -160,9 +173,11 @@ async function fetchMembers(query = '') {
   }
 }
 
+
 // Strict eligibility: active AND has combative sessions left
 function strictFilterEligibleMembers(members, query = '') {
   const q = (query || '').trim().toLowerCase();
+
 
   const filtered = members
     .filter(m => (m.status || 'active') === 'active')
@@ -181,13 +196,16 @@ function strictFilterEligibleMembers(members, query = '') {
     })
     .filter(m => m._hasCombativeAvailable);
 
+
   if (!q) return filtered;
+
 
   return filtered.filter(m =>
     (m.name && m.name.toLowerCase().includes(q)) ||
     (m.memberId && m.memberId.toLowerCase().includes(q))
   );
 }
+
 
 // Compute remaining sessions shown in table/autocomplete
 function getRemainingSessions(member) {
@@ -198,8 +216,52 @@ function getRemainingSessions(member) {
     : Number(combative.duration || 0);
 }
 
+
+// Tab Switching Function - ADDED
+function switchView(view) {
+  currentView = view;
+  const listView = document.getElementById('listView');
+  const calendarView = document.getElementById('calendarView');
+  const listTab = document.getElementById('listTab');
+  const calendarTab = document.getElementById('calendarTab');
+
+  if (view === 'list') {
+    if (listView) listView.classList.add('active');
+    if (calendarView) calendarView.classList.remove('active');
+    if (listTab) listTab.classList.add('active');
+    if (calendarTab) calendarTab.classList.remove('active');
+  } else if (view === 'calendar') {
+    if (calendarView) calendarView.classList.add('active');
+    if (listView) listView.classList.remove('active');
+    if (calendarTab) calendarTab.classList.add('active');
+    if (listTab) listTab.classList.remove('active');
+    generateCalendar(); // Regenerate calendar when switching
+  }
+  console.log('Switched view to:', view);
+}
+
+
 function setupEventListeners() {
   console.log('Setting up event listeners...');
+  
+  // Tab switching - ADDED
+  const listTab = document.getElementById('listTab');
+  const calendarTab = document.getElementById('calendarTab');
+  
+  if (listTab) {
+    listTab.addEventListener('click', () => switchView('list'));
+    console.log('✓ listTab click listener added');
+  } else {
+    console.warn('listTab not found');
+  }
+  
+  if (calendarTab) {
+    calendarTab.addEventListener('click', () => switchView('calendar'));
+    console.log('✓ calendarTab click listener added');
+  } else {
+    console.warn('calendarTab not found');
+  }
+  
   const memberSearch = document.getElementById('memberSearch');
   if (memberSearch) {
     memberSearch.addEventListener('input', debounce(async () => {
@@ -222,6 +284,7 @@ function setupEventListeners() {
     console.log('✓ memberSearch input/blur listeners added');
   } else console.warn('memberSearch not found');
 
+
   // Global click to hide autocomplete if outside
   document.addEventListener('click', (e) => {
     const autocomplete = document.getElementById('autocompleteSuggestions');
@@ -233,17 +296,20 @@ function setupEventListeners() {
     }
   });
 
+
   const classSelect = document.getElementById('classSelect');
   if (classSelect) {
     classSelect.addEventListener('change', onClassChange);
     console.log('✓ classSelect change listener added');
   } else console.error('✗ classSelect not found for listener');
 
+
   const panelMemberSelect = document.getElementById('panelMemberSelect');
   if (panelMemberSelect) {
     panelMemberSelect.addEventListener('change', updatePanelButton);
     console.log('✓ panelMemberSelect change listener added');
   }
+
 
   const addBulkBtn = document.getElementById('addToBulkBtn');
   if (addBulkBtn) {
@@ -253,6 +319,7 @@ function setupEventListeners() {
     console.error('✗ addToBulkBtn not found—check HTML ID');
   }
 
+
   const addPanelBtn = document.getElementById('addPanelToCartBtn');
   if (addPanelBtn) {
     addPanelBtn.addEventListener('click', addPanelSelectionToCart);
@@ -260,6 +327,21 @@ function setupEventListeners() {
   } else {
     console.error('✗ addPanelToCartBtn not found—check HTML ID');
   }
+
+  // Clear cart button - ADDED
+  const clearCartBtn = document.getElementById('clearCartBtn');
+  if (clearCartBtn) {
+    clearCartBtn.addEventListener('click', clearCart);
+    console.log('✓ clearCartBtn click listener added');
+  }
+
+  // Confirm bulk button - ADDED
+  const confirmBulkBtn = document.getElementById('confirmBulkBtn');
+  if (confirmBulkBtn) {
+    confirmBulkBtn.addEventListener('click', confirmBulkEnroll);
+    console.log('✓ confirmBulkBtn click listener added');
+  }
+
 
   document.addEventListener('change', (e) => {
     if (e.target.id === 'selectAllMembers') {
@@ -271,9 +353,18 @@ function setupEventListeners() {
     }
   });
 
+
   const timeSelect = document.getElementById('sessionTime');
   if (timeSelect) timeSelect.addEventListener('change', () => console.log('Time selected:', timeSelect.value));
+  
+  // Calendar month change - ADDED
+  const calendarMonth = document.getElementById('calendarMonth');
+  if (calendarMonth) {
+    calendarMonth.addEventListener('change', generateCalendar);
+    console.log('✓ calendarMonth change listener added');
+  }
 }
+
 
 function debounce(func, wait) {
   return function(...args) {
@@ -282,22 +373,27 @@ function debounce(func, wait) {
   };
 }
 
+
 function onClassChange() {
   const selectedClassId = document.getElementById('classSelect')?.value;
   console.log('onClassChange: Selected class ID =', selectedClassId);
   const sessionDetailsSection = document.getElementById('sessionDetailsSection');
   if (selectedClassId) {
-    if (sessionDetailsSection) sessionDetailsSection.classList.remove('d-none');
-    else console.warn('sessionDetailsSection not found');
+    if (sessionDetailsSection) {
+      sessionDetailsSection.style.display = 'block';
+      sessionDetailsSection.classList.remove('d-none');
+    } else console.warn('sessionDetailsSection not found');
     populateSessionsTable(selectedClassId);
     const cls = allClasses.find(c => c.class_id === selectedClassId);
     if (cls) populateTimeSlots(cls.schedule);
   } else if (sessionDetailsSection) {
+    sessionDetailsSection.style.display = 'none';
     sessionDetailsSection.classList.add('d-none');
   }
   updateSingleButtons();
   updateAddToCartButton();
 }
+
 
 function populateTimeSlots(schedule) {
   const timeSlotsDiv = document.getElementById('timeSlots');
@@ -309,24 +405,41 @@ function populateTimeSlots(schedule) {
   timeSlotsDiv.innerHTML = '';
   timeSelect.innerHTML = '<option value="">Select Time</option>';
   timeSelect.style.display = 'none';
-  const timeMatch = schedule.match(/(\d{1,2}:\d{2} [AP]M - \d{1,2}:\d{2} [AP]M)/i);
+  
+  // FIXED: Changed \d{1:2} to \d{1,2}
+  const timeMatch = schedule.match(/(\d{1,2}:\d{2}\s*[AP]M)\s*-\s*(\d{1,2}:\d{2}\s*[AP]M)/i);
+  
   if (timeMatch) {
-    const timeRange = timeMatch[1];
+    const timeRange = `${timeMatch[1]} - ${timeMatch[2]}`;
+    console.log('Matched time range:', timeRange);
+    
     const slotBtn = document.createElement('button');
-    slotBtn.className = 'btn btn-sm btn-outline-info me-2 mb-2';
+    slotBtn.className = 'time-slot';
     slotBtn.textContent = timeRange;
-    slotBtn.onclick = () => {
+    slotBtn.type = 'button'; // Important: prevent form submission
+    slotBtn.onclick = (e) => {
+      e.preventDefault();
+      // Remove selected class from all time slots
+      document.querySelectorAll('.time-slot').forEach(btn => btn.classList.remove('selected'));
+      // Add selected class to clicked button
+      slotBtn.classList.add('selected');
+      // Set the select value
       timeSelect.value = timeRange;
       timeSelect.style.display = 'block';
       showSuccess('Time selected: ' + timeRange);
+      console.log('Time slot selected:', timeRange);
     };
     timeSlotsDiv.appendChild(slotBtn);
     timeSelect.innerHTML += `<option value="${timeRange}">${timeRange}</option>`;
+    console.log('Time slot button created for:', timeRange);
   } else {
+    console.warn('No time match found in schedule:', schedule);
     timeSlotsDiv.innerHTML = '<p class="text-muted small">No predefined slots.</p>';
     timeSelect.style.display = 'block';
   }
 }
+
+
 
 function populateMembersTable(members) {
   const tbody = document.getElementById('membersTableBody');
@@ -336,6 +449,7 @@ function populateMembersTable(members) {
   }
   tbody.innerHTML = '';
   const classSelectValue = document.getElementById('classSelect')?.value || '';
+
 
   // Render only strictly-eligible list
   members.forEach((member) => {
@@ -348,11 +462,11 @@ function populateMembersTable(members) {
       <td>${member.name || member.fullName || 'Unknown'}</td>
       <td>${getRemainingSessions(member)}</td>
       <td>
-        <button class="btn btn-sm btn-info add-to-bulk-btn" 
+        <button class="action-button cart-button add-to-bulk-btn" 
                 data-member-id="${memberId}"
                 onclick="addMemberToCart('${memberId}')"
                 ${!classSelectValue ? 'disabled' : ''}>
-          ${classSelectValue ? 'Add to Cart' : 'Select Class First'}
+          <i class="cart-icon">🛒</i> ${classSelectValue ? 'Add to Cart' : 'Select Class First'}
         </button>
       </td>
     `;
@@ -366,15 +480,22 @@ function populateMembersTable(members) {
   updateAddToCartButton();
 }
 
+
 function updateSingleButtons() {
   const classSelect = document.getElementById('classSelect');
   const hasClass = !!(classSelect && classSelect.value);
   console.log('updateSingleButtons: hasClass =', hasClass, 'value =', classSelect?.value);
   document.querySelectorAll('.add-to-bulk-btn').forEach(btn => {
     btn.disabled = !hasClass;
-    btn.textContent = hasClass ? 'Add to Cart' : 'Select Class First';
+    const icon = btn.querySelector('.cart-icon');
+    if (icon) {
+      btn.innerHTML = hasClass ? '<i class="cart-icon">🛒</i> Add to Cart' : 'Select Class First';
+    } else {
+      btn.textContent = hasClass ? 'Add to Cart' : 'Select Class First';
+    }
   });
 }
+
 
 function populateAutocomplete(members) {
   const suggestions = document.getElementById('autocompleteSuggestions');
@@ -384,7 +505,7 @@ function populateAutocomplete(members) {
     const memberId = member.memberId;
     if (!memberId) return;
     const div = document.createElement('div');
-    div.className = 'autocomplete-suggestion p-2 border-bottom cursor-pointer hover-bg';
+    div.className = 'autocomplete-suggestion';
     div.innerHTML = `<strong>${member.name || member.fullName}</strong> (${memberId}) - ${getRemainingSessions(member)} sessions`;
     div.onclick = (e) => {
       e.stopPropagation();
@@ -398,6 +519,7 @@ function populateAutocomplete(members) {
   suggestions.style.display = members.length > 0 ? 'block' : 'none';
   console.log('Autocomplete populated and shown:', members.length, 'items');
 }
+
 
 function populatePanelMembers(members) {
   const select = document.getElementById('panelMemberSelect');
@@ -413,6 +535,7 @@ function populatePanelMembers(members) {
   if (select.children.length === 0) select.innerHTML = '<option value="">No members available</option>';
 }
 
+
 function toggleAllMembers() {
   const selectAll = document.getElementById('selectAllMembers');
   if (!selectAll) return;
@@ -422,18 +545,20 @@ function toggleAllMembers() {
   selectAll.checked = checkedCount === checkboxes.length && checkboxes.length > 0;
 }
 
+
 function updateAddToCartButton() {
   const checkedCount = Array.from(document.querySelectorAll('.member-checkbox:checked')).length;
   const classSelected = !!document.getElementById('classSelect')?.value;
   const addBtn = document.getElementById('addToBulkBtn');
   if (addBtn) {
     addBtn.disabled = checkedCount === 0 || !classSelected;
-    addBtn.innerHTML = `<i class="fas fa-cart-plus me-2"></i> ${checkedCount > 0 ? `Add ${checkedCount} to Cart` : 'Add Selected to Cart'}`;
+    addBtn.innerHTML = `<i class="cart-icon">🛒</i> ${checkedCount > 0 ? `Add ${checkedCount} to Cart` : 'Add Selected to Cart'}`;
     console.log('Bulk button updated: disabled =', addBtn.disabled, 'checked =', checkedCount, 'classSelected =', classSelected);
   } else {
     console.error('addToBulkBtn not found—check HTML ID');
   }
 }
+
 
 // SINGLE ADD TO CART
 function addMemberToCart(memberId) {
@@ -467,6 +592,7 @@ function addMemberToCart(memberId) {
   showSuccess(`Added ${member.name || member.fullName} to cart`);
   console.log('=== SINGLE ADD END ===');
 }
+
 
 // BULK ADD TO CART
 function addSelectedToCart() {
@@ -510,6 +636,7 @@ function addSelectedToCart() {
   console.log('=== BULK ADD END ===');
 }
 
+
 function populateSessionsTable(classId) {
   const tbody = document.getElementById('sessionsTableBody');
   if (!tbody) {
@@ -529,7 +656,7 @@ function populateSessionsTable(classId) {
           <td>${enr.session_date || enr.sessiondate}</td>
           <td>${enr.session_time || enr.sessiontime}</td>
           <td><span class="badge bg-info">${enr.attendance_status || enr.attendancestatus}</span></td>
-          <td><button class="btn btn-sm btn-success attend-button" onclick="markAttended('${enr._id}')">Mark Attended</button></td>
+          <td><button class="action-button" onclick="markAttended('${enr._id}')">Mark Attended</button></td>
         `;
         tbody.appendChild(row);
       });
@@ -541,6 +668,7 @@ function populateSessionsTable(classId) {
     });
 }
 
+
 // CART DISPLAY UPDATE
 function updateBulkEnrollDisplay() {
   console.log('=== UPDATE CART DISPLAY START ===');
@@ -550,7 +678,9 @@ function updateBulkEnrollDisplay() {
   const emptyMsg = document.getElementById('emptyCartMsg');
   const bulkBtn = document.getElementById('confirmBulkBtn');
 
+
   console.log('DOM elements found:', !!panel, !!list, !!emptyMsg, !!bulkBtn);
+
 
   if (!panel) {
     console.error("bulkEnrollPanel not found - cart won't show. Add <div id=\"bulkEnrollPanel\"> to HTML.");
@@ -561,48 +691,47 @@ function updateBulkEnrollDisplay() {
     return;
   }
 
-  if (emptyMsg) emptyMsg.classList.add('d-none');
+
+  if (emptyMsg) emptyMsg.style.display = 'block';
   list.innerHTML = '';
+
 
   if (bulkEnrollments.length === 0) {
     console.log('Cart empty—hiding panel');
     panel.style.display = 'none';
-    panel.classList.add('d-none');
     if (bulkBtn) {
       bulkBtn.disabled = true;
-      bulkBtn.innerHTML = '<i class="fas fa-save me-2"></i> Bulk Enroll';
+      bulkBtn.innerHTML = '<i class="save-icon">💾</i> Bulk Enroll Selected';
     }
     if (emptyMsg) {
-      emptyMsg.classList.remove('d-none');
       emptyMsg.textContent = 'Your cart is empty. Add members above!';
     }
     console.log('=== UPDATE CART DISPLAY END (EMPTY) ===');
     return;
   }
 
+
   // Show panel
   console.log('Cart has items—showing panel');
   panel.style.display = 'block';
-  panel.classList.remove('d-none');
+  if (emptyMsg) emptyMsg.style.display = 'none';
   if (bulkBtn) {
     bulkBtn.disabled = false;
-    bulkBtn.innerHTML = `<i class="fas fa-save me-2"></i> Bulk Enroll (${bulkEnrollments.length})`;
+    bulkBtn.innerHTML = `<i class="save-icon">💾</i> Bulk Enroll (${bulkEnrollments.length})`;
   }
+
 
   bulkEnrollments.forEach((enr, idx) => {
     const classObj = allClasses.find(c => c.class_id === enr.classId);
     const className = classObj ? (classObj.class_name || classObj.name) : 'Unknown';
     const memberId = enr.member.memberId;
     const li = document.createElement('li');
-    li.className = 'list-group-item d-flex justify-content-between align-items-start';
     li.innerHTML = `
       <div class="flex-grow-1">
         <div><strong>${enr.member.name || enr.member.fullName}</strong> (ID: ${memberId}) → <span class="text-info">${className}</span></div>
         <small class="text-muted d-block">${enr.sessionDate.toLocaleDateString()} @ ${enr.sessionTime}</small>
       </div>
-      <button class="btn btn-sm btn-danger ms-2" onclick="removeFromBulk(${idx})">
-        <i class="fas fa-trash"></i>
-      </button>
+      <button class="remove-btn" onclick="removeFromBulk(${idx})">Remove</button>
     `;
     list.appendChild(li);
     console.log(`✓ Added to display: ${memberId} for ${className}`);
@@ -610,6 +739,7 @@ function updateBulkEnrollDisplay() {
   console.log('✓ Cart panel shown, list populated');
   console.log('=== UPDATE CART DISPLAY END (POPULATED) ===');
 }
+
 
 function removeFromBulk(idx) {
   if (bulkEnrollments[idx]) {
@@ -619,75 +749,101 @@ function removeFromBulk(idx) {
   }
 }
 
+
 function clearCart() {
   bulkEnrollments = [];
   updateBulkEnrollDisplay();
   showSuccess('Cart cleared');
 }
 
+
 async function confirmBulkEnroll() {
   if (bulkEnrollments.length === 0) {
     showError('Cart is empty');
     return;
   }
-  if (!confirm(`Enroll ${bulkEnrollments.length}?`)) return;
+  if (!confirm(`Enroll ${bulkEnrollments.length} members?`)) return;
+  
   let successCount = 0;
   const errors = [];
+  
   for (const enr of bulkEnrollments) {
     try {
       const memberId = enr.member.memberId;
+      
+      // FIXED: Match backend field names exactly
       const postBody = {
-        classid: enr.classId,
-        memberid: memberId,
-        membername: enr.member.name || enr.member.fullName,
-        sessiondate: enr.sessionDate.toISOString().split('T')[0],
-        sessiontime: enr.sessionTime,
-        attendancestatus: 'scheduled',
-        status: 'active'
+        class_id: enr.classId,           // was: classid
+        member_id: memberId,             // was: memberid
+        session_date: enr.sessionDate.toISOString().split('T')[0],  // was: sessiondate
+        session_time: enr.sessionTime,   // was: sessiontime
+        member_name: enr.member.name || enr.member.fullName
       };
+      
+      console.log('Posting enrollment:', postBody);
+      
       const response = await fetch(`${SERVER_URL}/api/enrollments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(postBody)
       });
+      
       if (response.ok) {
+        const result = await response.json();
+        console.log('Enrollment success:', result);
         successCount++;
       } else {
-        const errText = await response.text();
-        errors.push(`Failed ${memberId}: ${errText}`);
+        const errData = await response.json();
+        errors.push(`Failed ${memberId}: ${errData.error || response.statusText}`);
+        console.error('Enrollment failed:', errData);
       }
     } catch (error) {
       errors.push(`Error ${enr.member.memberId}: ${error.message}`);
+      console.error('Enrollment error:', error);
     }
   }
-  if (errors.length > 0) showError(errors.join('; '));
-  showSuccess(`${successCount} enrolled`);
+  
+  if (errors.length > 0) {
+    showError(errors.join('; '));
+  }
+  
+  if (successCount > 0) {
+    showSuccess(`${successCount} member(s) enrolled successfully`);
+  }
+  
   bulkEnrollments = [];
   updateBulkEnrollDisplay();
   await fetchMembers('');
+  
+  // Refresh scheduled sessions table
+  const classSelect = document.getElementById('classSelect');
+  if (classSelect && classSelect.value) {
+    populateSessionsTable(classSelect.value);
+  }
 }
+
 
 function showSuccess(message) {
   console.log('SUCCESS:', message);
   const successEl = document.getElementById('successMessage');
   if (successEl) {
-    const msgBody = successEl.querySelector('.message-body');
-    if (msgBody) msgBody.textContent = message;
-    successEl.classList.remove('d-none');
-    setTimeout(() => successEl.classList.add('d-none'), 3000);
+    successEl.textContent = message;
+    successEl.style.display = 'block';
+    setTimeout(() => successEl.style.display = 'none', 3000);
   }
 }
+
 
 function showError(message) {
   console.error('ERROR:', message);
   const errorEl = document.getElementById('errorMessage');
   if (errorEl) {
-    const errorText = document.getElementById('errorText');
-    if (errorText) errorText.textContent = message;
-    errorEl.classList.remove('d-none');
-    setTimeout(() => errorEl.classList.add('d-none'), 5000);
+    errorEl.textContent = message;
+    errorEl.style.display = 'block';
+    setTimeout(() => errorEl.style.display = 'none', 5000);
   }
 }
+
 
 function updatePanelButton() {
   const panelSelect = document.getElementById('panelMemberSelect');
@@ -701,15 +857,6 @@ function updatePanelButton() {
   }
 }
 
-function switchView(view) {
-  currentView = view;
-  const tabElement = document.getElementById(view === 'list' ? 'listTab' : 'calendarTab');
-  if (tabElement) {
-    const tabs = new bootstrap.Tab(tabElement);
-    tabs.show();
-  }
-  if (view === 'calendar') generateCalendar();
-}
 
 function generateCalendar() {
   const calendarMonth = document.getElementById('calendarMonth');
@@ -725,7 +872,7 @@ function generateCalendar() {
   let row = document.createElement('tr');
   for (let i = 0; i < firstDay; i++) {
     const emptyCell = document.createElement('td');
-    emptyCell.className = 'calendar-day bg-secondary';
+    emptyCell.className = 'calendar-day';
     row.appendChild(emptyCell);
   }
   for (let day = 1; day <= lastDay; day++) {
@@ -735,12 +882,15 @@ function generateCalendar() {
     td.innerHTML = `<div class="day-number">${day}</div>`;
     if (date.toDateString() === new Date().toDateString()) td.classList.add('today');
     const classesToday = allClasses.filter(cls => isClassOnDay(cls.schedule, date.getDay()));
-    classesToday.forEach(cls => {
-      const classEl = document.createElement('div');
-      classEl.className = 'class-on-day small text-danger';
-      classEl.textContent = cls.class_name || cls.name;
-      td.appendChild(classEl);
-    });
+    if (classesToday.length > 0) {
+      td.classList.add('has-class');
+      classesToday.forEach(cls => {
+        const classEl = document.createElement('div');
+        classEl.className = 'class-on-day';
+        classEl.textContent = cls.class_name || cls.name;
+        td.appendChild(classEl);
+      });
+    }
     td.onclick = (e) => selectDate(date, e);
     row.appendChild(td);
     if (row.children.length === 7) {
@@ -749,23 +899,27 @@ function generateCalendar() {
     }
   }
   if (row.children.length > 0) tbody.appendChild(row);
+  console.log('Calendar generated for:', year, month);
 }
+
 
 function isClassOnDay(schedule, dayIndex) {
   return schedule.toLowerCase().includes(dayOfWeekNames[dayIndex].toLowerCase());
 }
+
 
 function parseTimeFromSchedule(schedule) {
   const match = schedule.match(/(\d{1,2}:\d{2} [AP]M - \d{1,2}:\d{2} [AP]M)/i);
   return match ? match[1] : '9:00 AM - 10:00 AM';
 }
 
+
 function selectDate(date, event) {
   selectedDate = date;
   const panelTitle = document.getElementById('panelTitle');
   if (panelTitle) panelTitle.textContent = `Selected Date: ${date.toDateString()}`;
   const datePanel = document.getElementById('datePanel');
-  if (datePanel) datePanel.classList.remove('d-none');
+  if (datePanel) datePanel.style.display = 'block';
   const classesToday = allClasses.filter(cls => isClassOnDay(cls.schedule, date.getDay()));
   const details = document.getElementById('classDetails');
   if (details) {
@@ -773,14 +927,16 @@ function selectDate(date, event) {
     classesToday.forEach(cls => {
       const classId = cls.class_id;
       const card = document.createElement('div');
-      card.className = 'class-card card mb-2';
+      card.className = 'class-card';
       card.innerHTML = `
-        <div class="card-body p-3">
-          <h5 class="card-title text-danger">${cls.class_name || cls.name}</h5>
-          <p class="card-text mb-1"><strong>Trainer:</strong> ${cls.trainer_name || 'TBD'}</p>
-          <p class="card-text mb-1"><strong>Time:</strong> ${parseTimeFromSchedule(cls.schedule)}</p>
-          <p class="card-text mb-0"><strong>Description:</strong> ${cls.description || 'None'}</p>
-          <button class="btn btn-sm btn-info mt-2" onclick="addClassToCart('${classId}', event)">Add Members</button>
+        <div class="card-body">
+          <h5 class="text-danger">${cls.class_name || cls.name}</h5>
+          <p><strong>Trainer:</strong> ${cls.trainer_name || 'TBD'}</p>
+          <p><strong>Time:</strong> ${parseTimeFromSchedule(cls.schedule)}</p>
+          <p><strong>Description:</strong> ${cls.description || 'None'}</p>
+          <button class="action-button cart-button" onclick="addClassToCart('${classId}', event)">
+            <i class="cart-icon">🛒</i> Add Members
+          </button>
         </div>
       `;
       details.appendChild(card);
@@ -790,6 +946,7 @@ function selectDate(date, event) {
   event.target.closest('td').classList.add('selected');
   updatePanelButton();
 }
+
 
 // Calendar "Add Selection to Cart"
 function addPanelSelectionToCart() {
@@ -838,6 +995,7 @@ function addPanelSelectionToCart() {
   console.log('=== CALENDAR ADD END ===');
 }
 
+
 function addClassToCart(classId, event) {
   event.stopPropagation();
   const cls = allClasses.find(c => c.class_id === classId);
@@ -859,10 +1017,12 @@ function addClassToCart(classId, event) {
   showSuccess(`${addedCount} added for ${cls.class_name || cls.name}`);
 }
 
+
 function markAttended(enrollmentId) {
   console.log('Mark attended:', enrollmentId);
   showSuccess('Marked as attended');
 }
+
 
 // MANUAL TEST FUNCTIONS (call in console)
 window.testAddCart = function() {
@@ -897,7 +1057,6 @@ window.testShowCart = function() {
   const panel = document.getElementById('bulkEnrollPanel');
   if (panel) {
     panel.style.display = 'block';
-    panel.classList.remove('d-none');
     console.log('✓ Cart panel forced visible');
   } else {
     console.error('✗ bulkEnrollPanel not found');

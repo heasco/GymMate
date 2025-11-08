@@ -26,8 +26,15 @@
 }
 
 @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .section h2 {
@@ -59,14 +66,14 @@
     border: 1px solid;
 }
 
-.server-connected { 
-    background: rgba(40, 167, 69, 0.1); 
+.server-connected {
+    background: rgba(40, 167, 69, 0.1);
     color: #28a745;
     border-color: #28a745;
 }
 
-.server-disconnected { 
-    background: rgba(220, 53, 69, 0.1); 
+.server-disconnected {
+    background: rgba(220, 53, 69, 0.1);
     color: #dc3545;
     border-color: #dc3545;
 }
@@ -311,31 +318,31 @@ select:focus {
     .section {
         padding: 1.5rem;
     }
-    
+
     .nav-buttons {
         flex-direction: column;
     }
-    
+
     .action-button {
         min-width: 100%;
     }
-    
+
     .member-list th,
     .member-list td {
         padding: 0.8rem 1rem;
         font-size: 0.9rem;
     }
-    
+
     .member-list table {
         display: block;
         overflow-x: auto;
     }
-    
+
     .action-buttons {
         flex-direction: column;
         gap: 0.3rem;
     }
-    
+
     .action-button,
     .archive-button {
         min-width: 100%;
@@ -347,26 +354,64 @@ select:focus {
     .section {
         padding: 1rem;
     }
-    
+
     .section h2 {
         font-size: 1.5rem;
     }
-    
+
     input[type="text"],
     input[type="number"],
     input[type="date"],
     select {
         padding: 0.8rem 1rem;
     }
-    
+
     .member-list td:nth-child(4),
     .member-list th:nth-child(4),
     .member-list td:nth-child(5),
     .member-list th:nth-child(5) {
         display: none;
     }
-    
+
     .action-buttons {
         gap: 0.2rem;
     }
+}
+
+.tabs {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    margin: 20px 0;
+    padding: 10px 0;
+}
+
+.tab-btn {
+    background: rgba(0, 0, 0, 0.5);
+    color: rgba(255, 255, 255, 0.6);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    padding: 12px 30px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: all 0.3s ease;
+    min-width: 180px;
+}
+
+.tab-btn:hover {
+    background: rgba(179, 0, 0, 0.2);
+    border-color: rgba(179, 0, 0, 0.5);
+    color: rgba(255, 255, 255, 0.9);
+    transform: translateY(-2px);
+}
+
+.tab-btn.active {
+    background: linear-gradient(135deg, #b30000 0%, #ff3333 100%);
+    color: #ffffff;
+    border-color: #b30000;
+    box-shadow: 0 4px 15px rgba(179, 0, 0, 0.4);
 }

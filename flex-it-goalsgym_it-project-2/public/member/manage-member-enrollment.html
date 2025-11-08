@@ -3,180 +3,85 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Manage Enrollments - GOALS Gym</title>
+    <title>My Enrollments | GOALS Gym</title>
     <link rel="stylesheet" href="../admin/admin-css/admin-mainpage.css">
     <link rel="stylesheet" href="./member-css/manage-member-enrollment.css">
 </head>
 <body>
-    <div class="admin-container">
+    <div class="member-container">
+        <!-- Sidebar -->
         <aside class="sidebar">
             <div class="sidebar-header">
-                <h2>GOALS Gym Member</h2>
+                <h2>GOALS Gym</h2>
+                <p class="member-name" id="memberName">Member</p>
             </div>
             <nav class="sidebar-nav">
-                <a href="member-dashboard.html"><span>Dashboard</span></a>
-                <a href="member-classes.html"><span>Schedule</span></a>
-                <a href="manage-member-enrollment.html" class="active"><span>Enroll</span></a>
-                <a href="member-profile.html"><span>Profile</span></a>
-                <a href="send-class-feedback.html"><span>Feedback</span></a>
+                <a href="./member-mainpage.html"><span>Dashboard</span></a>
+                <a href="./manage-member-enrollment.html" class="active"><span>My Enrollments</span></a>
+                <a href="./member-profile.html"><span>My Profile</span></a>
+                <a href="./view-classes.html"><span>Browse Classes</span></a>
             </nav>
         </aside>
 
+        <!-- Header -->
         <header class="header">
             <button class="menu-toggle" id="menuToggle">☰</button>
-            <h1>Manage Enrollments</h1>
+            <h1>Class Enrollment</h1>
             <button class="logout-btn" id="logoutBtn">Logout</button>
         </header>
 
+        <!-- Main Content -->
         <main class="main-content">
             <div class="container">
-                <div class="member-greeting">
-                    <h2>Welcome, <span id="memberName">Member</span>!</h2>
-                    <p class="subtitle">Select classes and dates to enroll. Cancel anytime before class starts.</p>
-                </div>
-
                 <!-- Session Counter -->
-                <div class="session-card">
-                    <div class="card-header">
-                        <h3>Remaining Sessions</h3>
-                    </div>
-                    <div class="card-body">
-                        <div class="session-counter">
-                            <span id="remainingSessions">—</span>
-                        </div>
-                        <div class="membership-info" id="membershipInfo">Loading membership information...</div>
-                    </div>
+                <div class="session-counter-card">
+                    <h3>Remaining Sessions</h3>
+                    <div class="session-count" id="remainingSessions">0</div>
+                    <div class="membership-info" id="membershipInfo">Loading membership information...</div>
                 </div>
 
-                <!-- View Toggle -->
+                <!-- View Tabs -->
                 <div class="view-tabs">
-                    <button class="view-tab active" data-view="calendar">Calendar View</button>
-                    <button class="view-tab" data-view="list">List View</button>
+                    <button class="view-tab active" id="tabCalendar" data-view="calendar">
+                        📅 Calendar View
+                    </button>
+                    <button class="view-tab" id="tabList" data-view="list">
+                        📋 List View
+                    </button>
                 </div>
 
                 <!-- Calendar View -->
-                <div id="calendarView" class="main-card">
-                    <div class="card-header">
-                        <h3>Class Calendar</h3>
-                    </div>
-                    <div class="card-body">
-                        <div class="calendar-navigation">
-                            <button class="nav-btn" id="prevMonth">‹</button>
-                            <span id="currentMonthDisplay">Loading...</span>
-                            <button class="nav-btn" id="nextMonth">›</button>
-                        </div>
-                        <div id="calendarContainer" class="calendar-container">
-                            <div class="loading-state">Loading calendar...</div>
-                        </div>
-                        
-                        <!-- Enrollment Cart for Calendar View -->
-                        <div id="enrollmentCartCalendar" class="enrollment-cart">
-                            <div class="cart-header">
-                                <h4>Enrollment Cart</h4>
-                            </div>
-                            <div id="cartContentCalendar" class="cart-content">
-                                <p>No classes selected yet. Click on a date to add classes.</p>
-                            </div>
-                            <div class="cart-actions">
-                                <button class="btn btn-primary" id="confirmCartBtnCalendar" disabled>
-                                    Confirm All Enrollments
-                                </button>
-                            </div>
-                        </div>
+                <div id="calendarView" class="view-container" style="display: block;">
+                    <h2>Class Calendar</h2>
+                    <div id="calendarContainer">
+                        <p>Loading calendar...</p>
                     </div>
                 </div>
 
                 <!-- List View -->
-                <div id="listView" class="main-card" style="display:none;">
-                    <div class="card-header">
-                        <div class="list-header">
-                            <h3>Available Classes</h3>
-                            <input type="text" id="classSearch" placeholder="Search classes..." class="search-input">
-                        </div>
+                <div id="listView" class="view-container" style="display: none;">
+                    <h2>Available Classes</h2>
+                    <div id="classesGrid">
+                        <p>Loading classes...</p>
                     </div>
-                    <div class="card-body">
-                        <div id="classesGrid" class="classes-grid">
-                            <div class="loading-state">Loading classes...</div>
-                        </div>
-                        
-                        <!-- Enrollment Cart for List View -->
-                        <div id="enrollmentCart" class="enrollment-cart">
-                            <div class="cart-header">
-                                <h4>Selected Enrollments</h4>
-                            </div>
-                            <div id="cartContent" class="cart-content">
-                                <p>No classes selected yet.</p>
-                            </div>
-                            <div class="cart-actions">
-                                <button class="btn btn-primary" id="confirmCartBtn" disabled>
-                                    Confirm All Enrollments
-                                </button>
-                            </div>
-                        </div>
+                </div>
+
+                <!-- Enrollment Cart -->
+                <div id="enrollmentCart" class="enrollment-cart" style="display: block;">
+                    <div class="cart-header">
+                        <h3>🛒 Your Enrollment Cart</h3>
+                    </div>
+                    <div id="cartContent" class="cart-content">
+                        <p>No classes selected yet. Click on a date to add classes.</p>
+                    </div>
+                    <div class="cart-footer">
+                        <button id="confirmCartBtn" class="btn btn-primary" disabled>
+                            Confirm All Enrollments
+                        </button>
                     </div>
                 </div>
             </div>
         </main>
-    </div>
-
-    <!-- Day Modal -->
-    <div id="dayModal" class="modal-overlay" style="display:none;">
-        <div class="modal-container">
-            <div class="modal-header">
-                <h3 id="dayModalTitle">Classes for Date</h3>
-                <button class="close-btn" onclick="closeModal('dayModal')">×</button>
-            </div>
-            <div class="modal-body">
-                <div class="modal-date-info">
-                    <div id="modalDateDisplay"></div>
-                    <div class="sessions-info">
-                        Sessions remaining: <span id="modalSessionsRemaining">0</span>
-                    </div>
-                </div>
-                <div id="dayModalContent">
-                    <!-- Classes will be populated here -->
-                </div>
-            </div>
-            <div class="modal-actions">
-                <button class="btn btn-secondary" onclick="closeModal('dayModal')">Close</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Time Selection Modal -->
-    <div id="timeModal" class="modal-overlay" style="display:none;">
-        <div class="modal-container">
-            <div class="modal-header">
-                <h3 id="timeModalTitle">Select Time</h3>
-                <button class="close-btn" onclick="closeModal('timeModal')">×</button>
-            </div>
-            <div class="modal-body">
-                <div id="timeModalContent">
-                    <!-- Time slots will be populated here -->
-                </div>
-            </div>
-            <div class="modal-actions">
-                <button class="btn btn-secondary" onclick="closeModal('timeModal')">Cancel</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Single Class Modal -->
-    <div id="singleClassModal" class="modal-overlay" style="display:none;">
-        <div class="modal-container">
-            <div class="modal-header">
-                <h3 id="singleClassModalTitle">Enroll in Class</h3>
-                <button class="close-btn" onclick="closeModal('singleClassModal')">×</button>
-            </div>
-            <div class="modal-body">
-                <div id="singleClassModalContent">
-                    <!-- Class details and time selection will be populated here -->
-                </div>
-            </div>
-            <div class="modal-actions">
-                <button class="btn btn-secondary" onclick="closeModal('singleClassModal')">Cancel</button>
-            </div>
-        </div>
     </div>
 
     <script src="./member-js/manage-member-enrollment.js"></script>
