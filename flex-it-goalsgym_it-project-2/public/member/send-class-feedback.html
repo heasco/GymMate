@@ -4,179 +4,123 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Send Class Feedback - GOALS Gym</title>
-    <link rel="stylesheet" href="member-css/send-class-feedback.css">
+    <link rel="stylesheet" href="../admin/admin-css/admin-mainpage.css">
+    <link rel="stylesheet" href="./member-css/send-class-feedback.css">
 </head>
 <body>
-    <div class="container">
-        <h1 class="form-title">Send Feedback to a Class</h1>
-        <div id="memberGreet" class="form-group" style="margin-bottom:24px;">
-            Welcome, <span id="memberName"></span>!
-        </div>
-        <div class="section active">
-            <form id="feedbackForm">
-                <div class="form-group">
-                    <label for="classSelect">Select Class</label>
-                    <select id="classSelect" name="classId" required>
-                        <option value="">-- Select your class --</option>
-                        <!-- Classes will be dynamically loaded here -->
-                    </select>
+    <div class="admin-container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h2>GOALS Gym Member</h2>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="member-dashboard.html"><span>Dashboard</span></a>
+                <a href="member-classes.html"><span>Schedule</span></a>
+                <a href="manage-member-enrollment.html"><span>Enroll</span></a>
+                <a href="member-profile.html"><span>Profile</span></a>
+                <a href="send-class-feedback.html" class="active"><span>Feedback</span></a>
+            </nav>
+        </aside>
+
+        <header class="header">
+            <button class="menu-toggle" id="menuToggle">☰</button>
+            <h1>Send Class Feedback</h1>
+            <button class="logout-btn" id="logoutBtn">Logout</button>
+        </header>
+
+        <main class="main-content">
+            <div class="container">
+                <div class="member-greeting">
+                    <h2>Share Your Feedback, <span id="memberName">Member</span>!</h2>
+                    <p class="subtitle">Help us improve by sharing your class experience</p>
+                    <div class="member-badge" id="memberIdBadge">Anonymous Feedback</div>
                 </div>
-                <div class="form-group">
-                    <label for="rating">Rating</label>
-                    <select id="rating" name="rating" required>
-                        <option value="">-- Select a rating --</option>
-                        <option value="1">1 - Poor</option>
-                        <option value="2">2 - Fair</option>
-                        <option value="3">3 - Good</option>
-                        <option value="4">4 - Very Good</option>
-                        <option value="5">5 - Excellent</option>
-                    </select>
+
+                <div class="dashboard-grid">
+                    <!-- Feedback Form Card -->
+                    <div class="dashboard-card full-width">
+                        <div class="card-header">
+                            <h3>Send Class Feedback</h3>
+                        </div>
+                        <div class="card-body">
+                            <form id="feedbackForm" class="feedback-form">
+                                <div class="form-group">
+                                    <label for="classSelect">Select Class</label>
+                                    <select id="classSelect" name="classId" required>
+                                        <option value="">-- Select your class --</option>
+                                        <!-- Classes will be dynamically loaded here -->
+                                    </select>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="rating">Rating</label>
+                                    <div class="rating-stars">
+                                        <input type="radio" id="star5" name="rating" value="5">
+                                        <label for="star5">⭐</label>
+                                        <input type="radio" id="star4" name="rating" value="4">
+                                        <label for="star4">⭐</label>
+                                        <input type="radio" id="star3" name="rating" value="3">
+                                        <label for="star3">⭐</label>
+                                        <input type="radio" id="star2" name="rating" value="2">
+                                        <label for="star2">⭐</label>
+                                        <input type="radio" id="star1" name="rating" value="1">
+                                        <label for="star1">⭐</label>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="feedbackText">Your Feedback</label>
+                                    <textarea id="feedbackText" name="feedback" placeholder="Share your experience with the class, trainer, facilities, or any suggestions for improvement..." required rows="6"></textarea>
+                                </div>
+                                
+                                <div class="anonymous-notice">
+                                    <span class="notice-icon">🔒</span>
+                                    <span class="notice-text">Your feedback is <strong>anonymous</strong> to other members and trainers. Only administrators can view your identity for quality improvement purposes.</span>
+                                </div>
+                                
+                                <div class="form-actions">
+                                    <button type="submit" class="btn-primary">
+                                        <span class="btn-icon">📤</span>
+                                        Send Feedback
+                                    </button>
+                                    <button type="reset" class="btn-secondary">
+                                        <span class="btn-icon">🔄</span>
+                                        Clear Form
+                                    </button>
+                                </div>
+                                
+                                <div id="feedbackStatus" class="message" style="display: none;"></div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Quick Actions -->
+                    <div class="dashboard-card">
+                        <div class="card-header">
+                            <h3>Quick Actions</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="quick-actions">
+                                <a href="./member-dashboard.html" class="action-btn primary">
+                                    <span class="action-icon">📊</span>
+                                    <span class="action-text">View Dashboard</span>
+                                </a>
+                                <a href="./member-classes.html" class="action-btn secondary">
+                                    <span class="action-icon">📅</span>
+                                    <span class="action-text">View Schedule</span>
+                                </a>
+                                <a href="./manage-member-enrollment.html" class="action-btn secondary">
+                                    <span class="action-icon">➕</span>
+                                    <span class="action-text">Enroll in Classes</span>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label for="feedbackText">Your Feedback</label>
-                    <textarea id="feedbackText" name="feedback" placeholder="Type your feedback here..." required></textarea>
-                </div>
-                <p class="anonymous-tip">
-                    Your feedback will be <strong>anonymous</strong> to other members and trainers, but viewable by the admin.
-                </p>
-                <div class="nav-buttons">
-                    <button type="submit">Send Feedback</button>
-                </div>
-                <div id="feedbackStatus" class="success-message" style="display: none;"></div>
-            </form>
-        </div>
+            </div>
+        </main>
     </div>
-   <script>
-    const SERVER_URL = "http://localhost:8080";
-    window.loadedClasses = [];
 
-    function loadMemberName() {
-        const authUser = JSON.parse(localStorage.getItem('authUser'));
-        if (authUser && authUser.user && authUser.user.name) {
-            document.getElementById('memberName').textContent = authUser.user.name;
-        } else {
-            document.getElementById('memberName').textContent = "Member";
-        }
-    }
-
-    async function loadUserClasses() {
-        const classSelect = document.getElementById("classSelect");
-        classSelect.innerHTML = "<option value=''>-- Loading your classes... --</option>";
-        try {
-            const authUser = JSON.parse(localStorage.getItem('authUser'));
-            const memberId = authUser && authUser.user && (authUser.user.memberId || authUser.user.member_id || authUser.user._id);
-            const token = localStorage.getItem('authToken');
-            // Fetch enrollments for this member
-            const response = await fetch(`${SERVER_URL}/api/enrollments/member/${memberId}`, {
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${token}`
-                }
-            });
-            const data = await response.json();
-            if (!data.success || !Array.isArray(data.data) || data.data.length === 0) {
-                classSelect.innerHTML = "<option value=''>No enrolled classes found</option>";
-                return;
-            }
-            // For each enrollment, fetch the Class document
-            const classDetails = await Promise.all(data.data.map(async (enroll) => {
-                // Use the generic class_id string
-                const classId = enroll.class_id || enroll.classid;
-                let classData, schedule = "", trainer_id = "", class_name = "";
-                try {
-                    const classRes = await fetch(`${SERVER_URL}/api/classes/${classId}`, {
-                        headers: { "Authorization": `Bearer ${token}` }
-                    });
-                    const classJson = await classRes.json();
-                    if (classJson && classJson.data) {
-                        classData = classJson.data;
-                        class_name = classData.class_name || classData.classname || classId;
-                        schedule = classData.schedule || "";
-                        trainer_id = classData.trainer_id || classData.trainerid || "";
-                    }
-                } catch {}
-                return {
-                    class_id: classId,
-                    class_name,
-                    schedule,
-                    trainer_id,
-                    sessiondate: enroll.sessiondate
-                };
-            }));
-
-            window.loadedClasses = classDetails;
-            classSelect.innerHTML = "<option value=''>-- Select your class --</option>";
-            classDetails.forEach(cls => {
-                const option = document.createElement("option");
-                option.value = cls.class_id;
-                option.textContent = `${cls.class_name} (${cls.schedule})${cls.sessiondate ? " - " + (new Date(cls.sessiondate)).toLocaleDateString() : ""}`;
-                option.dataset.trainerId = cls.trainer_id;
-                classSelect.appendChild(option);
-            });
-        } catch (err) {
-            classSelect.innerHTML = "<option value=''>Failed to load classes</option>";
-        }
-    }
-
-    document.addEventListener("DOMContentLoaded", function() {
-        loadMemberName();
-        loadUserClasses();
-
-        document.getElementById("feedbackForm").addEventListener("submit", async function(e) {
-            e.preventDefault();
-            const feedbackStatus = document.getElementById("feedbackStatus");
-            feedbackStatus.style.display = "none";
-            feedbackStatus.className = "success-message";
-
-            const classId = document.getElementById("classSelect").value;
-            const rating = document.getElementById("rating").value;
-            const comment = document.getElementById("feedbackText").value.trim();
-            const authUser = JSON.parse(localStorage.getItem('authUser'));
-            const memberId = authUser && authUser.user && (authUser.user.memberId || authUser.user.member_id || authUser.user._id);
-
-            // Retrieve class/trainer info from loadedClasses using generic class_id
-            const selectedClass = window.loadedClasses.find(cls => cls.class_id === classId);
-            const trainerId = selectedClass ? selectedClass.trainer_id : "";
-
-            if (!classId || !comment || !trainerId || !rating) {
-                feedbackStatus.textContent = "Please select a class, provide a rating, and write your feedback.";
-                feedbackStatus.style.display = "block";
-                feedbackStatus.className = "error";
-                return;
-            }
-
-            try {
-                const token = localStorage.getItem('authToken');
-                const response = await fetch(`${SERVER_URL}/api/feedbacks`, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "Authorization": `Bearer ${token}`
-                    },
-                    body: JSON.stringify({
-                        class_id: classId,
-                        member_id: memberId,
-                        trainer_id: trainerId,
-                        rating: parseInt(rating),
-                        comment
-                    })
-                });
-                const data = await response.json();
-                if (response.ok && data.success) {
-                    feedbackStatus.textContent = "Thank you for your feedback!";
-                    feedbackStatus.style.display = "block";
-                    feedbackStatus.className = "success-message";
-                    document.getElementById("feedbackForm").reset();
-                } else {
-                    throw new Error(data.error || data.message || "Failed to send feedback.");
-                }
-            } catch (err) {
-                feedbackStatus.textContent = err.message || "Failed to send feedback.";
-                feedbackStatus.style.display = "block";
-                feedbackStatus.className = "error";
-            }
-        });
-    });
-</script>
+    <script src="./member-js/send-class-feedback.js"></script>
 </body>
 </html>

@@ -1,0 +1,420 @@
+/* ========================================
+   MEMBER DASHBOARD - GOALS GYM THEME
+   ======================================== */
+
+/* Import base styles from admin-mainpage.css */
+
+/* Page-specific styles for Member Dashboard */
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0;
+}
+
+/* Member Greeting */
+.member-greeting {
+    background: rgba(30, 30, 30, 0.9);
+    padding: 2rem;
+    border-radius: var(--radius);
+    margin-bottom: 2rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(10px);
+    text-align: center;
+    position: relative;
+}
+
+.member-greeting h2 {
+    color: var(--accent);
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.member-greeting .subtitle {
+    color: var(--neutral);
+    font-size: 1rem;
+    margin-bottom: 1rem;
+    opacity: 0.9;
+}
+
+.member-badge {
+    display: inline-block;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--highlight) 100%);
+    color: var(--accent);
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: 0 4px 12px rgba(179, 0, 0, 0.3);
+}
+
+/* Dashboard Grid */
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 2rem;
+    margin-bottom: 2rem;
+}
+
+/* Dashboard Cards */
+.dashboard-card {
+    background: rgba(30, 30, 30, 0.9);
+    border-radius: var(--radius);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(10px);
+    overflow: hidden;
+    transition: var(--transition);
+}
+
+.dashboard-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+}
+
+.card-header {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--highlight) 100%);
+    padding: 1.5rem 2rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.card-header h3 {
+    color: var(--accent);
+    font-size: 1.4rem;
+    font-weight: 700;
+    margin: 0;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.card-body {
+    padding: 2rem;
+}
+
+/* Membership Section */
+.membership-section {
+    margin-bottom: 1.5rem;
+}
+
+.membership-section h4 {
+    color: var(--accent);
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.membership-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.membership-list li {
+    padding: 0.8rem 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--neutral);
+    font-size: 0.95rem;
+}
+
+.membership-list li:last-child {
+    border-bottom: none;
+}
+
+.membership-list li span {
+    display: block;
+    margin-bottom: 0.3rem;
+}
+
+.membership-list li span:first-child {
+    color: var(--accent);
+    font-weight: 600;
+}
+
+/* Session Counter */
+.session-counter {
+    text-align: center;
+    padding: 1.5rem;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: var(--radius);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.counter-label {
+    display: block;
+    color: var(--neutral);
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.5rem;
+}
+
+.counter-value {
+    display: block;
+    font-size: 2.5rem;
+    font-weight: 800;
+    color: var(--primary);
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+    line-height: 1;
+}
+
+/* Dashboard Table */
+.dashboard-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: var(--radius);
+    overflow: hidden;
+}
+
+.dashboard-table thead {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--highlight) 100%);
+}
+
+.dashboard-table th {
+    padding: 1rem;
+    color: var(--accent);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    text-align: left;
+    font-size: 0.9rem;
+}
+
+.dashboard-table td {
+    padding: 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--neutral);
+    transition: var(--transition);
+}
+
+.dashboard-table tbody tr:hover td {
+    background: rgba(179, 0, 0, 0.1);
+    color: var(--accent);
+}
+
+.dashboard-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* Profile Info */
+.profile-info {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.info-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.8rem 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.info-item:last-child {
+    border-bottom: none;
+}
+
+.info-label {
+    color: var(--accent);
+    font-weight: 600;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.info-value {
+    color: var(--neutral);
+    font-size: 0.95rem;
+    font-weight: 500;
+}
+
+/* Quick Actions */
+.quick-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.action-btn {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 1.5rem;
+    border-radius: var(--radius);
+    text-decoration: none;
+    transition: var(--transition);
+    border: 2px solid transparent;
+}
+
+.action-btn.primary {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--highlight) 100%);
+    color: var(--accent);
+    box-shadow: 0 4px 12px rgba(179, 0, 0, 0.3);
+}
+
+.action-btn.secondary {
+    background: transparent;
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
+.action-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(179, 0, 0, 0.4);
+}
+
+.action-btn.secondary:hover {
+    background: var(--primary);
+    color: var(--accent);
+}
+
+.action-icon {
+    font-size: 1.2rem;
+}
+
+.action-text {
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-size: 0.9rem;
+}
+
+/* Error State */
+.error-state {
+    background: rgba(220, 53, 69, 0.1);
+    color: #dc3545;
+    border: 1px solid #dc3545;
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    text-align: center;
+    font-weight: 600;
+    margin-top: 2rem;
+}
+
+/* Loading States */
+.loading-state {
+    color: var(--neutral);
+    font-style: italic;
+    text-align: center;
+    padding: 2rem;
+}
+
+/* Status Badges */
+.status-badge {
+    display: inline-block;
+    padding: 0.3rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.status-active {
+    background: rgba(40, 167, 69, 0.2);
+    color: #28a745;
+    border: 1px solid #28a745;
+}
+
+.status-completed {
+    background: rgba(23, 162, 184, 0.2);
+    color: #17a2b8;
+    border: 1px solid #17a2b8;
+}
+
+.status-pending {
+    background: rgba(255, 193, 7, 0.2);
+    color: #ffc107;
+    border: 1px solid #ffc107;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+    .dashboard-grid {
+        grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+        gap: 1.5rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+    
+    .member-greeting {
+        padding: 1.5rem;
+    }
+    
+    .member-greeting h2 {
+        font-size: 1.6rem;
+    }
+    
+    .card-body {
+        padding: 1.5rem;
+    }
+    
+    .info-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+        text-align: left;
+    }
+    
+    .quick-actions {
+        gap: 0.8rem;
+    }
+    
+    .action-btn {
+        padding: 0.8rem 1.2rem;
+    }
+    
+    .counter-value {
+        font-size: 2rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .member-greeting h2 {
+        font-size: 1.4rem;
+    }
+    
+    .member-badge {
+        font-size: 0.8rem;
+        padding: 0.4rem 0.8rem;
+    }
+    
+    .card-header {
+        padding: 1rem 1.5rem;
+    }
+    
+    .card-header h3 {
+        font-size: 1.2rem;
+    }
+    
+    .card-body {
+        padding: 1rem;
+    }
+    
+    .dashboard-table {
+        font-size: 0.9rem;
+    }
+    
+    .dashboard-table th,
+    .dashboard-table td {
+        padding: 0.8rem 0.5rem;
+    }
+    
+    .counter-value {
+        font-size: 1.8rem;
+    }
+}

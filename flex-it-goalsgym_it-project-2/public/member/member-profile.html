@@ -1,167 +1,128 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Manage Profile - GOALS Gym</title>
-<link rel="stylesheet" href="/style.css"/>
-<style>
-  :root{
-    --nav-bg:#12335a;
-    --nav-accent:#0b2a45;
-    --card-head:#0e3b63;
-    --muted:#9aa6b2;
-    --accent:#f6b33a;
-  }
-  html,body {height:100%; margin:0; font-family: "Segoe UI", Roboto, system-ui, Arial; background:#f2f4f7; color:#222;}
-  .app {display:flex; min-height:100vh; gap:18px;}
-  .sidebar {
-    width:240px;
-    background:linear-gradient(180deg,var(--nav-bg),var(--nav-accent));
-    color:#fff; padding:18px 12px;
-    box-shadow: 2px 0 6px rgba(0,0,0,0.08);
-  }
-  .brand {display:flex; align-items:center; gap:10px; margin-bottom:18px;}
-  .brand .logo {
-    width:44px; height:44px; background:#fff2; border-radius:6px; display:flex;
-    align-items:center; justify-content:center; font-weight:700; color:#fff; font-size:18px;
-  }
-  .brand h2 { font-size:18px; margin:0; letter-spacing:0.2px; }
-  .nav { margin-top:12px; display:flex; flex-direction:column; gap:8px; }
-  .nav a {
-    color:rgba(255,255,255,0.95); text-decoration:none; padding:10px 12px; border-radius:6px; display:block; font-size:14px;
-  }
-  .nav a:hover { background:rgba(255,255,255,0.06);}
-  .main { flex:1; padding:20px 28px;}
-  .topbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;}
-  .topbar h1 { margin:0; font-size:20px; color:#0e2740;}
-  .card { background:#fff; border-radius:8px; box-shadow:0 1px 0 rgba(0,0,0,0.04); margin-bottom:18px; overflow:hidden; }
-  .card .card-head { background:var(--card-head); color:#fff; padding:12px 16px; font-weight:700;}
-  .card .card-body { padding:22px 18px 28px 18px; color:#223; }
-  .field-group {margin-bottom:18px;}
-  .field-group label { display:block; font-size:.97rem; color:#355; margin-bottom:2px;}
-  .field-group input[type="text"], .field-group input[type="email"] {
-    padding:8px; border-radius:6px; border:1px solid #cdd7df; width:100%; font-size:15px;
-  }
-  .btn { padding:8px 14px; border-radius:6px; border:1px solid #cdd7df; background:#fff; cursor:pointer; font-size:15px;}
-  .btn-primary { background:var(--card-head); color:#fff; border-color:var(--card-head);}
-  .btn:active{transform:translateY(1px)}
-  .msg {margin-top:8px;}
-  .msg.ok { color: #218838;}
-  .msg.err { color: crimson;}
-  @media (max-width:880px){
-    .sidebar{display:none}
-    .main{padding:14px}
-  }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile - GOALS Gym</title>
+    <link rel="stylesheet" href="../admin/admin-css/admin-mainpage.css">
+    <link rel="stylesheet" href="./member-css/member-profile.css">
 </head>
 <body>
-<div class="app">
-  <aside class="sidebar" aria-label="Left navigation">
-    <div class="brand">
-      <div class="logo">G</div>
-      <div>
-        <h2>GOALS Gym</h2>
-        <div style="font-size:12px;opacity:0.9;">Member portal</div>
-      </div>
+    <div class="admin-container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h2>GOALS Gym Member</h2>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="member-dashboard.html"><span>Dashboard</span></a>
+                <a href="member-classes.html"><span>Schedule</span></a>
+                <a href="manage-member-enrollment.html"><span>Enroll</span></a>
+                <a href="member-profile.html" class="active"><span>Profile</span></a>
+                <a href="send-class-feedback.html"><span>Feedback</span></a>
+            </nav>
+        </aside>
+
+        <header class="header">
+            <button class="menu-toggle" id="menuToggle">☰</button>
+            <h1>Member Profile</h1>
+            <button class="logout-btn" id="logoutBtn">Logout</button>
+        </header>
+
+        <main class="main-content">
+            <div class="container">
+                <div class="member-greeting">
+                    <h2>Your Profile, <span id="profileName">Member</span>!</h2>
+                    <p class="subtitle">Manage your personal information and contact details</p>
+                    <div class="member-badge" id="profileMemberId">Loading...</div>
+                </div>
+
+                <div class="dashboard-grid">
+                    <!-- Personal Information -->
+                    <div class="dashboard-card">
+                        <div class="card-header">
+                            <h3>Personal Information</h3>
+                        </div>
+                        <div class="card-body">
+                            <form id="profileForm" class="profile-form">
+                                <div class="form-group">
+                                    <label for="firstName">First Name</label>
+                                    <input type="text" id="firstName" name="firstName" class="form-input" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="lastName">Last Name</label>
+                                    <input type="text" id="lastName" name="lastName" class="form-input" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="email">Email Address</label>
+                                    <input type="email" id="email" name="email" class="form-input" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="phone">Phone Number</label>
+                                    <input type="text" id="phone" name="phone" class="form-input" required>
+                                </div>
+                                <button type="submit" class="btn-primary">Save Changes</button>
+                                <div id="profileMessage" class="message" style="display: none;"></div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Membership Details -->
+                    <div class="dashboard-card">
+                        <div class="card-header">
+                            <h3>Membership Details</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="profile-info">
+                                <div class="info-item">
+                                    <span class="info-label">Member Since:</span>
+                                    <span id="memberSince" class="info-value">Loading...</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">Membership Status:</span>
+                                    <span id="membershipStatus" class="info-value status-active">Active</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">Membership Type:</span>
+                                    <span id="membershipType" class="info-value">Loading...</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">Remaining Sessions:</span>
+                                    <span id="remainingSessions" class="info-value">—</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Actions -->
+                    <div class="dashboard-card">
+                        <div class="card-header">
+                            <h3>Quick Actions</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="quick-actions">
+                                <a href="./member-dashboard.html" class="action-btn primary">
+                                    <span class="action-icon">📊</span>
+                                    <span class="action-text">View Dashboard</span>
+                                </a>
+                                <a href="./member-classes.html" class="action-btn secondary">
+                                    <span class="action-icon">📅</span>
+                                    <span class="action-text">View Schedule</span>
+                                </a>
+                                <a href="./manage-member-enrollment.html" class="action-btn secondary">
+                                    <span class="action-icon">➕</span>
+                                    <span class="action-text">Enroll in Classes</span>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Error Display -->
+                <div id="error" class="error-state" style="display: none;"></div>
+            </div>
+        </main>
     </div>
-    <nav class="nav" role="navigation">
-      <a href="./member-dashboard.html">Dashboard</a>
-      <a href="./member-classes.html">Schedule</a>
-      <a href="./manage-member-enrollment.html">Enroll</a>
-      <a href="./manage-profile.html" style="background:rgba(255,255,255,0.06);">Profile</a>
-      <a href="#" id="sidebarLogout">Logout</a>
-    </nav>
-  </aside>
-  <main class="main">
-    <div class="topbar">
-      <h1>Manage Profile</h1>
-    </div>
-    <div class="card">
-      <div class="card-head">Edit My Contact Details</div>
-      <form id="profileForm" class="card-body" autocomplete="off">
-        <div class="field-group">
-          <label for="profileEmail">Email address</label>
-          <input type="email" id="profileEmail" name="email" required autocomplete="email"/>
-        </div>
-        <div class="field-group">
-          <label for="profilePhone">Phone</label>
-          <input type="text" id="profilePhone" name="phone" required autocomplete="tel"/>
-        </div>
-        <button type="submit" class="btn btn-primary">Save changes</button>
-        <div id="profileMsg" class="msg" style="display:none;"></div>
-      </form>
-    </div>
-  </main>
-</div>
-<script>
-const API_URL = 'http://localhost:8080';
-const $ = id => document.getElementById(id);
-function getAuth(){ try { return JSON.parse(localStorage.getItem('authUser') || 'null'); } catch(e){ return null; } }
-function memberIdFromAuth(){ const a=getAuth(); if (!a||!a.user) return null; const u=a.user; return u.memberId||u.member_id||u._id||u.id||null; }
-function logout(){ localStorage.removeItem('authUser'); window.location.href = './member-login.html'; }
 
-document.addEventListener('DOMContentLoaded', () => {
-  if ($('sidebarLogout')) $('sidebarLogout').addEventListener('click', e => { e.preventDefault(); logout(); });
-
-  // Load current member info
-  loadProfile();
-
-  // Listen for update submit
-  $('profileForm').addEventListener('submit', async function(ev){
-    ev.preventDefault();
-    updateProfile();
-  });
-});
-
-async function loadProfile() {
-  const memberId = memberIdFromAuth();
-  if (!memberId) return logout();
-
-  $('profileMsg').style.display = "none";
-  try {
-    const res = await fetch(`${API_URL}/api/members/${encodeURIComponent(memberId)}`);
-    if (!res.ok) throw new Error("Failed to load member profile");
-    const member = (await res.json()).data;
-    $('profileEmail').value = member.email || '';
-    $('profilePhone').value = member.phone || '';
-  } catch (e) {
-    $('profileMsg').className = "msg err";
-    $('profileMsg').style.display = "";
-    $('profileMsg').textContent = "Failed to load profile. Try re-logging in.";
-  }
-}
-
-async function updateProfile() {
-  const memberId = memberIdFromAuth();
-  if (!memberId) return logout();
-
-  const email = $('profileEmail').value.trim();
-  const phone = $('profilePhone').value.trim();
-
-  $('profileMsg').style.display = "none";
-  try {
-    const res = await fetch(`${API_URL}/api/members/${encodeURIComponent(memberId)}/profile`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, phone })
-    });
-    const js = await res.json();
-    if (!res.ok) throw new Error(js.error || js.message || 'Update failed');
-
-    // update localStorage with new data
-    const auth = getAuth(); 
-    if (auth && js.data) { auth.user = js.data; localStorage.setItem('authUser', JSON.stringify(auth)); }
-
-    $('profileMsg').className = "msg ok"; 
-    $('profileMsg').textContent = "Changes saved!"; 
-    $('profileMsg').style.display = "";
-  } catch (e) {
-    $('profileMsg').className = "msg err";
-    $('profileMsg').textContent = "Error: " + (e.message || 'Update failed');
-    $('profileMsg').style.display = "";
-  }
-}
-</script>
+    <script src="./member-js/member-profile.js"></script>
 </body>
 </html>

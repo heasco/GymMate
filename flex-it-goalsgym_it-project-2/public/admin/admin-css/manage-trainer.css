@@ -1,35 +1,317 @@
-/* Reuse the visual style from manage-members.css */
-@import url('manage-members.css');
+/* ========================================
+   MANAGE TRAINERS PAGE - GOALS GYM THEME
+   ======================================== */
 
-/* Add/override as needed for trainer management */
-
-#trainerList .action-button {
-  background-color: #06911d;
-  color: #fff;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 4px;
-  cursor: pointer;
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0;
 }
 
-#trainerList .action-button:hover {
-  background-color: #058115;
+/* Sections */
+.section {
+    display: none;
+    background: rgba(30, 30, 30, 0.9);
+    padding: 2.5rem;
+    border-radius: var(--radius);
+    margin-bottom: 2rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(10px);
 }
 
-#editTrainerSection .nav-buttons {
-  margin-top: 20px;
+.section.active {
+    display: block;
+    animation: fadeIn 0.3s ease-in-out;
 }
 
-#editTrainerSection .action-button {
-  margin-right: 10px;
-  background-color: #06911d;
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
-#editTrainerSection .action-button:hover {
-  background-color: #058115;
+.section h2 {
+    color: var(--accent);
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 2px solid var(--primary);
+    padding-bottom: 0.5rem;
 }
 
-/* Additional tweaks for trainer form */
-#editTrainerSection .form-group {
-  margin-bottom: 16px;
+.section h3 {
+    color: var(--accent);
+    font-size: 1.4rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+}
+
+/* Server Status */
+.server-status {
+    padding: 1rem;
+    margin-bottom: 2rem;
+    border-radius: var(--radius);
+    font-weight: 600;
+    text-align: center;
+    font-size: 0.9rem;
+    border: 1px solid;
+}
+
+.server-connected { 
+    background: rgba(40, 167, 69, 0.1); 
+    color: #28a745;
+    border-color: #28a745;
+}
+
+.server-disconnected { 
+    background: rgba(220, 53, 69, 0.1); 
+    color: #dc3545;
+    border-color: #dc3545;
+}
+
+/* Messages */
+.success-message,
+.error-message {
+    display: none;
+    padding: 1rem 1.5rem;
+    margin-bottom: 2rem;
+    border-radius: var(--radius);
+    font-weight: 600;
+    text-align: center;
+}
+
+.success-message {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--highlight) 100%);
+    color: var(--accent);
+    box-shadow: 0 4px 15px rgba(179, 0, 0, 0.3);
+}
+
+.error-message {
+    background: rgba(220, 53, 69, 0.1);
+    color: #dc3545;
+    border: 1px solid #dc3545;
+}
+
+/* Form Groups */
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group label {
+    color: var(--accent);
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    display: block;
+    font-size: 0.95rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Form Inputs */
+input[type="text"],
+input[type="email"],
+select {
+    width: 100%;
+    padding: 1rem 1.2rem;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: var(--radius);
+    font-size: 1rem;
+    background: rgba(0, 0, 0, 0.5);
+    color: var(--accent);
+    font-family: 'Poppins', sans-serif;
+    transition: var(--transition);
+}
+
+input[type="text"]:focus,
+input[type="email"]:focus,
+select:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px rgba(179, 0, 0, 0.2);
+    background: rgba(0, 0, 0, 0.7);
+}
+
+/* Navigation Buttons */
+.nav-buttons {
+    margin-top: 2rem;
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+/* Buttons */
+.action-button {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--highlight) 100%);
+    color: var(--accent);
+    padding: 1rem 2rem;
+    border: none;
+    border-radius: var(--radius);
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    flex: 1;
+    min-width: 200px;
+    box-shadow: 0 4px 15px rgba(179, 0, 0, 0.3);
+}
+
+.action-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(255, 51, 51, 0.4);
+}
+
+/* Trainer List */
+.trainer-list {
+    margin-top: 2rem;
+}
+
+.trainer-list table {
+    width: 100%;
+    border-collapse: collapse;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: var(--radius);
+    overflow: hidden;
+}
+
+.trainer-list th,
+.trainer-list td {
+    padding: 1rem 1.2rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    text-align: left;
+}
+
+.trainer-list th {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--highlight) 100%);
+    color: var(--accent);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-size: 0.9rem;
+}
+
+.trainer-list tr:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+.trainer-list tr:last-child td {
+    border-bottom: none;
+}
+
+/* Search Group */
+.search-group {
+    position: relative;
+}
+
+/* Autocomplete Suggestions */
+.autocomplete-suggestions {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: rgba(0, 0, 0, 0.9);
+    border: 1px solid var(--primary);
+    border-radius: var(--radius);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+    z-index: 1000;
+    max-height: 250px;
+    overflow-y: auto;
+    display: none;
+    backdrop-filter: blur(10px);
+}
+
+.autocomplete-suggestion {
+    padding: 1rem 1.2rem;
+    cursor: pointer;
+    color: var(--neutral);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    transition: var(--transition);
+}
+
+.autocomplete-suggestion:hover {
+    background: rgba(179, 0, 0, 0.2);
+    color: var(--accent);
+}
+
+.autocomplete-suggestion:last-child {
+    border-bottom: none;
+}
+
+/* Availability Badges */
+.availability-badge {
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.availability-available {
+    background: rgba(40, 167, 69, 0.2);
+    color: #28a745;
+    border: 1px solid #28a745;
+}
+
+.availability-unavailable {
+    background: rgba(220, 53, 69, 0.2);
+    color: #dc3545;
+    border: 1px solid #dc3545;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .section {
+        padding: 1.5rem;
+    }
+    
+    .nav-buttons {
+        flex-direction: column;
+    }
+    
+    .action-button {
+        min-width: 100%;
+    }
+    
+    .trainer-list th,
+    .trainer-list td {
+        padding: 0.8rem 1rem;
+        font-size: 0.9rem;
+    }
+    
+    .trainer-list table {
+        display: block;
+        overflow-x: auto;
+    }
+}
+
+@media (max-width: 480px) {
+    .section {
+        padding: 1rem;
+    }
+    
+    .section h2 {
+        font-size: 1.5rem;
+    }
+    
+    input[type="text"],
+    input[type="email"],
+    select {
+        padding: 0.8rem 1rem;
+    }
+    
+    .trainer-list td:nth-child(3),
+    .trainer-list th:nth-child(3),
+    .trainer-list td:nth-child(4),
+    .trainer-list th:nth-child(4) {
+        display: none;
+    }
+    
+    .availability-badge {
+        font-size: 0.7rem;
+        padding: 0.4rem 0.8rem;
+    }
 }

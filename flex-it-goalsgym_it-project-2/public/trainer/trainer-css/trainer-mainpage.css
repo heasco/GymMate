@@ -1,27 +1,54 @@
+/* ========================================
+   TRAINER MAIN PAGE - GOALS GYM THEME
+   ======================================== */
+
+/* Trainer Greeting Section */
 .trainer-greeting {
     margin-bottom: 30px;
+    text-align: center;
 }
+
 .trainer-greeting h2 {
     font-size: 2em;
     margin-bottom: 5px;
     color: #fff;
+    line-height: 1.2;
 }
+
 .specialization {
     font-size: 1.15em;
     color: #ff0000;
     margin-bottom: 15px;
 }
+
+/* Dashboard Metrics */
+.dashboard-metrics {
+    margin-bottom: 1.5em;
+    color: #f3f4f6;
+}
+
+/* Section Styling */
 .section {
     background-color: #2d2d2d;
     padding: 24px 20px;
     border-radius: 8px;
     box-shadow: 0 2px 10px rgba(0,0,0,0.2);
 }
+
 .section h3 {
     color: #fff;
     margin-bottom: 18px;
 }
-.schedule-table {
+
+/* Status Messages */
+.loading, .no-classes, .error {
+    color: #ff0000;
+    padding: 15px;
+    text-align: center;
+}
+
+/* Table Styling */
+.dashboard-table {
     width: 100%;
     border-collapse: collapse;
     background: #222;
@@ -29,30 +56,65 @@
     border-radius: 5px;
     overflow: hidden;
 }
-.schedule-table th, .schedule-table td {
+
+.dashboard-table th, .dashboard-table td {
     padding: 12px;
     border: 1px solid #444;
+    text-align: center;
 }
-.schedule-table th {
+
+.dashboard-table th {
     background: #3a3a3a;
     color: #ff0000;
 }
-.schedule-table tr:nth-child(even) {
+
+.dashboard-table td:first-child, 
+.dashboard-table th:first-child {
+    text-align: left;
+}
+
+.dashboard-table tr:nth-child(even) {
     background-color: #292929;
 }
-.no-classes, .loading, .error {
-    color: #ff0000;
-    padding: 15px;
-    text-align: center;
+
+/* Attendance Badges */
+.attendance-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 12px;
+    background: #334155;
+    color: #f1f5f9;
+    font-weight: 600;
+    font-size: 1em;
+    margin-left: 8px;
 }
+
+.high-badge {
+    background: #2563eb !important;
+    color: #f1f5f9 !important;
+}
+
+.low-badge {
+    background: #facc15 !important;
+    color: #78350f !important;
+}
+
+.streak-badge {
+    background: #eab308 !important;
+    color: #78350f !important;
+}
+
+/* Responsive Design */
 @media (max-width: 600px) {
-    .section, .container {
+    .section {
         padding: 10px !important;
     }
+    
     .trainer-greeting h2 {
         font-size: 1.3em;
     }
-    .schedule-table th, .schedule-table td {
+    
+    .dashboard-table th, .dashboard-table td {
         padding: 8px;
         font-size: 0.9em;
     }

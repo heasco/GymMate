@@ -1,0 +1,485 @@
+:root {
+  --primary: #B30000;
+  --primary-dark: #8A0000;
+  --primary-light: #FF3333;
+  --accent: #FFFFFF;
+  --bg-main: #000000;
+  --bg-section: #121212;
+  --bg-card: #0A0A0A;
+  --bg-details: #1A1A1A;
+  --field-bg: #1A1A1A;
+  --border: #2D2D2D;
+  --text-main: #FFFFFF;
+  --text-label: #BFBFBF;
+  --text-muted: #7F8C8D;
+  --danger: #DC3545;
+  --success: #28A745;
+  --warning: #FFC107;
+  --info: #17A2B8;
+  --radius: 8px;
+  --radius-big: 12px;
+  --shadow: 0 4px 20px rgba(179, 0, 0, 0.15);
+  --transition: all 0.3s ease;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    color: var(--text-label);
+}
+
+h1, h2, h3, h4 {
+    color: var(--accent);
+    margin-bottom: 20px;
+    font-weight: 700;
+}
+
+h1 {
+    font-size: 28px;
+    border-bottom: 2px solid var(--primary);
+    padding-bottom: 10px;
+    color: var(--primary);
+}
+
+h2 {
+    font-size: 24px;
+    color: var(--primary);
+}
+
+h3 {
+    font-size: 20px;
+    color: var(--accent);
+}
+
+.card {
+    background: linear-gradient(135deg, var(--bg-card) 0%, var(--bg-section) 100%);
+    border-radius: var(--radius-big);
+    box-shadow: var(--shadow);
+    padding: 25px;
+    margin-bottom: 25px;
+    border: 1px solid var(--border);
+    transition: var(--transition);
+}
+
+.card:hover {
+    box-shadow: 0 6px 25px rgba(179, 0, 0, 0.25);
+    border-color: var(--primary);
+}
+
+.section {
+    margin-bottom: 30px;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: var(--text-label);
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+input[type="text"], input[type="date"] {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid var(--border);
+    border-radius: var(--radius);
+    font-size: 16px;
+    background: var(--field-bg);
+    color: var(--text-main);
+    transition: var(--transition);
+    outline: none;
+    box-sizing: border-box;
+}
+
+input[type="text"]:focus, input[type="date"]:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(179, 0, 0, 0.1);
+}
+
+.hidden { 
+    display: none !important; 
+}
+
+.loading {
+    text-align: center;
+    padding: 20px;
+    color: var(--text-muted);
+    font-weight: 600;
+    background: var(--bg-details);
+    border-radius: var(--radius);
+    margin: 15px 0;
+}
+
+.server-status {
+    padding: 12px 20px;
+    border-radius: var(--radius);
+    margin-bottom: 25px;
+    text-align: center;
+    font-weight: 600;
+    border: 1px solid transparent;
+    transition: var(--transition);
+}
+
+.server-connected {
+    background: linear-gradient(135deg, var(--success) 0%, #1E7E34 100%);
+    color: var(--accent);
+}
+
+.server-disconnected {
+    background: linear-gradient(135deg, var(--danger) 0%, #C82333 100%);
+    color: var(--accent);
+}
+
+.success-message {
+    background: linear-gradient(135deg, var(--success) 0%, #1E7E34 100%);
+    color: var(--accent);
+    padding: 12px 20px;
+    border-radius: var(--radius);
+    margin-bottom: 20px;
+    font-weight: 600;
+    border: 1px solid transparent;
+}
+
+.error-message {
+    background: linear-gradient(135deg, var(--danger) 0%, #C82333 100%);
+    color: var(--accent);
+    padding: 12px 20px;
+    border-radius: var(--radius);
+    margin-bottom: 20px;
+    font-weight: 600;
+    border: 1px solid transparent;
+}
+
+/* Details & Summary Styles */
+details {
+    margin-bottom: 15px;
+    border: 2px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    background: var(--bg-details);
+    transition: var(--transition);
+}
+
+details:hover {
+    border-color: var(--primary);
+    box-shadow: 0 4px 15px rgba(179, 0, 0, 0.2);
+}
+
+details[open] {
+    border-color: var(--primary);
+    box-shadow: 0 4px 20px rgba(179, 0, 0, 0.25);
+}
+
+summary {
+    padding: 15px 20px;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    color: var(--accent);
+    cursor: pointer;
+    font-weight: 700;
+    font-size: 16px;
+    transition: var(--transition);
+    list-style: none;
+    position: relative;
+}
+
+summary:hover {
+    background: linear-gradient(135deg, var(--primary-light) 0%, var(--primary) 100%);
+}
+
+summary::-webkit-details-marker {
+    display: none;
+}
+
+summary:after {
+    content: '▶';
+    position: absolute;
+    right: 20px;
+    transition: transform 0.3s ease;
+}
+
+details[open] summary:after {
+    transform: rotate(90deg);
+}
+
+.class-details {
+    padding: 20px;
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.trainer-info {
+    margin-bottom: 20px;
+    padding: 15px;
+    background: var(--bg-card);
+    border-radius: var(--radius);
+    border-left: 4px solid var(--primary);
+    color: var(--text-main);
+}
+
+.trainer-info h3 {
+    color: var(--primary);
+    margin-bottom: 10px;
+    font-size: 18px;
+}
+
+/* Enrollment Filters */
+.enrollment-filters {
+    display: flex;
+    align-items: center;
+    margin: 20px 0;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding: 15px;
+    background: var(--bg-card);
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+}
+
+.enrollment-filters label {
+    margin-bottom: 0;
+    color: var(--text-main);
+    text-transform: none;
+    letter-spacing: normal;
+}
+
+.btn-filter, .btn-next3 {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    color: var(--accent);
+    border: none;
+    padding: 10px 20px;
+    border-radius: var(--radius);
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 14px;
+    transition: var(--transition);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    min-width: 120px;
+}
+
+.btn-filter:hover, .btn-next3:hover {
+    background: linear-gradient(135deg, var(--primary-light) 0%, var(--primary) 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(179, 0, 0, 0.3);
+}
+
+/* Session Groups */
+.session-group {
+    margin: 20px 0;
+    padding: 15px;
+    background: var(--bg-card);
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+}
+
+.session-date {
+    margin-bottom: 12px;
+    color: var(--primary);
+    font-weight: 700;
+    font-size: 16px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 8px;
+}
+
+.members-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    color: var(--text-main);
+}
+
+.members-list li {
+    padding: 10px 15px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: var(--transition);
+}
+
+.members-list li:hover {
+    background: rgba(179, 0, 0, 0.1);
+}
+
+.members-list li:last-child {
+    border-bottom: none;
+}
+
+/* Badge Styles */
+.badge {
+    display: inline-block;
+    padding: 4px 12px;
+    font-size: 11px;
+    font-weight: 700;
+    border-radius: 20px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-left: 10px;
+}
+
+.badge.scheduled { 
+    background: linear-gradient(135deg, var(--info) 0%, #138496 100%);
+    color: var(--accent);
+}
+
+.badge.attended { 
+    background: linear-gradient(135deg, var(--success) 0%, #1E7E34 100%);
+    color: var(--accent);
+}
+
+.badge.missed { 
+    background: linear-gradient(135deg, var(--warning) 0%, #E0A800 100%);
+    color: #000;
+}
+
+.badge.cancelled { 
+    background: linear-gradient(135deg, var(--danger) 0%, #C82333 100%);
+    color: var(--accent);
+}
+
+/* Feedback Styles */
+.feedback-section {
+    margin-top: 25px;
+    padding-top: 20px;
+    border-top: 2px solid var(--border);
+}
+
+.feedback-list {
+    margin: 15px 0;
+    padding: 0;
+    list-style: none;
+}
+
+.feedback-list li {
+    background: var(--bg-card);
+    margin-bottom: 12px;
+    border-radius: var(--radius);
+    padding: 15px;
+    border-left: 4px solid var(--primary);
+    transition: var(--transition);
+}
+
+.feedback-list li:hover {
+    transform: translateX(5px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.delete-feedback-btn {
+    background: linear-gradient(135deg, var(--danger) 0%, #C82333 100%);
+    color: var(--accent);
+    border: none;
+    padding: 8px 16px;
+    border-radius: var(--radius);
+    font-size: 12px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: var(--transition);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 8px;
+}
+
+.delete-feedback-btn:hover {
+    background: linear-gradient(135deg, #E74C3C 0%, var(--danger) 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+}
+
+.no-members, .error {
+    padding: 15px;
+    text-align: center;
+    border-radius: var(--radius);
+    font-weight: 600;
+    margin: 15px 0;
+}
+
+.no-members {
+    background: var(--bg-card);
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+}
+
+.error {
+    background: linear-gradient(135deg, var(--danger) 0%, #C82333 100%);
+    color: var(--accent);
+    border: 1px solid transparent;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .container {
+        padding: 15px;
+    }
+    
+    .card {
+        padding: 20px 15px;
+    }
+    
+    .enrollment-filters {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+    }
+    
+    .btn-filter, .btn-next3 {
+        width: 100%;
+        margin: 5px 0;
+    }
+    
+    .members-list li {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+    
+    .badge {
+        margin-left: 0;
+        align-self: flex-start;
+    }
+    
+    h1 {
+        font-size: 24px;
+    }
+    
+    h2 {
+        font-size: 20px;
+    }
+    
+    summary {
+        padding: 12px 15px;
+        font-size: 14px;
+    }
+    
+    .class-details {
+        padding: 15px;
+    }
+}
+
+@media (max-width: 480px) {
+    .container {
+        padding: 10px;
+    }
+    
+    .card {
+        padding: 15px 10px;
+    }
+    
+    .enrollment-filters {
+        padding: 10px;
+    }
+    
+    input[type="text"], input[type="date"] {
+        padding: 10px 12px;
+    }
+}

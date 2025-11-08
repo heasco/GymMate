@@ -1,328 +1,296 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Trainer Availability - GOALS Gym</title>
-  <link rel="stylesheet" href="./trainer-css/trainer-availability.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trainer Availability - GOALS Gym</title>
+    <link rel="stylesheet" href="../admin/admin-css/admin-mainpage.css">
+    <link rel="stylesheet" href="./trainer-css/trainer-availability.css">
 </head>
 <body>
-  <div class="admin-container">
-    <!-- Sidebar -->
-    <aside class="sidebar">
-      <div class="sidebar-header">
-        <h2>GOALS Gym Trainer</h2>
-      </div>
-      <nav class="sidebar-nav">
-        <a href="trainer-mainpage.html">Dashboard</a>
-        <a href="view-and-change-schedule.html">My Classes & Schedule</a>
-        <a href="trainer-profile-management.html">Profile</a>
-        <a href="view-classes-feedback.html">Feedback</a>
-        <a href="trainer-availability.html" class="active">Availability</a>
-      </nav>
-    </aside>
-
-    <!-- Main Content -->
-    <main class="main-content">
-      <header class="header">
-        <button class="menu-toggle" id="menuToggle">☰</button>
-        <h1>Trainer Availability & Leave Management</h1>
-        <button class="logout-btn" id="logoutBtn">Logout</button>
-      </header>
-
-      <div class="container">
-        <section class="availability-form-section">
-          <h2>Set Weekly Availability</h2>
-          <form id="availabilityForm">
-            <div class="form-group">
-              <label>Select Days & Time Blocks:</label>
-              <div class="weekdays-blocks">
-                <!-- Days and time blocks (morning/afternoon/evening) -->
-                <div class="weekday-block" data-day="monday">
-                  <span>Monday</span>
-                  <label><input type="checkbox" name="monday[]" value="morning">Morning</label>
-                  <label><input type="checkbox" name="monday[]" value="afternoon">Afternoon</label>
-                  <label><input type="checkbox" name="monday[]" value="evening">Evening</label>
-                </div>
-                <div class="weekday-block" data-day="tuesday">
-                  <span>Tuesday</span>
-                  <label><input type="checkbox" name="tuesday[]" value="morning">Morning</label>
-                  <label><input type="checkbox" name="tuesday[]" value="afternoon">Afternoon</label>
-                  <label><input type="checkbox" name="tuesday[]" value="evening">Evening</label>
-                </div>
-                <div class="weekday-block" data-day="wednesday">
-                  <span>Wednesday</span>
-                  <label><input type="checkbox" name="wednesday[]" value="morning">Morning</label>
-                  <label><input type="checkbox" name="wednesday[]" value="afternoon">Afternoon</label>
-                  <label><input type="checkbox" name="wednesday[]" value="evening">Evening</label>
-                </div>
-                <div class="weekday-block" data-day="thursday">
-                  <span>Thursday</span>
-                  <label><input type="checkbox" name="thursday[]" value="morning">Morning</label>
-                  <label><input type="checkbox" name="thursday[]" value="afternoon">Afternoon</label>
-                  <label><input type="checkbox" name="thursday[]" value="evening">Evening</label>
-                </div>
-                <div class="weekday-block" data-day="friday">
-                  <span>Friday</span>
-                  <label><input type="checkbox" name="friday[]" value="morning">Morning</label>
-                  <label><input type="checkbox" name="friday[]" value="afternoon">Afternoon</label>
-                  <label><input type="checkbox" name="friday[]" value="evening">Evening</label>
-                </div>
-                <div class="weekday-block" data-day="saturday">
-                  <span>Saturday</span>
-                  <label><input type="checkbox" name="saturday[]" value="morning">Morning</label>
-                  <label><input type="checkbox" name="saturday[]" value="afternoon">Afternoon</label>
-                  <label><input type="checkbox" name="saturday[]" value="evening">Evening</label>
-                </div>
-                <div class="weekday-block" data-day="sunday">
-                  <span>Sunday</span>
-                  <label><input type="checkbox" name="sunday[]" value="morning">Morning</label>
-                  <label><input type="checkbox" name="sunday[]" value="afternoon">Afternoon</label>
-                  <label><input type="checkbox" name="sunday[]" value="evening">Evening</label>
-                </div>
-              </div>
+    <div class="admin-container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h2>GOALS Gym Trainer</h2>
             </div>
-            <button type="submit">Save Availability</button>
-            <div id="availabilityStatus" class="form-status"></div>
-          </form>
-        </section>
+            <nav class="sidebar-nav">
+                <a href="trainer-mainpage.html"><span>Dashboard</span></a>
+                <a href="view-and-change-schedule.html"><span>My Classes & Schedule</span></a>
+                <a href="trainer-profile-management.html"><span>Profile</span></a>
+                <a href="view-classes-feedback.html"><span>Feedback</span></a>
+                <a href="trainer-availability.html" class="active"><span>Availability</span></a>
+            </nav>
+        </aside>
 
-        <section class="leave-section">
-          <h2>Mark Unavailability / Leave Days</h2>
-          <form id="leaveForm">
-            <label for="leaveDate">Select Date:</label>
-            <input type="date" id="leaveDate" name="leaveDate" required>
-            <label for="leaveReason">Reason (optional):</label>
-            <input type="text" id="leaveReason" name="leaveReason" placeholder="E.g. Sick, Personal, Vacation">
-            <button type="submit">Mark as Unavailable</button>
-            <div id="leaveStatus" class="form-status"></div>
-          </form>
-          <div class="leave-history">
-            <h3>Upcoming Unavailable Days</h3>
-            <ul id="leaveList"></ul>
-          </div>
-        </section>
+        <header class="header">
+            <button class="menu-toggle" id="menuToggle">☰</button>
+            <h1>Trainer Availability & Leave Management</h1>
+            <button class="logout-btn" id="logoutBtn">Logout</button>
+        </header>
 
-        <section class="current-availability">
-          <h2>Current Availability & Schedule</h2>
-          <div id="currentAvailability"></div>
-          <div id="currentSchedule"></div>
-        </section>
-      </div>
-    </main>
-  </div>
+        <main class="main-content">
+            <div class="container">
+                <section class="leave-section">
+                    <h2>Mark Unavailability / Leave Days</h2>
+                    <form id="leaveForm">
+                        <div class="form-group">
+                            <label for="leaveDate">Select Date:</label>
+                            <input type="date" id="leaveDate" name="leaveDate" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="leaveReason">Reason (optional):</label>
+                            <input type="text" id="leaveReason" name="leaveReason" placeholder="E.g. Sick, Personal, Vacation">
+                        </div>
+                        <button type="submit" class="action-button">Mark as Unavailable</button>
+                        <div id="leaveStatus" class="form-status"></div>
+                    </form>
+                    <div class="leave-history">
+                        <h3>Upcoming Unavailable Days</h3>
+                        <ul id="leaveList"></ul>
+                    </div>
+                </section>
 
-  <script>
-  // Use your backend API location here:
-  const API_BASE = 'http://localhost:8080';
+                <section class="current-availability">
+                    <h2>Set Your Weekly Availability</h2>
+                    <div class="schedule-instructions">
+                        <p>Click once on a time slot to mark as <strong>Available</strong> (Green)</p>
+                        <p>Click twice on a time slot to mark as <strong>Not Available</strong> (Red)</p>
+                        <button id="clearSchedule" class="action-button secondary">Clear All Availability</button>
+                    </div>
+                    <div class="weekly-schedule">
+                        <h3>Weekly Availability Schedule</h3>
+                        <div class="schedule-table-container">
+                            <table class="weekly-schedule-table">
+                                <thead>
+                                    <tr>
+                                        <th>Time</th>
+                                        <th>Monday</th>
+                                        <th>Tuesday</th>
+                                        <th>Wednesday</th>
+                                        <th>Thursday</th>
+                                        <th>Friday</th>
+                                        <th>Saturday</th>
+                                        <th>Sunday</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="scheduleBody">
+                                    <!-- Schedule will be generated by JavaScript -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="availability-summary">
+                        <h4>Availability Summary</h4>
+                        <div id="summaryStats"></div>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
 
-  document.addEventListener('DOMContentLoaded', async function () {
-    const menuToggle = document.getElementById('menuToggle');
-    const sidebar = document.querySelector('.sidebar');
-    const logoutBtn = document.getElementById('logoutBtn');
-    const authUser = JSON.parse(localStorage.getItem('authUser'));
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const menuToggle = document.getElementById('menuToggle');
+            const sidebar = document.querySelector('.sidebar');
+            const logoutBtn = document.getElementById('logoutBtn');
+            const authUser = JSON.parse(localStorage.getItem('authUser'));
+            
+            if (!authUser || !authUser.user || authUser.role !== "trainer" || (Date.now() - authUser.timestamp > 3600000)) {
+                localStorage.removeItem('authUser');
+                window.location.href = '../trainer-login.html';
+                return;
+            }
+            
+            menuToggle.addEventListener('click', () => sidebar.classList.toggle('collapsed'));
+            
+            logoutBtn.addEventListener('click', () => {
+                localStorage.removeItem('authUser');
+                window.location.href = '../trainer-login.html';
+            });
+            
+            document.addEventListener('click', (e) => {
+                if (window.innerWidth <= 768 && !sidebar.contains(e.target) && !menuToggle.contains(e.target)) {
+                    sidebar.classList.remove('collapsed');
+                }
+            });
 
-    // Robust trainerId extraction
-    const trainerObj = authUser && authUser.user;
-    const trainerId =
-      (trainerObj && (trainerObj.trainerid || trainerObj.trainer_id || trainerObj.username || trainerObj.id))
-      ? (trainerObj.trainerid || trainerObj.trainer_id || trainerObj.username || trainerObj.id)
-      : null;
+            // Initialize schedule data
+            let scheduleData = JSON.parse(localStorage.getItem('trainerSchedule')) || {};
+            let leaveDays = JSON.parse(localStorage.getItem('trainerLeaveDays')) || [];
 
-    if (
-      !authUser ||
-      !authUser.user ||
-      authUser.role !== 'trainer' ||
-      Date.now() - authUser.timestamp > 3600000 ||
-      !trainerId
-    ) {
-      localStorage.removeItem('authUser');
-      window.location.href = '../trainer-login.html';
-      return;
-    }
+            // Generate empty schedule
+            generateSchedule();
+            loadLeaveHistory();
+            updateSummary();
 
-    logoutBtn.addEventListener('click', () => {
-      localStorage.removeItem('authUser');
-      window.location.href = '../trainer-login.html';
-    });
+            // Clear schedule button
+            document.getElementById('clearSchedule').addEventListener('click', function() {
+                if (confirm('Are you sure you want to clear all availability?')) {
+                    scheduleData = {};
+                    localStorage.setItem('trainerSchedule', JSON.stringify(scheduleData));
+                    generateSchedule();
+                    updateSummary();
+                }
+            });
 
-    menuToggle.addEventListener('click', () => {
-      sidebar.classList.toggle('collapsed');
-    });
+            // Leave form submission
+            document.getElementById('leaveForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                markLeave();
+            });
 
-    // === HELPER: Set form checkboxes to match availability object ===
-    function setAvailabilityForm(availability) {
-      document.querySelectorAll('.weekday-block').forEach(block => {
-        const day = block.getAttribute('data-day');
-        const checkedShifts = availability && availability[day] ? availability[day] : [];
-        block.querySelectorAll('input[type="checkbox"]').forEach(cb => {
-          cb.checked = checkedShifts.includes(cb.value);
+            function generateSchedule() {
+                const scheduleBody = document.getElementById('scheduleBody');
+                scheduleBody.innerHTML = '';
+                
+                const timeSlots = [
+                    '6:00 AM', '7:00 AM', '8:00 AM', '9:00 AM', '10:00 AM', '11:00 AM',
+                    '12:00 PM', '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM', '5:00 PM',
+                    '6:00 PM', '7:00 PM', '8:00 PM', '9:00 PM'
+                ];
+
+                const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+
+                timeSlots.forEach(time => {
+                    const row = document.createElement('tr');
+                    const timeCell = document.createElement('td');
+                    timeCell.className = 'time-slot';
+                    timeCell.textContent = time;
+                    row.appendChild(timeCell);
+
+                    days.forEach(day => {
+                        const cell = document.createElement('td');
+                        cell.className = 'schedule-slot';
+                        cell.setAttribute('data-day', day);
+                        cell.setAttribute('data-time', time);
+                        
+                        // Set initial state from saved data
+                        const slotKey = `${day}_${time}`;
+                        if (scheduleData[slotKey] === 'available') {
+                            cell.className = 'schedule-slot available-slot';
+                            cell.textContent = 'Available';
+                        } else if (scheduleData[slotKey] === 'unavailable') {
+                            cell.className = 'schedule-slot unavailable-slot';
+                            cell.textContent = 'Not Available';
+                        } else {
+                            cell.className = 'schedule-slot empty-slot';
+                            cell.textContent = 'Click to set';
+                        }
+
+                        // Add click handler
+                        cell.addEventListener('click', function() {
+                            handleSlotClick(this);
+                        });
+                        
+                        row.appendChild(cell);
+                    });
+
+                    scheduleBody.appendChild(row);
+                });
+            }
+
+            function handleSlotClick(cell) {
+                const day = cell.getAttribute('data-day');
+                const time = cell.getAttribute('data-time');
+                const slotKey = `${day}_${time}`;
+                
+                // Toggle states: empty -> available -> unavailable -> empty
+                if (cell.classList.contains('empty-slot')) {
+                    // First click: set to available
+                    cell.className = 'schedule-slot available-slot';
+                    cell.textContent = 'Available';
+                    scheduleData[slotKey] = 'available';
+                } else if (cell.classList.contains('available-slot')) {
+                    // Second click: set to unavailable
+                    cell.className = 'schedule-slot unavailable-slot';
+                    cell.textContent = 'Not Available';
+                    scheduleData[slotKey] = 'unavailable';
+                } else if (cell.classList.contains('unavailable-slot')) {
+                    // Third click: set back to empty
+                    cell.className = 'schedule-slot empty-slot';
+                    cell.textContent = 'Click to set';
+                    delete scheduleData[slotKey];
+                }
+                
+                // Save to localStorage
+                localStorage.setItem('trainerSchedule', JSON.stringify(scheduleData));
+                updateSummary();
+            }
+
+            function markLeave() {
+                const date = document.getElementById('leaveDate').value;
+                const reason = document.getElementById('leaveReason').value;
+                const status = document.getElementById('leaveStatus');
+                
+                if (date) {
+                    if (!leaveDays.some(leave => leave.date === date)) {
+                        leaveDays.push({ date, reason: reason || 'No reason provided' });
+                        localStorage.setItem('trainerLeaveDays', JSON.stringify(leaveDays));
+                        
+                        status.textContent = "Successfully marked as unavailable!";
+                        status.className = "form-status success";
+                        document.getElementById('leaveForm').reset();
+                        
+                        loadLeaveHistory();
+                    } else {
+                        status.textContent = "This date is already marked as unavailable!";
+                        status.className = "form-status error";
+                    }
+                }
+            }
+
+            function loadLeaveHistory() {
+                const leaveList = document.getElementById('leaveList');
+                leaveList.innerHTML = '';
+                
+                if (leaveDays.length === 0) {
+                    leaveList.innerHTML = '<li>No upcoming unavailable days.</li>';
+                    return;
+                }
+                
+                leaveDays.forEach(leave => {
+                    const li = document.createElement('li');
+                    li.innerHTML = `
+                        ${leave.date} (${leave.reason})
+                        <button class="remove-leave" data-date="${leave.date}">×</button>
+                    `;
+                    leaveList.appendChild(li);
+                });
+
+                // Add remove event listeners
+                document.querySelectorAll('.remove-leave').forEach(button => {
+                    button.addEventListener('click', function() {
+                        const dateToRemove = this.getAttribute('data-date');
+                        leaveDays = leaveDays.filter(leave => leave.date !== dateToRemove);
+                        localStorage.setItem('trainerLeaveDays', JSON.stringify(leaveDays));
+                        loadLeaveHistory();
+                    });
+                });
+            }
+
+            function updateSummary() {
+                const summaryStats = document.getElementById('summaryStats');
+                const totalSlots = 7 * 16; // 7 days * 16 time slots
+                const availableSlots = Object.values(scheduleData).filter(status => status === 'available').length;
+                const unavailableSlots = Object.values(scheduleData).filter(status => status === 'unavailable').length;
+                const emptySlots = totalSlots - availableSlots - unavailableSlots;
+                
+                summaryStats.innerHTML = `
+                    <div class="stat-item">
+                        <span class="stat-label">Available Slots:</span>
+                        <span class="stat-value available">${availableSlots}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Unavailable Slots:</span>
+                        <span class="stat-value unavailable">${unavailableSlots}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Not Set:</span>
+                        <span class="stat-value empty">${emptySlots}</span>
+                    </div>
+                `;
+            }
         });
-      });
-    }
-
-    // ===== AVAILABILITY FORM SUBMIT =====
-    document.getElementById('availabilityForm').addEventListener('submit', async function(e) {
-      e.preventDefault();
-      const status = document.getElementById('availabilityStatus');
-      status.textContent = '';
-      const data = {};
-      document.querySelectorAll('.weekday-block').forEach(block => {
-        const day = block.getAttribute('data-day');
-        data[day] = [];
-        block.querySelectorAll('input[type="checkbox"]:checked').forEach(cb => {
-          data[day].push(cb.value);
-        });
-      });
-      try {
-        const resp = await fetch(`${API_BASE}/api/trainers/set-availability`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json'},
-          body: JSON.stringify({
-            availability: data,
-            trainerid: trainerId
-          })
-        });
-        const result = await resp.json();
-        status.textContent = result.success ? "Availability saved!" : result.error || "Failed to save.";
-        status.className = result.success ? "form-status success" : "form-status error";
-      } catch (err) {
-        status.textContent = "Network error.";
-        status.className = "form-status error";
-      }
-    });
-
-    // ===== LEAVE FORM SUBMIT =====
-    document.getElementById('leaveForm').addEventListener('submit', async function(e) {
-      e.preventDefault();
-      const status = document.getElementById('leaveStatus');
-      status.textContent = '';
-      const date = document.getElementById('leaveDate').value;
-      const reason = document.getElementById('leaveReason').value;
-      try {
-        const resp = await fetch(`${API_BASE}/api/trainers/mark-leave`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json'},
-          body: JSON.stringify({
-            date,
-            reason,
-            trainerid: trainerId
-          })
-        });
-        const result = await resp.json();
-        status.textContent = result.success ? "Marked as unavailable!" : result.error || "Failed to mark.";
-        status.className = result.success ? "form-status success" : "form-status error";
-        if(result.success) loadLeaveHistory();
-      } catch (err) {
-        status.textContent = "Network error.";
-        status.className = "form-status error";
-      }
-    });
-
-    // ===== LOAD LEAVE HISTORY =====
-    async function loadLeaveHistory() {
-      try {
-        const resp = await fetch(`${API_BASE}/api/trainers/get-leave?trainerid=${encodeURIComponent(trainerId)}`);
-        const result = await resp.json();
-        const leaveList = document.getElementById('leaveList');
-        leaveList.innerHTML = '';
-        if(result.success && result.leaves.length) {
-          result.leaves.forEach(leave => {
-            const li = document.createElement('li');
-            li.textContent = `${leave.date} (${leave.reason || 'No reason'})`;
-            leaveList.appendChild(li);
-          });
-        } else {
-          leaveList.innerHTML = '<li>No upcoming unavailable days.</li>';
-        }
-      } catch (err) {
-        document.getElementById('leaveList').innerHTML = '<li>Error loading leave history.</li>';
-      }
-    }
-    loadLeaveHistory();
-
-    // ===== LOAD CURRENT AVAILABILITY =====
-    async function loadCurrentAvailability() {
-      try {
-        const resp = await fetch(`${API_BASE}/api/trainers/get-availability?trainerid=${encodeURIComponent(trainerId)}`);
-        const result = await resp.json();
-        const div = document.getElementById('currentAvailability');
-        div.innerHTML = '';
-        if(result.success) {
-          setAvailabilityForm(result.availability); // <-- Automatically set checkboxes
-          Object.keys(result.availability).forEach(day => {
-            div.innerHTML += `<div><strong>${day.charAt(0).toUpperCase() + day.slice(1)}: </strong>${result.availability[day].join(', ') || 'None'}</div>`;
-          });
-        } else {
-          // If no custom availability, check all by default
-          setAvailabilityForm({
-            monday: ['morning','afternoon','evening'],
-            tuesday: ['morning','afternoon','evening'],
-            wednesday: ['morning','afternoon','evening'],
-            thursday: ['morning','afternoon','evening'],
-            friday: ['morning','afternoon','evening'],
-            saturday: ['morning','afternoon','evening'],
-            sunday: ['morning','afternoon','evening']
-          });
-          div.textContent = "No availability set.";
-        }
-      } catch (err) {
-        setAvailabilityForm({
-          monday: ['morning','afternoon','evening'],
-          tuesday: ['morning','afternoon','evening'],
-          wednesday: ['morning','afternoon','evening'],
-          thursday: ['morning','afternoon','evening'],
-          friday: ['morning','afternoon','evening'],
-          saturday: ['morning','afternoon','evening'],
-          sunday: ['morning','afternoon','evening']
-        });
-        document.getElementById('currentAvailability').textContent = "Error loading current availability.";
-      }
-    }
-    loadCurrentAvailability();
-
-
-// ===== LOAD CURRENT SCHEDULE (only this trainer) =====
-async function loadCurrentSchedule() {
-  const div = document.getElementById('currentSchedule');
-  div.innerHTML = '<h3>My Classes</h3>';
-
-  try {
-    const resp = await fetch(`${API_BASE}/api/classes?trainerid=${encodeURIComponent(trainerId)}`);
-    if (!resp.ok) {
-      div.innerHTML += '<p>Error loading classes.</p>';
-      return;
-    }
-
-    const result = await resp.json();
-    const allFromApi = Array.isArray(result?.data) ? result.data : [];
-
-    // Defensive client-side filter in case the backend ever returns more than requested
-    const myClasses = allFromApi.filter(c => {
-      const cid = c.trainer_id || c.trainerid || null;
-      return cid === trainerId;
-    });
-
-    if (myClasses.length === 0) {
-      div.innerHTML += '<p>No classes assigned to you.</p>';
-      return;
-    }
-
-    const items = myClasses.map(c => {
-      const name = c.class_name || c.classname || 'Unnamed Class';
-      const sched = c.schedule || '';
-      return `<li>${name} - ${sched}</li>`;
-    }).join('');
-
-    div.innerHTML += `<ul>${items}</ul>`;
-  } catch (err) {
-    div.innerHTML = '<h3>My Classes</h3><p>Error loading schedule.</p>';
-  }
-}
-
-    loadCurrentSchedule();
-  });
-</script>
-
+    </script>
 </body>
 </html>

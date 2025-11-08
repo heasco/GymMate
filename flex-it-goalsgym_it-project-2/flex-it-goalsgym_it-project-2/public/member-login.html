@@ -1,0 +1,139 @@
+<!-- public/member-login.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Member Login - GOALS Gym</title>
+  <link rel="stylesheet" href="./style.css">
+</head>
+
+<body>
+  <!-- Back Button -->
+  <button class="circle-back-btn" onclick="window.location.href='./index.html'">&lt;</button>
+
+  <!-- Transparent Background Logo -->
+    <div class="background-logo">
+        <img src="./image/logo2.png" alt="GOALS Gym Logo" class="transparent-logo-bg">
+    </div>
+
+  <!-- Login Container -->
+  <div class="login-container" id="login-block">
+    <h1 class="login-title">Member Login</h1>
+
+    <form id="loginForm" aria-hidden="false">
+      <div class="input-group">
+        <label for="username" class="input-label">Username</label>
+        <input type="text" id="username" class="input-field" required autocomplete="username">
+      </div>
+
+      <div class="input-group">
+        <label for="password" class="input-label">Password</label>
+        <input type="password" id="password" class="input-field" required autocomplete="current-password">
+      </div>
+
+      <button type="submit" id="loginBtn" class="login-button">Login</button>
+      
+    </form>
+    
+  </div>
+
+  <!-- Logged-in UI -->
+  <div id="memberPanel" class="logged-in-panel hide" aria-live="polite">
+    <div>
+      
+      <div class="small" id="memberInfo"></div>
+    </div>
+  
+  </div>
+
+  <script>
+    const API_URL = 'http://localhost:8080';
+
+    const $ = id => document.getElementById(id);
+    const show = el => { if (!el) return; el.classList.remove('hide'); el.style.display = ''; };
+    const hide = el => { if (!el) return; el.classList.add('hide'); el.style.display = 'none'; };
+
+    const loginForm = $('loginForm'),
+          usernameInput = $('username'),
+          passwordInput = $('password'),
+          loginBtn = $('loginBtn'),
+          loginStayBtn = $('loginStayBtn'),
+          errorMessage = $('error-message');
+
+    const memberPanel = $('memberPanel'),
+          welcomeText = $('welcomeText'),
+          memberInfo = $('memberInfo'),
+          logoutBtn = $('logoutBtn'),
+          manageEnrollmentsBtn = $('manageEnrollmentsBtn');
+
+    function getAuth() { try { return JSON.parse(localStorage.getItem('authUser') || 'null'); } catch (e) { return null; } }
+    function memberNameFromAuth() {
+      const a = getAuth(); if (!a || !a.user) return ''; const u = a.user;
+      return u.name || u.fullname || u.username || '';
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      loginForm.addEventListener('submit', async (e) => { e.preventDefault(); await performLogin(false); });
+      loginStayBtn.addEventListener('click', async () => { await performLogin(true); });
+      logoutBtn.addEventListener('click', () => { localStorage.removeItem('authUser'); showLoginUI(); });
+
+      manageEnrollmentsBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        window.location.href = "flex-it-goalsgym_it-project-2/public/admin/manage-members.html";
+      });
+
+      const auth = getAuth();
+      if (auth && auth.role === 'member' && auth.user) showLoggedInUI();
+      else showLoginUI();
+
+      usernameInput.focus();
+    });
+
+    async function performLogin(stay) {
+      errorMessage.textContent = '';
+      const username = usernameInput.value.trim(), password = passwordInput.value;
+      if (!username || !password) { errorMessage.textContent = 'Enter username & password.'; return; }
+
+      loginBtn.disabled = true;
+      loginBtn.textContent = 'Logging in...';
+
+      try {
+        const resp = await fetch(`${API_URL}/api/member/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+
+        if (!resp.ok) {
+          const err = await resp.json().catch(() => ({}));
+          throw new Error(err.error || 'Invalid member credentials');
+        }
+
+        const data = await resp.json();
+        localStorage.setItem('authUser', JSON.stringify({ user: data.data, role: 'member', timestamp: Date.now() }));
+
+        showLoggedInUI();
+        if (stay) window.location.href = "./manage-members.html";
+      } catch (err) {
+        console.warn('Login error', err);
+        errorMessage.textContent = err.message.includes('Failed to fetch')
+          ? 'Server unavailable. Try again later.'
+          : err.message;
+      } finally {
+        loginBtn.disabled = false;
+        loginBtn.textContent = 'Login';
+      }
+    }
+
+    function showLoggedInUI() {
+      const auth = getAuth(); if (!auth || !auth.user) return showLoginUI();
+      welcomeText.textContent = `Welcome, ${memberNameFromAuth()}`;
+      memberInfo.textContent = `Username: ${auth.user.username || ''}`;
+      hide(loginForm); show(memberPanel);
+    }
+
+    function showLoginUI() { show(loginForm); hide(memberPanel); }
+  </script>
+</body>
+</html>

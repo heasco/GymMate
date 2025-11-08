@@ -1,0 +1,464 @@
+:root {
+    --primary: #B30000;
+    --primary-dark: #8A0000;
+    --primary-light: #FF3333;
+    --accent: #FFFFFF;
+    --bg-main: #000000;
+    --bg-section: #121212;
+    --bg-card: #0A0A0A;
+    --bg-dark: #1A1A1A;
+    --border: #2D2D2D;
+    --text-main: #FFFFFF;
+    --text-label: #BFBFBF;
+    --text-muted: #7F8C8D;
+    --success: #28A745;
+    --warning: #FFC107;
+    --danger: #DC3545;
+    --radius: 8px;
+    --radius-big: 12px;
+    --shadow: 0 4px 20px rgba(179, 0, 0, 0.15);
+    --transition: all 0.3s ease;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: var(--bg-main);
+    color: var(--text-main);
+    line-height: 1.6;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    position: relative;
+}
+
+/* Transparent Background Logo */
+.background-logo {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: -1;
+    pointer-events: none;
+    opacity: 0.3; /* 10% opacity for subtle background */
+}
+
+.background-logo img {
+    width: 600px;
+    height: 600px;
+   
+}
+
+.attendance-container {
+    max-width: 1200px;
+    width: 100%;
+    margin: 0 auto;
+    position: relative;
+    z-index: 1;
+}
+
+.attendance-header {
+    text-align: center;
+    margin-bottom: 30px;
+    padding: 30px;
+    background: linear-gradient(135deg, var(--bg-section) 0%, var(--bg-card) 100%);
+    border-radius: var(--radius-big);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow);
+    position: relative;
+    z-index: 2;
+}
+
+.attendance-header h1 {
+    color: var(--primary);
+    font-size: 2.5rem;
+    font-weight: 800;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.attendance-header p {
+    color: var(--text-label);
+    font-size: 1.1rem;
+    font-weight: 500;
+}
+
+.attendance-main {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+    align-items: start;
+    position: relative;
+    z-index: 2;
+}
+
+.camera-section {
+    background: linear-gradient(135deg, var(--bg-section) 0%, var(--bg-card) 100%);
+    border-radius: var(--radius-big);
+    padding: 25px;
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+}
+
+.camera-box {
+    background: var(--bg-dark);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-bottom: 20px;
+    border: 2px solid var(--border);
+    text-align: center;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#camera {
+    width: 100%;
+    max-width: 400px;
+    height: 300px;
+    border-radius: var(--radius);
+    border: 2px solid var(--primary);
+    background: #000;
+    display: block;
+}
+
+.camera-status {
+    text-align: center;
+}
+
+.status-message {
+    background: var(--bg-dark);
+    padding: 15px;
+    border-radius: var(--radius);
+    border-left: 4px solid var(--primary);
+    font-weight: 600;
+    margin-bottom: 15px;
+    color: var(--text-label);
+}
+
+.log-status {
+    background: var(--bg-dark);
+    padding: 15px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    font-weight: 600;
+    min-height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    color: var(--success);
+}
+
+/* Attendance Type Selection - Positioned below camera */
+.attendance-type-selection {
+    margin-top: 20px;
+    padding: 20px;
+    background: var(--bg-dark);
+    border-radius: var(--radius);
+    border: 2px solid var(--primary);
+    text-align: center;
+}
+
+.attendance-type-selection h4 {
+    color: var(--primary);
+    margin-bottom: 15px;
+    font-size: 1.2rem;
+}
+
+.type-buttons {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.type-btn {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    color: var(--accent);
+    border: none;
+    padding: 10px 20px;
+    border-radius: var(--radius);
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border: 2px solid var(--primary);
+    font-size: 0.9rem;
+}
+
+.type-btn:hover {
+    background: linear-gradient(135deg, var(--primary-light) 0%, var(--primary) 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(179, 0, 0, 0.3);
+}
+
+.logs-section {
+    background: linear-gradient(135deg, var(--bg-section) 0%, var(--bg-card) 100%);
+    border-radius: var(--radius-big);
+    padding: 25px;
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow);
+    height: fit-content;
+}
+
+.logs-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid var(--primary);
+}
+
+.logs-header h3 {
+    color: var(--primary);
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.last-updated {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.attendance-logs {
+    background: var(--bg-dark);
+    border-radius: var(--radius);
+    padding: 20px;
+    max-height: 400px;
+    overflow-y: auto;
+    border: 1px solid var(--border);
+}
+
+.loading-logs {
+    text-align: center;
+    color: var(--text-muted);
+    font-style: italic;
+    padding: 20px;
+}
+
+.log-entry {
+    padding: 12px 15px;
+    margin-bottom: 10px;
+    background: rgba(26, 26, 26, 0.8);
+    border-radius: var(--radius);
+    border-left: 4px solid var(--primary);
+    transition: var(--transition);
+}
+
+.log-entry:hover {
+    background: rgba(179, 0, 0, 0.1);
+    transform: translateX(5px);
+}
+
+.log-time {
+    color: var(--primary);
+    font-weight: 600;
+    font-size: 0.9rem;
+    margin-bottom: 5px;
+}
+
+.log-member {
+    color: var(--text-main);
+    font-weight: 600;
+    margin-bottom: 3px;
+}
+
+.log-type {
+    color: var(--text-label);
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Modal Styles - Now positioned below camera */
+.attendance-modal {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90%;
+    max-width: 400px;
+    background: linear-gradient(135deg, var(--bg-card) 0%, var(--bg-section) 100%);
+    border-radius: var(--radius-big);
+    padding: 25px;
+    border: 2px solid var(--primary);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    margin-top: 20px;
+    animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+}
+
+.modal-header {
+    text-align: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid var(--border);
+}
+
+.modal-header h3 {
+    color: var(--primary);
+    font-size: 1.5rem;
+    margin-bottom: 10px;
+    font-weight: 700;
+}
+
+.modal-header p {
+    color: var(--text-main);
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.modal-buttons {
+    display: grid;
+    gap: 12px;
+}
+
+.modal-btn {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    color: var(--accent);
+    border: none;
+    padding: 12px 20px;
+    border-radius: var(--radius);
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: var(--transition);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border: 2px solid var(--primary);
+}
+
+.modal-btn:hover {
+    background: linear-gradient(135deg, var(--primary-light) 0%, var(--primary) 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(179, 0, 0, 0.3);
+}
+
+/* Responsive Design */
+@media (max-width: 968px) {
+    body {
+        padding: 15px;
+        align-items: flex-start;
+    }
+    
+    .attendance-main {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+    
+    .attendance-header h1 {
+        font-size: 2rem;
+    }
+    
+    .camera-section, .logs-section {
+        padding: 20px;
+    }
+    
+    .attendance-modal {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 90%;
+        max-width: 350px;
+    }
+    
+    .background-logo img {
+        width: 300px;
+        height: 300px;
+    }
+}
+
+@media (max-width: 768px) {
+    .attendance-container {
+        padding: 0;
+    }
+    
+    .attendance-header {
+        padding: 20px;
+    }
+    
+    .attendance-header h1 {
+        font-size: 1.8rem;
+    }
+    
+    #camera {
+        height: 250px;
+    }
+    
+    .modal-content {
+        padding: 20px;
+    }
+    
+    .modal-btn {
+        padding: 10px 16px;
+        font-size: 0.9rem;
+    }
+    
+    .logs-header {
+        flex-direction: column;
+        gap: 10px;
+        align-items: flex-start;
+    }
+    
+    .type-buttons {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .type-btn {
+        width: 100%;
+        max-width: 200px;
+    }
+    
+    .background-logo img {
+        width: 250px;
+        height: 250px;
+    }
+}
+
+/* Scrollbar Styling */
+.attendance-logs::-webkit-scrollbar {
+    width: 8px;
+}
+
+.attendance-logs::-webkit-scrollbar-track {
+    background: var(--bg-dark);
+    border-radius: 4px;
+}
+
+.attendance-logs::-webkit-scrollbar-thumb {
+    background: var(--primary);
+    border-radius: 4px;
+}
+
+.attendance-logs::-webkit-scrollbar-thumb:hover {
+    background: var(--primary-light);
+}

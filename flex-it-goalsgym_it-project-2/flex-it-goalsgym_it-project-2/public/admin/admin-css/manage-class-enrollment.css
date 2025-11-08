@@ -1,0 +1,513 @@
+/* ========================================
+   MANAGE CLASS ENROLLMENT - GOALS GYM THEME
+   ======================================== */
+
+:root {
+    --primary: #B30000;
+    --primary-dark: #8A0000;
+    --highlight: #FF3333;
+    --secondary: #000000;
+    --accent: #FFFFFF;
+    --neutral: #BFBFBF;
+    --dark: #121212;
+    --darker: #0a0a0a;
+    --radius: 8px;
+    --transition: all 0.3s ease;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0;
+}
+
+/* Server Status */
+.server-status {
+    padding: 1rem;
+    margin-bottom: 2rem;
+    border-radius: var(--radius);
+    font-weight: 600;
+    text-align: center;
+    font-size: 0.9rem;
+    border: 1px solid;
+}
+
+.server-connected { 
+    background: rgba(40, 167, 69, 0.1); 
+    color: #28a745;
+    border-color: #28a745;
+}
+
+.server-disconnected { 
+    background: rgba(220, 53, 69, 0.1); 
+    color: #dc3545;
+    border-color: #dc3545;
+}
+
+/* Success and Error Messages */
+.success-message {
+    display: none;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--highlight) 100%);
+    color: var(--accent);
+    padding: 1rem 1.5rem;
+    margin-bottom: 2rem;
+    border-radius: var(--radius);
+    font-weight: 600;
+    text-align: center;
+    box-shadow: 0 4px 15px rgba(179, 0, 0, 0.3);
+}
+
+.error-message {
+    display: none;
+    background: rgba(220, 53, 69, 0.1);
+    color: #dc3545;
+    border: 1px solid #dc3545;
+    padding: 1rem 1.5rem;
+    margin-bottom: 2rem;
+    border-radius: var(--radius);
+    font-weight: 600;
+    text-align: center;
+}
+
+/* Sections */
+.section {
+    background: rgba(30, 30, 30, 0.9);
+    padding: 2.5rem;
+    border-radius: var(--radius);
+    margin-bottom: 2rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(10px);
+}
+
+.section h2 {
+    color: var(--accent);
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 2px solid var(--primary);
+    padding-bottom: 0.5rem;
+}
+
+/* Form Groups */
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group label {
+    color: var(--accent);
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    display: block;
+    font-size: 0.95rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Form Inputs */
+select,
+input[type="text"],
+input[type="number"],
+input[type="date"] {
+    width: 100%;
+    padding: 1rem 1.2rem;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: var(--radius);
+    font-size: 1rem;
+    background: rgba(0, 0, 0, 0.5);
+    color: var(--accent);
+    font-family: 'Poppins', sans-serif;
+    transition: var(--transition);
+}
+
+select:focus,
+input[type="text"]:focus,
+input[type="number"]:focus,
+input[type="date"]:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px rgba(179, 0, 0, 0.2);
+    background: rgba(0, 0, 0, 0.7);
+}
+
+select {
+    height: 48px;
+}
+
+/* Search Group */
+.search-group {
+    position: relative;
+    display: flex;
+    gap: 1rem;
+}
+
+.search-group input {
+    flex: 1;
+}
+
+/* Session Details Styling */
+.session-details {
+    background: rgba(0, 0, 0, 0.3);
+    padding: 2rem;
+    border-radius: var(--radius);
+    border-left: 4px solid var(--primary);
+    margin-top: 2rem;
+}
+
+.session-details h3 {
+    color: var(--primary);
+    font-size: 1.4rem;
+    margin-bottom: 1.5rem;
+    font-weight: 600;
+}
+
+.session-form-group {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    margin-bottom: 2rem;
+}
+
+/* Time Slots */
+.time-slots {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.time-slot {
+    display: flex;
+    align-items: center;
+    padding: 1rem 1.2rem;
+    background: rgba(0, 0, 0, 0.5);
+    border-radius: var(--radius);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    transition: var(--transition);
+    cursor: pointer;
+}
+
+.time-slot:hover {
+    border-color: var(--primary);
+    background: rgba(179, 0, 0, 0.1);
+}
+
+.time-slot input[type="radio"] {
+    margin-right: 1rem;
+    width: auto;
+    accent-color: var(--primary);
+}
+
+.time-slot input[type="radio"]:checked + .time-slot-label {
+    color: var(--primary);
+    font-weight: 700;
+}
+
+.time-slot-label {
+    color: var(--neutral);
+    margin: 0;
+    cursor: pointer;
+    font-weight: 500;
+    transition: var(--transition);
+}
+
+/* Selected Member Info */
+.selected-member-info {
+    background: rgba(0, 0, 0, 0.3);
+    padding: 1.5rem;
+    border-radius: var(--radius);
+    border-left: 4px solid var(--primary);
+    margin-top: 2rem;
+    color: var(--neutral);
+}
+
+.selected-member-info h4 {
+    color: var(--primary);
+    font-size: 1.2rem;
+    margin-bottom: 1rem;
+    font-weight: 600;
+}
+
+/* Buttons */
+button {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--highlight) 100%);
+    color: var(--accent);
+    border: none;
+    padding: 1rem 2rem;
+    border-radius: var(--radius);
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: 0 4px 15px rgba(179, 0, 0, 0.3);
+}
+
+button:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(255, 51, 51, 0.4);
+}
+
+button:active {
+    transform: translateY(0);
+}
+
+button:disabled {
+    background: var(--neutral);
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+/* Specific Button Styles */
+.next-session-btn {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    width: 100%;
+    margin-top: 1rem;
+}
+
+.next-session-btn:hover:not(:disabled) {
+    box-shadow: 0 6px 20px rgba(32, 201, 151, 0.4);
+}
+
+.enroll-btn {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    min-width: 200px;
+}
+
+.enroll-btn:hover:not(:disabled) {
+    box-shadow: 0 6px 20px rgba(32, 201, 151, 0.4);
+}
+
+.clear-btn {
+    background: transparent;
+    border: 2px solid var(--primary);
+    color: var(--primary);
+}
+
+.clear-btn:hover {
+    background: var(--primary);
+    color: var(--accent);
+}
+
+.remove-button {
+    background: linear-gradient(135deg, #e91e63 0%, #ad1457 100%);
+    font-size: 0.8rem;
+    padding: 0.5rem 1rem;
+    margin-right: 0.5rem;
+}
+
+.attend-button {
+    background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
+    font-size: 0.8rem;
+    padding: 0.5rem 1rem;
+}
+
+/* Navigation Buttons */
+.nav-buttons {
+    margin-top: 2rem;
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.nav-buttons button {
+    flex: 1;
+    min-width: 200px;
+}
+
+/* Member Lists */
+.member-list {
+    margin-top: 2rem;
+    color: var(--neutral);
+}
+
+.member-list h3 {
+    color: var(--primary);
+    font-size: 1.4rem;
+    margin-bottom: 1.5rem;
+    font-weight: 600;
+    border-bottom: 2px solid var(--primary);
+    padding-bottom: 0.5rem;
+}
+
+.member-list table {
+    width: 100%;
+    border-collapse: collapse;
+    background: rgba(30, 30, 30, 0.9);
+    border-radius: var(--radius);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+}
+
+.member-list th {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--highlight) 100%);
+    color: var(--accent);
+    padding: 1.2rem 1rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    text-align: left;
+    font-size: 0.9rem;
+}
+
+.member-list td {
+    padding: 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--neutral);
+    transition: var(--transition);
+}
+
+.member-list tbody tr:hover td {
+    background: rgba(179, 0, 0, 0.1);
+    color: var(--accent);
+}
+
+.member-list tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* Autocomplete Suggestions */
+.autocomplete-suggestions {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: rgba(30, 30, 30, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: var(--radius);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+    z-index: 1000;
+    max-height: 200px;
+    overflow-y: auto;
+    display: none;
+    backdrop-filter: blur(10px);
+}
+
+.autocomplete-suggestion {
+    padding: 1rem 1.2rem;
+    cursor: pointer;
+    color: var(--neutral);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    transition: var(--transition);
+}
+
+.autocomplete-suggestion:hover {
+    background: rgba(179, 0, 0, 0.1);
+    color: var(--accent);
+}
+
+.autocomplete-suggestion:last-child {
+    border-bottom: none;
+}
+
+/* Status Badges */
+.status-badge {
+    padding: 0.4rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.status-badge.scheduled {
+    background: rgba(23, 162, 184, 0.2);
+    color: #17a2b8;
+    border: 1px solid #17a2b8;
+}
+
+.status-badge.attended {
+    background: rgba(40, 167, 69, 0.2);
+    color: #28a745;
+    border: 1px solid #28a745;
+}
+
+.status-badge.missed {
+    background: rgba(255, 193, 7, 0.2);
+    color: #ffc107;
+    border: 1px solid #ffc107;
+}
+
+.status-badge.cancelled {
+    background: rgba(220, 53, 69, 0.2);
+    color: #dc3545;
+    border: 1px solid #dc3545;
+}
+
+/* Hide number arrows (Chrome only) */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+    .container {
+        padding: 0 1rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .section {
+        padding: 2rem;
+    }
+    
+    .session-form-group {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+    
+    .time-slots {
+        grid-template-columns: 1fr;
+    }
+    
+    .nav-buttons {
+        flex-direction: column;
+    }
+    
+    .nav-buttons button {
+        min-width: 100%;
+        margin-bottom: 1rem;
+    }
+    
+    .search-group {
+        flex-direction: column;
+    }
+}
+
+@media (max-width: 480px) {
+    .section {
+        padding: 1.5rem;
+    }
+    
+    .section h2 {
+        font-size: 1.5rem;
+    }
+    
+    .session-details {
+        padding: 1.5rem;
+    }
+    
+    .member-list th,
+    .member-list td {
+        padding: 0.8rem 0.5rem;
+        font-size: 0.85rem;
+    }
+    
+    button {
+        padding: 0.8rem 1.5rem;
+        font-size: 0.9rem;
+    }
+    
+    .remove-button,
+    .attend-button {
+        font-size: 0.75rem;
+        padding: 0.4rem 0.8rem;
+    }
+}

@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manage Trainers - GOALS Gym</title>
+  <link rel="stylesheet" href="admin-css/admin-mainpage.css">
+  <link rel="stylesheet" href="admin-css/manage-members.css">
+  <link rel="stylesheet" href="admin-css/manage-trainer.css">
+</head>
+<body>
+  <div class="admin-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <h2>GOALS Gym Admin</h2>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="./admin-mainpage.html"><span>Dashboard</span></a>
+        <a href="add-classes.html"><span>Add Classes</span></a>
+        <a href="add-member.html"><span>Add Members</span></a>
+        <a href="manage-members.html"><span>Manage Members</span></a>
+        <a href="add-trainer.html"><span>Add Trainers</span></a>
+        <a href="manage-trainer.html" class="active"><span>Manage Trainers</span></a>
+        <a href="manage-class-enrollment.html"><span>Manage Enrollments</span></a>
+        <a href="add-transaction.html"><span>Add Transaction</span></a>
+        <a href="view-classes-and-feedback.html"><span>View Classes</span></a>
+        <a href="trainer-schedule-management.html"><span>Trainer Schedule Management</span></a>
+      </nav>
+    </aside>
+    <!-- Header -->
+    <header class="header">
+      <button class="menu-toggle" id="menuToggle"></button>
+      <h1>Manage Trainers</h1>
+      <button class="logout-btn" id="logoutBtn">Logout</button>
+    </header>
+    <!-- Main Content -->
+    <main class="main-content">
+      <div class="container">
+        <!-- Server Status -->
+        <div id="serverStatus" class="server-status">Checking server connection...</div>
+        <div id="successMessage" class="success-message"></div>
+        <div id="errorMessage" class="error-message"></div>
+
+        <div id="trainerListSection" class="section active">
+          <h2>Manage Trainers</h2>
+          <div class="form-group">
+            <label>Search Trainers</label>
+            <div class="search-group">
+              <input type="text" id="trainerSearch" placeholder="Enter name or trainer ID">
+              <div id="trainerSuggestions" class="autocomplete-suggestions"></div>
+            </div>
+          </div>
+          <div id="trainerList" class="member-list">
+            <h3>Trainers</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th>Trainer ID</th>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Specialization</th>
+                  <th>Availability</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="trainerListBody">
+                <!-- Trainers will be loaded here -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div id="editTrainerSection" class="section">
+          <h2>Edit Trainer</h2>
+          <form id="editTrainerForm">
+            <input type="hidden" id="editTrainerId" name="trainerid">
+            <div class="form-group">
+              <label for="editName">Name</label>
+              <input type="text" id="editName" name="name" required>
+            </div>
+            <div class="form-group">
+              <label for="editEmail">Email</label>
+              <input type="email" id="editEmail" name="email" required>
+            </div>
+            <div class="form-group">
+              <label for="editSpecialization">Specialization</label>
+              <input type="text" id="editSpecialization" name="specialization" required>
+            </div>
+            <div class="form-group">
+              <label for="editAvailability">Availability</label>
+              <select id="editAvailability" name="is_available">
+                <option value="true">Available</option>
+                <option value="false">Unavailable</option>
+              </select>
+            </div>
+            <div class="nav-buttons">
+              <button type="submit" class="action-button">Update Trainer</button>
+              <button type="button" class="action-button" onclick="showTrainerList()">Back to Trainer List</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </main>
+  </div>
+  <script>
+    const SERVER_URL = "http://localhost:8080";
+    document.addEventListener("DOMContentLoaded", async function() {
+      await checkServerConnection();
+      await loadTrainers();
+      setupTrainerSearch();
+    });
+
+    async function checkServerConnection() {
+      const statusElement = document.getElementById("serverStatus");
+      try {
+        const response = await fetch(SERVER_URL + "/health");
+        if (response.ok) {
+          statusElement.textContent = "Connected to server successfully";
+          statusElement.className = "server-status server-connected";
+        } else {
+          throw new Error("Server response not OK");
+        }
+      } catch (error) {
+        statusElement.textContent = "Cannot connect to server. Please try again later.";
+        statusElement.className = "server-status server-disconnected";
+      }
+    }
+
+    // Load Trainers
+    async function loadTrainers(query = "") {
+      const trainerListBody = document.getElementById("trainerListBody");
+      trainerListBody.innerHTML = "<tr><td colspan='6'>Loading...</td></tr>";
+      let url = SERVER_URL + "/api/trainers";
+      if (query.length > 0) {
+        url += `/search?query=${encodeURIComponent(query)}`;
+      }
+      try {
+        const response = await fetch(url, {
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + localStorage.getItem("authToken"),
+          },
+        });
+        const result = await response.json();
+        if (result.success && result.data.length > 0) {
+          displayTrainers(result.data);
+        } else {
+          trainerListBody.innerHTML = "<tr><td colspan='6'>No trainers found</td></tr>";
+        }
+      } catch (error) {
+        trainerListBody.innerHTML = "<tr><td colspan='6'>Error loading trainers</td></tr>";
+      }
+    }
+
+    function displayTrainers(trainers) {
+      const trainerListBody = document.getElementById("trainerListBody");
+      trainerListBody.innerHTML = "";
+      trainers.forEach(trainer => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${trainer.trainer_id || trainer.trainerid || trainer._id || trainer.id}</td>
+          <td>${trainer.name}</td>
+          <td>${trainer.email}</td>
+          <td>${trainer.specialization}</td>
+          <td>${trainer.is_available ? "Available" : "Unavailable"}</td>
+          <td>
+            <button class="action-button" onclick='editTrainer(${JSON.stringify(trainer)})'>Edit</button>
+          </td>
+        `;
+        trainerListBody.appendChild(row);
+      });
+    }
+
+    function setupTrainerSearch() {
+      const searchInput = document.getElementById("trainerSearch");
+      searchInput.addEventListener("input", function() {
+        const query = searchInput.value.trim();
+        if (query.length < 2) {
+          loadTrainers();
+          return;
+        }
+        loadTrainers(query);
+      });
+    }
+
+    function editTrainer(trainer) {
+      document.getElementById("trainerListSection").classList.remove("active");
+      document.getElementById("editTrainerSection").classList.add("active");
+      document.getElementById("editTrainerId").value = trainer.trainer_id || trainer.trainerid || trainer._id || trainer.id;
+      document.getElementById("editName").value = trainer.name;
+      document.getElementById("editEmail").value = trainer.email;
+      document.getElementById("editSpecialization").value = trainer.specialization;
+      document.getElementById("editAvailability").value = String(trainer.is_available);
+    }
+
+    function showTrainerList() {
+      document.getElementById("editTrainerSection").classList.remove("active");
+      document.getElementById("trainerListSection").classList.add("active");
+      loadTrainers();
+    }
+
+    // Update Trainer
+    document.getElementById("editTrainerForm").addEventListener("submit", async function(e) {
+      e.preventDefault();
+      const trainerId = document.getElementById("editTrainerId").value;
+      const name = document.getElementById("editName").value.trim();
+      const email = document.getElementById("editEmail").value.trim().toLowerCase();
+      const specialization = document.getElementById("editSpecialization").value.trim();
+      const is_available = document.getElementById("editAvailability").value === "true";
+
+      const updateData = { name, email, specialization, is_available };
+      const successMessage = document.getElementById("successMessage");
+      const errorMessage = document.getElementById("errorMessage");
+
+      try {
+        const response = await fetch(`${SERVER_URL}/api/trainers/${trainerId}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + localStorage.getItem("authToken"),
+          },
+          body: JSON.stringify(updateData),
+        });
+        const result = await response.json();
+        if (response.ok && result.success) {
+          successMessage.textContent = result.message || "Trainer updated successfully";
+          successMessage.style.display = "block";
+          errorMessage.style.display = "none";
+          setTimeout(() => {
+            successMessage.style.display = "none";
+            showTrainerList();
+          }, 3000);
+        } else {
+          errorMessage.textContent = result.error || "Failed to update trainer";
+          errorMessage.style.display = "block";
+          successMessage.style.display = "none";
+        }
+      } catch (error) {
+        errorMessage.textContent = "Network error: " + error.message;
+        errorMessage.style.display = "block";
+        successMessage.style.display = "none";
+      }
+    });
+  </script>
+</body>
+</html>

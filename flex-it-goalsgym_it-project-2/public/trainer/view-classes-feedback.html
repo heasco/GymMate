@@ -8,181 +8,269 @@
     <link rel="stylesheet" href="./trainer-css/view-classes-feedback.css">
 </head>
 <body>
-<div class="admin-container">
-    <aside class="sidebar">
-        <div class="sidebar-header">
-            <h2>GOALS Gym Trainer</h2>
-        </div>
-        <nav class="sidebar-nav">
-     <a href="trainer-mainpage.html">Dashboard</a>
-        <a href="view-and-change-schedule.html">My Classes & Schedule</a>
-        <a href="trainer-profile-management.html">Profile</a>
-        <a href="view-classes-feedback.html" class="active">Feedback</a>
-        <a href="trainer-availability.html">Availability</a>
-        </nav>
-    </aside>
-    <header class="header">
-        <button class="menu-toggle" id="menuToggle">☰</button>
-        <h1>Class Feedbacks</h1>
-        <button class="logout-btn" id="logoutBtn">Logout</button>
-    </header>
-    <main class="main-content">
-        <div class="container">
-            <div class="trainer-greeting">
-                <h2>Welcome, <span id="trainerName">Trainer</span>!</h2>
+    <div class="admin-container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h2>GOALS Gym Trainer</h2>
             </div>
-            <div class="filter-buttons">
-                <button id="showAllBtn" class="active">All Classes</button>
-                <button id="showMineBtn">All My Classes</button>
+            <nav class="sidebar-nav">
+                <a href="trainer-mainpage.html"><span>Dashboard</span></a>
+                <a href="view-and-change-schedule.html"><span>My Classes & Schedule</span></a>
+                <a href="trainer-profile-management.html"><span>Profile</span></a>
+                <a href="view-classes-feedback.html" class="active"><span>Feedback</span></a>
+                <a href="trainer-availability.html"><span>Availability</span></a>
+            </nav>
+        </aside>
+
+        <header class="header">
+            <button class="menu-toggle" id="menuToggle">☰</button>
+            <h1>Class Feedbacks</h1>
+            <button class="logout-btn" id="logoutBtn">Logout</button>
+        </header>
+
+        <main class="main-content">
+            <div class="container">
+                <div class="trainer-greeting">
+                    <h2>Welcome, <span id="trainerName">Trainer</span>!</h2>
+                </div>
+                
+                <div class="filter-section">
+                    <div class="filter-buttons">
+                        <button id="showAllBtn" class="filter-btn active">All Classes</button>
+                        <button id="showMineBtn" class="filter-btn">My Classes Only</button>
+                    </div>
+                    
+                    <div class="rating-filter">
+                        <label for="ratingFilter">Filter by Rating:</label>
+                        <select id="ratingFilter">
+                            <option value="">All Ratings</option>
+                            <option value="5">★★★★★ (5 stars)</option>
+                            <option value="4">★★★★☆ (4 stars)</option>
+                            <option value="3">★★★☆☆ (3 stars)</option>
+                            <option value="2">★★☆☆☆ (2 stars)</option>
+                            <option value="1">★☆☆☆☆ (1 star)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="feedbackLoading" class="loading">Loading classes and feedback...</div>
+                <div id="classesList"></div>
             </div>
-            <div id="feedbackLoading" class="loading">Loading classes and feedback...</div>
-            <div id="classesList"></div>
-            <div class="feedback-rating-filter" style="margin:10px 0 22px 0;">
-    <label for="ratingFilter" style="font-weight:bold;margin-right:8px;">Filter by Rating:</label>
-    <select id="ratingFilter">
-        <option value="">All Ratings</option>
-        <option value="5">5 stars</option>
-        <option value="4">4 stars</option>
-        <option value="3">3 stars</option>
-        <option value="2">2 stars</option>
-        <option value="1">1 star</option>
-    </select>
-</div>
+        </main>
+    </div>
 
-        </div>
-    </main>
-</div>
-<script>
-const SERVER_URL = 'http://localhost:8080';
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const menuToggle = document.getElementById('menuToggle');
+            const sidebar = document.querySelector('.sidebar');
+            const logoutBtn = document.getElementById('logoutBtn');
+            const authUser = JSON.parse(localStorage.getItem('authUser'));
 
-let allClasses = [], trainerClasses = [];
-let trainerId = null;
-let currentFeedbackRatingFilter = "";
-
-function updateTrainerName() {
-    const authUser = JSON.parse(localStorage.getItem('authUser'));
-    if (authUser && authUser.user && authUser.user.name)
-        document.getElementById('trainerName').textContent = authUser.user.name;
-}
-
-// Renders classes/cards with feedbacks, filtering feedbacks by chosen rating
-function renderClasses(classes) {
-    const classesList = document.getElementById('classesList');
-    if (!classes || classes.length === 0) {
-        classesList.innerHTML = `<div class="no-classes">No classes found.</div>`;
-        return;
-    }
-    let html = '';
-    for (const cls of classes) {
-        // Only render feedbacks matching filter if set
-        let feedbacks = cls.feedbacks || [];
-        if (currentFeedbackRatingFilter)
-            feedbacks = feedbacks.filter(fb => String(fb.rating) === currentFeedbackRatingFilter);
-
-        html += `<section class="class-card">
-            <header>
-                <h3>${cls.class_name}</h3>
-                <div class="schedule">${cls.schedule || ""}</div>
-                <div class="summary">Capacity: ${cls.capacity || '-'} | Enrolled: ${cls.current_enrollment || '-'}</div>
-                <div class="trainer-label"><strong>Trainer:</strong> ${cls.trainer_name || cls.trainer_id || 'Unknown'}</div>
-            </header>
-            <div class="class-feedback-list">
-                ${
-                  feedbacks.length > 0
-                  ? `<h4>Feedbacks (${feedbacks.length}):</h4>
-                        <ul class="feedback-list">` +
-                        feedbacks.map(fb =>
-                        `<li>
-                            <div><strong>Rating:</strong> ${fb.rating} / 5 &mdash; <strong>Comment:</strong> ${fb.comment || "(No comment)"}</div>
-                            <div class="meta">
-                                <span><strong>Date:</strong> ${new Date(fb.date_submitted).toLocaleString()}</span>
-                            </div>
-                        </li>`).join('')
-                    + `</ul>`
-                  : `<div class="no-feedbacks">No feedbacks${currentFeedbackRatingFilter ? " with this rating" : ""} yet for this class.</div>`
+            if (!authUser || !authUser.user || authUser.role !== "trainer" || (Date.now() - authUser.timestamp > 3600000)) {
+                localStorage.removeItem('authUser');
+                window.location.href = '../trainer-login.html';
+                return;
+            }
+            
+            menuToggle.addEventListener('click', () => sidebar.classList.toggle('collapsed'));
+            
+            logoutBtn.addEventListener('click', () => {
+                localStorage.removeItem('authUser');
+                window.location.href = '../trainer-login.html';
+            });
+            
+            document.addEventListener('click', (e) => {
+                if (window.innerWidth <= 768 && !sidebar.contains(e.target) && !menuToggle.contains(e.target)) {
+                    sidebar.classList.remove('collapsed');
                 }
-            </div>
-        </section>`;
-    }
-    classesList.innerHTML = html;
-}
+            });
 
-// Fetch classes and new feedbacks by class from `feedbacks.js` route
-async function fetchClassesAndFeedbacks() {
-    document.getElementById('feedbackLoading').style.display = "block";
-    document.getElementById('classesList').innerHTML = "";
-    const authUser = JSON.parse(localStorage.getItem('authUser'));
-    trainerId = authUser.user.trainerid || authUser.user.trainer_id || authUser.user.id;
+            // Set trainer name
+            document.getElementById('trainerName').textContent = authUser.user.name || 'Trainer';
 
-    const resp = await fetch(`${SERVER_URL}/api/classes`);
-    let classes = [];
-    if (resp.ok) {
-        const data = await resp.json();
-        classes = data.data || [];
-    }
+            // Sample data - replace with actual API calls
+            const sampleClasses = [
+                {
+                    class_id: '1',
+                    class_name: 'Morning Yoga',
+                    schedule: 'Mon, Wed, Fri 7:00 AM - 8:00 AM',
+                    capacity: 20,
+                    current_enrollment: 15,
+                    trainer_name: authUser.user.name || 'You',
+                    trainer_id: authUser.user.trainerid || 'T001',
+                    isMine: true,
+                    feedbacks: [
+                        {
+                            rating: 5,
+                            comment: 'Excellent class! The instructor was very knowledgeable and supportive.',
+                            date_submitted: '2024-01-15T10:30:00Z',
+                            member_name: 'John Smith'
+                        },
+                        {
+                            rating: 4,
+                            comment: 'Great session, but the room was a bit crowded.',
+                            date_submitted: '2024-01-14T09:15:00Z',
+                            member_name: 'Sarah Johnson'
+                        },
+                        {
+                            rating: 5,
+                            comment: 'Perfect way to start the day!',
+                            date_submitted: '2024-01-13T08:45:00Z',
+                            member_name: 'Mike Davis'
+                        }
+                    ]
+                },
+                {
+                    class_id: '2',
+                    class_name: 'HIIT Training',
+                    schedule: 'Tue, Thu 5:00 PM - 6:00 PM',
+                    capacity: 15,
+                    current_enrollment: 12,
+                    trainer_name: 'Jane Wilson',
+                    trainer_id: 'T002',
+                    isMine: false,
+                    feedbacks: [
+                        {
+                            rating: 3,
+                            comment: 'Good workout but too intense for beginners.',
+                            date_submitted: '2024-01-16T18:20:00Z',
+                            member_name: 'Robert Brown'
+                        },
+                        {
+                            rating: 4,
+                            comment: 'Challenging but rewarding!',
+                            date_submitted: '2024-01-15T17:30:00Z',
+                            member_name: 'Emily Clark'
+                        }
+                    ]
+                },
+                {
+                    class_id: '3',
+                    class_name: 'Strength Training',
+                    schedule: 'One-time 2024-01-20, 6:00 PM - 7:00 PM',
+                    capacity: 20,
+                    current_enrollment: 8,
+                    trainer_name: authUser.user.name || 'You',
+                    trainer_id: authUser.user.trainerid || 'T001',
+                    isMine: true,
+                    feedbacks: []
+                }
+            ];
 
-    // Use `/api/feedbacks/class/:class_id` for feedbacks
-    await Promise.all(classes.map(async cls => {
-        cls.isMine = (cls.trainer_id === trainerId);
-        // This is the key change:
-        const feedbackResp = await fetch(`${SERVER_URL}/api/feedbacks/class/${cls.class_id || cls._id}`);
-        if (feedbackResp.ok) {
-            const feedbackData = await feedbackResp.json();
-            cls.feedbacks = feedbackData.data || [];
-        } else {
-            cls.feedbacks = [];
-        }
-    }));
+            let allClasses = sampleClasses;
+            let trainerClasses = sampleClasses.filter(cls => cls.isMine);
+            let currentFeedbackRatingFilter = "";
 
-    allClasses = classes;
-    trainerClasses = classes.filter(cls => cls.isMine);
-    document.getElementById('feedbackLoading').style.display = "none";
-    renderClasses(allClasses);
-}
+            // Load classes
+            setTimeout(() => {
+                document.getElementById('feedbackLoading').style.display = 'none';
+                renderClasses(allClasses);
+            }, 1000);
 
-document.addEventListener('DOMContentLoaded', () => {
-    // Sidebar and logout logic
-    const menuToggle = document.getElementById('menuToggle');
-    const sidebar = document.querySelector('.sidebar');
-    const logoutBtn = document.getElementById('logoutBtn');
-    const authUser = JSON.parse(localStorage.getItem('authUser'));
-    if (!authUser || !authUser.user || authUser.role !== "trainer" || (Date.now() - authUser.timestamp > 3600000)) {
-        localStorage.removeItem('authUser');
-        window.location.href = '../trainer-login.html';
-        return;
-    }
-    menuToggle.addEventListener('click', () => sidebar.classList.toggle('collapsed'));
-    logoutBtn.addEventListener('click', () => {
-        localStorage.removeItem('authUser');
-        window.location.href = '../trainer-login.html';
-    });
-    updateTrainerName();
+            // Filter button handlers
+            document.getElementById('showAllBtn').addEventListener('click', function() {
+                document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+                this.classList.add('active');
+                renderClasses(allClasses);
+            });
 
-    document.getElementById('showAllBtn').addEventListener('click', function() {
-        this.classList.add("active");
-        document.getElementById('showMineBtn').classList.remove("active");
-        renderClasses(allClasses);
-    });
-    document.getElementById('showMineBtn').addEventListener('click', function() {
-        this.classList.add("active");
-        document.getElementById('showAllBtn').classList.remove("active");
-        renderClasses(trainerClasses);
-    });
+            document.getElementById('showMineBtn').addEventListener('click', function() {
+                document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+                this.classList.add('active');
+                renderClasses(trainerClasses);
+            });
 
-    // Feedback rating filter
-    document.getElementById('ratingFilter').addEventListener('change', function() {
-        currentFeedbackRatingFilter = this.value;
-        // Figure out which currently selected set to display
-        if (document.getElementById('showMineBtn').classList.contains('active'))
-            renderClasses(trainerClasses);
-        else
-            renderClasses(allClasses);
-    });
+            // Rating filter handler
+            document.getElementById('ratingFilter').addEventListener('change', function() {
+                currentFeedbackRatingFilter = this.value;
+                const activeFilter = document.querySelector('.filter-btn.active').id;
+                if (activeFilter === 'showMineBtn') {
+                    renderClasses(trainerClasses);
+                } else {
+                    renderClasses(allClasses);
+                }
+            });
 
-    fetchClassesAndFeedbacks();
-});
-</script>
+            function renderClasses(classes) {
+                const classesList = document.getElementById('classesList');
+                
+                if (!classes || classes.length === 0) {
+                    classesList.innerHTML = '<div class="no-classes">No classes found.</div>';
+                    return;
+                }
 
-</script>
+                let html = '';
+                classes.forEach(cls => {
+                    // Filter feedbacks by rating if filter is set
+                    let feedbacks = cls.feedbacks || [];
+                    if (currentFeedbackRatingFilter) {
+                        feedbacks = feedbacks.filter(fb => String(fb.rating) === currentFeedbackRatingFilter);
+                    }
+
+                    html += `
+                        <div class="class-card ${cls.isMine ? 'my-class' : ''}">
+                            <div class="class-header">
+                                <h3>${cls.class_name}</h3>
+                                <div class="class-meta">
+                                    <span class="schedule">${cls.schedule || 'No schedule'}</span>
+                                    <span class="enrollment">${cls.current_enrollment}/${cls.capacity} enrolled</span>
+                                    ${cls.isMine ? '<span class="my-class-badge">Your Class</span>' : ''}
+                                </div>
+                            </div>
+                            
+                            <div class="trainer-info">
+                                <strong>Trainer:</strong> ${cls.trainer_name}
+                            </div>
+
+                            <div class="feedback-section">
+                                <h4>Member Feedback ${feedbacks.length > 0 ? `(${feedbacks.length})` : ''}</h4>
+                                
+                                ${feedbacks.length > 0 ? `
+                                    <div class="feedback-list">
+                                        ${feedbacks.map(fb => `
+                                            <div class="feedback-item">
+                                                <div class="feedback-header">
+                                                    <div class="star-rating">
+                                                        ${generateStars(fb.rating)}
+                                                        <span class="rating-number">${fb.rating}/5</span>
+                                                    </div>
+                                                    <span class="feedback-date">${new Date(fb.date_submitted).toLocaleDateString()}</span>
+                                                </div>
+                                                <div class="feedback-comment">${fb.comment || 'No comment provided'}</div>
+                                                <div class="feedback-meta">
+                                                    <strong>From:</strong> ${fb.member_name || 'Anonymous Member'}
+                                                </div>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                ` : `
+                                    <div class="no-feedbacks">
+                                        ${currentFeedbackRatingFilter ? 
+                                            'No feedbacks with this rating yet.' : 
+                                            'No feedbacks yet for this class.'
+                                        }
+                                    </div>
+                                `}
+                            </div>
+                        </div>
+                    `;
+                });
+
+                classesList.innerHTML = html;
+            }
+
+            function generateStars(rating) {
+                let stars = '';
+                for (let i = 1; i <= 5; i++) {
+                    if (i <= rating) {
+                        stars += '<span class="star filled">★</span>';
+                    } else {
+                        stars += '<span class="star">★</span>';
+                    }
+                }
+                return stars;
+            }
+        });
+    </script>
 </body>
 </html>

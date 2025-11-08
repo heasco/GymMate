@@ -6,24 +6,6 @@
     <title>Trainer Dashboard - GOALS Gym</title>
     <link rel="stylesheet" href="../admin/admin-css/admin-mainpage.css">
     <link rel="stylesheet" href="./trainer-css/trainer-mainpage.css">
-    <style>
-      /* Enhanced for visual balance, base colors preserved */
-      .dashboard-metrics { margin-bottom: 1.5em; color: #f3f4f6; }
-      .schedule-table { background: #18181b; color: #e5e7eb; border-collapse: collapse; width: 100%; }
-      .schedule-table th, .schedule-table td { padding: 10px 14px; border: 1px solid #27272a; }
-      .schedule-table th { background: #232327; color: #a5b4fc; }
-      .schedule-table td { background: #1f2937; }
-      .schedule-table .low-attendance-row { background: #fdf6b2; color: #ffffff; border-left: 5px solid #eab308; }
-      .attendance-badge { display:inline-block; padding:4px 12px; border-radius:12px; background:#334155; color:#f1f5f9; font-weight:600; font-size:1em; margin-left:8px; }
-      .high-badge { background:#2563eb !important; color:#f1f5f9 !important; }
-      .low-badge { background:#facc15 !important; color:#78350f !important; }
-      .streak-badge { background:#eab308 !important; color:#78350f !important; }
-      .schedule-table .em { color: #64748b; }
-      /* Headings and dashboard titles for clarity */
-      .dashboard-metrics strong { color: #a5b4fc; }
-      .schedule-table th, .schedule-table td { text-align: center; }
-      .schedule-table td:first-child, .schedule-table th:first-child { text-align: left; }
-    </style>
 </head>
 <body>
     <div class="admin-container">
@@ -32,171 +14,141 @@
                 <h2>GOALS Gym Trainer</h2>
             </div>
             <nav class="sidebar-nav">
-                <a href="trainer-mainpage.html" class="active">Dashboard</a>
-                <a href="view-and-change-schedule.html">My Classes & Schedule</a>
-                <a href="trainer-profile-management.html">Profile</a>
-                <a href="view-classes-feedback.html">Feedback</a>
-                <a href="trainer-availability.html">Availability</a>
+                <a href="trainer-mainpage.html" class="active"><span>Dashboard</span></a>
+                <a href="view-and-change-schedule.html"><span>My Classes & Schedule</span></a>
+                <a href="trainer-profile-management.html"><span>Profile</span></a>
+                <a href="view-classes-feedback.html"><span>Feedback</span></a>
+                <a href="trainer-availability.html"><span>Availability</span></a>
             </nav>
         </aside>
+        
         <header class="header">
             <button class="menu-toggle" id="menuToggle">☰</button>
             <h1>Trainer Dashboard</h1>
             <button class="logout-btn" id="logoutBtn">Logout</button>
         </header>
+        
         <main class="main-content">
             <div class="trainer-greeting">
-                <h2>Welcome, <span id="trainerName">Trainer</span>!</h2>
-                <div class="specialization" id="specialization"></div>
+                <h2>Welcome, <span id="trainerName">Christian Bryan Tom</span>!</h2>
+                <div class="specialization" id="specialization">Specialization: Fitness Training</div>
             </div>
-            <div class="dashboard-metrics" id="dashboardMetrics"></div>
+            
+            <div class="dashboard-metrics" id="dashboardMetrics">
+                <div class="dashboard-cards-row">
+                    <div class="dashboard-stat-card">
+                        <div class="stat-title">Weekly Attendance Total</div>
+                        <div class="stat-value">42</div>
+                    </div>
+                    <div class="dashboard-stat-card">
+                        <div class="stat-title">Most Attended Session</div>
+                        <div class="stat-value">Morning Yoga</div>
+                    </div>
+                </div>
+            </div>
+            
             <div class="section">
                 <h3>Your Classes and Attendance</h3>
                 <div id="scheduleLoading" class="loading">Loading schedule...</div>
-                <div id="trainerSchedule"></div>
+                <div id="trainerSchedule">
+                    <table class="dashboard-table">
+                        <thead>
+                            <tr>
+                                <th>Class Name</th>
+                                <th>Schedule</th>
+                                <th>Capacity</th>
+                                <th>Enrolled</th>
+                                <th>Attendance This Week</th>
+                                <th>Participation Rate (%)</th>
+                                <th>Attendance Streak</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Morning Yoga</td>
+                                <td>Mon, Wed, Fri 7:00 AM</td>
+                                <td>20</td>
+                                <td>18</td>
+                                <td>15</td>
+                                <td>83%</td>
+                                <td>5</td>
+                            </tr>
+                            <tr>
+                                <td>HIIT Training</td>
+                                <td>Tue, Thu 5:00 PM</td>
+                                <td>15</td>
+                                <td>12</td>
+                                <td>10</td>
+                                <td>83%</td>
+                                <td>4</td>
+                            </tr>
+                            <tr>
+                                <td>Strength Training</td>
+                                <td>Mon, Wed 6:00 PM</td>
+                                <td>20</td>
+                                <td>8</td>
+                                <td>6</td>
+                                <td>75%</td>
+                                <td>3</td>
+                            </tr>
+                            <tr>
+                                <td>Cardio Blast</td>
+                                <td>Tue, Thu 7:00 AM</td>
+                                <td>10</td>
+                                <td>9</td>
+                                <td>8</td>
+                                <td>89%</td>
+                                <td>6</td>
+                            </tr>
+                            <tr>
+                                <td>Flexibility & Stretch</td>
+                                <td>Sat 9:00 AM</td>
+                                <td>10</td>
+                                <td>6</td>
+                                <td>3</td>
+                                <td>50%</td>
+                                <td>2</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </main>
     </div>
-<script>
- const API_URL = 'http://localhost:8080';
- function getCurrentWeekRange() {
-   const now = new Date(), start = new Date(now), end = new Date(now);
-   const day = now.getDay() || 7;
-   start.setDate(now.getDate() - day + 1);
-   end.setDate(start.getDate() + 6);
-   start.setHours(0,0,0,0); end.setHours(23,59,59,999);
-   return { start, end };
- }
- function calcAttendanceStreak(dates) {
-   if (dates.length === 0) return 0;
-   let streak = 1, max = 1;
-   dates.sort();
-   for (let i=1; i<dates.length; i++) {
-     const d0 = new Date(dates[i-1]), d1 = new Date(dates[i]);
-     if ((d1 - d0) === 86400000) { streak++; if (streak > max) max = streak; }
-     else streak = 1;
-   }
-   return max;
- }
- document.addEventListener('DOMContentLoaded', async function() {
-   const menuToggle = document.getElementById('menuToggle');
-   const sidebar = document.querySelector('.sidebar');
-   const logoutBtn = document.getElementById('logoutBtn');
-   const authUser = JSON.parse(localStorage.getItem('authUser'));
-   if (!authUser || !authUser.user || authUser.role !== "trainer" || (Date.now() - authUser.timestamp > 3600000)) {
-     localStorage.removeItem('authUser');
-     window.location.href = '../trainer-login.html';
-     return;
-   }
-   menuToggle.addEventListener('click', () => sidebar.classList.toggle('collapsed'));
-   logoutBtn.addEventListener('click', () => {
-     localStorage.removeItem('authUser');
-     window.location.href = '../trainer-login.html';
-   });
-   document.getElementById('trainerName').textContent = authUser.user.name;
-   if (authUser.user.specialization)
-     document.getElementById('specialization').textContent = `Specialization: ${authUser.user.specialization}`;
-   const scheduleDiv = document.getElementById('trainerSchedule');
-   const loading = document.getElementById('scheduleLoading');
-   const metricsDiv = document.getElementById('dashboardMetrics');
-   try {
-     const trainerId = authUser.user.trainerid || authUser.user.trainer_id || authUser.user.id;
-     const resp = await fetch(`${API_URL}/api/classes?trainerid=${encodeURIComponent(trainerId)}`);
-     if (!resp.ok) throw new Error(`Failed to fetch classes: ${resp.status}`);
-     const data = await resp.json(), allFromApi = data.data || [];
-     const classes = allFromApi.filter(c => {
-       const cid = c.trainer_id || c.trainerid || null;
-       return cid === trainerId;
-     });
-     loading.style.display = 'none';
-     if (classes.length === 0) {
-       scheduleDiv.innerHTML = '<div class="no-classes">No assigned classes or schedule found.</div>';
-       metricsDiv.innerHTML = "";
-       return;
-     }
-     const { start: weekStart, end: weekEnd } = getCurrentWeekRange();
-     let totalWeeklyAttendance = 0, bestSession = null, bestCount = 0;
-     const classInfo = await Promise.all(classes.map(async c => {
-       const cid = c.class_id || c.classid || c._id;
-       let enrollments = [];
-       try {
-         const enrollResp = await fetch(`${API_URL}/api/classes/${cid}/enrollments`);
-         if (enrollResp.ok) {
-           const enroll = await enrollResp.json();
-           enrollments = enroll.data || [];
-         }
-       } catch (err) {}
-       const attendanceByDate = {};
-       let weeklyAttendance = 0;
-       enrollments.forEach(e => {
-         const status = (e.attendance_status||'').toLowerCase();
-         if (status !== 'attended') return;
-         const sessionDate = e.session_date;
-         const dateStr = sessionDate ? (new Date(sessionDate)).toISOString().slice(0,10) : 'unknown';
-         if (!attendanceByDate[dateStr]) attendanceByDate[dateStr]=0;
-         attendanceByDate[dateStr]++;
-         const dt = new Date(dateStr);
-         if (dt >= weekStart && dt <= weekEnd) weeklyAttendance++;
-       });
-       Object.entries(attendanceByDate).forEach(([dt,count])=>{
-         totalWeeklyAttendance += (new Date(dt)>=weekStart&&new Date(dt)<=weekEnd)?count:0;
-         if (count > bestCount) { bestCount = count; bestSession = { class: c, date: dt, count }; }
-       });
-       const enrolled = enrollments.length || 0;
-       const capacity = c.capacity || '-';
-       const participationRate = enrolled ? Math.round(weeklyAttendance/enrolled*100) : 0;
-       const datesAttended = Object.keys(attendanceByDate);
-       const streak = calcAttendanceStreak(datesAttended);
-       const lowAttendance = enrolled && c.capacity && ((enrolled / c.capacity) < .5);
-       return {
-         name: c.classname || c.class_name || 'Unnamed',
-         schedule: c.schedule || '',
-         capacity, enrolled,
-         weeklyAttendance,
-         participationRate,
-         mostAttended: Object.entries(attendanceByDate).sort((a,b)=>b[1]-a[1])[0]||null,
-         streak,
-         attendanceByDate,
-         lowAttendance
-       }
-     }));
-     let dashHTML = `<div style="display:flex;flex-wrap:wrap;gap:2.5em 1.5em;">`
-     dashHTML += `<div><strong>Weekly Attendance Total:</strong> <span class="attendance-badge high-badge">${totalWeeklyAttendance}</span></div>`;
-     dashHTML += `<div><strong>Most Attended Session:</strong> <span class="attendance-badge">${bestSession ? (bestSession.class.classname || bestSession.class.class_name) + " (" + bestSession.date + ") – " + bestSession.count + " attended" : "N/A"}</span></div>`;
-     dashHTML += `</div>`;
-     metricsDiv.innerHTML = dashHTML;
-     let html = `<table class="schedule-table"><thead><tr>
-  <th>Class Name</th>
-  <th>Schedule</th>
-  <th>Capacity</th>
-  <th>Enrolled</th>
-  <th>Attendance<br>This Week</th>
-  <th>Participation<br>Rate (%)</th>
-  <th>Attendance<br>Streak</th>
-  <th>Attended By Date</th>
-</tr></thead><tbody>`;
-     for (const c of classInfo) {
-       html += `<tr${c.lowAttendance?' class="low-attendance-row"':''}>
- <td>${c.name}</td>
- <td>${c.schedule}</td>
- <td>${c.capacity}</td>
- <td><b>${c.enrolled}</b> ${c.lowAttendance?'<span class="attendance-badge low-badge">Low</span>':''}</td>
- <td><span class="attendance-badge high-badge">${c.weeklyAttendance}</span></td>
- <td><span class="attendance-badge">${c.participationRate}%</span></td>
- <td><span class="attendance-badge streak-badge">${c.streak}</span></td>
- <td>`;
-       html += Object.entries(c.attendanceByDate)
-         .sort((a,b) => b[0].localeCompare(a[0]))
-         .map(([date,count])=>`${date}: <b>${count}</b>`).join("<br>") || '<span class="em">No attended sessions</span>';
-       html += `</td></tr>`;
-     }
-     html += "</tbody></table>";
-     scheduleDiv.innerHTML = html;
-   } catch (err) {
-     loading.style.display = 'none';
-     scheduleDiv.innerHTML = '<div class="error">Failed to load schedule. Check console for details.</div>';
-   }
- });
-</script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const menuToggle = document.getElementById('menuToggle');
+            const sidebar = document.querySelector('.sidebar');
+            const logoutBtn = document.getElementById('logoutBtn');
+            const authUser = JSON.parse(localStorage.getItem('authUser'));
+            
+            if (!authUser || !authUser.user || authUser.role !== "trainer" || (Date.now() - authUser.timestamp > 3600000)) {
+                localStorage.removeItem('authUser');
+                window.location.href = '../trainer-login.html';
+                return;
+            }
+            
+            menuToggle.addEventListener('click', () => sidebar.classList.toggle('collapsed'));
+            
+            logoutBtn.addEventListener('click', () => {
+                localStorage.removeItem('authUser');
+                window.location.href = '../trainer-login.html';
+            });
+            
+            document.getElementById('trainerName').textContent = authUser.user.name;
+            if (authUser.user.specialization) {
+                document.getElementById('specialization').textContent = `Specialization: ${authUser.user.specialization}`;
+            }
+            
+            document.addEventListener('click', (e) => {
+                if (window.innerWidth <= 768 && !sidebar.contains(e.target) && !menuToggle.contains(e.target)) {
+                    sidebar.classList.remove('collapsed');
+                }
+            });
+            
+            document.getElementById('scheduleLoading').style.display = 'none';
+        });
+    </script>
 </body>
 </html>

@@ -1,120 +1,187 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Member Login - GOALS Gym</title>
-  <link rel="stylesheet" href="/style.css"/>
-  <link rel="stylesheet" href="./member/member-css/member-login.css">
-    
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Member Login - GOALS Gym</title>
+    <link rel="stylesheet" href="./style.css">
 </head>
 <body>
-  <div class="brand">GOALS Gym • Member Portal</div>
-
-  <div class="center-wrap">
-    <div class="login-card" role="main" aria-labelledby="loginHeading">
-      <h1 id="loginHeading" class="login-title">ADMIN LOGIN</h1>
-
-      <form id="loginForm" aria-hidden="false" autocomplete="on">
-        <div class="form-row">
-          <label for="username">Username</label>
-          <input type="text" id="username" class="input-field" required autocomplete="username" placeholder="your username">
-        </div>
-
-        <div class="form-row">
-          <label for="password">Password</label>
-          <input type="password" id="password" class="input-field" required autocomplete="current-password" placeholder="your password">
-        </div>
-
-        <div style="margin-top:6px">
-          <button type="submit" id="loginBtn" class="btn btn-login">LOGIN</button>
-        </div>
-      </form>
-
-      <div id="error-message" class="error-message" role="alert" aria-live="polite"></div>
-
-      <div style="display:flex;gap:8px;margin-top:14px;">
-        <button id="loginStayBtn" class="btn btn-ghost" style="flex:1">Login & go to Enrollments</button>
-        <button id="loginHiddenBtn" class="btn btn-ghost" style="display:none">Hidden</button>
-      </div>
-
-      <div class="sub-text">Forgot your password? Contact admin to reset.</div>
-
-      <!-- Logged-in small panel (shown if already logged) -->
-      <div id="memberPanel" class="logged-panel hide" aria-live="polite" style="margin-top:14px;">
-        <div>
-          <div id="welcomeText" style="font-weight:700">Welcome, <span id="memberNameMini">Member</span></div>
-          <div class="small" id="memberInfo">Username: -</div>
-        </div>
-        <div style="display:flex;gap:8px;align-items:center;">
-          <button id="manageEnrollmentsBtn" class="btn btn-ghost">Manage Enrollments</button>
-          <button id="dashboardBtn" class="btn btn-ghost">Dashboard</button>
-          <button id="logoutBtn" class="btn btn-ghost">Logout</button>
-        </div>
-      </div>
+    <div class="login-container">
+        <h1 class="login-title">Member Login</h1>
+        <form id="loginForm">
+            <div class="input-group">
+                <label for="username" class="input-label">Username</label>
+                <input type="text" id="username" class="input-field" required autocomplete="username">
+            </div>
+            <div class="input-group">
+                <label for="password" class="input-label">Password</label>
+                <input type="password" id="password" class="input-field" required autocomplete="current-password">
+            </div>
+            <div class="login-buttons">
+                <button type="submit" class="login-button">Login</button>
+                <button type="button" id="loginStayBtn" class="login-stay-button">Login & Stay</button>
+            </div>
+        </form>
+        <p class="error-message" id="error-message"></p>
+        <p class="info-message">Forgot your password? Contact admin to reset.</p>
     </div>
-  </div>
 
-<script>
-const API_URL = 'http://localhost:8080';
+    <!-- Logged-in Panel -->
+    <div id="memberPanel" class="logged-in-panel">
+        <div class="welcome-section">
+            <div id="welcomeText" class="welcome-text">Welcome, Member</div>
+            <div id="memberInfo" class="member-info"></div>
+        </div>
+        <div class="panel-buttons">
+            <button id="manageEnrollmentsBtn" class="panel-button primary">Manage Enrollments</button>
+            <a href="member/member-mainpage.html"><button class="panel-button">Go to Dashboard</button></a>
+            <button id="logoutBtn" class="panel-button ghost">Logout</button>
+        </div>
+    </div>
 
-const $ = id => document.getElementById(id);
-const show = el => { if(!el) return; el.classList.remove('hide'); el.style.display = ''; };
-const hide = el => { if(!el) return; el.classList.add('hide'); el.style.display = 'none'; };
+    <!-- Back Button -->
+    <button class="circle-back-btn" onclick="window.location.href='./index.html'">&lt;</button>
 
-const loginForm = $('loginForm'), usernameInput = $('username'), passwordInput = $('password'),
-      loginBtn = $('loginBtn'), loginStayBtn = $('loginStayBtn'), errorMessage = $('error-message'),
-      memberPanel = $('memberPanel'), welcomeText = $('welcomeText'), memberInfo = $('memberInfo'),
-      manageEnrollmentsBtn = $('manageEnrollmentsBtn'), dashboardBtn = $('dashboardBtn'), logoutBtn = $('logoutBtn'),
-      memberNameMini = $('memberNameMini');
+    <!-- Transparent Background Logo -->
+    <div class="background-logo">
+        <img src="./image/logo2.png" alt="GOALS Gym Logo" class="transparent-logo-bg">
+    </div>
 
-function getAuth(){ try { return JSON.parse(localStorage.getItem('authUser')||'null'); } catch(e){return null;} }
-function memberIdFromAuth(){ const a=getAuth(); if(!a||!a.user) return null; const u=a.user; return u.memberId||u.member_id||u._id||u.id||null; }
-function memberNameFromAuth(){ const a=getAuth(); if(!a||!a.user) return ''; const u=a.user; return u.name||u.fullname||u.username||''; }
+    <script>
+        const API_URL = 'http://localhost:8080';
 
-document.addEventListener('DOMContentLoaded', () => {
-  loginForm.addEventListener('submit', async (e)=>{ e.preventDefault(); await performLogin(false); });
-  loginStayBtn.addEventListener('click', async ()=>{ await performLogin(true); });
-  logoutBtn.addEventListener('click', ()=> { localStorage.removeItem('authUser'); showLoginUI(); });
+        // DOM elements
+        const loginForm = document.getElementById('loginForm');
+        const usernameInput = document.getElementById('username');
+        const passwordInput = document.getElementById('password');
+        const loginStayBtn = document.getElementById('loginStayBtn');
+        const errorMessage = document.getElementById('error-message');
+        const memberPanel = document.getElementById('memberPanel');
+        const welcomeText = document.getElementById('welcomeText');
+        const memberInfo = document.getElementById('memberInfo');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const manageEnrollmentsBtn = document.getElementById('manageEnrollmentsBtn');
 
-  manageEnrollmentsBtn.addEventListener('click', (e) => {
-    e.preventDefault();
-    window.location.href = "member/manage-member-enrollment.html";
-  });
-  dashboardBtn.addEventListener('click', ()=> { window.location.href = "member/member-dashboard.html"; });
+        // Utility functions
+        function getAuth() {
+            try {
+                return JSON.parse(localStorage.getItem('authUser') || 'null');
+            } catch (e) {
+                return null;
+            }
+        }
 
-  const auth = getAuth();
-  if (auth && auth.role === 'member' && auth.user) showLoggedInUI(); else showLoginUI();
-  usernameInput.focus();
-});
+        function memberNameFromAuth() {
+            const auth = getAuth();
+            if (!auth || !auth.user) return '';
+            const user = auth.user;
+            return user.name || user.fullname || user.username || '';
+        }
 
-async function performLogin(stay) {
-  errorMessage.textContent = '';
-  const username = usernameInput.value.trim(), password = passwordInput.value;
-  if (!username || !password) { errorMessage.textContent = 'Enter username & password.'; return; }
-  loginBtn.disabled = true; loginBtn.textContent = 'Logging in...';
-  try {
-    const resp = await fetch(`${API_URL}/api/member/login`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ username, password }) });
-    if (!resp.ok) { const err = await resp.json().catch(()=>({})); throw new Error(err.error || 'Invalid member credentials'); }
-    const data = await resp.json();
-    localStorage.setItem('authUser', JSON.stringify({ user: data.data, role:'member', timestamp: Date.now() }));
-    showLoggedInUI();
-    if (stay) { window.location.href = "member/manage-member-enrollment.html"; } else { window.location.href = "member/member-dashboard.html"; }
-  } catch (err) {
-    console.warn('Login error', err);
-    errorMessage.textContent = err.message.includes('Failed to fetch') ? 'Server unavailable. Try again later.' : err.message;
-  } finally {
-    loginBtn.disabled = false; loginBtn.textContent = 'LOGIN';
-  }
-}
+        // Event listeners
+        document.addEventListener('DOMContentLoaded', () => {
+            loginForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                await performLogin(false);
+            });
+            
+            loginStayBtn.addEventListener('click', async () => {
+                await performLogin(true);
+            });
+            
+            logoutBtn.addEventListener('click', () => {
+                localStorage.removeItem('authUser');
+                showLoginUI();
+            });
 
-function showLoggedInUI() {
-  const auth = getAuth(); if(!auth||!auth.user) return showLoginUI();
-  memberNameMini.textContent = memberNameFromAuth();
-  memberInfo.textContent = `Username: ${auth.user.username || ''}`;
-  hide(loginForm); show(memberPanel);
-}
-function showLoginUI(){ show(loginForm); hide(memberPanel); }
-</script>
+            manageEnrollmentsBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                window.location.href = "member/manage-member-enrollment.html";
+            });
+
+            // Check if already logged in
+            const auth = getAuth();
+            if (auth && auth.role === 'member' && auth.user) {
+                showLoggedInUI();
+            } else {
+                showLoginUI();
+            }
+            
+            usernameInput.focus();
+        });
+
+        async function performLogin(stay) {
+            errorMessage.textContent = '';
+            const username = usernameInput.value.trim();
+            const password = passwordInput.value;
+            const submitButton = loginForm.querySelector('button[type="submit"]');
+
+            if (!username || !password) {
+                errorMessage.textContent = 'Please enter both username and password.';
+                return;
+            }
+
+            submitButton.disabled = true;
+            submitButton.textContent = 'Logging in...';
+
+            try {
+                const response = await fetch(`${API_URL}/api/member/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json().catch(() => ({}));
+                    throw new Error(error.message || 'Invalid member credentials');
+                }
+
+                const data = await response.json();
+                
+                localStorage.setItem('authUser', JSON.stringify({
+                    user: data.data,
+                    role: 'member',
+                    timestamp: Date.now()
+                }));
+                
+                showLoggedInUI();
+                
+                if (stay) {
+                    window.location.href = "member/manage-member-enrollment.html";
+                } else {
+                    window.location.href = "member/member-mainpage.html";
+                }
+            } catch (err) {
+                console.error('Login error:', err);
+                errorMessage.textContent = err.message.includes('Failed to fetch') 
+                    ? 'Server unavailable. Please try again later.' 
+                    : err.message;
+            } finally {
+                submitButton.disabled = false;
+                submitButton.textContent = 'Login';
+            }
+        }
+
+        function showLoggedInUI() {
+            const auth = getAuth();
+            if (!auth || !auth.user) {
+                showLoginUI();
+                return;
+            }
+
+            welcomeText.textContent = `Welcome, ${memberNameFromAuth()}`;
+            memberInfo.textContent = `Username: ${auth.user.username || ''}`;
+            
+            loginForm.style.display = 'none';
+            memberPanel.style.display = 'flex';
+        }
+
+        function showLoginUI() {
+            loginForm.style.display = 'block';
+            memberPanel.style.display = 'none';
+            errorMessage.textContent = '';
+        }
+    </script>
 </body>
 </html>

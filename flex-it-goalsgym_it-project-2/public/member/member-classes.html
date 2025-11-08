@@ -1,711 +1,156 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Member Classes - GOALS Gym</title>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css" />
-<link rel="stylesheet" href="/style.css"/>
-<style>
-  :root{
-    --nav-bg:#12335a;
-    --nav-accent:#0b2a45;
-    --card-head:#0e3b63;
-    --muted:#9aa6b2;
-    --accent:#f6b33a;
-  }
-  html,body {height:100%; margin:0; font-family: "Segoe UI", Roboto, system-ui, Arial; background:#f2f4f7; color:#222;}
-  .app {
-    display:flex; min-height:100vh; gap:18px;
-  }
-  .sidebar {
-    width:240px; background:linear-gradient(180deg,var(--nav-bg),var(--nav-accent)); color:#fff;
-    padding:18px 12px; box-shadow: 2px 0 6px rgba(0,0,0,0.08);
-  }
-  .brand {
-    display:flex; align-items:center; gap:10px; margin-bottom:18px;
-  }
-  .brand .logo {
-    width:44px; height:44px; background:#fff2; border-radius:6px; display:flex; align-items:center; justify-content:center;
-    font-weight:700; color:#fff; font-size:18px;
-  }
-  .brand h2 { font-size:18px; margin:0; letter-spacing:0.2px; }
-  .nav { margin-top:12px; display:flex; flex-direction:column; gap:8px; }
-  .nav a {
-    color:rgba(255,255,255,0.95); text-decoration:none; padding:10px 12px; border-radius:6px; display:block; font-size:14px;
-  }
-  .nav a:hover { background:rgba(255,255,255,0.06); }
-  .main { flex:1; padding:20px 28px; }
-  .topbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
-  .topbar h1 { margin:0; font-size:20px; color:#0e2740; }
-  .badge { background:#eef; padding:6px 10px; border-radius:8px; display:inline-block; font-weight:600; color:#0e2740; }
-  .card { background:#fff; border-radius:8px; box-shadow:0 1px 0 rgba(0,0,0,0.04); margin-bottom:18px; overflow:hidden; }
-  .card .card-head { background:var(--card-head); color:#fff; padding:12px 16px; font-weight:700; }
-  .card .card-body { padding:14px 16px; color:#223; }
-  .enroll-table{width:100%;border-collapse:collapse;margin-top:8px}
-  .enroll-table th,.enroll-table td{padding:10px 12px;border-bottom:1px solid #eef;text-align:left;vertical-align:middle}
-  .enroll-table th{background:#fafafa;color:#546b7a;font-weight:700;font-size:13px}
-  .enroll-table tr:hover td{background:#fbfcfd}
-  .btn { padding:8px 10px; border-radius:6px; border:1px solid #cdd7df; background:#fff; cursor:pointer; font-size:13px; }
-  .btn:active{transform:translateY(1px)}
-  .btn-primary { background:var(--card-head); color:#fff; border-color:var(--card-head); }
-  .btn-danger { background:#e53e3e; color:#fff; border-color:#c53030; }
-  .btn-ghost { background:transparent; border:1px solid #dbe6ef; color:#0e2740; }
-  .row-actions { display:flex; gap:8px; align-items:center; }
-  .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:9999}
-  .modal{background:white;padding:18px;border-radius:8px;max-width:520px;width:94%}
-  textarea{width:100%;min-height:110px;padding:8px;border-radius:6px;border:1px solid #ccc}
-  .small{font-size:.95rem;color:#657786}
-  .rating{display:flex;gap:6px;align-items:center}
-  .modal-footer { display:flex; justify-content:flex-end; gap:8px; margin-top:12px; }
-  .hidden{display:none!important}
-
-  /* Fix Bulma modal conflict: show custom modal panes */
-  #cancelModal .modal,
-  #feedbackModal .modal {
-    display: block !important;
-  }
-
-  /* Calendar Custom Styles */
-  .calendar-container { margin:0 -15px; padding:15px; background:#f8f9fa; border-radius:8px; }
-  .calendar-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; flex-wrap:wrap; gap:10px; }
-  .calendar-tabs { display:flex; gap:5px; }
-  .calendar-tab { padding:8px 16px; border:1px solid #ddd; background:#fff; cursor:pointer; border-radius:6px; transition:all 0.2s; }
-  .calendar-tab.active { background:var(--accent); color:#fff; border-color:var(--accent); }
-  .calendar-grid { display:grid; grid-template-columns:repeat(7, 1fr); gap:1px; background:#e0e0e0; }
-  .calendar-day { background:#fff; min-height:120px; padding:8px; position:relative; border-radius:4px; }
-  .calendar-day.other-month { background:#f8f9fa; color:#999; }
-  .calendar-day.today { background:#e3f2fd; border:2px solid var(--accent); }
-  .calendar-day-header { font-weight:600; color:#555; margin-bottom:4px; font-size:13px; }
-  .calendar-class { 
-    background:#fff3cd; border-left:3px solid var(--accent); padding:4px 6px; margin:2px 0; 
-    border-radius:3px; font-size:11px; display:flex; justify-content:space-between; align-items:center;
-  }
-  .calendar-status { 
-    padding:1px 4px; border-radius:3px; font-size:9px; font-weight:600; margin-left:4px;
-    min-width:35px; text-align:center;
-  }
-  .status-attended { background:#d4edda; color:#155724; border:1px solid #c3e6cb; }
-  .status-active { background:#d1ecf1; color:#0c5460; border:1px solid #bee5eb; }
-  .status-missed { background:#f8d7da; color:#721c24; border:1px solid #f5c6cb; }
-  .status-cancelled { background:#fff3cd; color:#856404; border:1px solid #ffeaa7; }
-  .calendar-date-picker { margin:0 10px; }
-  .calendar-empty { color:#999; text-align:center; padding:40px; font-style:italic; }
-  @media (max-width:880px){
-    .sidebar{display:none}
-    .main{padding:14px}
-    .calendar-header { flex-direction:column; align-items:stretch; }
-    .calendar-tabs { justify-content:center; }
-    .calendar-class { font-size:10px; }
-    .calendar-status { font-size:8px; min-width:30px; }
-  }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Classes - GOALS Gym</title>
+    <link rel="stylesheet" href="../admin/admin-css/admin-mainpage.css">
+    <link rel="stylesheet" href="./member-css/member-classes.css">
 </head>
 <body>
-<div class="app">
-  <aside class="sidebar" aria-label="Left navigation">
-    <div class="brand">
-      <div class="logo">G</div>
-      <div>
-        <h2>GOALS Gym</h2>
-        <div style="font-size:12px;opacity:0.9;">Member portal</div>
-      </div>
-    </div>
-    <nav class="nav" role="navigation">
-      <a href="./member-dashboard.html">Dashboard</a>
-      <a href="./member-classes.html" style="background:rgba(255,255,255,0.06);">Schedule</a>
-      <a href="./manage-member-enrollment.html">Enroll</a>
-      <a href="./member-profile.html">Profile</a>
-      <a href="#" id="sidebarLogout">Logout</a>
-    </nav>
-  </aside>
-  <main class="main">
-    <div class="topbar">
-      <div>
-        <h1>My Classes</h1>
-        <div class="small">Manage booked classes. Cancel to refund a session before it starts. Send feedback for any class you attended.</div>
-      </div>
-    </div>
-    <div class="card">
-      <div class="card-head">Class Schedule</div>
-      <div class="card-body">
-        <div><strong>Remaining combative sessions:</strong> <span id="remainingSessions" class="badge">—</span></div>
-        <div id="loading" class="small" style="margin-top:10px">Loading your enrollments...</div>
-        <div id="error" class="small" style="color:crimson;display:none;margin-top:8px"></div>
-        <table class="enroll-table" id="enrollmentsTable" style="display:none; margin-top:12px;">
-          <thead><tr><th>Class</th><th>Day</th><th>Date</th><th>Time</th><th>Status</th><th style="width:240px"></th></tr></thead>
-          <tbody id="enrollmentsBody"></tbody>
-        </table>
-      </div>
-    </div>
-    <div class="card">
-      <div class="card-head">Calendar View</div>
-      <div class="card-body">
-        <div class="calendar-header">
-          <div class="calendar-tabs">
-            <div class="calendar-tab active" data-view="month">Monthly</div>
-            <div class="calendar-tab" data-view="week">Weekly</div>
-            <div class="calendar-tab" data-view="today">Today</div>
-          </div>
-          <input type="date" id="calendarDate" class="calendar-date-picker">
-        </div>
-        <div id="calendarContainer" class="calendar-container">
-          <div class="calendar-empty">Loading calendar...</div>
-        </div>
-      </div>
-    </div>
-  </main>
-</div>
-
-<div id="cancelModal" class="hidden">
-  <div class="modal-backdrop">
-    <div class="modal" role="dialog" aria-modal="true">
-      <div id="cancelText" class="small">Are you sure you want to cancel this enrollment? This will refund your session if allowed.</div>
-      <div style="margin-top:12px;text-align:right">
-        <button id="cancelNo" class="btn">No</button>
-        <button id="cancelYes" class="btn btn-danger">Yes, cancel</button>
-      </div>
-    </div>
-  </div>
-</div>
-<div id="feedbackModal" class="hidden">
-  <div class="modal-backdrop">
-    <div class="modal" role="dialog" aria-modal="true">
-      <h3 id="feedbackTitle">Send feedback</h3>
-      <div class="small" id="feedbackClassInfo"></div>
-      <div style="margin-top:10px">
-        <label class="small">Rating (1-5)</label>
-        <div class="rating">
-          <select id="feedbackRating">
-            <option value="">Select</option>
-            <option>5</option><option>4</option><option>3</option><option>2</option><option>1</option>
-          </select>
-        </div>
-      </div>
-      <div style="margin-top:10px">
-        <label class="small">Comment</label>
-        <textarea id="feedbackComment" placeholder="Write your feedback here..."></textarea>
-      </div>
-      <div class="modal-footer">
-        <button id="feedbackCancel" class="btn">Cancel</button>
-        <button id="feedbackSend" class="btn btn-primary">Send Feedback</button>
-      </div>
-    </div>
-  </div>
-</div>
-<script>
-const API_URL = 'http://localhost:8080';
-const $ = id => document.getElementById(id);
-const classNameCache = {}; // Cache for class names to avoid repeated API calls
-
-function getAuth(){ try { return JSON.parse(localStorage.getItem('authUser') || 'null'); } catch(e){ return null; } }
-function memberIdFromAuth(){ const a=getAuth(); if(!a||!a.user) return null; const u=a.user; return u.memberId||u.member_id||u._id||u.id||null; }
-function escapeHtml(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-let pendingCancelId = null;
-let pendingFeedback = { enrollmentId: null, classId: null, className: '', trainerId: null };
-let allEnrollments = [];
-
-// ---------------------- Status Helper Function ----------------------
-function getStatusClass(status) {
-  const statusMap = {
-    'attended': { class: 'status-attended', label: 'Attended', color: '#28a745' },
-    'active': { class: 'status-active', label: 'Active', color: '#17a2b8' },
-    'scheduled': { class: 'status-active', label: 'Scheduled', color: '#17a2b8' },
-    'missed': { class: 'status-missed', label: 'Missed', color: '#dc3545' },
-    'cancelled': { class: 'status-cancelled', label: 'Cancelled', color: '#ffc107' },
-    'completed': { class: 'status-attended', label: 'Completed', color: '#28a745' }
-  };
-  return statusMap[status.toLowerCase()] || { class: 'status-active', label: 'Unknown', color: '#6c757d' };
-}
-
-function getFormattedStatus(status) {
-  const statusInfo = getStatusClass(status);
-  return `<span class="calendar-status ${statusInfo.class}">${statusInfo.label}</span>`;
-}
-
-// ---------------------- Class Name Helper Functions ----------------------
-async function getClassNameById(classId) {
-  // Check cache first
-  if (classNameCache[classId]) {
-    return classNameCache[classId];
-  }
-  
-  try {
-    const res = await fetch(`${API_URL}/api/classes/${encodeURIComponent(classId)}`);
-    if (res.ok) {
-      const data = await res.json();
-      const className = data.data?.class_name || classId;
-      classNameCache[classId] = className;
-      return className;
-    }
-  } catch (error) {
-    console.warn('Failed to fetch class name:', error);
-  }
-  
-  // Fallback - use the classId itself
-  classNameCache[classId] = classId;
-  return classId;
-}
-
-function getClassName(enrollment) {
-  // Check if we already have the name cached or in the enrollment
-  if (enrollment.class_name) return enrollment.class_name;
-  if (enrollment.class_id && enrollment.class_id.class_name) return enrollment.class_id.class_name;
-  
-  // If it's just a class_id string, use the async helper (now cached, so sync)
-  if (typeof enrollment.class_id === 'string' || enrollment.class_id) {
-    const classIdStr = typeof enrollment.class_id === 'string' ? enrollment.class_id : (enrollment.class_id?._id || enrollment.class_id);
-    return getClassNameById(classIdStr);  // Returns promise, but cached = sync
-  }
-  
-  return 'Unnamed Class';
-}
-
-// ---------------------- Enrollment Table Logic ----------------------
-document.addEventListener('DOMContentLoaded', () => {
-  loadEnrollments();
-  window.addEventListener('storage', (ev) => { if (ev.key === 'authUser') renderRemainingSessions(); });
-  $('cancelNo').addEventListener('click', ()=> $('cancelModal').classList.add('hidden'));
-  $('cancelYes').addEventListener('click', async ()=> { const id = pendingCancelId; if (!id) return; $('cancelModal').classList.add('hidden'); await performCancel(id); });
-  $('feedbackCancel').addEventListener('click', ()=> { $('feedbackModal').classList.add('hidden'); pendingFeedback = { enrollmentId:null, classId:null, className:'', trainerId: null }; });
-  $('feedbackSend').addEventListener('click', sendFeedback);
-  const so = document.getElementById('sidebarLogout');
-  if (so) so.addEventListener('click', (e) => { e.preventDefault(); localStorage.removeItem('authUser'); window.location.href = '../member-login.html'; });
-  
-  // Calendar initialization
-  initCalendar();
-});
-
-async function loadEnrollments() {
-  const memberId = memberIdFromAuth(); if (!memberId) return window.location.href = './member-login.html';
-  $('error').style.display = 'none'; $('loading').style.display = ''; $('enrollmentsTable').style.display = 'none'; $('enrollmentsBody').innerHTML = '';
-  
-  try {
-    const res = await fetch(`${API_URL}/api/enrollments/member/${encodeURIComponent(memberId)}`);
-    if (!res.ok) throw new Error('Failed to load enrollments');
-    const js = await res.json();
-    allEnrollments = js.data || [];
-    
-    if (!allEnrollments.length) { 
-      $('loading').textContent = 'You have no upcoming enrollments.'; 
-      await renderRemainingSessions(); 
-      initCalendar();
-      return; 
-    }
-    
-    // Pre-fetch all class names for better performance (parallel)
-    const uniqueClassIds = [...new Set(allEnrollments.map(en => 
-      typeof en.class_id === 'string' ? en.class_id : (en.class_id?._id || en.class_id)
-    ).filter(id => id))];
-    
-    const classNamePromises = uniqueClassIds.map(classId => getClassNameById(classId));
-    await Promise.all(classNamePromises);
-    
-    $('loading').style.display = 'none';
-    const body = $('enrollmentsBody');
-    
-    // Render rows with await all for robustness
-    const renderPromises = allEnrollments.map(async (en) => {
-      const tr = document.createElement('tr');
-      const className = await getClassName(en);  // Now sync via cache
-      const day = en.session_day || '';
-      const date = en.session_date ? new Date(en.session_date).toLocaleDateString() : (en.enrollment_date ? new Date(en.enrollment_date).toLocaleDateString() : '');
-      const time = en.session_time || '';
-      const status = en.attendance_status || en.status || 'scheduled';
-      const statusInfo = getStatusClass(status);
-      
-      const classIdStr = typeof en.class_id === 'string' ? en.class_id : (en.class_id?._id || en.class_id);
-      const cancelBtn = (status === 'scheduled') ? `<button class="btn" data-id="${en._id || en.enrollment_id}" onclick="openCancelModal(event)">Cancel</button>` : `<button class="btn" disabled>Cancel</button>`;
-      let feedbackBtn = '';
-      if (status === 'attended' || status === 'completed') {
-        feedbackBtn = `<button class="btn btn-ghost" data-en="${en._id || en.enrollment_id}" data-cl="${classIdStr || ''}" data-name="${escapeHtml(className)}" onclick="openFeedbackModal(event)">Send feedback</button>`;
-      }
-      
-      tr.innerHTML = `
-        <td>${escapeHtml(className)}</td>
-        <td>${escapeHtml(day)}</td>
-        <td>${escapeHtml(date)}</td>
-        <td>${escapeHtml(time)}</td>
-        <td><span class="calendar-status ${statusInfo.class}">${statusInfo.label}</span></td>
-        <td><div class="row-actions">${cancelBtn}${feedbackBtn}</div></td>
-      `;
-      body.appendChild(tr);
-    });
-    
-    await Promise.all(renderPromises);
-    $('enrollmentsTable').style.display = 'table';  // Show only after all rendered
-    
-  } catch (err) {
-    $('error').textContent = err.message || 'Error'; $('error').style.display = ''; $('loading').style.display = 'none';
-  }
-  await renderRemainingSessions();
-  initCalendar();
-}
-
-window.openCancelModal = function(ev) {
-  const id = ev.target.getAttribute('data-id'); if (!id) return;
-  pendingCancelId = id;
-  $('cancelText').textContent = 'Are you sure you want to cancel this enrollment? This will refund your session if the class has not started yet.';
-  $('cancelModal').classList.remove('hidden');
-}
-
-window.openFeedbackModal = async function(ev) {
-  const btn = ev.target;
-  const enrollmentId = btn.getAttribute('data-en');
-  const classId = btn.getAttribute('data-cl');
-  const name = btn.getAttribute('data-name') || '';
-  let trainerId = null;
-  if (!classId) { 
-    console.error('No classId in button data-cl'); 
-    alert('Class information missing'); 
-    return; 
-  }
-  console.log('Fetching class for trainer_id:', classId);  // Debug
-  try {
-    const classRes = await fetch(`${API_URL}/api/classes/${encodeURIComponent(classId)}`);
-    console.log('Class fetch response:', classRes.status, classRes.statusText);  // Debug
-    if (classRes.ok) {
-      const classJs = await classRes.json();
-      console.log('Class data:', classJs.data);  // Debug
-      trainerId = classJs.data?.trainer_id || null;
-      if (!trainerId) {
-        console.warn('No trainer_id in class data for ID:', classId);
-      }
-    } else {
-      console.error('Class fetch failed:', classRes.status, await classRes.text());
-    }
-  } catch (err) { 
-    console.error('Class fetch error:', err); 
-    trainerId = null; 
-  }
-  pendingFeedback = { enrollmentId, classId, className: name, trainerId };
-  $('feedbackTitle').textContent = `Send feedback — ${name}`;
-  $('feedbackClassInfo').textContent = `Class: ${name} (Trainer ID: ${trainerId || 'Not found'})`;  // Show for debug
-  $('feedbackRating').value = '';
-  $('feedbackComment').value = '';
-  $('feedbackModal').classList.remove('hidden');
-  if (!trainerId) {
-    alert('Warning: No trainer assigned to this class. Feedback may fail if required by backend. Check console.');
-  }
-}
-
-async function sendFeedback() {
-  const rating = $('feedbackRating').value;
-  const comment = $('feedbackComment').value.trim();
-  if (!pendingFeedback || !pendingFeedback.enrollmentId || !pendingFeedback.classId) { alert('Missing enrollment/class info.'); return; }
-  if (!rating) { alert('Please select a rating'); return; }
-  if (parseInt(rating) < 1 || parseInt(rating) > 5) { alert('Rating must be between 1 and 5'); return; }
-  
-  // Relaxed trainerId check - warn if missing, but try to send (backend may need update)
-  if (!pendingFeedback.trainerId) {
-    const proceed = confirm('No trainer ID found for this class. Continue anyway? (Feedback might fail on server.)');
-    if (!proceed) return;
-  }
-  
-  try {
-    const auth = getAuth(); if (!auth || !auth.user) return alert('Please login again');
-    const payload = {
-      class_id: pendingFeedback.classId,
-      member_id: memberIdFromAuth(),
-      trainer_id: pendingFeedback.trainerId || '',  // Send empty string if null
-      rating: parseInt(rating),
-      comment: comment || ''
-    };
-    console.log('Sending feedback payload:', payload);  // Debug
-    const res = await fetch(`${API_URL}/api/feedbacks`, {
-      method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)
-    });
-    const js = await res.json().catch(()=>({}));
-    console.log('Feedback response:', res.status, js);  // Debug
-    if (!res.ok) throw new Error(js.error || js.message || 'Send feedback failed');
-    alert(js.message || 'Feedback sent. Thank you!');
-    $('feedbackModal').classList.add('hidden');
-    pendingFeedback = { enrollmentId:null, classId:null, className:'', trainerId: null };
-    await loadEnrollments();
-  } catch (err) {
-    console.error('Feedback send error:', err);
-    alert('Feedback failed: ' + (err.message || 'Unknown. Check console for details.'));
-  }
-}
-
-async function performCancel(enrollId) {
-  try {
-    const res = await fetch(`${API_URL}/api/enrollments/${encodeURIComponent(enrollId)}/cancel`, { method:'PUT' });
-    const js = await res.json().catch(()=>({}));
-    if (!res.ok) throw new Error(js.error || js.message || 'Cancel failed');
-    await refreshMemberFromServer();
-    await loadEnrollments();
-    alert(js.message || 'Enrollment cancelled.' + (js.refund_processed ? ' Session refunded.' : ''));
-  } catch (err) {
-    alert('Cancel failed: ' + (err.message || 'Unknown'));
-  }
-}
-
-async function refreshMemberFromServer() {
-  const memberId = memberIdFromAuth(); if (!memberId) return;
-  try {
-    const res = await fetch(`${API_URL}/api/members/${encodeURIComponent(memberId)}`);
-    if (!res.ok) return;
-    const js = await res.json();
-    const auth = getAuth() || { role:'member' }; auth.user = js.data || auth.user; auth.timestamp = Date.now(); localStorage.setItem('authUser', JSON.stringify(auth));
-  } catch (e) { }
-}
-
-async function renderRemainingSessions() {
-  const auth = getAuth(); let remainingText = '—';
-  const memberId = memberIdFromAuth();
-  if (!memberId) { $('remainingSessions').textContent = remainingText; return; }
-  try {
-    const res = await fetch(`${API_URL}/api/members/${encodeURIComponent(memberId)}`);
-    if (res.ok) {
-      const js = await res.json();
-      const member = js.data || (auth && auth.user);
-      const comb = (member.memberships||[]).find(m => (m.type||'').toLowerCase().includes('combative')) || null;
-      if (comb) {
-        if (comb.remainingSessions !== undefined && comb.remainingSessions !== null && !isNaN(parseInt(comb.remainingSessions)))
-          remainingText = parseInt(comb.remainingSessions);
-        else if (comb.remaining !== undefined && comb.remaining !== null && !isNaN(parseInt(comb.remaining)))
-          remainingText = parseInt(comb.remaining);
-      }
-    }
-  } catch (e) { }
-  $('remainingSessions').textContent = (remainingText !== '—' ? remainingText : "0");
-}
-
-// ---------------------- CALENDAR LOGIC WITH STATUS ----------------------
-function initCalendar() {
-  const tabs = document.querySelectorAll('.calendar-tab');
-  const datePicker = document.getElementById('calendarDate');
-  
-  // Set today's date
-  const today = new Date();
-  datePicker.value = today.toISOString().split('T')[0];
-  
-  tabs.forEach(tab => {
-    tab.addEventListener('click', (e) => {
-      tabs.forEach(t => t.classList.remove('active'));
-      e.currentTarget.classList.add('active');
-      renderCalendar(e.currentTarget.dataset.view, datePicker.value);
-    });
-  });
-  
-  datePicker.addEventListener('change', () => {
-    renderCalendar(document.querySelector('.calendar-tab.active').dataset.view, datePicker.value);
-  });
-  
-  // Initial render after data loads
-  setTimeout(() => {
-    if (allEnrollments.length > 0) {
-      renderCalendar('month', datePicker.value);
-    }
-  }, 800);
-}
-
-function renderCalendar(view, selectedDate) {
-  const container = document.getElementById('calendarContainer');
-  const date = new Date(selectedDate);
-  let html = '';
-  
-  if (view === 'today') {
-    const todayEnrollments = allEnrollments.filter(en => {
-      const enDate = new Date(en.session_date);
-      return enDate.toDateString() === new Date().toDateString();
-    });
-    
-    html = `
-      <div class="has-text-centered mb-4">
-        <h3 class="title is-4">Today's Classes</h3>
-        <p class="subtitle is-6">${new Date().toLocaleDateString()}</p>
-      </div>
-    `;
-    
-    if (todayEnrollments.length === 0) {
-      html += '<div class="has-text-centered py-6"><p class="is-size-5 has-text-grey">No classes today</p></div>';
-    } else {
-      // Sort by time
-      todayEnrollments.sort((a, b) => {
-        const timeA = a.session_time || '00:00';
-        const timeB = b.session_time || '00:00';
-        return timeA.localeCompare(timeB);
-      });
-      
-      const rows = todayEnrollments.map(en => {
-        const className = classNameCache[typeof en.class_id === 'string' ? en.class_id : (en.class_id?._id || en.class_id)] || getClassName(en);
-        const status = en.attendance_status || en.status || 'scheduled';
-        const statusInfo = getStatusClass(status);
-        return `
-          <tr>
-            <td>${en.session_time || 'All day'}</td>
-            <td>${className}</td>
-            <td><span class="calendar-status ${statusInfo.class}">${statusInfo.label}</span></td>
-          </tr>
-        `;
-      }).join('');
-      
-      html += `
-        <div class="table-container">
-          <table class="table is-fullwidth is-striped">
-            <thead>
-              <tr>
-                <th>Time</th>
-                <th>Class</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${rows}
-            </tbody>
-          </table>
-        </div>
-      `;
-    }
-    
-  } else if (view === 'week') {
-    const weekStart = new Date(date);
-    weekStart.setDate(date.getDate() - date.getDay());
-    
-    html = `
-      <div class="has-text-centered mb-4">
-        <h3 class="title is-4">This Week's Classes</h3>
-        <p class="subtitle is-6">${weekStart.toLocaleDateString()} - ${new Date(weekStart.getTime() + 6 * 24 * 60 * 60 * 1000).toLocaleDateString()}</p>
-      </div>
-    `;
-    
-    const weekEnrollments = allEnrollments.filter(en => {
-      const enDate = new Date(en.session_date);
-      return enDate >= weekStart && enDate <= new Date(weekStart.getTime() + 6 * 24 * 60 * 60 * 1000);
-    });
-    
-    if (weekEnrollments.length === 0) {
-      html += '<div class="has-text-centered py-6"><p class="is-size-5 has-text-grey">No classes this week</p></div>';
-    } else {
-      const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-      const dayMap = {};
-      
-      weekEnrollments.forEach(en => {
-        const enDate = new Date(en.session_date);
-        const dayIndex = enDate.getDay();
-        if (!dayMap[dayIndex]) dayMap[dayIndex] = [];
-        dayMap[dayIndex].push(en);
-      });
-      
-      const dayColumns = Array.from({length: 7}, (_, i) => {
-        const dayClasses = dayMap[i] || [];
-        const dayDate = new Date(weekStart.getTime() + i * 24 * 60 * 60 * 1000);
-        const isToday = dayDate.toDateString() === new Date().toDateString();
-        
-        const classTags = dayClasses.map(en => {
-          const className = classNameCache[typeof en.class_id === 'string' ? en.class_id : (en.class_id?._id || en.class_id)] || getClassName(en);
-          const status = en.attendance_status || en.status || 'scheduled';
-          const statusInfo = getStatusClass(status);
-          return `
-            <div class="calendar-class">
-              <div style="display:flex; justify-content:space-between; align-items:center; width:100%;">
-                <span class="is-size-7">${en.session_time || 'All day'} - ${className}</span>
-                <span class="calendar-status ${statusInfo.class} is-size-7">${statusInfo.label}</span>
-              </div>
+    <div class="admin-container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h2>GOALS Gym Member</h2>
             </div>
-          `;
-        }).join('');
-        
-        return `
-          <div class="column is-2">
-            <div class="notification is-light ${isToday ? 'is-info' : ''}">
-              <p class="has-text-centered has-text-weight-semibold mb-2">${days[i]}</p>
-              <p class="has-text-centered is-size-7">${dayDate.toLocaleDateString()}</p>
-              ${classTags || '<p class="has-text-centered is-size-7 has-text-grey">No classes</p>'}
-            </div>
-          </div>
-        `;
-      }).join('');
-      
-      html += `
-        <div class="columns is-multiline">
-          ${dayColumns}
-        </div>
-      `;
-    }
-    
-  } else { // Monthly view
-    const year = date.getFullYear();
-    const month = date.getMonth();
-    const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
-    const daysInMonth = lastDay.getDate();
-    const startingDay = firstDay.getDay();
-    
-    html = `
-      <div class="has-text-centered mb-4">
-        <h3 class="title is-4">${firstDay.toLocaleDateString('default', { month: 'long', year: 'numeric' })}</h3>
-      </div>
-    `;
-    
-    const monthEnrollments = allEnrollments.filter(en => {
-      const enDate = new Date(en.session_date);
-      return enDate.getMonth() === month && enDate.getFullYear() === year;
-    });
-    
-    if (monthEnrollments.length === 0) {
-      html += '<div class="has-text-centered py-6"><p class="is-size-5 has-text-grey">No classes this month</p></div>';
-    } else {
-      // Create day map with cached class names and status
-      const dayMap = {};
-      monthEnrollments.forEach(en => {
-        const enDate = new Date(en.session_date);
-        const day = enDate.getDate();
-        if (!dayMap[day]) dayMap[day] = [];
-        dayMap[day].push(en);
-      });
-      
-      const calendarCells = Array.from({length: 42}, (_, i) => {
-        const day = i - startingDay + 1;
-        if (day >= 1 && day <= daysInMonth) {
-          const dayClasses = dayMap[day] || [];
-          const isToday = day === new Date().getDate() && month === new Date().getMonth() && year === new Date().getFullYear();
-          
-          const classItems = dayClasses.map(en => {
-            const className = classNameCache[typeof en.class_id === 'string' ? en.class_id : (en.class_id?._id || en.class_id)] || getClassName(en);
-            const status = en.attendance_status || en.status || 'scheduled';
-            const statusInfo = getStatusClass(status);
-            return `
-              <div class="calendar-class" style="padding:3px 6px; margin:1px 0; font-size:10px;">
-                <div style="display:flex; justify-content:space-between; align-items:center; width:100%;">
-                  <span style="font-size:9px;">${en.session_time || 'All'}</span>
-                  <div style="display:flex; flex-direction:column; align-items:flex-end;">
-                    <strong style="font-size:9px;">${className}</strong>
-                    <span class="calendar-status ${statusInfo.class}" style="font-size:8px; padding:0 2px; margin-top:1px;">${statusInfo.label}</span>
-                  </div>
+            <nav class="sidebar-nav">
+                <a href="member-dashboard.html"><span>Dashboard</span></a>
+                <a href="member-classes.html" class="active"><span>Schedule</span></a>
+                <a href="manage-member-enrollment.html"><span>Enroll</span></a>
+                <a href="member-profile.html"><span>Profile</span></a>
+                <a href="send-class-feedback.html"><span>Feedback</span></a>
+            </nav>
+        </aside>
+
+        <header class="header">
+            <button class="menu-toggle" id="menuToggle">☰</button>
+            <h1>My Classes</h1>
+            <button class="logout-btn" id="logoutBtn">Logout</button>
+        </header>
+
+        <main class="main-content">
+            <div class="container">
+                <div class="member-greeting">
+                    <h2>Welcome, <span id="memberName">Member</span>!</h2>
+                    <p class="subtitle">Manage booked classes. Cancel to refund a session before it starts. Send feedback for any class you attended.</p>
                 </div>
-              </div>
-            `;
-          }).join('');
-          
-          return `
-            <div class="calendar-day ${isToday ? 'today' : ''}">
-              <div class="calendar-day-header">${day}</div>
-              ${classItems || '<div class="is-size-7 has-text-grey" style="font-size:10px;">No class</div>'}
+
+                <!-- Session Counter -->
+                <div class="session-card">
+                    <div class="card-header">
+                        <h3>Remaining Sessions</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="session-counter">
+                            <span id="remainingSessions">—</span>
+                        </div>
+                        <div class="membership-info" id="membershipInfo">Loading membership information...</div>
+                    </div>
+                </div>
+
+                <!-- Enrollments Table -->
+                <div class="main-card">
+                    <div class="card-header">
+                        <h3>Class Schedule</h3>
+                    </div>
+                    <div class="card-body">
+                        <div id="loading" class="loading-state">Loading your enrollments...</div>
+                        <div id="error" class="error-state"></div>
+                        <table class="enrollments-table" id="enrollmentsTable">
+                            <thead>
+                                <tr>
+                                    <th>Class</th>
+                                    <th>Day</th>
+                                    <th>Date</th>
+                                    <th>Time</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="enrollmentsBody">
+                                <!-- Enrollment rows will be inserted here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Calendar View -->
+                <div class="main-card">
+                    <div class="card-header">
+                        <h3>Calendar View</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="calendar-controls">
+                            <div class="view-tabs">
+                                <button class="view-tab active" data-view="month">Monthly View</button>
+                                <button class="view-tab" data-view="week">Weekly View</button>
+                                <button class="view-tab" data-view="today">Today's Classes</button>
+                            </div>
+                            <div class="date-picker">
+                                <input type="date" id="calendarDate">
+                            </div>
+                        </div>
+                        <div id="calendarContainer" class="calendar-container">
+                            <div class="loading-state">Loading calendar...</div>
+                        </div>
+                    </div>
+                </div>
             </div>
-          `;
-        } else {
-          return '<div class="calendar-day other-month"></div>';
-        }
-      }).join('');
-      
-      html += `
-        <div class="calendar-grid">
-          ${calendarCells}
+        </main>
+    </div>
+
+    <!-- Cancel Confirmation Modal -->
+    <div id="cancelModal" class="modal-overlay">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3>Cancel Enrollment</h3>
+                <button class="close-btn" onclick="closeModal('cancelModal')">×</button>
+            </div>
+            <div class="modal-body">
+                <p id="cancelText">Are you sure you want to cancel this enrollment? This will refund your session if allowed.</p>
+                <div class="modal-actions">
+                    <button class="action-btn secondary" id="cancelNo">No, Keep</button>
+                    <button class="action-btn danger" id="cancelYes">Yes, Cancel</button>
+                </div>
+            </div>
         </div>
-        <div class="has-text-centered mt-3">
-          <p class="is-size-7 has-text-grey">
-            Total: ${monthEnrollments.length} class${monthEnrollments.length !== 1 ? 'es' : ''}
-          </p>
+    </div>
+
+    <!-- Feedback Modal -->
+    <div id="feedbackModal" class="modal-overlay">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3 id="feedbackTitle">Send Feedback</h3>
+                <button class="close-btn" onclick="closeModal('feedbackModal')">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="class-info" id="feedbackClassInfo"></div>
+                
+                <div class="form-group">
+                    <label for="feedbackRating">Rating (1-5 stars)</label>
+                    <select id="feedbackRating">
+                        <option value="">Select Rating</option>
+                        <option value="5">★★★★★ (5 stars)</option>
+                        <option value="4">★★★★☆ (4 stars)</option>
+                        <option value="3">★★★☆☆ (3 stars)</option>
+                        <option value="2">★★☆☆☆ (2 stars)</option>
+                        <option value="1">★☆☆☆☆ (1 star)</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="feedbackComment">Comment</label>
+                    <textarea id="feedbackComment" placeholder="Write your feedback here..."></textarea>
+                </div>
+                
+                <div class="modal-actions">
+                    <button class="action-btn secondary" id="feedbackCancel">Cancel</button>
+                    <button class="action-btn primary" id="feedbackSend">Send Feedback</button>
+                </div>
+            </div>
         </div>
-      `;
-    }
-  }
-  
-  container.innerHTML = html;
-}
-</script>
+    </div>
+
+    <script src="./member-js/member-classes.js"></script>
 </body>
 </html>
