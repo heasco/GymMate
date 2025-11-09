@@ -16,7 +16,7 @@ const MemberSchema = new mongoose.Schema(
     name: { type: String, required: [true, 'Please add a name'], trim: true },
     username: { type: String, unique: true, required: true, lowercase: true, trim: true },
     password: { type: String, required: true, minlength: [6, 'Password must be at least 6 characters'] },
-        birthdate: {
+    birthdate: {
       type: Date,
       validate: {
         validator: function(v){

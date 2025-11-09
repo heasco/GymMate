@@ -19,6 +19,7 @@ const initAdmin = require('./utils/initAdmin');
 
 const { initEnrollmentAutoUpdate } = require('./jobs/enrollmentAutoUpdate'); 
 const { initMembershipExpiryReminder } = require('./jobs/membershipExpiryReminder'); // ADDED
+const { initMembershipStatusUpdate } = require('./jobs/membershipDeactivation');
 
 console.log('Routes mounted.');
 
@@ -60,6 +61,13 @@ mongoose.connection.on('connected', async () => {
     console.log('Membership expiry reminder job initialized');
   } catch (err) {
     console.error('Membership expiry reminder initialization error:', err);
+  }
+  
+  try {
+    initMembershipStatusUpdate();
+    console.log('Membership Deactivation job initialized');
+  } catch (err) {
+    console.error('Membership Deactivation initialization error:', err);
   }
 });
 
