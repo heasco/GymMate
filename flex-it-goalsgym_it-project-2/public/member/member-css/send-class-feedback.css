@@ -166,14 +166,14 @@
 }
 
 .rating-stars label:hover,
-.rating-stars label:hover ~ label,
-.rating-stars input:checked ~ label {
+.rating-stars label:hover~label,
+.rating-stars input:checked~label {
     opacity: 1;
     transform: scale(1.1);
     color: #ffc107;
 }
 
-.rating-stars input:checked + label {
+.rating-stars input:checked+label {
     color: #ffc107;
 }
 
@@ -333,7 +333,7 @@
         grid-template-columns: 1fr;
         gap: 1.5rem;
     }
-    
+
     .form-actions {
         flex-direction: column;
     }
@@ -343,19 +343,19 @@
     .member-greeting {
         padding: 1.5rem;
     }
-    
+
     .member-greeting h2 {
         font-size: 1.6rem;
     }
-    
+
     .card-body {
         padding: 1.5rem;
     }
-    
+
     .rating-stars label {
         font-size: 1.5rem;
     }
-    
+
     .anonymous-notice {
         flex-direction: column;
         text-align: center;
@@ -367,27 +367,191 @@
     .member-greeting h2 {
         font-size: 1.4rem;
     }
-    
+
     .member-badge {
         font-size: 0.8rem;
         padding: 0.4rem 0.8rem;
     }
-    
+
     .card-header {
         padding: 1rem 1.5rem;
     }
-    
+
     .card-header h3 {
         font-size: 1.2rem;
     }
-    
+
     .card-body {
         padding: 1rem;
     }
-    
+
     .btn-primary,
     .btn-secondary {
         padding: 0.8rem 1.5rem;
         font-size: 0.8rem;
     }
+}
+
+/* Fix Dropdown Color - Make it visible! */
+#classSelect {
+    background-color: rgba(40, 40, 40, 0.9) !important;
+    color: #ffffff !important;
+    /* White text */
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 0.8rem;
+    border-radius: var(--radius);
+    font-size: 1rem;
+    width: 100%;
+    cursor: pointer;
+}
+
+#classSelect option {
+    background-color: #2a2a2a !important;
+    color: #ffffff !important;
+    /* White text in options */
+    padding: 0.5rem;
+}
+
+#classSelect:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px rgba(179, 0, 0, 0.2);
+}
+
+/* Modal Styles */
+.modal {
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.8);
+}
+
+.modal-content {
+    background-color: rgba(30, 30, 30, 0.98);
+    margin: 5% auto;
+    padding: 0;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius);
+    width: 90%;
+    max-width: 800px;
+    max-height: 80vh;
+    overflow: hidden;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+}
+
+.modal-header {
+    padding: 1.5rem 2rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(179, 0, 0, 0.1);
+}
+
+.modal-header h2 {
+    margin: 0;
+    color: var(--accent);
+    font-size: 1.5rem;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    color: var(--accent);
+    font-size: 2rem;
+    cursor: pointer;
+    padding: 0;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition);
+}
+
+.modal-close:hover {
+    color: var(--primary);
+    transform: rotate(90deg);
+}
+
+.modal-body {
+    padding: 2rem;
+    max-height: calc(80vh - 100px);
+    overflow-y: auto;
+}
+
+/* Feedback Items */
+.feedback-item {
+    background: rgba(40, 40, 40, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-left: 4px solid var(--primary);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.feedback-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.8rem;
+}
+
+.feedback-header h4 {
+    margin: 0;
+    color: var(--accent);
+    font-size: 1.1rem;
+}
+
+.feedback-date {
+    color: var(--neutral);
+    font-size: 0.9rem;
+}
+
+.feedback-rating {
+    color: #ffbe18;
+    font-size: 1.2rem;
+    margin-bottom: 0.8rem;
+}
+
+.feedback-comment {
+    color: var(--accent);
+    line-height: 1.6;
+    padding: 0.5rem 0;
+}
+
+/* Button as link style */
+.action-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    padding: 1rem 1.5rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius);
+    color: var(--accent);
+    text-decoration: none;
+    transition: var(--transition);
+    cursor: pointer;
+    font-size: 1rem;
+    width: 100%;
+    justify-content: flex-start;
+}
+
+.action-btn.primary {
+    background: var(--primary);
+    border-color: var(--primary);
+}
+
+.action-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    transform: translateY(-2px);
+}
+
+.action-btn.primary:hover {
+    background: var(--highlight);
 }
