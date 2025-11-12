@@ -18,9 +18,13 @@
                 <label for="password" class="input-label">Password</label>
                 <input type="password" id="password" class="input-field" required autocomplete="current-password">
             </div>
+
+        
+
             <div class="login-buttons">
                 <button type="submit" class="login-button">Login</button>
             </div>
+
         </form>
         <p class="error-message" id="error-message"></p>
         <p class="info-message">Forgot your password? Contact admin to reset.</p>
@@ -71,7 +75,45 @@
             }
         }
 
+HEAD
+        function memberNameFromAuth() {
+            const auth = getAuth();
+            if (!auth || !auth.user) return '';
+            const user = auth.user;
+            return user.name || user.fullname || user.username || '';
+        }
+
+        // Event listeners
+        document.addEventListener('DOMContentLoaded', () => {
+            loginForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                await performLogin();
+            });
+            
+            logoutBtn.addEventListener('click', () => {
+                localStorage.removeItem('authUser');
+                showLoginUI();
+            });
+
+            manageEnrollmentsBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                window.location.href = "member/manage-member-enrollment.html";
+            });
+
+            // Check if already logged in
+            const auth = getAuth();
+            if (auth && auth.role === 'member' && auth.user) {
+                showLoggedInUI();
+            } else {
+                showLoginUI();
+            }
+            
+            usernameInput.focus();
+        });
+
+
         // Login function
+
         async function performLogin() {
             errorMessage.textContent = '';
             const username = usernameInput.value.trim();
@@ -107,8 +149,13 @@
                     timestamp: Date.now()
                 }));
                 
+
+                // Redirect to member dashboard after successful login
+                window.location.href = "member/member-mainpage.html";
+
                 // Redirect to dashboard
                 window.location.href = "member/member-dashboard.html";
+
                 
             } catch (err) {
                 console.error('Login error:', err);

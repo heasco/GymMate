@@ -127,6 +127,60 @@
     color: var(--accent);
 }
 
+/* Calendar header for month arrows */
+.calendar-header {
+    display: grid;
+    grid-template-columns: 48px 1fr 48px; /* left arrow / month / right arrow */
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    z-index: 3; /* stay on top of other elements */
+    background: transparent;
+}
+
+/* Styles for the generated nav buttons (‹ / ›) */
+.calendar-header .calendar-nav-btn {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--highlight) 100%);
+    color: var(--accent);
+    border: none;
+    padding: 0.35rem 0.6rem;
+    border-radius: 8px;
+    font-size: 1.3rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    height: 36px;
+    transition: var(--transition);
+}
+
+.calendar-header .calendar-nav-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 14px rgba(0,0,0,0.25);
+}
+
+/* Making the month label bold, centered and readable on all sizes */
+#currentMonthDisplay {
+    text-align: center;
+    font-size: 1.2rem;
+    font-weight: 700;
+    text-transform: capitalize;
+    color: var(--accent);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+@media (max-width: 480px) {
+    .calendar-header {
+        grid-template-columns: 36px 1fr 36px;
+    }
+    .calendar-header .calendar-nav-btn { font-size: 1rem; height: 32px; }
+    #currentMonthDisplay { font-size: 1rem; }
+}
+
+
 /* Calendar Navigation */
 .calendar-navigation {
     display: flex;
