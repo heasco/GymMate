@@ -12,70 +12,28 @@
         <form id="loginForm">
             <div class="input-group">
                 <label for="username" class="input-label">Username</label>
-                <input type="text" id="username" class="input-field" required autocomplete="username">
+                <input type="text" id="username" name="username" class="input-field" required autocomplete="username">
             </div>
             <div class="input-group">
                 <label for="password" class="input-label">Password</label>
-                <input type="password" id="password" class="input-field" required autocomplete="current-password">
+                <input type="password" id="password" name="password" class="input-field" required autocomplete="current-password">
             </div>
+            
+            <!-- ADDED: Hidden role field -->
+            <input type="hidden" id="role" name="role" value="trainer">
+            
             <button type="submit" class="login-button">Login</button>
         </form>
-        <p class="error-message" id="error-message"></p>
+        <p class="error-message" id="errorMessage"></p>
     </div>
 
-    <script>
-        const API_URL = 'http://localhost:8080';
-        
-        document.getElementById('loginForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const username = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
-            const errorElement = document.getElementById('error-message');
-            const submitButton = e.target.querySelector('button[type="submit"]');
+    <button class="circle-back-btn" onclick="window.location.href='./index.html'">&lt;</button>
 
-            submitButton.disabled = true;
-            submitButton.textContent = 'Logging in...';
-            errorElement.textContent = '';
-
-            try {
-                const response = await fetch(`${API_URL}/api/trainer/login`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username, password })
-                });
-
-                if (!response.ok) {
-                    const error = await response.json().catch(() => ({}));
-                    throw new Error(error.message || 'Invalid trainer credentials');
-                }
-
-                const data = await response.json();
-                
-                localStorage.setItem('authUser', JSON.stringify({
-                    user: data.data,
-                    role: 'trainer',
-                    timestamp: Date.now()
-                }));
-                
-                window.location.href = './trainer/trainer-mainpage.html';
-            } catch (err) {
-                errorElement.textContent = err.message.includes('Failed to fetch')
-                    ? 'Server unavailable. Try again later.'
-                    : err.message;
-            } finally {
-                submitButton.disabled = false;
-                submitButton.textContent = 'Login';
-            }
-        });
-
-        document.getElementById('username').focus();
-    </script>
-</body>
-<button class="circle-back-btn" onclick="window.location.href='./index.html'">&lt;</button>
-
-<!-- Transparent Background Logo -->
+    <!-- Transparent Background Logo -->
     <div class="background-logo">
         <img src="./image/logo2.png" alt="GOALS Gym Logo" class="transparent-logo-bg">
     </div>
+    
+    <script src="login.js"></script>
+</body>
 </html>

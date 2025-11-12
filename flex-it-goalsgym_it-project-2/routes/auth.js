@@ -1,67 +1,121 @@
 // routes/auth.js
 const express = require('express');
 const bcrypt = require('bcryptjs');
-const asyncHandler = require('../middleware/asyncHandler'); // if you have one
+const asyncHandler = require('../middleware/asyncHandler');
 const Admin = require('../models/Admin');
 const Member = require('../models/Member');
 const Trainer = require('../models/Trainer');
-
 const router = express.Router();
 
 /**
- * Admin login
+ * UNIFIED LOGIN ENDPOINT (NEW - handles all 3 roles)
+ * POST /api/login
+ * body: { username, password, role }
+ */
+router.post('/login', asyncHandler(async (req, res) => {
+  const { username, password, role } = req.body || {};
+  
+  if (!username || !password || !role) {
+    return res.status(400).json({ 
+      success: false, 
+      message: 'Username, password, and role are required' 
+    });
+  }
+
+  let user;
+  let Model;
+  
+  // Select the correct model based on role
+  if (role === 'admin') {
+    Model = Admin;
+  } else if (role === 'member') {
+    Model = Member;
+  } else if (role === 'trainer') {
+    Model = Trainer;
+  } else {
+    return res.status(400).json({ 
+      success: false, 
+      message: 'Invalid role specified' 
+    });
+  }
+
+  // Find user in the appropriate collection
+  user = await Model.findOne({ username: username.trim() }).lean();
+  
+  if (!user) {
+    return res.status(401).json({ 
+      success: false, 
+      message: 'Invalid credentials' 
+    });
+  }
+
+  // Verify password
+  const isPasswordValid = await bcrypt.compare(password, user.password);
+  
+  if (!isPasswordValid) {
+    return res.status(401).json({ 
+      success: false, 
+      message: 'Invalid credentials' 
+    });
+  }
+
+  // Remove password from response
+  delete user.password;
+  
+  // Add role to user object for frontend
+  user.role = role;
+
+  res.json({ 
+    success: true, 
+    user: user,
+    message: 'Login successful'
+  });
+}));
+
+/**
+ * Admin login (LEGACY - kept for backward compatibility)
  * POST /api/admin/login
  * body: { username, password }
  */
 router.post('/admin/login', asyncHandler(async (req, res) => {
   const { username, password } = req.body || {};
   if (!username || !password) return res.status(400).json({ success: false, error: 'Username and password required' });
-
   const admin = await Admin.findOne({ username: username.trim() }).lean();
   if (!admin) return res.status(401).json({ success: false, error: 'Invalid credentials' });
-
   const ok = await bcrypt.compare(password, admin.password);
   if (!ok) return res.status(401).json({ success: false, error: 'Invalid credentials' });
-
-  // remove sensitive fields
   delete admin.password;
   res.json({ success: true, data: admin });
 }));
 
 /**
- * Member login
+ * Member login (LEGACY - kept for backward compatibility)
  * POST /api/member/login
  * body: { username, password }
  */
 router.post('/member/login', asyncHandler(async (req, res) => {
   const { username, password } = req.body || {};
   if (!username || !password) return res.status(400).json({ success: false, error: 'Username and password required' });
-
   const member = await Member.findOne({ username: username.trim() }).lean();
   if (!member) return res.status(401).json({ success: false, error: 'Invalid credentials' });
-
   const ok = await bcrypt.compare(password, member.password);
   if (!ok) return res.status(401).json({ success: false, error: 'Invalid credentials' });
-
   delete member.password;
   res.json({ success: true, data: member });
 }));
 
 /**
- * Trainer login
+ * Trainer login (LEGACY - kept for backward compatibility)
  * POST /api/trainer/login
  * body: { username, password }
  */
 router.post('/trainer/login', asyncHandler(async (req, res) => {
   const { username, password } = req.body || {};
   if (!username || !password) return res.status(400).json({ success: false, error: 'Username and password required' });
-
   const trainer = await Trainer.findOne({ username: username.trim() }).lean();
   if (!trainer) return res.status(401).json({ success: false, error: 'Invalid credentials' });
-
   const ok = await bcrypt.compare(password, trainer.password);
   if (!ok) return res.status(401).json({ success: false, error: 'Invalid credentials' });
-
   delete trainer.password;
   res.json({ success: true, data: trainer });
 }));

@@ -1,16 +1,19 @@
 // Server configuration
 const SERVER_URL = 'http://localhost:8080';
 
+
 // DOM Ready
 document.addEventListener('DOMContentLoaded', function() {
     initializePage();
     loadDashboard();
 });
 
+
 // Initialize page
 function initializePage() {
     setupSidebarAndSession();
 }
+
 
 // Setup sidebar and session management
 function setupSidebarAndSession() {
@@ -46,19 +49,22 @@ function setupSidebarAndSession() {
     });
 }
 
-// Get member ID from auth
+
+// Get member ID from auth - FIXED: Works with new login.js structure
 function getMemberIdFromAuth() {
     try {
         const authUser = JSON.parse(localStorage.getItem('authUser') || 'null');
-        if (!authUser || !authUser.user) return null;
+        if (!authUser) return null;
         
-        const user = authUser.user;
+        // FIXED: Check both old structure (authUser.user) and new structure (direct authUser)
+        const user = authUser.user || authUser;
         return user.memberId || user.member_id || user._id || user.id || null;
     } catch (error) {
         console.error('Error getting member ID:', error);
         return null;
     }
 }
+
 
 // Load dashboard data
 async function loadDashboard() {
@@ -67,6 +73,7 @@ async function loadDashboard() {
         logout();
         return;
     }
+
 
     // Set initial loading states
     document.getElementById('dashboardName').textContent = 'Member';
@@ -80,6 +87,7 @@ async function loadDashboard() {
     const errorElement = document.getElementById('error');
     errorElement.style.display = 'none';
 
+
     try {
         // Load member data
         const memberResponse = await fetch(`${SERVER_URL}/api/members/${encodeURIComponent(memberId)}`);
@@ -87,8 +95,10 @@ async function loadDashboard() {
             throw new Error('Failed to load member data');
         }
 
+
         const memberData = await memberResponse.json();
         const member = memberData.data || memberData;
+
 
         // Update basic member info
         document.getElementById('dashboardName').textContent = member.name || member.username || 'Member';
@@ -107,6 +117,7 @@ async function loadDashboard() {
         } else {
             document.getElementById('infoJoinDate').textContent = '—';
         }
+
 
         // Process memberships
         let combativeSessions = '—';
@@ -142,8 +153,10 @@ async function loadDashboard() {
         
         document.getElementById('remainingCombSessions').textContent = combativeSessions !== '—' ? combativeSessions : '0';
 
+
         // Load recent classes
         await loadRecentClasses(memberId);
+
 
     } catch (error) {
         console.error('Dashboard loading error:', error);
@@ -151,6 +164,7 @@ async function loadDashboard() {
         errorElement.textContent = `${error.message || 'Problem loading dashboard'}. Please try logging in again.`;
     }
 }
+
 
 // Load recent classes
 async function loadRecentClasses(memberId) {
@@ -229,6 +243,7 @@ async function loadRecentClasses(memberId) {
     }
 }
 
+
 // Utility function to escape HTML
 function escapeHtml(text) {
     if (!text) return '';
@@ -237,12 +252,14 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
+
 // Logout function
 function logout() {
     localStorage.removeItem('authUser');
     localStorage.removeItem('memberData');
     window.location.href = '../member-login.html';
 }
+
 
 // Show toast notification
 function showToast(message, type = 'info') {
@@ -296,6 +313,7 @@ function showToast(message, type = 'info') {
         }
     }, 5000);
 }
+
 
 // Add CSS for toast animations
 const style = document.createElement('style');

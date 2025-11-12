@@ -9,11 +9,12 @@ function getAuth() {
 }
 
 function memberIdFromAuth() {
-  const a = getAuth();
-  if (!a || !a.user) return null;
-  const u = a.user;
-  return u.memberId || u.member_id || u._id || u.id || null;
+    const a = getAuth();
+    if (!a) return null;
+    const u = a.user || a; 
+    return u.memberId || u.member_id || u._id || u.id || null;
 }
+
 
 function escapeHtml(s) {
   return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -62,14 +63,15 @@ function showLoadingState(show = true) {
 document.addEventListener('DOMContentLoaded', async () => {
   console.log('=== DOM Content Loaded ===');
   
-  const auth = getAuth();
-  console.log('Auth check:', auth ? 'Authenticated' : 'Not authenticated');
-  
-  if (!auth || auth.role !== 'member' || !auth.user) {
+const auth = getAuth();
+console.log('Auth check:', auth ? 'Authenticated' : 'Not authenticated');
+
+
+if (!auth || auth.role !== 'member') {
     console.warn('Authentication failed, redirecting to login');
     window.location.href = "../member-login.html";
     return;
-  }
+}
   
   showLoadingState(true);
   await loadInitialData();

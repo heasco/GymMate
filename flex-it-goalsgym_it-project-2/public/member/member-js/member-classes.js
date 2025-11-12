@@ -266,19 +266,21 @@ async function loadEnrollments() {
     switchCalendarView('month');
 }
 
+
 // Get member ID from auth
 function getMemberIdFromAuth() {
     try {
         const authUser = JSON.parse(localStorage.getItem('authUser') || 'null');
-        if (!authUser || !authUser.user) return null;
+        if (!authUser) return null;
         
-        const user = authUser.user;
+        const user = authUser.user || authUser;  // ✅ FIXED: Support both old and new login structure
         return user.memberId || user.member_id || user._id || user.id || null;
     } catch (error) {
         console.error('Error getting member ID:', error);
         return null;
     }
 }
+
 
 // Status helper function
 function getStatusClass(status) {

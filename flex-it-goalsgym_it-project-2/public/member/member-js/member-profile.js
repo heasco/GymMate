@@ -16,12 +16,12 @@ function memberIdFromAuth() {
     const auth = getAuth();
     console.log('[Auth] Full auth object:', auth);
     
-    if (!auth || !auth.user) {
-        console.error('[Auth] No auth or user found');
+    if (!auth) {
+        console.error('[Auth] No auth found');
         return null;
     }
-    
-    const user = auth.user;
+
+    const user = auth.user || auth;
     console.log('[Auth] User object:', user);
     
     const id = user.memberId || user.member_id || user._id || user.id || null;
@@ -29,6 +29,7 @@ function memberIdFromAuth() {
     
     return id;
 }
+
 
 // Format date to "Month Day, Year"
 function formatDate(dateString) {

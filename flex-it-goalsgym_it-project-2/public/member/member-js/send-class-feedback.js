@@ -19,10 +19,11 @@ function getAuth() {
 
 function memberIdFromAuth() {
     const auth = getAuth();
-    if (!auth || !auth.user) return null;
-    const user = auth.user;
+    if (!auth) return null;
+    const user = auth.user || auth;
     return user.memberId || user.member_id || user._id || user.id || null;
 }
+
 
 function logout() {
     localStorage.removeItem('authUser');
@@ -120,16 +121,19 @@ document.addEventListener('DOMContentLoaded', () => {
 // Load Member Name
 function loadMemberName() {
     const authUser = getAuth();
-    if (authUser && authUser.user) {
-        const userName = authUser.user.name || 'Member';
+    if (authUser) {
+        const user = authUser.user || authUser;
+        const userName = user.name || 'Member';
+        
         if ($('memberName')) {
             $('memberName').textContent = userName;
         }
         if ($('memberIdBadge')) {
-            $('memberIdBadge').textContent = authUser.user.memberId || 'Member';
+            $('memberIdBadge').textContent = user.memberId || 'Member';
         }
     }
 }
+
 
 // Load ATTENDED Classes ONLY
 async function loadAttendedClasses() {
