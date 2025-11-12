@@ -18,13 +18,13 @@
                 <label for="password" class="input-label">Password</label>
                 <input type="password" id="password" class="input-field" required autocomplete="current-password">
             </div>
-<<<<<<< HEAD
-            <button type="submit" class="login-button">Login</button>
-=======
+
+        
+
             <div class="login-buttons">
                 <button type="submit" class="login-button">Login</button>
             </div>
->>>>>>> 9f83a9130c9af64397700294c255b021ee8549b1
+
         </form>
         <p class="error-message" id="error-message"></p>
         <p class="info-message">Forgot your password? Contact admin to reset.</p>
@@ -75,7 +75,7 @@
             }
         }
 
-<<<<<<< HEAD
+HEAD
         function memberNameFromAuth() {
             const auth = getAuth();
             if (!auth || !auth.user) return '';
@@ -111,9 +111,9 @@
             usernameInput.focus();
         });
 
-=======
+
         // Login function
->>>>>>> 9f83a9130c9af64397700294c255b021ee8549b1
+
         async function performLogin() {
             errorMessage.textContent = '';
             const username = usernameInput.value.trim();
@@ -149,13 +149,13 @@
                     timestamp: Date.now()
                 }));
                 
-<<<<<<< HEAD
+
                 // Redirect to member dashboard after successful login
                 window.location.href = "member/member-mainpage.html";
-=======
+
                 // Redirect to dashboard
                 window.location.href = "member/member-dashboard.html";
->>>>>>> 9f83a9130c9af64397700294c255b021ee8549b1
+
                 
             } catch (err) {
                 console.error('Login error:', err);
