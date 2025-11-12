@@ -18,23 +18,16 @@
                 <label for="password" class="input-label">Password</label>
                 <input type="password" id="password" class="input-field" required autocomplete="current-password">
             </div>
+<<<<<<< HEAD
             <button type="submit" class="login-button">Login</button>
+=======
+            <div class="login-buttons">
+                <button type="submit" class="login-button">Login</button>
+            </div>
+>>>>>>> 9f83a9130c9af64397700294c255b021ee8549b1
         </form>
         <p class="error-message" id="error-message"></p>
         <p class="info-message">Forgot your password? Contact admin to reset.</p>
-    </div>
-
-    <!-- Logged-in Panel -->
-    <div id="memberPanel" class="logged-in-panel">
-        <div class="welcome-section">
-            <div id="welcomeText" class="welcome-text">Welcome, Member</div>
-            <div id="memberInfo" class="member-info"></div>
-        </div>
-        <div class="panel-buttons">
-            <button id="manageEnrollmentsBtn" class="panel-button primary">Manage Enrollments</button>
-            <a href="member/member-mainpage.html"><button class="panel-button">Go to Dashboard</button></a>
-            <button id="logoutBtn" class="panel-button ghost">Logout</button>
-        </div>
     </div>
 
     <!-- Back Button -->
@@ -53,13 +46,27 @@
         const usernameInput = document.getElementById('username');
         const passwordInput = document.getElementById('password');
         const errorMessage = document.getElementById('error-message');
-        const memberPanel = document.getElementById('memberPanel');
-        const welcomeText = document.getElementById('welcomeText');
-        const memberInfo = document.getElementById('memberInfo');
-        const logoutBtn = document.getElementById('logoutBtn');
-        const manageEnrollmentsBtn = document.getElementById('manageEnrollmentsBtn');
 
-        // Utility functions
+        // Check if already logged in on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            const auth = getAuth();
+            if (auth && auth.role === 'member' && auth.user) {
+                // Already logged in, redirect to dashboard
+                window.location.href = "member/member-dashboard.html";
+                return;
+            }
+            
+            // Focus username field
+            usernameInput.focus();
+
+            // Login form submission
+            loginForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                await performLogin();
+            });
+        });
+
+        // Utility function to get auth from localStorage
         function getAuth() {
             try {
                 return JSON.parse(localStorage.getItem('authUser') || 'null');
@@ -68,6 +75,7 @@
             }
         }
 
+<<<<<<< HEAD
         function memberNameFromAuth() {
             const auth = getAuth();
             if (!auth || !auth.user) return '';
@@ -103,6 +111,9 @@
             usernameInput.focus();
         });
 
+=======
+        // Login function
+>>>>>>> 9f83a9130c9af64397700294c255b021ee8549b1
         async function performLogin() {
             errorMessage.textContent = '';
             const username = usernameInput.value.trim();
@@ -131,44 +142,30 @@
 
                 const data = await response.json();
                 
+                // Save auth to localStorage
                 localStorage.setItem('authUser', JSON.stringify({
                     user: data.data,
                     role: 'member',
                     timestamp: Date.now()
                 }));
                 
+<<<<<<< HEAD
                 // Redirect to member dashboard after successful login
                 window.location.href = "member/member-mainpage.html";
+=======
+                // Redirect to dashboard
+                window.location.href = "member/member-dashboard.html";
+>>>>>>> 9f83a9130c9af64397700294c255b021ee8549b1
                 
             } catch (err) {
                 console.error('Login error:', err);
                 errorMessage.textContent = err.message.includes('Failed to fetch') 
                     ? 'Server unavailable. Please try again later.' 
                     : err.message;
-            } finally {
+                    
                 submitButton.disabled = false;
                 submitButton.textContent = 'Login';
             }
-        }
-
-        function showLoggedInUI() {
-            const auth = getAuth();
-            if (!auth || !auth.user) {
-                showLoginUI();
-                return;
-            }
-
-            welcomeText.textContent = `Welcome, ${memberNameFromAuth()}`;
-            memberInfo.textContent = `Username: ${auth.user.username || ''}`;
-            
-            loginForm.style.display = 'none';
-            memberPanel.style.display = 'flex';
-        }
-
-        function showLoginUI() {
-            loginForm.style.display = 'block';
-            memberPanel.style.display = 'none';
-            errorMessage.textContent = '';
         }
     </script>
 </body>

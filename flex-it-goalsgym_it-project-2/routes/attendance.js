@@ -138,6 +138,67 @@ router.post('/log', async (req, res) => {
   }
 });
 
+// ✅ ADD THIS NEW ROUTE - Dashboard statistics
+router.get('/today', async (req, res) => {
+    try {
+        const todayStart = new Date();
+        todayStart.setHours(0, 0, 0, 0);
+        const todayEnd = new Date();
+        todayEnd.setHours(23, 59, 59, 999);
+
+        // Get all logs from today with member info
+        const logs = await Attendance.find({
+            timestamp: { $gte: todayStart, $lte: todayEnd }
+        })
+        .sort({ timestamp: -1 })
+        .populate('memberId', 'name');
+
+        // Calculate stats
+        const totalCheckins = logs.filter(l => l.logType === 'login').length;
+        
+        // Determine who's currently in gym
+        const memberStatus = {};
+        for (const log of logs) {
+            const mId = log.memberId?._id?.toString();
+            if (!mId) continue;
+            
+            if (!memberStatus[mId] || log.timestamp > memberStatus[mId].timestamp) {
+                memberStatus[mId] = log;
+            }
+        }
+        
+        const currentlyInGym = Object.values(memberStatus)
+            .filter(log => log.logType === 'login').length;
+        
+        // Get last check-in
+        const lastCheckin = logs.find(l => l.logType === 'login');
+        
+        // Format recent activity
+        const recentActivity = logs.slice(0, 10).map(log => ({
+            memberName: log.memberId?.name || 'Unknown',
+            type: log.logType === 'login' ? 'check-in' : 'check-out',
+            timestamp: log.timestamp,
+            attendedType: log.attendedType
+        }));
+
+        res.json({
+            success: true,
+            data: {
+                totalCheckins,
+                currentlyInGym,
+                lastCheckin: lastCheckin ? {
+                    timestamp: lastCheckin.timestamp,
+                    memberName: lastCheckin.memberId?.name || 'Unknown'
+                } : null,
+                recentActivity
+            }
+        });
+    } catch (err) {
+        res.json({ success: false, error: err.message });
+    }
+});
+
+
 router.get('/logs/today', async (req, res) => {
   try {
     const now = new Date();

@@ -1,6 +1,6 @@
 /* ========================================
    ADD MEMBER PAGE - GOALS GYM THEME
-   ======================================== */
+======================================== */
 
 /* Form Styles */
 .member-form {
@@ -45,6 +45,154 @@
     border-color: var(--primary);
     box-shadow: 0 0 0 2px rgba(179, 0, 0, 0.2);
     background: rgba(0, 0, 0, 0.7);
+}
+
+.field .label {
+    color: var(--accent);
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    display: block;
+    font-size: 0.95rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.field .input {
+    width: 100%;
+    padding: 1rem 1.2rem;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: var(--radius);
+    font-size: 1rem;
+    background: rgba(0, 0, 0, 0.5);
+    color: var(--accent);
+    font-family: 'Poppins', sans-serif;
+    transition: var(--transition);
+}
+
+.help {
+    color: var(--neutral);
+    font-size: 0.85rem;
+    margin-top: 0.3rem;
+    font-style: italic;
+}
+
+/* Date input wrapper styling */
+.date-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.date-wrapper input[type="text"] {
+    flex: 1;
+    cursor: default;
+    background: #000305;
+    color: #ffffff;
+    padding: 10px 40px 10px 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+}
+
+.date-icon {
+    position: absolute;
+    right: 12px;
+    color: #ebebeb;
+    cursor: pointer;
+    font-size: 1.1rem;
+    z-index: 10;
+    transition: color 0.2s;
+}
+
+.date-icon:hover {
+    color: #2d87f0;
+}
+
+/* Hidden actual date inputs - positioned on top but invisible */
+input[type="date"].hidden-date {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    z-index: 5;
+    cursor: pointer;
+}
+
+/* Make sure the wrapper contains the hidden input properly */
+.date-wrapper {
+    position: relative;
+}
+
+.field .control.date-wrapper {
+    position: relative;
+}
+
+/* Date Picker Styling */
+.date-picker-group {
+    margin-bottom: 2rem;
+}
+
+.date-picker-group label {
+    color: var(--accent);
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.95rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.date-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.date-input-wrapper input[type="date"] {
+    width: 100%;
+    padding: 1rem 3rem 1rem 1.2rem;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-radius: var(--radius);
+    font-size: 1rem;
+    background: rgba(0, 0, 0, 0.5);
+    color: var(--accent);
+    font-family: 'Poppins', sans-serif;
+    transition: var(--transition);
+    cursor: pointer;
+}
+
+.date-input-wrapper input[type="date"]:hover {
+    border-color: var(--primary);
+    background: rgba(0, 0, 0, 0.6);
+}
+
+.date-input-wrapper input[type="date"]:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(179, 0, 0, 0.2);
+    background: rgba(0, 0, 0, 0.7);
+}
+
+.date-input-wrapper .icon-calendar {
+    position: absolute;
+    right: 1rem;
+    color: var(--primary);
+    font-size: 1.2rem;
+    pointer-events: none;
+}
+
+/* Custom calendar icon styling */
+input[type="date"]::-webkit-calendar-picker-indicator {
+    opacity: 0;
+    cursor: pointer;
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
 }
 
 /* Checkbox Styles */
@@ -163,6 +311,396 @@
     transform: none;
 }
 
+/* OR Divider - Updated to work outside form */
+.or-divider {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    margin: 2rem auto;
+    max-width: 600px;
+}
+
+.or-divider::before,
+.or-divider::after {
+    content: '';
+    flex: 1;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.or-divider span {
+    padding: 0 1rem;
+    color: var(--neutral);
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+/* Renew Button - Updated to work outside form */
+.renew-btn {
+    background: transparent;
+    color: #ffbe18;
+    border: 2px solid #ffbe18;
+    padding: 1rem 2rem;
+    border-radius: var(--radius);
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    width: 100%;
+    max-width: 600px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.8rem;
+    margin: 0 auto;
+}
+
+.renew-btn:hover {
+    background: #ffbe18;
+    color: var(--dark);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(255, 190, 24, 0.4);
+}
+
+/* Renewal Modal */
+.renewal-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.85);
+    z-index: 3000;
+    justify-content: center;
+    align-items: center;
+    backdrop-filter: blur(5px);
+    padding: 1rem;
+}
+
+.renewal-content {
+    background: var(--darker);
+    border-radius: var(--radius);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    max-width: 700px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    color: var(--accent);
+}
+
+.renewal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem 2rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    position: sticky;
+    top: 0;
+    background: var(--darker);
+    z-index: 10;
+}
+
+.renewal-header h3 {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--accent);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+}
+
+.close-modal {
+    background: transparent;
+    border: none;
+    color: var(--neutral);
+    font-size: 2rem;
+    cursor: pointer;
+    transition: var(--transition);
+    line-height: 1;
+}
+
+.close-modal:hover {
+    color: var(--accent);
+}
+
+.renewal-body {
+    padding: 2rem;
+}
+
+/* Search Section */
+.search-section {
+    margin-bottom: 2rem;
+}
+
+.search-section label {
+    color: var(--accent);
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    display: block;
+    font-size: 0.95rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.search-input-group {
+    display: flex;
+    gap: 0.8rem;
+}
+
+.search-input-group input {
+    flex: 1;
+    padding: 1rem 1.2rem;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: var(--radius);
+    font-size: 1rem;
+    background: rgba(0, 0, 0, 0.5);
+    color: var(--accent);
+    font-family: 'Poppins', sans-serif;
+    transition: var(--transition);
+}
+
+.search-input-group input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px rgba(179, 0, 0, 0.2);
+}
+
+.search-btn {
+    background: var(--primary);
+    color: var(--accent);
+    border: none;
+    padding: 0.8rem 1.5rem;
+    border-radius: var(--radius);
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    white-space: nowrap;
+}
+
+.search-btn:hover {
+    background: var(--highlight);
+    transform: translateY(-2px);
+}
+
+/* Search Results */
+.search-results {
+    margin-top: 1rem;
+}
+
+.search-result-item {
+    background: rgba(0, 0, 0, 0.3);
+    padding: 1rem;
+    border-radius: var(--radius);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    margin-bottom: 0.8rem;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.search-result-item:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: var(--primary);
+    transform: translateX(5px);
+}
+
+.result-info {
+    color: var(--accent);
+}
+
+.result-info strong {
+    color: var(--primary);
+    font-size: 1.1rem;
+}
+
+.result-info small {
+    color: var(--neutral);
+}
+
+.status-active {
+    color: #23d160;
+}
+
+.status-inactive {
+    color: #ff3860;
+}
+
+.status-suspended {
+    color: #ffbe18;
+}
+
+.no-results {
+    color: var(--neutral);
+    text-align: center;
+    padding: 1rem;
+    font-style: italic;
+}
+
+/* Selected Member Section */
+.selected-member-section {
+    margin-top: 2rem;
+}
+
+.member-info-card {
+    background: rgba(0, 0, 0, 0.4);
+    padding: 1.5rem;
+    border-radius: var(--radius);
+    border-left: 4px solid var(--primary);
+    margin-bottom: 2rem;
+}
+
+.member-info-card h4 {
+    color: var(--accent);
+    margin-bottom: 1rem;
+    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.member-info-card p {
+    color: var(--neutral);
+    margin-bottom: 0.5rem;
+}
+
+.status-badge {
+    display: inline-block;
+    padding: 0.3rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.status-badge.status-active {
+    background: rgba(35, 209, 96, 0.2);
+    color: #23d160;
+}
+
+.status-badge.status-inactive {
+    background: rgba(255, 56, 96, 0.2);
+    color: #ff3860;
+}
+
+.status-badge.status-suspended {
+    background: rgba(255, 190, 24, 0.2);
+    color: #ffbe18;
+}
+
+.membership-list {
+    margin-top: 1rem;
+}
+
+.membership-list strong {
+    display: block;
+    margin-bottom: 0.8rem;
+    color: var(--accent);
+}
+
+.membership-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.8rem;
+    border-radius: var(--radius);
+    margin-bottom: 0.5rem;
+    border: 1px solid;
+}
+
+.membership-item.active {
+    background: rgba(35, 209, 96, 0.1);
+    border-color: #23d160;
+}
+
+.membership-item.inactive,
+.membership-item.expired {
+    background: rgba(255, 56, 96, 0.1);
+    border-color: #ff3860;
+}
+
+.membership-type {
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.9rem;
+}
+
+.membership-status {
+    font-size: 0.85rem;
+    opacity: 0.8;
+}
+
+.membership-date {
+    font-size: 0.85rem;
+    opacity: 0.8;
+}
+
+.no-membership {
+    color: var(--neutral);
+    font-style: italic;
+    margin-top: 0.5rem;
+}
+
+/* Renewal Info Box */
+.renewal-info-box {
+    background: linear-gradient(135deg, rgba(255, 190, 24, 0.15) 0%, rgba(255, 190, 24, 0.05) 100%);
+    border: 2px solid #ffbe18;
+    border-left: 5px solid #ffbe18;
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    margin: 1.5rem 0;
+    color: var(--accent);
+    box-shadow: 0 4px 15px rgba(255, 190, 24, 0.2);
+}
+
+.renewal-info-box strong {
+    color: #ffbe18;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    font-size: 1.05rem;
+}
+
+.info-item {
+    padding: 1rem;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: var(--radius);
+    margin-bottom: 1rem;
+    border-left: 3px solid var(--primary);
+}
+
+.info-item:last-child {
+    margin-bottom: 0;
+}
+
+.info-item strong {
+    color: var(--primary);
+    display: block;
+    margin-bottom: 0.8rem;
+    font-size: 1rem;
+}
+
+.detail-line {
+    display: block;
+    color: var(--neutral);
+    padding: 0.3rem 0;
+    padding-left: 0.5rem;
+    font-size: 0.95rem;
+}
+
+.detail-line::before {
+    content: '• ';
+    color: var(--primary);
+    font-weight: bold;
+    margin-right: 0.5rem;
+}
+
 /* Messages */
 .message {
     padding: 1.2rem 1.5rem;
@@ -268,7 +806,9 @@
     margin-top: 1.5rem;
 }
 
-.btn-primary, .btn-success, .btn-secondary {
+.btn-primary,
+.btn-success,
+.btn-secondary {
     padding: 0.8rem 1.5rem;
     border-radius: var(--radius);
     font-weight: 600;
@@ -320,27 +860,47 @@
     .member-form {
         padding: 2rem;
     }
-    
+
     .checkbox-group {
         flex-direction: column;
         gap: 1rem;
     }
-    
+
     .face-modal {
         padding: 2rem;
     }
-    
+
     .face-capture-area {
         height: 300px;
     }
-    
+
     .face-controls {
         flex-direction: column;
         gap: 0.8rem;
     }
-    
-    .btn-primary, .btn-success, .btn-secondary {
+
+    .btn-primary,
+    .btn-success,
+    .btn-secondary {
         width: 100%;
+    }
+
+    .renewal-content {
+        max-height: 95vh;
+    }
+
+    .renewal-body {
+        padding: 1.5rem;
+    }
+
+    .search-input-group {
+        flex-direction: column;
+    }
+
+    .membership-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
     }
 }
 
@@ -348,21 +908,29 @@
     .member-form {
         padding: 1.5rem;
     }
-    
+
     .form-group input {
         padding: 0.8rem 1rem;
     }
-    
+
     .face-modal {
         padding: 1.5rem;
     }
-    
+
     .face-capture-area {
         height: 250px;
     }
-    
+
     .face-center-box {
         width: 150px;
         height: 150px;
+    }
+
+    .renewal-body {
+        padding: 1rem;
+    }
+
+    .renewal-header {
+        padding: 1rem 1.5rem;
     }
 }

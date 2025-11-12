@@ -45,23 +45,15 @@
                         <div class="card-body">
                             <form id="profileForm" class="profile-form">
                                 <div class="form-group">
-                                    <label for="firstName">First Name</label>
-                                    <input type="text" id="firstName" name="firstName" class="form-input" required>
+                                    <label for="profileEmail">Email Address</label>
+                                    <input type="email" id="profileEmail" name="email" class="form-input" required>
                                 </div>
                                 <div class="form-group">
-                                    <label for="lastName">Last Name</label>
-                                    <input type="text" id="lastName" name="lastName" class="form-input" required>
-                                </div>
-                                <div class="form-group">
-                                    <label for="email">Email Address</label>
-                                    <input type="email" id="email" name="email" class="form-input" required>
-                                </div>
-                                <div class="form-group">
-                                    <label for="phone">Phone Number</label>
-                                    <input type="text" id="phone" name="phone" class="form-input" required>
+                                    <label for="profilePhone">Phone Number</label>
+                                    <input type="text" id="profilePhone" name="phone" class="form-input" required>
                                 </div>
                                 <button type="submit" class="btn-primary">Save Changes</button>
-                                <div id="profileMessage" class="message" style="display: none;"></div>
+                                <div id="profileMsg" class="message" style="display: none;"></div>
                             </form>
                         </div>
                     </div>
@@ -79,7 +71,7 @@
                                 </div>
                                 <div class="info-item">
                                     <span class="info-label">Membership Status:</span>
-                                    <span id="membershipStatus" class="info-value status-active">Active</span>
+                                    <span id="membershipStatus" class="info-value">Loading...</span>
                                 </div>
                                 <div class="info-item">
                                     <span class="info-label">Membership Type:</span>

@@ -45,9 +45,9 @@
                         <div class="card-body">
                             <form id="feedbackForm" class="feedback-form">
                                 <div class="form-group">
-                                    <label for="classSelect">Select Class</label>
+                                    <label for="classSelect">Select Attended Class</label>
                                     <select id="classSelect" name="classId" required>
-                                        <option value="">-- Select your class --</option>
+                                        <option value="">-- Select your attended class --</option>
                                         <!-- Classes will be dynamically loaded here -->
                                     </select>
                                 </div>
@@ -101,7 +101,13 @@
                         </div>
                         <div class="card-body">
                             <div class="quick-actions">
-                                <a href="./member-dashboard.html" class="action-btn primary">
+                                <!-- NEW: View My Feedback Button -->
+                                <button id="viewFeedbackBtn" class="action-btn primary">
+                                    <span class="action-icon">📋</span>
+                                    <span class="action-text">View My Feedback</span>
+                                </button>
+                                
+                                <a href="./member-dashboard.html" class="action-btn secondary">
                                     <span class="action-icon">📊</span>
                                     <span class="action-text">View Dashboard</span>
                                 </a>
@@ -119,6 +125,19 @@
                 </div>
             </div>
         </main>
+    </div>
+
+    <!-- Feedback History Modal -->
+    <div id="feedbackModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>My Feedback History</h2>
+                <button class="modal-close" id="closeFeedbackModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="feedbackList"></div>
+            </div>
+        </div>
     </div>
 
     <script src="./member-js/send-class-feedback.js"></script>

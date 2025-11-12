@@ -125,7 +125,28 @@ router.post('/', asyncHandler(async (req, res) => {
   });
 }));
 
-// GET /api/enrollments/member/:memberId - Member’s upcoming sessions
+// ============================================
+// NEW ROUTE: Get attended classes for feedback
+// ============================================
+router.get('/member/:memberId/attended', asyncHandler(async (req, res) => {
+  const memberId = req.params.memberId;
+
+  // Get only ATTENDED sessions (past classes)
+  const enrollments = await Enrollment.find({
+    member_id: memberId,
+    attendance_status: 'attended',  // Only attended
+    status: 'completed'             // Completed sessions
+  })
+  .sort({ attended_at: -1 });  // Most recently attended first
+
+  return res.json({
+    success: true,
+    count: enrollments.length,
+    data: enrollments
+  });
+}));
+
+// GET /api/enrollments/member/:memberId - Member's upcoming sessions (KEEP ORIGINAL)
 router.get('/member/:memberId', asyncHandler(async (req, res) => {
   const memberId = req.params.memberId;
 
@@ -134,7 +155,6 @@ router.get('/member/:memberId', asyncHandler(async (req, res) => {
     status: 'active',
     session_date: { $gte: new Date() }
   })
-  // Do NOT .populate('class_id') if class_id is a string; remove populate if not using ObjectId ref
   .sort({ session_date: 1 });
 
   return res.json({

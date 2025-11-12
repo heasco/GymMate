@@ -1,0 +1,316 @@
+/* Attendance Checker Specific Styles */
+
+.attendance-container {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+/* Info Card */
+.info-card {
+    background: rgba(30, 30, 30, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    display: flex;
+    gap: 1.5rem;
+    align-items: flex-start;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+}
+
+.info-icon {
+    font-size: 2.5rem;
+    color: #2d87f0;
+    flex-shrink: 0;
+}
+
+.info-content h3 {
+    margin: 0 0 0.5rem 0;
+    color: var(--accent);
+    font-size: 1.2rem;
+}
+
+.info-content p {
+    margin: 0;
+    color: var(--neutral);
+    line-height: 1.6;
+}
+
+/* Quick Stats */
+.quick-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.stat-box {
+    background: rgba(30, 30, 30, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+    transition: all 0.3s ease;
+}
+
+.stat-box:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+    border-color: rgba(179, 0, 0, 0.5);
+}
+
+.stat-icon {
+    font-size: 2.5rem;
+    color: var(--primary);
+    flex-shrink: 0;
+}
+
+.stat-info {
+    flex: 1;
+}
+
+.stat-label {
+    font-size: 0.85rem;
+    color: var(--neutral);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.5rem;
+}
+
+.stat-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--accent);
+}
+
+.stat-value.in-gym {
+    color: #1df088;
+    text-shadow: 0 1px 15px rgba(29, 240, 136, 0.5);
+}
+
+/* Action Section */
+.action-section {
+    text-align: center;
+    margin: 3rem 0;
+}
+
+.launch-btn {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--highlight) 100%);
+    color: var(--accent);
+    border: none;
+    padding: 1.5rem 3rem;
+    font-size: 1.2rem;
+    font-weight: 700;
+    border-radius: 8px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 1rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 8px 25px rgba(179, 0, 0, 0.3);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.launch-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 35px rgba(255, 51, 51, 0.5);
+}
+
+.launch-btn i {
+    font-size: 1.3rem;
+}
+
+.help-text {
+    margin-top: 1rem;
+    color: var(--neutral);
+    font-size: 0.9rem;
+    font-style: italic;
+}
+
+/* Recent Activity */
+.recent-activity {
+    background: rgba(30, 30, 30, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 2rem;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+    margin-top: 2rem;
+}
+
+.activity-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid rgba(179, 0, 0, 0.3);
+}
+
+.activity-header h3 {
+    color: var(--accent);
+    font-size: 1.3rem;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.refresh-btn {
+    background: rgba(179, 0, 0, 0.2);
+    border: 1px solid var(--primary);
+    color: var(--accent);
+    padding: 0.6rem 1.2rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.refresh-btn:hover {
+    background: var(--primary);
+    transform: scale(1.05);
+}
+
+.activity-list {
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+.activity-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    margin-bottom: 0.8rem;
+    background: rgba(20, 20, 20, 0.5);
+    border-radius: 6px;
+    border-left: 3px solid transparent;
+    transition: all 0.3s ease;
+}
+
+.activity-item:hover {
+    background: rgba(30, 30, 30, 0.8);
+    transform: translateX(5px);
+}
+
+.activity-item.check-in {
+    border-left-color: #1df088;
+}
+
+.activity-item.check-out {
+    border-left-color: #ff6b6b;
+}
+
+.activity-icon {
+    font-size: 1.5rem;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.activity-item.check-in .activity-icon {
+    background: rgba(29, 240, 136, 0.2);
+    color: #1df088;
+}
+
+.activity-item.check-out .activity-icon {
+    background: rgba(255, 107, 107, 0.2);
+    color: #ff6b6b;
+}
+
+.activity-details {
+    flex: 1;
+}
+
+.activity-name {
+    color: var(--accent);
+    font-weight: 600;
+    font-size: 1rem;
+    margin-bottom: 0.3rem;
+}
+
+.activity-time {
+    color: var(--neutral);
+    font-size: 0.85rem;
+}
+
+.activity-badge {
+    padding: 0.4rem 0.8rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+}
+
+.activity-badge.check-in {
+    background: rgba(29, 240, 136, 0.2);
+    color: #1df088;
+}
+
+.activity-badge.check-out {
+    background: rgba(255, 107, 107, 0.2);
+    color: #ff6b6b;
+}
+
+.loading,
+.no-activity {
+    text-align: center;
+    padding: 2rem;
+    color: var(--neutral);
+    font-style: italic;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .info-card {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .quick-stats {
+        grid-template-columns: 1fr;
+    }
+
+    .launch-btn {
+        width: 100%;
+        justify-content: center;
+        padding: 1.2rem 2rem;
+        font-size: 1rem;
+    }
+
+    .activity-header {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: flex-start;
+    }
+
+    .refresh-btn {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .stat-box {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .activity-item {
+        flex-direction: column;
+        text-align: center;
+        gap: 0.5rem;
+    }
+}
