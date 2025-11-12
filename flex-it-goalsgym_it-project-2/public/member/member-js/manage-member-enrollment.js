@@ -207,10 +207,11 @@ function renderCalendarGrid() {
   const year = currentCalendarDate.getFullYear();
   const month = currentCalendarDate.getMonth();
   
+  // Add aria-labels and titles to nav buttons so they are explicit and accessible
   let html = `<div class="calendar-header">
-    <button class="calendar-nav-btn" id="prevMonth">‹</button>
+    <button class="calendar-nav-btn" id="prevMonth" aria-label="Previous month" title="Previous month">‹</button>
     <span id="currentMonthDisplay"></span>
-    <button class="calendar-nav-btn" id="nextMonth">›</button></div>
+    <button class="calendar-nav-btn" id="nextMonth" aria-label="Next month" title="Next month">›</button></div>
     <div class="calendar-grid">`;
   
   const weekdays = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
@@ -258,6 +259,12 @@ function renderCalendarGrid() {
   html += '</div>';
   container.innerHTML = html;
   
+  // ensure title is set immediately so month is always visible
+  updateCalendarTitle();
+  // ensure navigation buttons exist and have handlers
+  renderCalendarNavigation();
+
+  // rebind click handler for cells
   document.removeEventListener('click', handleCalendarClick, true);
   document.addEventListener('click', handleCalendarClick, true);
   
