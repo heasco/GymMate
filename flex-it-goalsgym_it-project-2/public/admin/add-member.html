@@ -28,6 +28,7 @@
                 <a href="./add-transaction.html"><span>Add Transaction</span></a>
                 <a href="./view-classes-and-feedback.html"><span>View Classes</span></a>
                 <a href="./trainer-schedule-management.html"><span>Trainer Schedule Management</span></a>
+                <a href="./attendance-checker.html"><span>Attendance System</span></a>
             </nav>
         </aside>
 
@@ -49,10 +50,14 @@
                     <input type="text" id="memberName" name="memberName" required>
                 </div>
 
+                <!-- ✅ BIRTHDATE with Calendar Icon -->
                 <div class="field">
-                    <label class="label" for="birthdate">Birthdate</label>
-                    <div class="control">
-                        <input class="input" type="date" id="birthdate" name="birthdate" required>
+                    <label class="label" for="birthdate">Birthdate *</label>
+                    <div class="control date-wrapper">
+                        <input class="input" type="text" id="birthdateDisplay" readonly placeholder="Select birthdate"
+                            required>
+                        <input type="date" id="birthdate" name="birthdate" class="hidden-date" required>
+                        <i class="fas fa-calendar-alt date-icon" id="birthdateIcon"></i>
                     </div>
                     <p class="help">Member must be at least 13 years old</p>
                 </div>
@@ -81,9 +86,14 @@
                     <input type="number" id="combativeSessions" name="combativeSessions" min="1" value="12">
                 </div>
 
+                <!-- ✅ JOIN DATE with Calendar Icon -->
                 <div class="form-group">
                     <label for="joinDate">Join Date *</label>
-                    <input type="date" id="joinDate" name="joinDate" required>
+                    <div class="date-wrapper">
+                        <input type="text" id="joinDateDisplay" readonly placeholder="Select join date" required>
+                        <input type="date" id="joinDate" name="joinDate" class="hidden-date" required>
+                        <i class="fas fa-calendar-alt date-icon" id="joinDateIcon"></i>
+                    </div>
                 </div>
 
                 <div class="form-group">
@@ -183,11 +193,11 @@
                         <div class="form-group">
                             <label>Select Membership to Renew *</label>
                             <div class="checkbox-group">
-                                <label class="checkbox">
+                                <label class="checkbox renewal-checkbox">
                                     <input type="checkbox" id="renewMonthly" value="monthly">
                                     Monthly Gym Membership
                                 </label>
-                                <label class="checkbox">
+                                <label class="checkbox renewal-checkbox">
                                     <input type="checkbox" id="renewCombative" value="combative">
                                     Combative Sports Membership
                                 </label>
@@ -261,9 +271,18 @@
         function initializeForm() {
             const memberForm = document.getElementById('memberForm');
 
-            // Set default join date to today
+            // ✅ Setup Birthdate Calendar Icon
+            setupDatePicker('birthdate', 'birthdateDisplay', 'birthdateIcon');
+
+            // ✅ Setup Join Date Calendar Icon
             const today = new Date();
-            document.getElementById('joinDate').valueAsDate = today;
+            const joinDateInput = document.getElementById('joinDate');
+            const joinDateDisplay = document.getElementById('joinDateDisplay');
+
+            joinDateInput.valueAsDate = today;
+            joinDateDisplay.value = formatDate(today);
+
+            setupDatePicker('joinDate', 'joinDateDisplay', 'joinDateIcon');
 
             // Membership type toggles
             document.getElementById('monthlyCheckbox').addEventListener('change', function () {
@@ -284,6 +303,36 @@
             setupRenewalModal();
         }
 
+        // ✅ UPDATED: Universal Date Picker Setup Function
+        function setupDatePicker(dateInputId, displayInputId, iconId) {
+            const dateInput = document.getElementById(dateInputId);
+            const displayInput = document.getElementById(displayInputId);
+            const icon = document.getElementById(iconId);
+
+            if (!dateInput || !displayInput || !icon) return;
+
+            // When icon is clicked, trigger the hidden date input
+            icon.addEventListener('click', (e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                dateInput.click(); // Click the hidden date input
+            });
+
+            // Also allow clicking the display input to open calendar
+            displayInput.addEventListener('click', (e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                dateInput.click();
+            });
+
+            // When date is selected, update the display field
+            dateInput.addEventListener('change', function () {
+                if (this.value) {
+                    displayInput.value = formatDate(this.value);
+                }
+            });
+        }
+
         function setupRenewalModal() {
             const renewBtn = document.getElementById('renewBtn');
             const modal = document.getElementById('renewalModal');
@@ -291,12 +340,26 @@
             const searchBtn = document.getElementById('searchBtn');
             const renewalForm = document.getElementById('renewalForm');
 
-            // Open modal - with proper event prevention
+            // FIX: Prevent checkbox labels from triggering date picker in renewal form
+            const renewalCheckboxLabels = document.querySelectorAll('.renewal-checkbox');
+            renewalCheckboxLabels.forEach(label => {
+                label.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    const checkbox = label.querySelector('input[type="checkbox"]');
+                    if (checkbox && e.target !== checkbox) {
+                        checkbox.checked = !checkbox.checked;
+                        const event = new Event('change', { bubbles: true });
+                        checkbox.dispatchEvent(event);
+                    }
+                });
+            });
+
+            // Open modal
             if (renewBtn) {
                 renewBtn.addEventListener('click', function (e) {
                     e.preventDefault();
                     e.stopPropagation();
-                    console.log('Renew button clicked!'); // Debug log
                     modal.style.display = 'flex';
                     resetRenewalModal();
                 });
@@ -349,7 +412,6 @@
             document.getElementById('selectedMemberSection').style.display = 'none';
             document.getElementById('renewalForm').reset();
 
-            // Reset renewal date to today
             const today = new Date();
             const renewalDateInput = document.getElementById('renewalDate');
             if (renewalDateInput) {
@@ -476,7 +538,6 @@
             if (combativeChecked) {
                 const sessions = parseInt(document.getElementById('renewCombativeSessions').value) || 12;
                 const currentMembership = selectedMember.memberships?.find(m => m.type === 'combative');
-                // Combative is always 1 month duration
                 const endDate = calculateNewEndDate(renewalDate, currentMembership?.endDate, 1, 'combative');
 
                 infoHTML += `
@@ -498,12 +559,10 @@
             const renewal = new Date(renewalDate);
             const currentEnd = currentEndDateStr ? new Date(currentEndDateStr) : null;
 
-            // For combative membership: Check if inactive for 2+ months
             if (membershipType === 'combative' && currentEnd) {
                 const twoMonthsAgo = new Date(renewal);
                 twoMonthsAgo.setMonth(twoMonthsAgo.getMonth() - 2);
 
-                // If membership ended more than 2 months ago, start fresh from renewal date
                 if (currentEnd < twoMonthsAgo) {
                     const newEnd = new Date(renewal);
                     newEnd.setMonth(newEnd.getMonth() + durationMonths);
@@ -511,14 +570,11 @@
                 }
             }
 
-            // For monthly membership OR combative within 2 months:
-            // If renewal is before expiry, add to the current end date
             if (currentEnd && renewal < currentEnd) {
                 const newEnd = new Date(currentEnd);
                 newEnd.setMonth(newEnd.getMonth() + durationMonths);
                 return newEnd;
             } else {
-                // If renewal is after expiry or no current membership, start from renewal date
                 const newEnd = new Date(renewal);
                 newEnd.setMonth(newEnd.getMonth() + durationMonths);
                 return newEnd;
@@ -550,7 +606,6 @@
                 const renewalDate = new Date(document.getElementById('renewalDate').value);
                 const updatedMemberships = [];
 
-                // Keep memberships that are not being renewed
                 if (selectedMember.memberships) {
                     selectedMember.memberships.forEach(m => {
                         if (m.type === 'monthly' && !monthlyChecked) {
@@ -561,12 +616,9 @@
                     });
                 }
 
-                // Add renewed memberships with startDate as renewalDate
                 if (monthlyChecked) {
                     const duration = parseInt(document.getElementById('renewMonthlyDuration').value) || 1;
                     const currentMembership = selectedMember.memberships?.find(m => m.type === 'monthly');
-
-                    // Calculate end date
                     const endDate = calculateNewEndDate(renewalDate, currentMembership?.endDate, duration, 'monthly');
 
                     updatedMemberships.push({
@@ -581,13 +633,11 @@
                 if (combativeChecked) {
                     const sessions = parseInt(document.getElementById('renewCombativeSessions').value) || 12;
                     const currentMembership = selectedMember.memberships?.find(m => m.type === 'combative');
-
-                    // Calculate end date with 2-month inactivity check - ALWAYS 1 MONTH for combative
                     const endDate = calculateNewEndDate(renewalDate, currentMembership?.endDate, 1, 'combative');
 
                     updatedMemberships.push({
                         type: 'combative',
-                        duration: sessions, // This is for sessions, not months
+                        duration: sessions,
                         remainingSessions: sessions,
                         startDate: renewalDate.toISOString(),
                         endDate: endDate.toISOString(),
@@ -686,7 +736,13 @@
                     showMessage('Member added successfully!', 'success');
                     setTimeout(() => {
                         document.getElementById('memberForm').reset();
-                        document.getElementById('joinDate').valueAsDate = new Date();
+
+                        // Reset join date to today
+                        const today = new Date();
+                        document.getElementById('joinDate').valueAsDate = today;
+                        document.getElementById('joinDateDisplay').value = formatDate(today);
+                        document.getElementById('birthdateDisplay').value = '';
+
                         document.getElementById('monthlyDetails').style.display = 'none';
                         document.getElementById('combativeDetails').style.display = 'none';
                         document.getElementById('faceStatus').textContent = '';

@@ -76,6 +76,58 @@
     font-style: italic;
 }
 
+/* Date input wrapper styling */
+.date-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.date-wrapper input[type="text"] {
+    flex: 1;
+    cursor: default;
+    background: #000305;
+    color: #ffffff;
+    padding: 10px 40px 10px 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+}
+
+.date-icon {
+    position: absolute;
+    right: 12px;
+    color: #ebebeb;
+    cursor: pointer;
+    font-size: 1.1rem;
+    z-index: 10;
+    transition: color 0.2s;
+}
+
+.date-icon:hover {
+    color: #2d87f0;
+}
+
+/* Hidden actual date inputs - positioned on top but invisible */
+input[type="date"].hidden-date {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    z-index: 5;
+    cursor: pointer;
+}
+
+/* Make sure the wrapper contains the hidden input properly */
+.date-wrapper {
+    position: relative;
+}
+
+.field .control.date-wrapper {
+    position: relative;
+}
+
 /* Date Picker Styling */
 .date-picker-group {
     margin-bottom: 2rem;

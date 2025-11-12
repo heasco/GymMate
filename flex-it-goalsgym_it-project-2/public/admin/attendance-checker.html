@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attendance Checker - GOALS Gym</title>
+    <link rel="stylesheet" href="./admin-css/admin-mainpage.css">
+    <link rel="stylesheet" href="./admin-css/attendance-checker.css">
+    <script src="https://kit.fontawesome.com/1d0b8c9b1d.js" crossorigin="anonymous"></script>
+</head>
+
+<body>
+    <div class="admin-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h2>GOALS Gym Admin</h2>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="./admin-mainpage.html"><span>Dashboard</span></a>
+                <a href="./add-classes.html"><span>Add Classes</span></a>
+                <a href="./add-member.html"><span>Add Member</span></a>
+                <a href="./manage-members.html"><span>Manage Member</span></a>
+                <a href="./add-trainer.html"><span>Add Trainer</span></a>
+                <a href="./manage-trainer.html"><span>Manage Trainer</span></a>
+                <a href="./manage-class-enrollment.html"><span>Manage Enrollment</span></a>
+                <a href="./add-transaction.html"><span>Add Transaction</span></a>
+                <a href="./view-classes-and-feedback.html"><span>View Classes</span></a>
+                <a href="./trainer-schedule-management.html"><span>Trainer Schedule Management</span></a>
+                <a href="./attendance-checker.html" class="active"><span>Attendance System</span></a>
+            </nav>
+        </aside>
+
+        <!-- Header -->
+        <header class="header">
+            <button class="menu-toggle" id="menuToggle">☰</button>
+            <h1>Attendance System</h1>
+            <button class="logout-btn" id="logoutBtn">Logout</button>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <h2>Facial Recognition Attendance</h2>
+
+            <div class="attendance-container">
+                <!-- Info Card -->
+                <div class="info-card">
+                    <div class="info-icon">
+                        <i class="fas fa-info-circle"></i>
+                    </div>
+                    <div class="info-content">
+                        <h3>How It Works</h3>
+                        <p>Click the button below to open the attendance system in a new window. The system uses facial recognition technology to automatically track member check-ins and check-outs.</p>
+                    </div>
+                </div>
+
+                <!-- Quick Stats -->
+                <div class="quick-stats">
+                    <div class="stat-box">
+                        <div class="stat-icon">
+                            <i class="fas fa-user-check"></i>
+                        </div>
+                        <div class="stat-info">
+                            <div class="stat-label">Today's Check-ins</div>
+                            <div class="stat-value" id="todayCheckins">-</div>
+                        </div>
+                    </div>
+
+                    <div class="stat-box">
+                        <div class="stat-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="stat-info">
+                            <div class="stat-label">Currently In Gym</div>
+                            <div class="stat-value in-gym" id="currentlyInGym">-</div>
+                        </div>
+                    </div>
+
+                    <div class="stat-box">
+                        <div class="stat-icon">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div class="stat-info">
+                            <div class="stat-label">Last Check-in</div>
+                            <div class="stat-value" id="lastCheckin">-</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Main Action Button -->
+                <div class="action-section">
+                    <button type="button" class="launch-btn" id="launchAttendanceBtn">
+                        <i class="fas fa-external-link-alt"></i>
+                        <span>Open Attendance System</span>
+                    </button>
+                    <p class="help-text">Opens in a new window for full-screen camera access</p>
+                </div>
+
+                <!-- Recent Activity -->
+                <div class="recent-activity">
+                    <div class="activity-header">
+                        <h3><i class="fas fa-history"></i> Recent Activity</h3>
+                        <button class="refresh-btn" id="refreshBtn">
+                            <i class="fas fa-sync-alt"></i> Refresh
+                        </button>
+                    </div>
+                    <div class="activity-list" id="activityList">
+                        <div class="loading">Loading recent activity...</div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const SERVER_URL = 'http://localhost:8080';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            setupSidebarAndSession();
+            loadDashboardData();
+            setupEventListeners();
+        });
+
+        function setupSidebarAndSession() {
+            const menuToggle = document.getElementById('menuToggle');
+            const sidebar = document.querySelector('.sidebar');
+            const logoutBtn = document.getElementById('logoutBtn');
+            const authUser = JSON.parse(localStorage.getItem('authUser'));
+
+            menuToggle.addEventListener('click', () => sidebar.classList.toggle('collapsed'));
+
+            if (!authUser || (Date.now() - authUser.timestamp > 3600000)) {
+                localStorage.removeItem('authUser');
+                window.location.href = '../admin-login.html';
+                return;
+            }
+
+            logoutBtn.addEventListener('click', () => {
+                localStorage.removeItem('authUser');
+                window.location.href = '../admin-login.html';
+            });
+
+            document.addEventListener('click', (e) => {
+                if (window.innerWidth <= 768 && !sidebar.contains(e.target) && !menuToggle.contains(e.target)) {
+                    sidebar.classList.remove('collapsed');
+                }
+            });
+        }
+
+        function setupEventListeners() {
+            const launchBtn = document.getElementById('launchAttendanceBtn');
+            const refreshBtn = document.getElementById('refreshBtn');
+
+            launchBtn.addEventListener('click', () => {
+                // Open attendance system in new window
+                const width = 1400;
+                const height = 900;
+                const left = (screen.width - width) / 2;
+                const top = (screen.height - height) / 2;
+                
+                window.open(
+                    '../attendance-admin/attendance-admin-mainpage.html',
+                    'AttendanceSystem',
+                    `width=${width},height=${height},top=${top},left=${left},toolbar=no,location=no,status=no,menubar=no,scrollbars=yes,resizable=yes`
+                );
+            });
+
+            refreshBtn.addEventListener('click', () => {
+                loadDashboardData();
+            });
+
+            // Auto-refresh every 30 seconds
+            setInterval(() => {
+                loadDashboardData();
+            }, 30000);
+        }
+
+        async function loadDashboardData() {
+            try {
+                const authUser = JSON.parse(localStorage.getItem('authUser'));
+                const response = await fetch(`${SERVER_URL}/api/attendance/today`, {
+                    headers: {
+                        'Authorization': `Bearer ${authUser.token}`
+                    }
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    updateDashboard(result.data);
+                }
+            } catch (error) {
+                console.error('Error loading dashboard data:', error);
+            }
+        }
+
+        function updateDashboard(data) {
+            // Update stats
+            document.getElementById('todayCheckins').textContent = data.totalCheckins || 0;
+            document.getElementById('currentlyInGym').textContent = data.currentlyInGym || 0;
+            
+            if (data.lastCheckin) {
+                const time = new Date(data.lastCheckin.timestamp);
+                document.getElementById('lastCheckin').textContent = time.toLocaleTimeString('en-US', {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            } else {
+                document.getElementById('lastCheckin').textContent = 'No activity yet';
+            }
+
+            // Update recent activity
+            displayRecentActivity(data.recentActivity || []);
+        }
+
+        function displayRecentActivity(activities) {
+            const activityList = document.getElementById('activityList');
+            
+            if (activities.length === 0) {
+                activityList.innerHTML = '<div class="no-activity">No recent activity today</div>';
+                return;
+            }
+
+            activityList.innerHTML = activities.slice(0, 10).map(activity => {
+                const time = new Date(activity.timestamp);
+                const timeStr = time.toLocaleTimeString('en-US', {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+
+                const typeClass = activity.type === 'check-in' ? 'check-in' : 'check-out';
+                const icon = activity.type === 'check-in' ? 'fa-sign-in-alt' : 'fa-sign-out-alt';
+
+                return `
+                    <div class="activity-item ${typeClass}">
+                        <div class="activity-icon">
+                            <i class="fas ${icon}"></i>
+                        </div>
+                        <div class="activity-details">
+                            <div class="activity-name">${activity.memberName}</div>
+                            <div class="activity-time">${timeStr}</div>
+                        </div>
+                        <div class="activity-badge ${typeClass}">
+                            ${activity.type === 'check-in' ? 'IN' : 'OUT'}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+    </script>
+</body>
+
+</html>
