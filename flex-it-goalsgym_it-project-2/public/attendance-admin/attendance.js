@@ -1,11 +1,26 @@
+// ✅ AUTH PROTECTION - Check before anything else
+(function checkAuth() {
+    const authUser = JSON.parse(localStorage.getItem('authUser'));
+    
+    // Check if user is logged in and session is valid (1 hour)
+    if (!authUser || (Date.now() - authUser.timestamp > 3600000)) {
+        // Not logged in or session expired - redirect to login
+        localStorage.removeItem('authUser');
+        window.location.href = '../admin-login.html';
+        return;
+    }
+    
+    console.log('Admin authenticated:', authUser.username);
+})();
+
+// ✅ Original attendance.js code starts here
 class AttendanceSystem {
     constructor() {
         this.camera = document.getElementById('camera');
         this.snapshot = document.getElementById('snapshot');
         this.statusMessage = document.getElementById('statusMessage');
         this.logStatus = document.getElementById('logStatus');
-        this.attendanceLogs = document.getElementById('attendanceLogs');
-        this.lastUpdated = document.getElementById('lastUpdated');
+        this.logsContainer = document.getElementById('logsContainer');
         this.modal = document.getElementById('attendanceModal');
         this.modalButtons = document.getElementById('modalButtons');
         this.modalMemberName = document.getElementById('modalMemberName');
@@ -25,15 +40,33 @@ class AttendanceSystem {
         this.startFaceDetection();
         this.loadAttendanceLogs();
         this.setupAutoRefresh();
+        this.setupKeyboardShortcuts();
+    }
+
+    // ✅ NEW: Keyboard shortcuts
+    setupKeyboardShortcuts() {
+        document.addEventListener('keydown', (e) => {
+            // ESC to close window
+            if (e.key === 'Escape') {
+                if (confirm('Close attendance system?')) {
+                    window.close();
+                }
+            }
+            // R to refresh logs
+            if (e.key === 'r' || e.key === 'R') {
+                this.loadAttendanceLogs();
+                this.updateStatus('Logs refreshed', 'success');
+            }
+        });
     }
 
     async startCamera() {
         try {
-            const stream = await navigator.mediaDevices.getUserMedia({ 
-                video: { 
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: {
                     width: { ideal: 640 },
                     height: { ideal: 480 }
-                } 
+                }
             });
             this.camera.srcObject = stream;
             this.updateStatus('Camera active - Ready for face detection', 'success');
@@ -44,15 +77,19 @@ class AttendanceSystem {
 
     updateStatus(message, type = 'info') {
         this.statusMessage.textContent = message;
-        this.statusMessage.style.color = type === 'error' ? '#DC3545' : 
-                                       type === 'success' ? '#28A745' : '#BFBFBF';
+        this.statusMessage.style.color = 
+            type === 'error' ? '#DC3545' : 
+            type === 'success' ? '#28A745' : 
+            '#BFBFBF';
     }
 
     updateLogStatus(message, type = 'info') {
         this.logStatus.textContent = message;
-        this.logStatus.style.color = type === 'error' ? '#DC3545' : 
-                                   type === 'success' ? '#28A745' : 
-                                   type === 'warning' ? '#FFC107' : '#BFBFBF';
+        this.logStatus.style.color = 
+            type === 'error' ? '#DC3545' : 
+            type === 'success' ? '#28A745' : 
+            type === 'warning' ? '#FFC107' : 
+            '#BFBFBF';
     }
 
     startFaceDetection() {
@@ -64,8 +101,10 @@ class AttendanceSystem {
 
         // Capture frame from camera
         const context = this.snapshot.getContext('2d');
+        this.snapshot.width = this.camera.videoWidth;
+        this.snapshot.height = this.camera.videoHeight;
         context.drawImage(this.camera, 0, 0, this.snapshot.width, this.snapshot.height);
-        
+
         // Convert to blob for API
         const blob = await new Promise(resolve => 
             this.snapshot.toBlob(resolve, 'image/jpeg', 0.9)
@@ -83,9 +122,9 @@ class AttendanceSystem {
                 method: 'POST',
                 body: formData
             });
-            
+
             const data = await response.json();
-            
+
             if (data && data.status === 'success' && data.faceId) {
                 await this.handleFaceDetected(data.faceId);
             } else {
@@ -134,7 +173,6 @@ class AttendanceSystem {
 
             const data = await response.json();
             await this.handleAttendanceResponse(data, faceId, displayName);
-            
         } catch (error) {
             this.updateLogStatus('Network error - Please try again', 'error');
         }
@@ -158,7 +196,7 @@ class AttendanceSystem {
     showAttendanceModal(options, classOptions, faceId, displayName) {
         this.modalMemberName.textContent = displayName;
         this.modalButtons.innerHTML = '';
-        
+
         options.forEach(type => {
             const button = document.createElement('button');
             button.className = 'modal-btn';
@@ -166,19 +204,19 @@ class AttendanceSystem {
             button.onclick = () => this.selectAttendanceType(type, faceId, displayName, classOptions);
             this.modalButtons.appendChild(button);
         });
-        
+
         this.modal.style.display = 'flex';
         this.modal.dataset.faceId = faceId;
     }
 
     selectAttendanceType(type, faceId, displayName, classOptions) {
         this.modal.style.display = 'none';
-        
+
         let classId = null;
         if ((type === "combative" || type === "both") && classOptions?.length) {
             classId = classOptions[0];
         }
-        
+
         this.logAttendanceWithType(faceId, displayName, type, classId);
     }
 
@@ -191,13 +229,13 @@ class AttendanceSystem {
             });
 
             const data = await response.json();
-            
+
             if (data.success) {
                 this.updateLogStatus(`${displayName} - ${attendedType.toUpperCase()} recorded`, 'success');
             } else {
                 this.updateLogStatus(data.error || 'Attendance error', 'error');
             }
-            
+
             this.loadAttendanceLogs();
         } catch (error) {
             this.updateLogStatus('Network error', 'error');
@@ -208,53 +246,53 @@ class AttendanceSystem {
         try {
             const response = await fetch(`${this.API_URL}/api/attendance/logs/today`);
             const data = await response.json();
-            
+
             if (data.success && Array.isArray(data.logs)) {
                 this.renderAttendanceLogs(data.logs);
-                this.updateLastUpdated();
             } else {
-                this.attendanceLogs.innerHTML = '<div class="loading-logs">No attendance records found</div>';
+                this.logsContainer.innerHTML = '<p class="no-logs">No attendance logs today</p>';
             }
         } catch (error) {
-            this.attendanceLogs.innerHTML = '<div class="loading-logs">Error loading attendance logs</div>';
+            this.logsContainer.innerHTML = '<p class="error-text">Failed to load logs</p>';
         }
     }
 
     renderAttendanceLogs(logs) {
         if (logs.length === 0) {
-            this.attendanceLogs.innerHTML = '<div class="loading-logs">No attendance records for today</div>';
+            this.logsContainer.innerHTML = '<p class="no-logs">No attendance logs today</p>';
             return;
         }
 
-        const logsHTML = logs.map(log => {
-            const type = log.logType || log.attendedType || log.type || "event";
-            const name = log.memberId?.name || log.memberId?.memberId || log.memberId || "Unknown";
-            const time = new Date(log.timestamp).toLocaleTimeString();
+        this.logsContainer.innerHTML = logs.map(log => {
+            const time = new Date(log.timestamp).toLocaleTimeString('en-US', {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
             
+            const memberName = log.memberId?.name || 'Unknown';
+            const logTypeClass = log.logType === 'login' ? 'login' : 'logout';
+            const icon = log.logType === 'login' ? '↓' : '↑';
+
             return `
-                <div class="log-entry">
-                    <div class="log-time">${time}</div>
-                    <div class="log-member">${name}</div>
-                    <div class="log-type">${type.toUpperCase()}</div>
+                <div class="log-item ${logTypeClass}">
+                    <span class="log-icon">${icon}</span>
+                    <span class="log-name">${memberName}</span>
+                    <span class="log-type">${log.logType.toUpperCase()}</span>
+                    <span class="log-time">${time}</span>
                 </div>
             `;
         }).join('');
-
-        this.attendanceLogs.innerHTML = logsHTML;
-    }
-
-    updateLastUpdated() {
-        const now = new Date();
-        this.lastUpdated.textContent = `Last updated: ${now.toLocaleTimeString()}`;
     }
 
     setupAutoRefresh() {
-        // Refresh logs every 10 seconds
-        setInterval(() => this.loadAttendanceLogs(), 10000);
+        // Refresh logs every 30 seconds
+        setInterval(() => {
+            this.loadAttendanceLogs();
+        }, 30000);
     }
 }
 
-// Initialize the attendance system when the page loads
+// ✅ Initialize the attendance system when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
     new AttendanceSystem();
 });

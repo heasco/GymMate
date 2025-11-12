@@ -6,6 +6,7 @@ let allEnrollments = [];
 let classNameCache = {};
 let pendingCancelId = null;
 let pendingFeedback = { enrollmentId: null, classId: null, className: '', trainerId: null };
+let currentMonthDate = new Date();
 
 // DOM Ready
 document.addEventListener('DOMContentLoaded', function() {
@@ -519,96 +520,119 @@ function generateWeekView() {
 }
 
 function generateMonthView() {
-    const calendarContainer = document.getElementById('calendarContainer');
-    const datePicker = document.getElementById('calendarDate');
-    const selectedDate = datePicker ? new Date(datePicker.value) : new Date();
+  const calendarContainer = document.getElementById('calendarContainer');
+  
+  // ✅ Use global currentMonthDate instead of date picker
+  const year = currentMonthDate.getFullYear();
+  const month = currentMonthDate.getMonth();
+  const today = new Date();
+  
+  // Get first day of month and last day of month
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month + 1, 0);
+  const daysInMonth = lastDay.getDate();
+  const startingDay = firstDay.getDay(); // 0=Sunday, 1=Monday, etc.
+  
+  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  
+  let html = `<div class="month-view">
+    <div class="month-header">
+        <button class="month-nav-btn" id="prevMonth" title="Previous Month">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="15 18 9 12 15 6"></polyline>
+            </svg>
+        </button>
+        <h4>${monthNames[month]} ${year}</h4>
+        <button class="month-nav-btn" id="nextMonth" title="Next Month">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
+        </button>
+    </div>
+    <div class="calendar-grid">`;
+  
+  // Generate day headers (Sun, Mon, Tue, etc.) - IN A ROW
+  dayNames.forEach(day => {
+    html += `<div class="calendar-header-day">${day}</div>`;
+  });
+  
+  // Generate empty cells for days before the first day of the month
+  for (let i = 0; i < startingDay; i++) {
+    html += `<div class="calendar-day empty"></div>`;
+  }
+  
+  // Generate days of the month - IN A GRID
+  for (let day = 1; day <= daysInMonth; day++) {
+    const currentDate = new Date(year, month, day);
+    const isToday = currentDate.toDateString() === today.toDateString();
+    const dateStr = currentDate.toISOString().split('T')[0];
     
-    const year = selectedDate.getFullYear();
-    const month = selectedDate.getMonth();
-    const today = new Date();
-    
-    // Get first day of month and last day of month
-    const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
-    const daysInMonth = lastDay.getDate();
-    const startingDay = firstDay.getDay(); // 0 = Sunday, 1 = Monday, etc.
-    
-    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-    
-    let html = `
-        <div class="month-view">
-            <div class="month-header">
-                <h4>${monthNames[month]} ${year}</h4>
-            </div>
-            <div class="calendar-grid">
-    `;
-    
-    // Generate day headers (Sun, Mon, Tue, etc.) - IN A ROW
-    dayNames.forEach(day => {
-        html += `<div class="calendar-header-day">${day}</div>`;
+    const dayEnrollments = allEnrollments.filter(enrollment => {
+      if (!enrollment.session_date) return false;
+      const enrollmentDate = new Date(enrollment.session_date);
+      return enrollmentDate.toISOString().split('T')[0] === dateStr;
     });
     
-    // Generate empty cells for days before the first day of the month
-    for (let i = 0; i < startingDay; i++) {
-        html += `<div class="calendar-day empty"></div>`;
+    html += `<div class="calendar-day${isToday ? ' today' : ''}">
+      <span class="calendar-day-number">${day}</span>
+      <div class="calendar-day-classes">`;
+    
+    if (dayEnrollments.length > 0) {
+      // Show up to 3 classes to avoid overflow
+      dayEnrollments.slice(0, 3).forEach(enrollment => {
+        const className = classNameCache[typeof enrollment.class_id === 'string' ? enrollment.class_id : enrollment.class_id?.id || enrollment.class_id] || getClassName(enrollment);
+        const status = enrollment.attendance_status || enrollment.status || 'scheduled';
+        const statusInfo = getStatusClass(status);
+        const shortName = className.length > 12 ? className.substring(0, 12) + '...' : className;
+        
+        html += `<div class="calendar-class" title="${className} - ${statusInfo.label}">
+          <span>${shortName}</span>
+          <span class="calendar-status ${statusInfo.class}">${statusInfo.label.charAt(0)}</span>
+        </div>`;
+      });
+      
+      // Show "+X more" if there are more classes
+      if (dayEnrollments.length > 3) {
+        html += `<div class="calendar-class">+${dayEnrollments.length - 3} more</div>`;
+      }
     }
     
-    // Generate days of the month - IN A GRID
-    for (let day = 1; day <= daysInMonth; day++) {
-        const currentDate = new Date(year, month, day);
-        const isToday = currentDate.toDateString() === today.toDateString();
-        const dateStr = currentDate.toISOString().split('T')[0];
-        
-        const dayEnrollments = allEnrollments.filter(enrollment => {
-            if (!enrollment.session_date) return false;
-            const enrollmentDate = new Date(enrollment.session_date);
-            return enrollmentDate.toISOString().split('T')[0] === dateStr;
-        });
-        
-        html += `
-            <div class="calendar-day ${isToday ? 'today' : ''}">
-                <span class="calendar-day-number">${day}</span>
-                <div class="calendar-day-classes">
-        `;
-        
-        if (dayEnrollments.length > 0) {
-            // Show up to 3 classes to avoid overflow
-            dayEnrollments.slice(0, 3).forEach(enrollment => {
-                const className = classNameCache[typeof enrollment.class_id === 'string' ? enrollment.class_id : (enrollment.class_id?._id || enrollment.class_id)] || getClassName(enrollment);
-                const status = enrollment.attendance_status || enrollment.status || 'scheduled';
-                const statusInfo = getStatusClass(status);
-                const shortName = className.length > 12 ? className.substring(0, 12) + '...' : className;
-                
-                html += `
-                    <div class="calendar-class" title="${className} - ${statusInfo.label}">
-                        <span>${shortName}</span>
-                        <span class="calendar-status ${statusInfo.class}">${statusInfo.label.charAt(0)}</span>
-                    </div>
-                `;
-            });
-            
-            // Show "+ more" if there are more classes
-            if (dayEnrollments.length > 3) {
-                html += `<div class="calendar-class">+${dayEnrollments.length - 3} more</div>`;
-            }
-        }
-        
-        html += `</div></div>`;
-    }
-    
-    // Calculate how many empty cells we need at the end to complete the grid (6 rows × 7 columns = 42 cells)
-    const totalCells = 42;
-    const usedCells = startingDay + daysInMonth;
-    const remainingCells = totalCells - usedCells;
-    
-    for (let i = 0; i < remainingCells; i++) {
-        html += `<div class="calendar-day empty"></div>`;
-    }
-    
-    html += `</div></div>`; // Close calendar-grid and month-view
-    calendarContainer.innerHTML = html;
+    html += `</div></div>`;
+  }
+  
+  // Calculate how many empty cells we need at the end to complete the grid (6 rows × 7 columns = 42 cells)
+  const totalCells = 42;
+  const usedCells = startingDay + daysInMonth;
+  const remainingCells = totalCells - usedCells;
+  
+  for (let i = 0; i < remainingCells; i++) {
+    html += `<div class="calendar-day empty"></div>`;
+  }
+  
+  html += `</div></div>`; // Close calendar-grid and month-view
+  
+  calendarContainer.innerHTML = html;
+  
+  // ✅ Add month navigation event listeners
+  const prevMonthBtn = document.getElementById('prevMonth');
+  const nextMonthBtn = document.getElementById('nextMonth');
+  
+  if (prevMonthBtn) {
+    prevMonthBtn.addEventListener('click', () => {
+      currentMonthDate.setMonth(currentMonthDate.getMonth() - 1);
+      generateMonthView();
+    });
+  }
+  
+  if (nextMonthBtn) {
+    nextMonthBtn.addEventListener('click', () => {
+      currentMonthDate.setMonth(currentMonthDate.getMonth() + 1);
+      generateMonthView();
+    });
+  }
 }
+
 
 // Modal functions
 function setupModalEvents() {

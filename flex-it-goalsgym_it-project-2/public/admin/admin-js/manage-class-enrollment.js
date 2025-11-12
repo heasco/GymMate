@@ -1,3 +1,10 @@
+// ✅ SIMPLE AUTH CHECK - MUST BE FIRST
+const authUser = JSON.parse(localStorage.getItem('authUser') || 'null');
+if (!authUser || (Date.now() - (authUser.timestamp || 0)) > 3600000) {
+  localStorage.removeItem('authUser');
+  window.location.href = '../admin-login.html';
+}
+
 // Complete Fixed JS: Strict Active + Combative Sessions Filter, Autocomplete Hide, Bulk Button Wired
 const SERVER_URL = 'http://localhost:8080';
 let debounceTimeout;
@@ -13,17 +20,21 @@ const dayOfWeekNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 
 
 document.addEventListener('DOMContentLoaded', async function() {
   console.log('=== INIT START ===');
-  // Auth Check (Optional - Skip if No Login)
+  
+  // Menu Toggle & Logout
   const menuToggle = document.getElementById('menuToggle');
   const sidebar = document.querySelector('.sidebar');
   const logoutBtn = document.getElementById('logoutBtn');
-  const authUser = JSON.parse(localStorage.getItem('authUser'));
-  if (authUser && Date.now() - authUser.timestamp > 3600000) {
-    localStorage.removeItem('authUser');
-  }
+  
   if (menuToggle) menuToggle.addEventListener('click', () => sidebar.classList.toggle('collapsed'));
-  if (logoutBtn) logoutBtn.addEventListener('click', () => { localStorage.removeItem('authUser'); window.location.href = '../admin-login.html'; });
-
+  
+  // ✅ LOGOUT - Only triggers when button is clicked
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', () => {
+      localStorage.removeItem('authUser');
+      window.location.href = '../admin-login.html';
+    });
+  }
 
   // Init: Simple Fetches
   await checkServerConnection();
@@ -42,9 +53,46 @@ document.addEventListener('DOMContentLoaded', async function() {
 
 
   // Default date to today for list view
-  const sessionDateInput = document.getElementById('sessionDate');
-  if (sessionDateInput) sessionDateInput.value = new Date().toISOString().split('T')[0];
-  else console.warn('sessionDate input not found');
+const sessionDateInput = document.getElementById('sessionDate');
+if (sessionDateInput) {
+  // Set minimum date to today using local timezone
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const day = String(today.getDate()).padStart(2, '0');
+  const minDate = `${year}-${month}-${day}`;
+  
+  sessionDateInput.setAttribute('min', minDate);
+  
+  // Block manual input of past dates - STRICTER VALIDATION
+  sessionDateInput.addEventListener('change', (e) => {
+    const inputValue = e.target.value;
+    
+    if (!inputValue) return; // Allow empty
+    
+    // Compare date strings directly (YYYY-MM-DD format)
+    if (inputValue < minDate) {
+      showError('Cannot select past dates. Please choose today or a future date.');
+      e.target.value = minDate; // Reset to today
+    }
+  });
+  
+  // Also validate on blur (when user leaves the field)
+  sessionDateInput.addEventListener('blur', (e) => {
+    const inputValue = e.target.value;
+    
+    if (!inputValue) return;
+    
+    if (inputValue < minDate) {
+      showError('Cannot select past dates. Please choose today or a future date.');
+      e.target.value = minDate;
+    }
+  });
+  
+  console.log('✅ sessionDate input restricted to future dates, min:', minDate);
+} else {
+  console.warn('sessionDate input not found');
+}
 
 
   console.log('=== INIT COMPLETE ===');
@@ -861,45 +909,98 @@ function updatePanelButton() {
 function generateCalendar() {
   const calendarMonth = document.getElementById('calendarMonth');
   if (!calendarMonth) return;
+
   const [year, month] = calendarMonth.value.split('-').map(Number);
   const title = document.getElementById('calendarTitle');
-  if (title) title.textContent = `${new Date(year, month - 1, 1).toLocaleString('default', { month: 'long' })} ${year}`;
+  if (title) {
+    title.textContent = new Date(year, month - 1, 1).toLocaleString('default', { month: 'long', year: 'numeric' });
+  }
+
   const firstDay = new Date(year, month - 1, 1).getDay();
   const lastDay = new Date(year, month, 0).getDate();
   const tbody = document.getElementById('calendarBody');
   if (!tbody) return;
+
   tbody.innerHTML = '';
   let row = document.createElement('tr');
+
+  // ✅ Get today's date (without time for comparison)
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  // Empty cells before first day
   for (let i = 0; i < firstDay; i++) {
     const emptyCell = document.createElement('td');
     emptyCell.className = 'calendar-day';
     row.appendChild(emptyCell);
   }
+
+  // Generate calendar days
   for (let day = 1; day <= lastDay; day++) {
     const date = new Date(year, month - 1, day);
+    date.setHours(0, 0, 0, 0);
+    
     const td = document.createElement('td');
     td.className = 'calendar-day';
     td.innerHTML = `<div class="day-number">${day}</div>`;
-    if (date.toDateString() === new Date().toDateString()) td.classList.add('today');
+
+    // ✅ Check if date is in the past
+    const isPast = date < today;
+    const isToday = date.toDateString() === today.toDateString();
+
+    // ✅ Find classes scheduled for this day of the week
     const classesToday = allClasses.filter(cls => isClassOnDay(cls.schedule, date.getDay()));
+
+    // ✅ Add classes to the day - LIMIT TO 4, show "+X more" if needed
     if (classesToday.length > 0) {
       td.classList.add('has-class');
-      classesToday.forEach(cls => {
-        const classEl = document.createElement('div');
-        classEl.className = 'class-on-day';
-        classEl.textContent = cls.class_name || cls.name;
-        td.appendChild(classEl);
-      });
+      
+      const maxDisplay = 4;
+      const classesToShow = classesToday.slice(0, maxDisplay);
+      const remainingCount = classesToday.length - maxDisplay;
+
+      // Show first 4 classes
+classesToShow.forEach(cls => {
+  const classEl = document.createElement('div');
+  classEl.className = 'class-on-day';
+  classEl.textContent = cls.class_name || cls.name || 'Class';  // ✅ FIXED
+  td.appendChild(classEl);
+});
+
+      // Show "+X more classes" if there are more than 4
+      if (remainingCount > 0) {
+        const moreEl = document.createElement('div');
+        moreEl.className = 'class-on-day more-classes';
+        moreEl.textContent = `+${remainingCount} more ${remainingCount === 1 ? 'class' : 'classes'}`;
+        td.appendChild(moreEl);
+      }
     }
-    td.onclick = (e) => selectDate(date, e);
+
+    // ✅ Apply styling based on date status
+    if (isPast) {
+      td.classList.add('past-date');
+      // Don't add click handler for past dates
+    } else {
+      // Current/future dates are clickable
+      if (isToday) {
+        td.classList.add('today');
+      }
+      td.onclick = (e) => selectDate(date, e);
+    }
+
     row.appendChild(td);
     if (row.children.length === 7) {
       tbody.appendChild(row);
       row = document.createElement('tr');
     }
   }
-  if (row.children.length > 0) tbody.appendChild(row);
-  console.log('Calendar generated for:', year, month);
+
+  // Add last row if incomplete
+  if (row.children.length > 0) {
+    tbody.appendChild(row);
+  }
+
+  console.log('Calendar generated for', year, month);
 }
 
 

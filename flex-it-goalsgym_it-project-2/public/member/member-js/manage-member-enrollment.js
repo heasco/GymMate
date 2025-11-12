@@ -19,6 +19,16 @@ function escapeHtml(s) {
   return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
+// Helper function to get today's date in YYYY-MM-DD format
+function getTodayDateString() {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const day = String(today.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+
 // ========== MAIN GLOBALS ==========
 let availableClasses = [];
 let memberEnrollments = [];
@@ -227,11 +237,13 @@ function renderCalendarGrid() {
     cellIndex++;
   }
   
-  for (let day = 1; day <= daysInMonth; day++) {
-    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-    const isToday = dateStr === new Date().toISOString().split('T')[0];
-    
-    const dayClasses = getClassesForDate(dateStr);
+for (let day = 1; day <= daysInMonth; day++) {
+  const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+  const todayStr = getTodayDateString();
+  const isToday = dateStr === todayStr;
+  const isPast = dateStr < todayStr; 
+  const dayClasses = getClassesForDate(dateStr);
+
     
     let classChips = '';
     if (dayClasses.length > 0) {
@@ -243,7 +255,7 @@ function renderCalendarGrid() {
       }
     }
     
-    html += `<div class="calendar-cell${isToday ? ' calendar-cell-today' : ''}${dayClasses.length > 0 ? ' has-classes' : ''}" data-date="${dateStr}">
+    html += `<div class="calendar-cell${isToday ? ' calendar-cell-today' : ''}${isPast ? ' past-date' : ''}${dayClasses.length > 0 ? ' has-classes' : ''}" data-date="${dateStr}"${isPast ? ' style="pointer-events: none; opacity: 0.5; cursor: not-allowed;"' : ''}>
       <div class="calendar-day-number">${day}</div>
       <div class="calendar-day-content"><div class="calendar-day-classes">${classChips}</div></div></div>`;
     
@@ -280,10 +292,16 @@ function renderCalendarNavigation() {
 function handleCalendarClick(event) {
   const cell = event.target.closest('.calendar-cell');
   if (!cell || cell.classList.contains('calendar-cell-empty')) return;
+  
   const dateStr = cell.getAttribute('data-date');
   if (!dateStr) return;
-  const dayClasses = getClassesForDate(dateStr);
-  showDayModal(dateStr, dayClasses);
+  
+  // ✅ Prevent clicking past dates
+  const todayStr = getTodayDateString();
+  if (dateStr < todayStr) {
+    showToast('Cannot select past dates', 'error');
+    return;
+  }
 }
 
 function getClassesForDate(dateStr) {
@@ -743,7 +761,7 @@ function showClassForEnrollment(classId) {
         <div class="time-selection">
           <h4>Select Date and Time</h4>
           <label for="enrollDatePicker">Date:</label>
-          <input type="date" id="enrollDatePicker" value="${new Date().toISOString().split('T')[0]}"
+          <input type="date" id="enrollDatePicker" value="${getTodayDateString()}" min="${getTodayDateString()}" class="date-picker" style="width:100%;padding:0.5rem;margin-bottom:1rem;border:1px solid #ccc;border-radius:4px;">
                  class="date-picker" style="width: 100%; padding: 0.5rem; margin-bottom: 1rem; border: 1px solid #ccc; border-radius: 4px;">
           <label>Time Slot:</label>
           <div class="time-slots" style="margin-top: 0.5rem;">
@@ -785,16 +803,27 @@ function showClassForEnrollment(classId) {
   `;
   modal.style.display = 'flex';
   
-  const datePicker = document.getElementById('enrollDatePicker');
-  if (datePicker) {
-    datePicker.addEventListener('change', function () {
-      const timeBtns = modal.querySelectorAll('.time-slot-btn');
-      timeBtns.forEach(btn => {
-        btn.dataset.date = this.value;
-      });
-      console.log('Date changed to:', this.value);
+const datePicker = document.getElementById('enrollDatePicker');
+if (datePicker) {
+  datePicker.addEventListener('change', function() {
+    const inputValue = this.value;
+    const minDate = getTodayDateString();
+    
+    // ✅ Validate past dates
+    if (inputValue < minDate) {
+      showToast('Cannot select past dates. Please choose today or a future date.', 'error');
+      this.value = minDate;
+      return;
+    }
+    
+    const timeBtns = modal.querySelectorAll('.time-slot-btn');
+    timeBtns.forEach(btn => {
+      btn.dataset.date = this.value;
     });
-  }
+    console.log('Date changed to:', this.value);
+  });
+}
+
   
   const timeSlotBtns = modal.querySelectorAll('.time-slot-btn');
   timeSlotBtns.forEach(btn => {

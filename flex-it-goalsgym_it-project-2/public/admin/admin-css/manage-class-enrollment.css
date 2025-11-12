@@ -32,7 +32,8 @@
 }
 
 /* Messages */
-.success-message, .error-message {
+.success-message,
+.error-message {
     display: none;
     padding: 1rem 1.5rem;
     margin-bottom: 2rem;
@@ -109,11 +110,20 @@
 }
 
 @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
-.section h2, .section h3, .section h4 {
+.section h2,
+.section h3,
+.section h4 {
     color: var(--accent);
     font-weight: 700;
     margin-bottom: 1.5rem;
@@ -445,14 +455,26 @@ input[type="checkbox"] {
     margin-bottom: 0.3rem;
 }
 
+/* ✅ Class badges on calendar days - VISIBLE TEXT */
 .class-on-day {
-    font-size: 0.75rem;
-    padding: 0.2rem 0.4rem;
-    background: rgba(179, 0, 0, 0.3);
+    display: block;
+    background: linear-gradient(135deg, rgba(179, 0, 0, 0.9), rgba(220, 20, 60, 0.9));
+    color: #ffffff !important;
+    /* ✅ FORCE WHITE TEXT */
+    padding: 4px 8px;
+    margin: 2px 0;
     border-radius: 4px;
-    margin-top: 0.2rem;
-    color: var(--accent);
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-align: center;
+    line-height: 1.3;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    transition: var(--transition);
 }
+
 
 /* Date Panel - UPDATED (Now Below Calendar) */
 .date-panel {
@@ -621,19 +643,20 @@ input[type="checkbox"] {
         font-size: 0.85rem;
     }
 
-    th, td {
+    th,
+    td {
         padding: 0.6rem;
     }
-    
+
     .calendar-table td {
         padding: 0.5rem 0.2rem;
         min-height: 60px;
     }
-    
+
     .day-number {
         font-size: 0.85rem;
     }
-    
+
     .class-on-day {
         font-size: 0.65rem;
     }
@@ -705,4 +728,68 @@ input[type="checkbox"] {
 .calendar-month-input:focus {
     border-color: var(--primary);
     box-shadow: 0 0 0 2px rgba(179, 0, 0, 0.2);
+}
+
+/* ✅ Class badges on calendar days - VISIBLE TEXT */
+.class-on-day {
+    display: block;
+    background: linear-gradient(135deg, rgba(179, 0, 0, 0.9), rgba(220, 20, 60, 0.9));
+    color: #ffffff !important;
+    /* ✅ FORCE WHITE TEXT */
+    padding: 4px 8px;
+    margin: 2px 0;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-align: center;
+    line-height: 1.3;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    transition: var(--transition);
+}
+
+.class-on-day:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+}
+
+/* ✅ "+X more classes" indicator */
+.more-classes {
+    background: rgba(100, 100, 100, 0.8) !important;
+    color: #ffffff !important;
+    font-size: 0.65rem !important;
+    font-style: italic;
+    border: 1px dashed rgba(255, 255, 255, 0.5);
+    padding: 3px 6px;
+}
+
+/* ✅ Past date class badges - dimmed but still readable */
+.past-date .class-on-day {
+    opacity: 0.5;
+    background: rgba(128, 128, 128, 0.6) !important;
+    color: rgba(255, 255, 255, 0.7) !important;
+}
+
+.past-date .more-classes {
+    opacity: 0.4;
+}
+
+/* ✅ Ensure text is visible on all backgrounds */
+.calendar-day {
+    background: rgba(26, 26, 26, 0.9);
+    position: relative;
+    min-height: 100px;
+    padding: 5px;
+    vertical-align: top;
+}
+
+/* Day number styling */
+.day-number {
+    font-size: 1rem;
+    font-weight: bold;
+    color: #ffffff;
+    margin-bottom: 5px;
+    display: block;
 }

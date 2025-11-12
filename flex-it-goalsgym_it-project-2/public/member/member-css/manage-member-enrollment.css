@@ -873,3 +873,26 @@
         padding: 1rem;
     }
 }
+
+/* Past dates styling */
+.calendar-cell.past-date {
+  background: rgba(50, 50, 50, 0.3) !important;
+  cursor: not-allowed !important;
+  opacity: 0.5 !important;
+  pointer-events: none;
+}
+
+.calendar-cell.past-date .calendar-day-number {
+  color: rgba(255, 255, 255, 0.3) !important;
+}
+
+.calendar-cell.past-date:hover {
+  transform: none !important;
+  background: rgba(50, 50, 50, 0.3) !important;
+}
+
+/* Today's date highlighted */
+.calendar-cell-today {
+  border: 2px solid var(--primary, #b30000);
+  font-weight: bold;
+}

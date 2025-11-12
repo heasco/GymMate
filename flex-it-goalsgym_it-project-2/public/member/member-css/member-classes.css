@@ -309,7 +309,8 @@
 }
 
 .calendar-header {
-    display: contents; /* This makes header cells part of the grid */
+    display: contents;
+    /* This makes header cells part of the grid */
 }
 
 .calendar-header-day {
@@ -787,72 +788,72 @@
     .member-greeting {
         padding: 1.5rem;
     }
-    
+
     .member-greeting h2 {
         font-size: 1.6rem;
     }
-    
+
     .card-body {
         padding: 1.5rem;
     }
-    
+
     .session-counter span {
         font-size: 3rem;
     }
-    
+
     .enrollments-table {
         font-size: 0.9rem;
     }
-    
+
     .enrollments-table th,
     .enrollments-table td {
         padding: 0.8rem 0.5rem;
     }
-    
+
     .calendar-controls {
         flex-direction: column;
         align-items: stretch;
     }
-    
+
     .view-tabs {
         justify-content: center;
     }
-    
+
     .action-buttons {
         flex-direction: column;
     }
-    
+
     .btn {
         min-width: 100%;
     }
-    
+
     .modal-container {
         width: 95%;
         margin: 1rem;
     }
-    
+
     .modal-body {
         padding: 1.5rem;
     }
-    
+
     .modal-actions {
         flex-direction: column;
     }
-    
+
     .action-btn {
         min-width: 100%;
     }
-    
+
     .calendar-day {
         min-height: 80px;
         padding: 0.5rem;
     }
-    
+
     .calendar-class {
         font-size: 0.7rem;
         padding: 0.2rem 0.3rem;
     }
-    
+
     .calendar-header-day {
         padding: 0.8rem 0.5rem;
         font-size: 0.8rem;
@@ -863,57 +864,112 @@
     .member-greeting h2 {
         font-size: 1.4rem;
     }
-    
+
     .card-header {
         padding: 1rem 1.5rem;
     }
-    
+
     .card-header h3 {
         font-size: 1.2rem;
     }
-    
+
     .card-body {
         padding: 1rem;
     }
-    
+
     .session-counter span {
         font-size: 2.5rem;
     }
-    
+
     .enrollments-table {
         font-size: 0.8rem;
     }
-    
+
     .enrollments-table th,
     .enrollments-table td {
         padding: 0.6rem 0.4rem;
     }
-    
+
     .view-tab {
         padding: 0.6rem 1rem;
         font-size: 0.8rem;
     }
-    
+
     .calendar-day {
         min-height: 60px;
         padding: 0.3rem;
     }
-    
+
     .calendar-class {
         font-size: 0.6rem;
         padding: 0.1rem 0.2rem;
     }
-    
+
     .calendar-header-day {
         padding: 0.6rem 0.3rem;
         font-size: 0.7rem;
     }
-    
+
     .month-header {
         padding: 1rem;
     }
-    
+
     .month-header h4 {
         font-size: 1.1rem;
     }
+}
+
+/* ========================================
+   MONTH NAVIGATION ARROWS
+   ======================================== */
+.month-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem;
+    background: linear-gradient(135deg, var(--primary), var(--highlight));
+    border-radius: var(--radius) var(--radius) 0 0;
+    color: var(--accent);
+}
+
+.month-header h4 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+    flex: 1;
+    text-align: center;
+    color: var(--accent);
+}
+
+.month-nav-btn {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    color: var(--accent);
+    padding: 0;
+}
+
+.month-nav-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: scale(1.1);
+}
+
+.month-nav-btn:active {
+    transform: scale(0.95);
+}
+
+.month-nav-btn svg {
+    width: 20px;
+    height: 20px;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
 }

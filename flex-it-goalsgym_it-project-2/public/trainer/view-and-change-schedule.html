@@ -3,12 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trainer - View and Change Schedule - GOALS Gym</title>
+    <title>View & Change Schedule - GOALS Gym</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="../admin/admin-css/admin-mainpage.css">
     <link rel="stylesheet" href="./trainer-css/view-and-change-schedule.css">
 </head>
 <body>
     <div class="admin-container">
+        <!-- Sidebar -->
         <aside class="sidebar">
             <div class="sidebar-header">
                 <h2>GOALS Gym Trainer</h2>
@@ -16,35 +18,40 @@
             <nav class="sidebar-nav">
                 <a href="trainer-mainpage.html"><span>Dashboard</span></a>
                 <a href="view-and-change-schedule.html" class="active"><span>My Classes & Schedule</span></a>
-                <a href="trainer-profile-management.html"><span>Profile</span></a>
+                <a href="trainer-profile-management.html" ><span>Profile</span></a>
                 <a href="view-classes-feedback.html"><span>Feedback</span></a>
-                <a href="trainer-availability.html"><span>Availability</span></a>
             </nav>
         </aside>
 
+        <!-- Header -->
         <header class="header">
             <button class="menu-toggle" id="menuToggle">☰</button>
-            <h1>My Classes and Schedule</h1>
+            <h1>My Classes & Schedule</h1>
             <button class="logout-btn" id="logoutBtn">Logout</button>
         </header>
 
+        <!-- Main Content -->
         <main class="main-content">
             <div class="container">
+                <!-- Trainer Greeting -->
                 <div class="trainer-greeting">
-                    <h2>Welcome, <span id="trainerName">Trainer</span>!</h2>
+                    <h2>Manage Your Classes, <span id="trainerName">Trainer</span>!</h2>
                 </div>
-                
+
+                <!-- Classes Section -->
                 <div class="section">
                     <h3>Your Assigned Classes</h3>
-                    <div id="scheduleLoading" class="loading">Loading your classes...</div>
-                    <div id="classesList"></div>
+                    <div id="classesLoading" class="loading">Loading your classes...</div>
+                    <div id="classesContainer"></div>
                 </div>
             </div>
         </main>
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
+        const API_URL = 'http://localhost:8080';
+
+        document.addEventListener('DOMContentLoaded', async function () {
             const menuToggle = document.getElementById('menuToggle');
             const sidebar = document.querySelector('.sidebar');
             const logoutBtn = document.getElementById('logoutBtn');
@@ -55,223 +62,356 @@
                 window.location.href = '../trainer-login.html';
                 return;
             }
-            
+
             menuToggle.addEventListener('click', () => sidebar.classList.toggle('collapsed'));
-            
             logoutBtn.addEventListener('click', () => {
                 localStorage.removeItem('authUser');
                 window.location.href = '../trainer-login.html';
             });
-            
-            document.addEventListener('click', (e) => {
-                if (window.innerWidth <= 768 && !sidebar.contains(e.target) && !menuToggle.contains(e.target)) {
-                    sidebar.classList.remove('collapsed');
-                }
-            });
 
-            // Set trainer name
-            document.getElementById('trainerName').textContent = authUser.user.name || 'Trainer';
+            document.getElementById('trainerName').textContent = authUser.user.name;
 
-            // Sample data - replace with actual API calls
-            const sampleClasses = [
-                {
-                    class_id: '1',
-                    class_name: 'Morning Yoga',
-                    description: 'Beginner friendly yoga class focusing on flexibility and relaxation',
-                    capacity: 20,
-                    current_enrollment: 15,
-                    trainer_id: authUser.user.trainerid || 'T001',
-                    schedule: 'Weekly Monday, Wednesday, Friday, 7:00 AM - 8:00 AM'
-                },
-                {
-                    class_id: '2',
-                    class_name: 'HIIT Training',
-                    description: 'High Intensity Interval Training for advanced fitness levels',
-                    capacity: 15,
-                    current_enrollment: 12,
-                    trainer_id: authUser.user.trainerid || 'T001',
-                    schedule: 'Weekly Tuesday, Thursday, 5:00 PM - 6:00 PM'
-                },
-                {
-                    class_id: '3',
-                    class_name: 'Strength Training',
-                    description: 'Weight training and strength building exercises',
-                    capacity: 20,
-                    current_enrollment: 8,
-                    trainer_id: authUser.user.trainerid || 'T001',
-                    schedule: 'One-time 2024-01-15, 6:00 PM - 7:00 PM'
-                }
-            ];
+            const classesContainer = document.getElementById('classesContainer');
+            const loading = document.getElementById('classesLoading');
 
-            // Load classes
-            setTimeout(() => {
-                document.getElementById('scheduleLoading').style.display = 'none';
-                renderClasses(sampleClasses);
-            }, 1000);
+            try {
+                const trainerId = authUser.user.trainer_id || authUser.user.trainerid || authUser.user.id;
+                const resp = await fetch(`${API_URL}/api/classes`);
+                if (!resp.ok) throw new Error(`Failed to fetch classes: ${resp.status}`);
 
-            function renderClasses(classes) {
-                const classesList = document.getElementById('classesList');
-                
-                if (!classes || classes.length === 0) {
-                    classesList.innerHTML = '<div class="no-classes">No classes assigned to you.</div>';
+                const data = await resp.json();
+                const allClasses = data.data || [];
+                const trainerClasses = allClasses.filter(c => {
+                    const cid = c.trainer_id || c.trainerid || null;
+                    return cid === trainerId;
+                });
+
+                loading.style.display = 'none';
+
+                if (trainerClasses.length === 0) {
+                    classesContainer.innerHTML = '<div class="no-classes">No classes assigned to you yet.</div>';
                     return;
                 }
 
-                let html = '';
-                classes.forEach(cls => {
-                    const schedule = parseSchedule(cls.schedule || '');
-                    
-                    html += `
-                        <div class="class-card">
-                            <div class="class-header">
-                                <h3>${cls.class_name}</h3>
-                                <span class="enrollment">${cls.current_enrollment}/${cls.capacity} enrolled</span>
-                            </div>
-                            <p class="class-description">${cls.description || "No description available"}</p>
-                            
-                            <div class="class-details">
-                                <div class="detail-item">
-                                    <strong>Capacity:</strong> ${cls.capacity} members
-                                </div>
-                                <div class="detail-item">
-                                    <strong>Current Schedule:</strong>
-                                    <div class="current-schedule">${cls.schedule || 'Not scheduled'}</div>
-                                </div>
-                            </div>
+                const classesWithEnrollment = await Promise.all(trainerClasses.map(async c => {
+                    const cid = c.class_id || c.classid || c._id;
+                    let enrolledCount = 0;
 
-                            <div class="edit-form">
-                                <h4>Update Schedule</h4>
-                                <div class="form-group">
-                                    <label for="scheduleType-${cls.class_id}">Schedule Type:</label>
-                                    <select id="scheduleType-${cls.class_id}" onchange="showCorrect('${cls.class_id}')">
-                                        <option value="">Select schedule type</option>
-                                        <option value="one-time" ${schedule.type === 'one-time' ? 'selected' : ''}>One-time Class</option>
-                                        <option value="weekly" ${schedule.type === 'weekly' ? 'selected' : ''}>Weekly Recurring</option>
-                                    </select>
-                                </div>
-
-                                <div class="edit-one-time" id="one-time-${cls.class_id}" style="display:${schedule.type === 'one-time' ? 'block' : 'none'}">
-                                    <div class="form-row">
-                                        <div class="form-group">
-                                            <label>Date:</label>
-                                            <input type="date" name="one_date" value="${schedule.date || ''}">
-                                        </div>
-                                        <div class="form-group">
-                                            <label>Start Time:</label>
-                                            <input type="time" name="one_start" value="${schedule.start || ''}">
-                                        </div>
-                                        <div class="form-group">
-                                            <label>End Time:</label>
-                                            <input type="time" name="one_end" value="${schedule.end || ''}">
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="edit-weekly" id="weekly-${cls.class_id}" style="display:${schedule.type === 'weekly' ? 'block' : 'none'}">
-                                    <div class="form-group">
-                                        <label>Days:</label>
-                                        <div class="days-checkboxes">
-                                            ${['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map(day => `
-                                                <label class="day-checkbox">
-                                                    <input type="checkbox" name="weekly_days" value="${day}" ${schedule.days.includes(day) ? 'checked' : ''}>
-                                                    ${day.substring(0, 3)}
-                                                </label>
-                                            `).join('')}
-                                        </div>
-                                    </div>
-                                    <div class="form-row">
-                                        <div class="form-group">
-                                            <label>Start Time:</label>
-                                            <input type="time" name="weekly_start" value="${schedule.start || ''}">
-                                        </div>
-                                        <div class="form-group">
-                                            <label>End Time:</label>
-                                            <input type="time" name="weekly_end" value="${schedule.end || ''}">
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="form-actions">
-                                    <button type="button" onclick="updateTrainerSchedule('${cls.class_id}')" class="save-btn">Save Changes</button>
-                                    <div class="edit-status" id="status-${cls.class_id}"></div>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                });
-
-                classesList.innerHTML = html;
-            }
-
-            function parseSchedule(schedule) {
-                let output = {
-                    type: '',
-                    date: '',
-                    start: '',
-                    end: '',
-                    days: []
-                };
-
-                if (/^One-time/.test(schedule)) {
-                    output.type = "one-time";
-                    const match = schedule.match(/^One-time\s+(\d{4}-\d{2}-\d{2}),\s*(\d{1,2}:\d{2}\s*[AP]M)\s*-\s*(\d{1,2}:\d{2}\s*[AP]M)/);
-                    if (match) {
-                        output.date = match[1];
-                        output.start = to24h(match[2]);
-                        output.end = to24h(match[3]);
+                    try {
+                        const enrollResp = await fetch(`${API_URL}/api/classes/${cid}/enrollments`);
+                        if (enrollResp.ok) {
+                            const enroll = await enrollResp.json();
+                            enrolledCount = (enroll.data || []).length;
+                        }
+                    } catch (err) {
+                        console.error('Error fetching enrollments:', err);
                     }
-                } else if (/^Weekly/.test(schedule)) {
-                    output.type = "weekly";
-                    const match = schedule.match(/^Weekly\s+([A-Za-z,\s]+),\s*(\d{1,2}:\d{2}\s*[AP]M)\s*-\s*(\d{1,2}:\d{2}\s*[AP]M)/i);
-                    if (match) {
-                        output.days = match[1].split(',').map(day => day.trim());
-                        output.start = to24h(match[2]);
-                        output.end = to24h(match[3]);
-                    }
-                }
 
-                return output;
-            }
+                    return { ...c, enrolledCount };
+                }));
 
-            function to24h(timeStr) {
-                if (!timeStr) return "";
-                const [time, period] = timeStr.split(' ');
-                let [hours, minutes] = time.split(':');
-                hours = parseInt(hours);
-                
-                if (period && period.toUpperCase() === 'PM' && hours < 12) hours += 12;
-                if (period && period.toUpperCase() === 'AM' && hours === 12) hours = 0;
-                
-                return `${hours.toString().padStart(2, '0')}:${minutes}`;
-            }
+                renderClasses(classesWithEnrollment, trainerId);
 
-            function timeFormat(timeStr) {
-                if (!timeStr) return "";
-                const [hours, minutes] = timeStr.split(':');
-                let hour = parseInt(hours);
-                const period = hour >= 12 ? 'PM' : 'AM';
-                hour = hour % 12 || 12;
-                return `${hour}:${minutes} ${period}`;
+            } catch (err) {
+                console.error('Error loading classes:', err);
+                loading.style.display = 'none';
+                classesContainer.innerHTML = '<div class="error">Failed to load classes. Please try again.</div>';
             }
         });
 
-        // Global functions for form handling
-        window.showCorrect = function(classId) {
-            const type = document.getElementById(`scheduleType-${classId}`).value;
-            document.getElementById(`one-time-${classId}`).style.display = type === 'one-time' ? 'block' : 'none';
-            document.getElementById(`weekly-${classId}`).style.display = type === 'weekly' ? 'block' : 'none';
-        };
-
-        window.updateTrainerSchedule = function(classId) {
-            const statusDiv = document.getElementById(`status-${classId}`);
-            statusDiv.textContent = "Schedule updated successfully!";
-            statusDiv.className = "edit-status success";
+        function parseScheduleDays(schedule) {
+            const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+            const activeDays = [];
             
-            // Simulate API call delay
-            setTimeout(() => {
-                statusDiv.textContent = "";
-            }, 3000);
-        };
+            days.forEach(day => {
+                if (schedule.includes(day)) {
+                    activeDays.push(day);
+                }
+            });
+            
+            return activeDays;
+        }
+
+        function renderClasses(classes, trainerId) {
+            const container = document.getElementById('classesContainer');
+            let html = '';
+
+            classes.forEach(cls => {
+                const classId = cls.class_id || cls.classid || cls._id;
+                const className = cls.class_name || cls.classname || 'Unnamed Class';
+                const description = cls.description || 'No description available';
+                const schedule = cls.schedule || 'Not scheduled';
+                const capacity = cls.capacity || '-';
+                const enrolled = cls.enrolledCount || 0;
+
+                const activeDays = parseScheduleDays(schedule);
+                const dayChecks = {
+                    'Mon': activeDays.includes('Mon'),
+                    'Tue': activeDays.includes('Tue'),
+                    'Wed': activeDays.includes('Wed'),
+                    'Thu': activeDays.includes('Thu'),
+                    'Fri': activeDays.includes('Fri'),
+                    'Sat': activeDays.includes('Sat'),
+                    'Sun': activeDays.includes('Sun')
+                };
+
+                html += `
+                    <div class="class-card" data-class-id="${classId}">
+                        <div class="class-header">
+                            <h3>${className}</h3>
+                            <span class="enrollment">${enrolled}/${capacity} Enrolled</span>
+                        </div>
+                        <p class="class-description">${description}</p>
+                        <div class="class-details">
+                            <div class="detail-item">
+                                <strong>Current Schedule:</strong>
+                                <div class="current-schedule">${schedule}</div>
+                            </div>
+                            <div class="detail-item"><strong>Capacity:</strong> ${capacity}</div>
+                        </div>
+                        <button class="save-btn" onclick="toggleEditForm('${classId}')">Edit Schedule</button>
+                        
+                        <div class="edit-form" id="editForm-${classId}" style="display: none;">
+                            <h4>Update Schedule</h4>
+                            
+                            <div class="schedule-type-selector">
+                                <button type="button" class="schedule-type-btn active" onclick="setScheduleType('${classId}', 'weekly')">
+                                    <i class="fa-solid fa-check btn-icon"></i> Weekly Recurring
+                                </button>
+                                <button type="button" class="schedule-type-btn" onclick="setScheduleType('${classId}', 'onetime')">
+                                    <i class="fa-solid fa-calendar-days btn-icon"></i> One-Time Event
+                                </button>
+                            </div>
+
+                            <div class="schedule-options" id="weeklyOptions-${classId}">
+                                <label class="section-label">
+                                    <i class="fa-solid fa-check label-icon"></i> Select Days:
+                                </label>
+                                <div class="day-checkboxes">
+                                    <div class="day-checkbox-item">
+                                        <input type="checkbox" id="mon-${classId}" value="Monday" ${dayChecks.Mon ? 'checked' : ''}>
+                                        <label for="mon-${classId}">Monday</label>
+                                    </div>
+                                    <div class="day-checkbox-item">
+                                        <input type="checkbox" id="tue-${classId}" value="Tuesday" ${dayChecks.Tue ? 'checked' : ''}>
+                                        <label for="tue-${classId}">Tuesday</label>
+                                    </div>
+                                    <div class="day-checkbox-item">
+                                        <input type="checkbox" id="wed-${classId}" value="Wednesday" ${dayChecks.Wed ? 'checked' : ''}>
+                                        <label for="wed-${classId}">Wednesday</label>
+                                    </div>
+                                    <div class="day-checkbox-item">
+                                        <input type="checkbox" id="thu-${classId}" value="Thursday" ${dayChecks.Thu ? 'checked' : ''}>
+                                        <label for="thu-${classId}">Thursday</label>
+                                    </div>
+                                    <div class="day-checkbox-item">
+                                        <input type="checkbox" id="fri-${classId}" value="Friday" ${dayChecks.Fri ? 'checked' : ''}>
+                                        <label for="fri-${classId}">Friday</label>
+                                    </div>
+                                    <div class="day-checkbox-item">
+                                        <input type="checkbox" id="sat-${classId}" value="Saturday" ${dayChecks.Sat ? 'checked' : ''}>
+                                        <label for="sat-${classId}">Saturday</label>
+                                    </div>
+                                    <div class="day-checkbox-item">
+                                        <input type="checkbox" id="sun-${classId}" value="Sunday" ${dayChecks.Sun ? 'checked' : ''}>
+                                        <label for="sun-${classId}">Sunday</label>
+                                    </div>
+                                </div>
+                                <label class="section-label" style="margin-top: 1rem;">
+                                    <i class="fa-solid fa-clock label-icon"></i> Time Range:
+                                </label>
+                                <div class="time-input-group">
+                                    <div class="time-input-wrapper">
+                                        <input type="time" id="startTime-${classId}" value="07:00" required>
+                                        <i class="fa-solid fa-clock time-icon-right" onclick="document.getElementById('startTime-${classId}').showPicker()"></i>
+                                    </div>
+                                    <span style="color: var(--accent);">to</span>
+                                    <div class="time-input-wrapper">
+                                        <input type="time" id="endTime-${classId}" value="08:00" required>
+                                        <i class="fa-solid fa-clock time-icon-right" onclick="document.getElementById('endTime-${classId}').showPicker()"></i>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="schedule-options" id="onetimeOptions-${classId}" style="display: none;">
+                                <label class="section-label">
+                                    <i class="fa-solid fa-calendar-days label-icon"></i> Select Date:
+                                </label>
+                                <div class="date-input-wrapper">
+                                    <input type="date" class="date-picker-input" id="eventDate-${classId}" required>
+                                    <i class="fa-solid fa-calendar-days date-icon-right" onclick="document.getElementById('eventDate-${classId}').showPicker()"></i>
+                                </div>
+                                <label class="section-label" style="margin-top: 1rem;">
+                                    <i class="fa-solid fa-clock label-icon"></i> Time Range:
+                                </label>
+                                <div class="time-input-group">
+                                    <div class="time-input-wrapper">
+                                        <input type="time" id="eventStartTime-${classId}" value="07:00" required>
+                                        <i class="fa-solid fa-clock time-icon-right" onclick="document.getElementById('eventStartTime-${classId}').showPicker()"></i>
+                                    </div>
+                                    <span style="color: var(--accent);">to</span>
+                                    <div class="time-input-wrapper">
+                                        <input type="time" id="eventEndTime-${classId}" value="08:00" required>
+                                        <i class="fa-solid fa-clock time-icon-right" onclick="document.getElementById('eventEndTime-${classId}').showPicker()"></i>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-actions" style="margin-top: 1.5rem;">
+                                <button class="save-btn" onclick="saveSchedule('${classId}', '${trainerId}')">Save Changes</button>
+                                <button class="save-btn" onclick="toggleEditForm('${classId}')" style="background: #666;">Cancel</button>
+                            </div>
+                            <div class="edit-status" id="status-${classId}" style="display: none;"></div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+
+            const today = new Date().toISOString().split('T')[0];
+            document.querySelectorAll('input[type="date"]').forEach(input => {
+                input.min = today;
+            });
+        }
+
+        function setScheduleType(classId, type) {
+            const weeklyOptions = document.getElementById(`weeklyOptions-${classId}`);
+            const onetimeOptions = document.getElementById(`onetimeOptions-${classId}`);
+            const buttons = document.querySelectorAll(`[data-class-id="${classId}"] .schedule-type-btn`);
+
+            buttons.forEach((btn, idx) => {
+                if ((type === 'weekly' && idx === 0) || (type === 'onetime' && idx === 1)) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+
+            if (type === 'weekly') {
+                weeklyOptions.style.display = 'block';
+                onetimeOptions.style.display = 'none';
+            } else {
+                weeklyOptions.style.display = 'none';
+                onetimeOptions.style.display = 'block';
+            }
+        }
+
+        function toggleEditForm(classId) {
+            const form = document.getElementById(`editForm-${classId}`);
+            if (form.style.display === 'none') {
+                form.style.display = 'block';
+            } else {
+                form.style.display = 'none';
+            }
+        }
+
+        async function saveSchedule(classId, trainerId) {
+            const statusDiv = document.getElementById(`status-${classId}`);
+            const activeType = document.querySelector(`[data-class-id="${classId}"] .schedule-type-btn.active`);
+            const isWeekly = activeType.textContent.includes('Weekly');
+
+            let scheduleText = '';
+
+            try {
+                if (isWeekly) {
+                    const days = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+                    const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+                    const selectedDays = [];
+
+                    days.forEach((day, idx) => {
+                        const checkbox = document.getElementById(`${day}-${classId}`);
+                        if (checkbox && checkbox.checked) {
+                            selectedDays.push(dayNames[idx]);
+                        }
+                    });
+
+                    if (selectedDays.length === 0) {
+                        statusDiv.textContent = 'Please select at least one day';
+                        statusDiv.className = 'edit-status error';
+                        statusDiv.style.display = 'block';
+                        return;
+                    }
+
+                    const startTime = document.getElementById(`startTime-${classId}`).value;
+                    const endTime = document.getElementById(`endTime-${classId}`).value;
+
+                    if (!startTime || !endTime) {
+                        statusDiv.textContent = 'Please select start and end times';
+                        statusDiv.className = 'edit-status error';
+                        statusDiv.style.display = 'block';
+                        return;
+                    }
+
+                    scheduleText = `${selectedDays.join(', ')} ${formatTime(startTime)} - ${formatTime(endTime)}`;
+
+                } else {
+                    const eventDate = document.getElementById(`eventDate-${classId}`).value;
+                    const eventStartTime = document.getElementById(`eventStartTime-${classId}`).value;
+                    const eventEndTime = document.getElementById(`eventEndTime-${classId}`).value;
+
+                    if (!eventDate || !eventStartTime || !eventEndTime) {
+                        statusDiv.textContent = 'Please fill in all fields';
+                        statusDiv.className = 'edit-status error';
+                        statusDiv.style.display = 'block';
+                        return;
+                    }
+
+                    const date = new Date(eventDate);
+                    const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                    scheduleText = `${dateStr} ${formatTime(eventStartTime)} - ${formatTime(eventEndTime)}`;
+                }
+
+                statusDiv.textContent = 'Updating schedule...';
+                statusDiv.className = 'edit-status';
+                statusDiv.style.display = 'block';
+
+                const response = await fetch(`${API_URL}/api/classes/${classId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}`
+                    },
+                    body: JSON.stringify({
+                        schedule: scheduleText,
+                        trainer_id: trainerId
+                    })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    statusDiv.textContent = '✓ Schedule updated successfully!';
+                    statusDiv.className = 'edit-status success';
+                    
+                    const scheduleDisplay = document.querySelector(`[data-class-id="${classId}"] .current-schedule`);
+                    if (scheduleDisplay) {
+                        scheduleDisplay.textContent = scheduleText;
+                    }
+
+                    setTimeout(() => {
+                        toggleEditForm(classId);
+                        statusDiv.style.display = 'none';
+                    }, 2000);
+                } else {
+                    throw new Error(result.error || 'Failed to update schedule');
+                }
+
+            } catch (err) {
+                console.error('Error updating schedule:', err);
+                statusDiv.textContent = `Error: ${err.message}`;
+                statusDiv.className = 'edit-status error';
+                statusDiv.style.display = 'block';
+            }
+        }
+
+        function formatTime(time24) {
+            const [hours, minutes] = time24.split(':');
+            const hour = parseInt(hours, 10);
+            const ampm = hour >= 12 ? 'PM' : 'AM';
+            const hour12 = hour % 12 || 12;
+            return `${hour12}:${minutes} ${ampm}`;
+        }
     </script>
 </body>
 </html>

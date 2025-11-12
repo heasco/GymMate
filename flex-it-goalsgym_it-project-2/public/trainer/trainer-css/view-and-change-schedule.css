@@ -1,37 +1,33 @@
 /* ========================================
-   VIEW AND CHANGE SCHEDULE - GOALS GYM THEME
-   ======================================== */
+   TRAINER SCHEDULE MANAGEMENT - GOALS GYM
+======================================== */
 
-/* Container */
 .container {
     max-width: 1200px;
     margin: 0 auto;
-    padding: 0;
+    padding: 2rem;
 }
 
-/* Trainer Greeting */
 .trainer-greeting {
+    background: linear-gradient(135deg, rgba(179, 0, 0, 0.1) 0%, rgba(255, 51, 51, 0.1) 100%);
+    border-left: 4px solid var(--primary);
+    padding: 1.5rem;
     margin-bottom: 2rem;
-    text-align: center;
+    border-radius: var(--radius);
 }
 
 .trainer-greeting h2 {
-    font-size: 2rem;
-    font-weight: 700;
-    margin-bottom: 0.5rem;
     color: var(--accent);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin: 0;
 }
 
-/* Section Styling */
+.trainer-greeting span {
+    color: var(--primary);
+}
+
 .section {
-    background: rgba(30, 30, 30, 0.9);
-    padding: 2.5rem;
-    border-radius: var(--radius);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
-    backdrop-filter: blur(10px);
     margin-bottom: 2rem;
 }
 
@@ -42,16 +38,39 @@
     margin-bottom: 1.5rem;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    border-bottom: 2px solid var(--primary);
-    padding-bottom: 0.5rem;
 }
 
-/* Class Cards */
-.class-card {
-    background: rgba(0, 0, 0, 0.3);
+.loading {
+    text-align: center;
     padding: 2rem;
+    color: var(--accent);
+    font-size: 1.1rem;
+}
+
+.no-classes {
+    text-align: center;
+    padding: 3rem;
+    background: rgba(30, 30, 30, 0.5);
     border-radius: var(--radius);
+    color: var(--accent);
+    font-size: 1.1rem;
+}
+
+.error {
+    text-align: center;
+    padding: 2rem;
+    background: rgba(220, 53, 69, 0.1);
+    border: 1px solid #dc3545;
+    border-radius: var(--radius);
+    color: #dc3545;
+    font-size: 1.1rem;
+}
+
+.class-card {
+    background: rgba(30, 30, 30, 0.9);
     border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius);
+    padding: 1.5rem;
     margin-bottom: 1.5rem;
     transition: var(--transition);
 }
@@ -66,160 +85,262 @@
     justify-content: space-between;
     align-items: center;
     margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .class-header h3 {
     color: var(--primary);
-    font-size: 1.4rem;
+    font-size: 1.5rem;
     font-weight: 700;
     margin: 0;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
 }
 
 .enrollment {
-    background: rgba(179, 0, 0, 0.2);
+    background: linear-gradient(135deg, var(--primary) 0%, var(--highlight) 100%);
     color: var(--accent);
     padding: 0.5rem 1rem;
-    border-radius: 20px;
+    border-radius: var(--radius);
     font-weight: 600;
     font-size: 0.9rem;
-    border: 1px solid var(--primary);
 }
 
 .class-description {
-    color: var(--neutral);
-    margin-bottom: 1.5rem;
+    color: rgba(255, 255, 255, 0.7);
+    margin-bottom: 1rem;
     line-height: 1.6;
-    font-size: 1rem;
 }
 
 .class-details {
     display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 1rem;
-    margin-bottom: 2rem;
+    margin-bottom: 1rem;
 }
 
 .detail-item {
-    color: var(--neutral);
-    font-size: 0.95rem;
+    padding: 0.8rem;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: var(--radius);
 }
 
 .detail-item strong {
     color: var(--accent);
-    font-weight: 600;
+    display: block;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 .current-schedule {
-    background: rgba(255, 255, 255, 0.05);
-    padding: 0.8rem 1rem;
-    border-radius: var(--radius);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    margin-top: 0.5rem;
-    color: var(--accent);
-    font-weight: 500;
+    color: var(--primary);
+    font-weight: 600;
+    font-size: 1.1rem;
 }
 
-/* Edit Form */
 .edit-form {
-    background: rgba(0, 0, 0, 0.5);
-    padding: 1.5rem;
-    border-radius: var(--radius);
-    border: 1px solid rgba(255, 255, 255, 0.1);
     margin-top: 1.5rem;
+    padding: 1.5rem;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius);
 }
 
 .edit-form h4 {
     color: var(--primary);
-    font-size: 1.2rem;
+    font-size: 1.3rem;
     font-weight: 600;
-    margin-bottom: 1.5rem;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+    margin-bottom: 1rem;
 }
 
-.form-group {
-    margin-bottom: 1.5rem;
-}
-
-.form-group label {
-    color: var(--accent);
-    font-weight: 600;
-    margin-bottom: 0.5rem;
-    display: block;
-    font-size: 0.95rem;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.form-row {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+.schedule-type-selector {
+    margin: 1.5rem 0;
+    display: flex;
     gap: 1rem;
 }
 
-/* Form Inputs */
-select,
-input[type="date"],
-input[type="time"] {
-    width: 100%;
-    padding: 1rem 1.2rem;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: var(--radius);
-    font-size: 1rem;
-    background: rgba(0, 0, 0, 0.5);
+.schedule-type-btn {
+    flex: 1;
+    padding: 0.8rem;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    background: rgba(0, 0, 0, 0.3);
     color: var(--accent);
-    font-family: 'Poppins', sans-serif;
+    border-radius: var(--radius);
+    cursor: pointer;
+    font-weight: 600;
     transition: var(--transition);
+    font-family: 'Poppins', sans-serif;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
 }
 
-select:focus,
-input[type="date"]:focus,
-input[type="time"]:focus {
-    outline: none;
+.schedule-type-btn .btn-icon {
+    font-size: 1.2rem;
+    display: inline-block;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.schedule-type-btn.active {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--highlight) 100%);
     border-color: var(--primary);
-    box-shadow: 0 0 0 2px rgba(179, 0, 0, 0.2);
-    background: rgba(0, 0, 0, 0.7);
+    box-shadow: 0 4px 15px rgba(179, 0, 0, 0.3);
 }
 
-/* Days Checkboxes */
-.days-checkboxes {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-    gap: 0.8rem;
-    margin-top: 0.5rem;
+.schedule-type-btn.active .btn-icon {
+    color: #ffffff;
 }
 
-.day-checkbox {
+.schedule-type-btn:hover {
+    border-color: var(--primary);
+}
+
+.schedule-options {
+    margin-top: 1rem;
+}
+
+.section-label {
+    color: var(--accent);
+    font-weight: 600;
+    margin-bottom: 0.5rem;
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    color: var(--neutral);
-    font-weight: 500;
-    cursor: pointer;
-    transition: var(--transition);
-    padding: 0.5rem;
-    border-radius: var(--radius);
-    border: 1px solid transparent;
 }
 
-.day-checkbox:hover {
-    background: rgba(179, 0, 0, 0.1);
-    color: var(--accent);
+.section-label .label-icon {
+    font-size: 1.2rem;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.day-checkboxes {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 0.8rem;
+    margin-top: 1rem;
+}
+
+.day-checkbox-item {
+    display: flex;
+    align-items: center;
+    padding: 0.6rem;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.day-checkbox-item:hover {
+    background: rgba(179, 0, 0, 0.2);
     border-color: var(--primary);
 }
 
-.day-checkbox input[type="checkbox"] {
+.day-checkbox-item input[type="checkbox"] {
+    margin-right: 0.5rem;
     width: 18px;
     height: 18px;
-    accent-color: var(--primary);
     cursor: pointer;
+    accent-color: var(--primary);
 }
 
-/* Buttons */
+.day-checkbox-item label {
+    cursor: pointer;
+    user-select: none;
+    color: var(--accent);
+    font-weight: 500;
+    flex: 1;
+}
+
+.time-input-group {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1rem;
+    align-items: center;
+}
+
+/* ✅ TIME INPUT WRAPPER WITH ICON ON RIGHT */
+.time-input-wrapper {
+    position: relative;
+    flex: 1;
+}
+
+.time-input-wrapper .time-icon-right {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 1.2rem;
+    cursor: pointer;
+    z-index: 10;
+    transition: var(--transition);
+}
+
+.time-input-wrapper .time-icon-right:hover {
+    color: var(--primary);
+    transform: translateY(-50%) scale(1.2);
+}
+
+.time-input-wrapper input[type="time"] {
+    width: 100%;
+    padding: 0.8rem 2.8rem 0.8rem 0.8rem;
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: var(--radius);
+    color: var(--accent);
+    font-size: 1rem;
+    font-family: 'Poppins', sans-serif;
+}
+
+.time-input-wrapper input[type="time"]:focus {
+    outline: none;
+    border-color: var(--primary);
+}
+
+/* ✅ DATE INPUT WRAPPER WITH ICON ON RIGHT */
+.date-input-wrapper {
+    position: relative;
+    margin-top: 1rem;
+}
+
+.date-input-wrapper .date-icon-right {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 1.2rem;
+    cursor: pointer;
+    z-index: 10;
+    transition: var(--transition);
+}
+
+.date-input-wrapper .date-icon-right:hover {
+    color: var(--primary);
+    transform: translateY(-50%) scale(1.2);
+}
+
+.date-input-wrapper .date-picker-input {
+    width: 100%;
+    padding: 0.8rem 2.8rem 0.8rem 0.8rem;
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: var(--radius);
+    color: var(--accent);
+    font-size: 1rem;
+    font-family: 'Poppins', sans-serif;
+}
+
+.date-input-wrapper .date-picker-input:focus {
+    outline: none;
+    border-color: var(--primary);
+}
+
 .form-actions {
     display: flex;
-    align-items: center;
     gap: 1rem;
     margin-top: 1.5rem;
 }
@@ -228,7 +349,7 @@ input[type="time"]:focus {
     background: linear-gradient(135deg, var(--primary) 0%, var(--highlight) 100%);
     color: var(--accent);
     border: none;
-    padding: 1rem 2rem;
+    padding: 0.8rem 1.5rem;
     border-radius: var(--radius);
     font-size: 1rem;
     font-weight: 600;
@@ -236,7 +357,6 @@ input[type="time"]:focus {
     transition: var(--transition);
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    box-shadow: 0 4px 15px rgba(179, 0, 0, 0.3);
 }
 
 .save-btn:hover {
@@ -244,12 +364,12 @@ input[type="time"]:focus {
     box-shadow: 0 6px 20px rgba(255, 51, 51, 0.4);
 }
 
-/* Status Messages */
 .edit-status {
-    padding: 0.8rem 1.2rem;
+    margin-top: 1rem;
+    padding: 1rem;
     border-radius: var(--radius);
     font-weight: 600;
-    font-size: 0.95rem;
+    text-align: center;
 }
 
 .edit-status.success {
@@ -264,88 +384,48 @@ input[type="time"]:focus {
     border: 1px solid #dc3545;
 }
 
-/* Loading and Empty States */
-.loading,
-.no-classes {
-    padding: 2rem;
-    text-align: center;
-    font-size: 1.1rem;
-    font-weight: 600;
-    border-radius: var(--radius);
-    margin: 1rem 0;
-}
-
-.loading {
-    background: rgba(255, 193, 7, 0.1);
-    color: #ffc107;
-    border: 1px solid #ffc107;
-}
-
-.no-classes {
-    background: rgba(108, 117, 125, 0.1);
-    color: var(--neutral);
-    border: 1px solid var(--neutral);
-}
-
-/* Responsive Design */
 @media (max-width: 768px) {
-    .section {
-        padding: 1.5rem;
+    .container {
+        padding: 1rem;
     }
-    
-    .class-card {
-        padding: 1.5rem;
-    }
-    
+
     .class-header {
         flex-direction: column;
         align-items: flex-start;
         gap: 1rem;
     }
-    
-    .form-row {
-        grid-template-columns: 1fr;
+
+    .schedule-type-selector {
+        flex-direction: column;
     }
-    
-    .days-checkboxes {
-        grid-template-columns: repeat(2, 1fr);
+
+    .day-checkboxes {
+        grid-template-columns: 1fr 1fr;
     }
-    
+
+    .time-input-group {
+        flex-direction: column;
+    }
+
     .form-actions {
         flex-direction: column;
-        align-items: stretch;
     }
-    
+
     .save-btn {
         width: 100%;
-        text-align: center;
     }
 }
 
 @media (max-width: 480px) {
-    .section {
-        padding: 1rem;
+    .trainer-greeting h2 {
+        font-size: 1.3rem;
     }
-    
-    .class-card {
-        padding: 1rem;
-    }
-    
+
     .class-header h3 {
         font-size: 1.2rem;
     }
-    
-    .edit-form {
-        padding: 1rem;
-    }
-    
-    select,
-    input[type="date"],
-    input[type="time"] {
-        padding: 0.8rem 1rem;
-    }
-    
-    .days-checkboxes {
+
+    .day-checkboxes {
         grid-template-columns: 1fr;
     }
 }

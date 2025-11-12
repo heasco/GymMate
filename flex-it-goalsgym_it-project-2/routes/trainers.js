@@ -5,7 +5,6 @@ const asyncHandler = require('../middleware/asyncHandler');
 const Trainer = require('../models/Trainer');
 const Feedback = require('../models/Feedback');
 const nodemailer = require('../utils/nodemailer');
-// const resend = require('../utils/resend');
 
 const router = express.Router();
 
@@ -78,7 +77,6 @@ router.post('/', asyncHandler(async (req, res) => {
     return res.status(400).json({ success: false, error: 'Validation failed', details: errors });
   }
 
-  // ALL WEEKS/DAYS/TIMES available by default
   const defaultWeeklyAvailability = {
     monday: ['morning', 'afternoon', 'evening'],
     tuesday: ['morning', 'afternoon', 'evening'],
@@ -154,7 +152,6 @@ router.post('/', asyncHandler(async (req, res) => {
 
 // ============ AVAILABILITY & LEAVE ROUTES ============
 
-// Universal trainer id lookup helper
 function extractTrainerId(req) {
   return req.user?.trainer_id || req.user?.trainerid ||
     req.body?.trainer_id || req.body?.trainerid ||
@@ -162,16 +159,12 @@ function extractTrainerId(req) {
     null;
 }
 
-// Set weekly availability
 router.post('/set-availability', async (req, res) => {
   const trainerId = extractTrainerId(req);
   const weeklyAvailability = req.body.availability;
   try {
     const trainer = await Trainer.findOne({
-      $or: [
-        { trainer_id: trainerId },
-        { trainerid: trainerId }
-      ]
+      $or: [{ trainer_id: trainerId }, { trainerid: trainerId }]
     });
     if (!trainer) return res.json({ success: false, error: 'Trainer not found.' });
     trainer.weeklyAvailability = weeklyAvailability;
@@ -182,15 +175,11 @@ router.post('/set-availability', async (req, res) => {
   }
 });
 
-// Get current weekly availability
 router.get('/get-availability', async (req, res) => {
   const trainerId = extractTrainerId(req);
   try {
     const trainer = await Trainer.findOne({
-      $or: [
-        { trainer_id: trainerId },
-        { trainerid: trainerId }
-      ]
+      $or: [{ trainer_id: trainerId }, { trainerid: trainerId }]
     });
     if (!trainer) return res.json({ success: false, error: 'Trainer not found.' });
     res.json({ success: true, availability: trainer.weeklyAvailability || {} });
@@ -199,17 +188,13 @@ router.get('/get-availability', async (req, res) => {
   }
 });
 
-// Mark a leave/unavailability day
 router.post('/mark-leave', async (req, res) => {
   const trainerId = extractTrainerId(req);
   const date = req.body.date;
   const reason = req.body.reason || '';
   try {
     const trainer = await Trainer.findOne({
-      $or: [
-        { trainer_id: trainerId },
-        { trainerid: trainerId }
-      ]
+      $or: [{ trainer_id: trainerId }, { trainerid: trainerId }]
     });
     if (!trainer) return res.json({ success: false, error: 'Trainer not found.' });
     trainer.leaveRecords = trainer.leaveRecords || [];
@@ -221,15 +206,11 @@ router.post('/mark-leave', async (req, res) => {
   }
 });
 
-// Get all upcoming leave/unavailability days
 router.get('/get-leave', async (req, res) => {
   const trainerId = extractTrainerId(req);
   try {
     const trainer = await Trainer.findOne({
-      $or: [
-        { trainer_id: trainerId },
-        { trainerid: trainerId }
-      ]
+      $or: [{ trainer_id: trainerId }, { trainerid: trainerId }]
     });
     if (!trainer) return res.json({ success: false, error: 'Trainer not found.' });
     const today = new Date().toISOString().split("T")[0];
@@ -240,11 +221,15 @@ router.get('/get-leave', async (req, res) => {
   }
 });
 
-// Update profile
+// Update profile - NO CURRENT PASSWORD REQUIRED
 router.post('/update-profile', asyncHandler(async (req, res) => {
-  const { trainer_id, username, phone, email, currentPassword, newPassword } = req.body;
-  let trainer;
+  const { trainer_id, username, phone, email, newPassword } = req.body;
 
+  if (!trainer_id) {
+    return res.status(400).json({ success: false, error: 'Trainer ID is required' });
+  }
+
+  let trainer;
   if (mongoose.Types.ObjectId.isValid(trainer_id)) {
     trainer = await Trainer.findOne({
       $or: [{ trainer_id }, { _id: trainer_id }]
@@ -253,91 +238,188 @@ router.post('/update-profile', asyncHandler(async (req, res) => {
     trainer = await Trainer.findOne({ trainer_id });
   }
 
-  if (!trainer) return res.status(404).json({ success: false, error: 'Trainer not found' });
-
-  if (typeof currentPassword === 'string' && currentPassword.length > 0) {
-    const match = await bcrypt.compare(currentPassword, trainer.password);
-    if (!match) {
-      return res.status(401).json({ success: false, error: 'Incorrect current password.' });
-    }
+  if (!trainer) {
+    return res.status(404).json({ success: false, error: 'Trainer not found' });
   }
 
-  if (username && username !== trainer.username) {
-    const existing = await Trainer.findOne({ username: username.trim().toLowerCase(), _id: { $ne: trainer._id } });
+  // UPDATE USERNAME (if provided and changed)
+  if (username && username.trim() !== '' && username !== trainer.username) {
+    const existing = await Trainer.findOne({
+      username: username.trim().toLowerCase(),
+      _id: { $ne: trainer._id }
+    });
+
     if (existing) {
       return res.status(409).json({ success: false, error: 'Username is already taken.' });
     }
+
     trainer.username = username.trim().toLowerCase();
   }
 
+  // UPDATE EMAIL (if provided and changed)
   if (typeof email !== 'undefined' && email !== trainer.email) {
-    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      return res.status(400).json({ success: false, error: 'Invalid email address' });
+    if (email && email.trim() !== '') {
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        return res.status(400).json({ success: false, error: 'Invalid email address' });
+      }
+
+      const existingEmail = await Trainer.findOne({
+        email: email.trim().toLowerCase(),
+        _id: { $ne: trainer._id }
+      });
+
+      if (existingEmail) {
+        return res.status(409).json({ success: false, error: 'Email is already taken.' });
+      }
+
+      trainer.email = email.trim().toLowerCase();
+    } else {
+      trainer.email = '';
     }
-    trainer.email = email ? email.trim().toLowerCase() : '';
   }
 
+  // UPDATE PHONE (if provided and changed)
   if (typeof phone !== 'undefined' && phone !== trainer.phone) {
-    if (phone && phone !== '' && !/^\+63\d{10}$/.test(phone)) {
-      return res.status(400).json({ success: false, error: 'Invalid Philippine phone format. Use +63XXXXXXXXXX' });
+    if (phone && phone.trim() !== '') {
+      if (!/^\+63\d{10}$/.test(phone)) {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid Philippine phone format. Use +63XXXXXXXXXX'
+        });
+      }
+      trainer.phone = phone.trim();
+    } else {
+      trainer.phone = '';
     }
-    trainer.phone = phone ? phone.trim() : '';
   }
 
-  if (newPassword) {
+  // UPDATE PASSWORD (if provided)
+  if (newPassword && newPassword.trim() !== '') {
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        success: false,
+        error: 'Password must be at least 6 characters long'
+      });
+    }
     trainer.password = newPassword;
   }
 
-  await trainer.save();
-  res.json({ success: true, message: 'Trainer profile updated.' });
+  await trainer.save({ validateModifiedOnly: true });
+
+  res.json({
+    success: true,
+    message: 'Profile updated successfully',
+    data: {
+      trainer_id: trainer.trainer_id,
+      username: trainer.username,
+      email: trainer.email,
+      phone: trainer.phone
+    }
+  });
 }));
 
-// ============================================
-// DYNAMIC PARAMETER ROUTES (after specific routes)
-// ============================================
-
-// PUT /api/trainers/:id
+// ✅ PUT /api/trainers/:id - Update trainer by ID (SINGLE ROUTE - NO DUPLICATE)
 router.put('/:id', asyncHandler(async (req, res) => {
   const { id } = req.params;
-  // Try by MongoDB _id or by trainer_id
-  let trainer;
-  if (mongoose.Types.ObjectId.isValid(id)) {
-    trainer = await Trainer.findById(id);
+  const updates = req.body;
+
+  // Remove fields that shouldn't be updated directly
+  delete updates.trainer_id;
+  delete updates._id;
+  delete updates.createdAt;
+  delete updates.updatedAt;
+
+  // Lowercase email and username if provided
+  if (updates.email) {
+    updates.email = updates.email.toLowerCase().trim();
+  }
+  if (updates.username) {
+    updates.username = updates.username.toLowerCase().trim();
   }
 
-  if (!trainer) {
+  // Find trainer
+  let trainer;
+  if (mongoose.Types.ObjectId.isValid(id)) {
+    trainer = await Trainer.findOne({ $or: [{ trainer_id: id }, { _id: id }] });
+  } else {
     trainer = await Trainer.findOne({ trainer_id: id });
   }
 
   if (!trainer) {
-    return res.status(404).json({ success: false, error: "Trainer not found." });
+    return res.status(404).json({ success: false, error: 'Trainer not found' });
+  }
+
+  // CHECK EMAIL UNIQUENESS (if email is being changed)
+  if (updates.email && updates.email !== trainer.email) {
+    const existingEmail = await Trainer.findOne({
+      email: updates.email,
+      _id: { $ne: trainer._id }
+    });
+
+    if (existingEmail) {
+      return res.status(409).json({ success: false, error: 'Email is already taken' });
+    }
+  }
+
+  // CHECK USERNAME UNIQUENESS (if username is being changed)
+  if (updates.username && updates.username !== trainer.username) {
+    const existingUsername = await Trainer.findOne({
+      username: updates.username,
+      _id: { $ne: trainer._id }
+    });
+
+    if (existingUsername) {
+      return res.status(409).json({ success: false, error: 'Username is already taken' });
+    }
   }
 
   // Accept both is_available and isavailable
-  if (typeof req.body.is_available !== "undefined") {
-    trainer.is_available = req.body.is_available;
-  } else if (typeof req.body.isavailable !== "undefined") {
-    trainer.is_available = req.body.isavailable;
+  if (typeof updates.is_available !== "undefined") {
+    trainer.is_available = updates.is_available;
+  } else if (typeof updates.isavailable !== "undefined") {
+    trainer.is_available = updates.isavailable;
   }
 
-  if (typeof req.body.name === "string") trainer.name = req.body.name.trim();
-  if (typeof req.body.email === "string") trainer.email = req.body.email.trim().toLowerCase();
-  if (typeof req.body.specialization === "string") trainer.specialization = req.body.specialization.trim();
+  // Apply other updates
+  if (typeof updates.name === "string") trainer.name = updates.name.trim();
+  if (typeof updates.email === "string") trainer.email = updates.email;
+  if (typeof updates.phone === "string") trainer.phone = updates.phone;
+  if (typeof updates.specialization === "string") trainer.specialization = updates.specialization.trim();
 
-  await trainer.save();
+  // BYPASS EMAIL VALIDATION for updates
+  await trainer.save({ validateModifiedOnly: true });
+
+  // Send email notification if email was updated
+  const email = trainer.email;
+  if (email) {
+    try {
+      const subject = 'Your GOALS Gym Trainer Profile Has Been Updated';
+      const text = `Hi ${trainer.name},\n\nYour trainer profile has been updated.\n\nIf you did not make this change, please contact the gym administrator immediately.\n\nBest,\nGOALS Gym Team`;
+      await nodemailer.sendMail({
+        from: '"GOALS Gym" <no-reply@goalsgym.com>',
+        to: email,
+        subject,
+        text
+      });
+      console.log('Email notification sent to trainer:', email);
+    } catch (emailError) {
+      console.error('Failed to send email:', emailError.message);
+    }
+  }
+
   res.json({
     success: true,
-    message: "Trainer updated successfully.",
+    message: 'Trainer updated successfully',
     data: {
       trainer_id: trainer.trainer_id,
       mongoId: trainer._id,
       name: trainer.name,
-      specialization: trainer.specialization,
+      username: trainer.username,
       email: trainer.email,
+      phone: trainer.phone,
+      specialization: trainer.specialization,
       is_available: trainer.is_available,
-      assigned_classes: trainer.assigned_classes,
-      updatedAt: trainer.updatedAt,
-      feedback_received: trainer.feedback_received
+      updatedAt: trainer.updatedAt
     }
   });
 }));
@@ -359,6 +441,42 @@ router.get('/:id/rating', asyncHandler(async (req, res) => {
   const averageRating = result.length > 0 ? result[0].averageRating.toFixed(1) : 0;
   const totalFeedback = result.length > 0 ? result[0].totalFeedback : 0;
   res.json({ success: true, data: { averageRating, totalFeedback } });
+}));
+
+// GET /api/trainers/:id - MUST BE LAST
+router.get('/:id', asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  let trainer;
+
+  if (mongoose.Types.ObjectId.isValid(id)) {
+    trainer = await Trainer.findOne({ $or: [{ trainer_id: id }, { _id: id }] });
+  } else {
+    trainer = await Trainer.findOne({ trainer_id: id });
+  }
+
+  if (!trainer) {
+    return res.status(404).json({ success: false, error: 'Trainer not found' });
+  }
+
+  res.json({
+    success: true,
+    data: {
+      trainer_id: trainer.trainer_id,
+      mongoId: trainer._id,
+      name: trainer.name,
+      username: trainer.username,
+      email: trainer.email,
+      phone: trainer.phone,
+      specialization: trainer.specialization,
+      is_available: trainer.is_available,
+      assigned_classes: trainer.assigned_classes,
+      weeklyAvailability: trainer.weeklyAvailability,
+      leaveRecords: trainer.leaveRecords,
+      feedback_received: trainer.feedback_received,
+      createdAt: trainer.createdAt,
+      updatedAt: trainer.updatedAt
+    }
+  });
 }));
 
 module.exports = router;

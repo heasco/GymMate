@@ -1,4 +1,0 @@
-face_recognition
-Flask
-numpy
-pillow

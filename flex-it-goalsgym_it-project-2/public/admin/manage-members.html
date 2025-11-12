@@ -151,6 +151,24 @@
   </div>
 
 <script>
+  // ✅ CHECK AUTH (Same as your other pages)
+  const authUser = JSON.parse(localStorage.getItem('authUser') || 'null');
+  if (!authUser || (Date.now() - (authUser.timestamp || 0)) > 3600000) {
+    localStorage.removeItem('authUser');
+    window.location.href = '../admin-login.html';
+  }
+
+  // ✅ MENU TOGGLE
+  document.getElementById('menuToggle').addEventListener('click', function() {
+    document.querySelector('.sidebar').classList.toggle('collapsed');
+  });
+
+  // ✅ LOGOUT (Only runs when you click logout button)
+  document.getElementById('logoutBtn').addEventListener('click', function() {
+    localStorage.removeItem('authUser');
+    window.location.href = '../admin-login.html';
+  });
+
   const SERVER_URL = 'http://localhost:8080';
   let debounceTimeout;
 

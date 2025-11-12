@@ -18,7 +18,6 @@
                 <a href="view-and-change-schedule.html"><span>My Classes & Schedule</span></a>
                 <a href="trainer-profile-management.html" class="active"><span>Profile</span></a>
                 <a href="view-classes-feedback.html"><span>Feedback</span></a>
-                <a href="trainer-availability.html"><span>Availability</span></a>
             </nav>
         </aside>
         
@@ -35,30 +34,44 @@
                     <form id="profileForm" autocomplete="off">
                         <div class="form-group">
                             <label for="username">Username (for login)</label>
-                            <input type="text" id="username" name="username" required minlength="3">
+                            <input type="text" id="username" name="username" required minlength="3" placeholder="Loading...">
                         </div>
                         <div class="form-group">
                             <label for="email">Email</label>
-                            <input type="email" id="email" name="email">
+                            <input type="email" id="email" name="email" placeholder="Loading...">
+                            <small style="color: #666; font-size: 12px;">Optional - used for notifications</small>
                         </div>
                         <div class="form-group">
                             <label for="phone">Phone (+63XXXXXXXXXX)</label>
-                            <input type="text" id="phone" name="phone" pattern="^\+63\d{10}$">
+                            <input type="text" id="phone" name="phone" pattern="^\+63\d{10}$" placeholder="+63XXXXXXXXXX">
+                            <small style="color: #666; font-size: 12px;">Optional - Philippine format</small>
                         </div>
+                        
+                        <hr style="margin: 30px 0; border: none; border-top: 2px solid #e0e0e0;">
+                        
+                        <h3 style="color: #d32f2f; margin-bottom: 15px;">Change Password (Optional)</h3>
+                        
+                        <!-- ✅ CURRENT PASSWORD FIELD (FIRST) -->
                         <div class="form-group">
                             <label for="currentPassword">Current Password</label>
-                            <input type="password" id="currentPassword" required autocomplete="current-password">
+                            <input type="password" id="currentPassword" name="currentPassword" autocomplete="current-password" placeholder="Enter current password to change">
+                            <small style="color: #666; font-size: 12px;">Required only if changing password</small>
                         </div>
+                        
                         <div class="form-group">
                             <label for="newPassword">New Password</label>
-                            <input type="password" id="newPassword" name="newPassword" minlength="4">
+                            <input type="password" id="newPassword" name="newPassword" minlength="6" autocomplete="new-password" placeholder="Enter new password">
+                            <small style="color: #666; font-size: 12px;">Minimum 6 characters</small>
                         </div>
+                        
                         <div class="form-group">
                             <label for="confirmPassword">Confirm New Password</label>
-                            <input type="password" id="confirmPassword" name="confirmPassword" minlength="4">
+                            <input type="password" id="confirmPassword" name="confirmPassword" minlength="6" autocomplete="new-password" placeholder="Re-enter new password">
                         </div>
+                        
                         <div class="form-buttons">
                             <button type="submit" class="action-button">Update Profile</button>
+                            <button type="button" class="cancel-button" onclick="resetForm()">Reset</button>
                         </div>
                         <div id="profileStatus" class="profile-status"></div>
                     </form>
@@ -68,12 +81,17 @@
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
+        const API_URL = 'http://localhost:8080';
+        let trainerId = null;
+        let originalData = {};
+
+        document.addEventListener('DOMContentLoaded', async function() {
             const menuToggle = document.getElementById('menuToggle');
             const sidebar = document.querySelector('.sidebar');
             const logoutBtn = document.getElementById('logoutBtn');
             const authUser = JSON.parse(localStorage.getItem('authUser'));
 
+            // ✅ AUTHENTICATION CHECK
             if (!authUser || !authUser.user || authUser.role !== "trainer" || (Date.now() - authUser.timestamp > 3600000)) {
                 localStorage.removeItem('authUser');
                 window.location.href = '../trainer-login.html';
@@ -93,55 +111,200 @@
                 }
             });
 
-            // Populate current values
-            document.getElementById('username').value = authUser.user.username || "";
-            document.getElementById('email').value = authUser.user.email || "";
-            document.getElementById('phone').value = authUser.user.phone || "";
+            // ✅ GET TRAINER ID from localStorage with multiple fallbacks
+            trainerId = authUser.user.trainer_id || authUser.user.trainerid || authUser.user.trainerId || authUser.user.id || authUser.user._id;
+            
+            if (!trainerId) {
+                showMessage('Error: Unable to identify trainer', 'error');
+                console.error('Auth user object:', authUser);
+                return;
+            }
 
-            document.getElementById('profileForm').addEventListener('submit', function(event) {
-                event.preventDefault();
-                const statusDiv = document.getElementById('profileStatus');
-                statusDiv.style.display = "none";
+            console.log('✅ Trainer ID:', trainerId);
 
-                const username = document.getElementById('username').value.trim();
-                const email = document.getElementById('email').value.trim();
-                const phone = document.getElementById('phone').value.trim();
-                const currentPassword = document.getElementById('currentPassword').value.trim();
-                const newPassword = document.getElementById('newPassword').value;
-                const confirmPassword = document.getElementById('confirmPassword').value;
+            // ✅ LOAD PROFILE DATA
+            await loadProfile();
 
-                if (newPassword && newPassword !== confirmPassword) {
-                    statusDiv.textContent = "New password and confirmation do not match.";
-                    statusDiv.className = "profile-status error";
-                    statusDiv.style.display = "block";
-                    return;
-                }
-                if (!currentPassword) {
-                    statusDiv.textContent = "Please enter your current password to update your profile.";
-                    statusDiv.className = "profile-status error";
-                    statusDiv.style.display = "block";
-                    return;
-                }
-
-                // Simulate successful update (replace with actual API call)
-                setTimeout(() => {
-                    // Update local storage user info
-                    authUser.user.username = username;
-                    authUser.user.email = email;
-                    authUser.user.phone = phone;
-                    localStorage.setItem('authUser', JSON.stringify(authUser));
-                    
-                    statusDiv.textContent = "Profile updated successfully!";
-                    statusDiv.className = "profile-status success";
-                    statusDiv.style.display = "block";
-                    
-                    // Clear password fields
-                    document.getElementById('currentPassword').value = "";
-                    document.getElementById('newPassword').value = "";
-                    document.getElementById('confirmPassword').value = "";
-                }, 1000);
-            });
+            // ✅ FORM SUBMISSION
+            document.getElementById('profileForm').addEventListener('submit', handleSubmit);
         });
+
+        // ✅ LOAD TRAINER PROFILE
+        async function loadProfile() {
+            try {
+                console.log('🔍 Fetching trainer profile for ID:', trainerId);
+                const response = await fetch(`${API_URL}/api/trainers/${trainerId}`);
+                
+                if (!response.ok) {
+                    throw new Error(`Failed to load profile: ${response.status}`);
+                }
+
+                const data = await response.json();
+                console.log('📦 API Response:', data);
+
+                const trainer = data.data;
+
+                if (!trainer) {
+                    throw new Error('Trainer data not found');
+                }
+
+                // Store original data
+                originalData = {
+                    username: trainer.username || '',
+                    email: trainer.email || '',
+                    phone: trainer.phone || ''
+                };
+
+                // ✅ POPULATE FORM with current values
+                document.getElementById('username').value = originalData.username;
+                document.getElementById('email').value = originalData.email;
+                document.getElementById('phone').value = originalData.phone;
+
+                // Remove placeholder text
+                document.getElementById('username').placeholder = 'Enter username';
+                document.getElementById('email').placeholder = 'your.email@example.com';
+
+                console.log('✅ Profile loaded successfully:', originalData);
+
+            } catch (err) {
+                console.error('❌ Error loading profile:', err);
+                showMessage(`Failed to load profile: ${err.message}`, 'error');
+            }
+        }
+
+        // ✅ HANDLE FORM SUBMISSION
+        async function handleSubmit(event) {
+            event.preventDefault();
+
+            const username = document.getElementById('username').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const phone = document.getElementById('phone').value.trim();
+            const currentPassword = document.getElementById('currentPassword').value;
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+
+            // ✅ VALIDATE PASSWORD CHANGE (if any password field is filled)
+            if (currentPassword || newPassword || confirmPassword) {
+                // Check if all password fields are filled
+                if (!currentPassword) {
+                    showMessage("Current password is required to change password.", 'error');
+                    return;
+                }
+                if (!newPassword) {
+                    showMessage("New password is required.", 'error');
+                    return;
+                }
+                if (!confirmPassword) {
+                    showMessage("Please confirm your new password.", 'error');
+                    return;
+                }
+                
+                // Check if new passwords match
+                if (newPassword !== confirmPassword) {
+                    showMessage("New password and confirmation do not match.", 'error');
+                    return;
+                }
+                
+                // Check minimum length
+                if (newPassword.length < 6) {
+                    showMessage("New password must be at least 6 characters long.", 'error');
+                    return;
+                }
+            }
+
+            // ✅ CHECK IF ANY CHANGES WERE MADE
+            const hasBasicChanges = username !== originalData.username || 
+                                   email !== originalData.email || 
+                                   phone !== originalData.phone;
+
+            if (!hasBasicChanges && !newPassword) {
+                showMessage('No changes to save', 'error');
+                return;
+            }
+
+            try {
+                showMessage('Updating profile...', 'info');
+
+                // ✅ BUILD PAYLOAD
+                const payload = {
+                    trainer_id: trainerId,
+                    username: username,
+                    email: email,
+                    phone: phone
+                };
+
+                if (currentPassword && newPassword) {
+                    payload.currentPassword = currentPassword;
+                    payload.newPassword = newPassword;
+                }
+
+                console.log('📤 Sending update:', payload);
+
+                // ✅ CALL UPDATE-PROFILE ROUTE
+                const response = await fetch(`${API_URL}/api/trainers/update-profile`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+                console.log('📥 Update response:', result);
+
+                if (!response.ok) {
+                    throw new Error(result.error || 'Failed to update profile');
+                }
+
+                // ✅ SUCCESS
+                showMessage('✓ Profile updated successfully!', 'success');
+                
+                // Update localStorage with new values
+                const authUser = JSON.parse(localStorage.getItem('authUser'));
+                authUser.user.username = username;
+                authUser.user.email = email;
+                authUser.user.phone = phone;
+                localStorage.setItem('authUser', JSON.stringify(authUser));
+                
+                // Clear ALL password fields
+                document.getElementById('currentPassword').value = '';
+                document.getElementById('newPassword').value = '';
+                document.getElementById('confirmPassword').value = '';
+                
+                // Reload profile after 1 second
+                setTimeout(() => {
+                    loadProfile();
+                }, 1000);
+
+            } catch (err) {
+                console.error('❌ Error updating profile:', err);
+                showMessage(`Error: ${err.message}`, 'error');
+            }
+        }
+
+        // ✅ RESET FORM
+        function resetForm() {
+            document.getElementById('username').value = originalData.username;
+            document.getElementById('email').value = originalData.email;
+            document.getElementById('phone').value = originalData.phone;
+            document.getElementById('currentPassword').value = '';
+            document.getElementById('newPassword').value = '';
+            document.getElementById('confirmPassword').value = '';
+            showMessage('Form reset to original values', 'success');
+        }
+
+        // ✅ SHOW MESSAGE
+        function showMessage(message, type) {
+            const statusDiv = document.getElementById('profileStatus');
+            statusDiv.textContent = message;
+            statusDiv.className = `profile-status ${type}`;
+            statusDiv.style.display = 'block';
+
+            // Auto-hide after 5 seconds (except for info messages)
+            setTimeout(() => {
+                if (type !== 'info') {
+                    statusDiv.style.display = 'none';
+                }
+            }, 5000);
+        }
     </script>
 </body>
 </html>

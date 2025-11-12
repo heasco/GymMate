@@ -3,274 +3,321 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trainer - View Class Feedbacks - GOALS Gym</title>
+    <title>View Classes Feedback - GOALS Gym</title>
     <link rel="stylesheet" href="../admin/admin-css/admin-mainpage.css">
     <link rel="stylesheet" href="./trainer-css/view-classes-feedback.css">
 </head>
 <body>
     <div class="admin-container">
+        <!-- Sidebar -->
         <aside class="sidebar">
             <div class="sidebar-header">
                 <h2>GOALS Gym Trainer</h2>
             </div>
             <nav class="sidebar-nav">
                 <a href="trainer-mainpage.html"><span>Dashboard</span></a>
-                <a href="view-and-change-schedule.html"><span>My Classes & Schedule</span></a>
-                <a href="trainer-profile-management.html"><span>Profile</span></a>
+                <a href="view-and-change-schedule.html" ><span>My Classes & Schedule</span></a>
+                <a href="trainer-profile-management.html" ><span>Profile</span></a>
                 <a href="view-classes-feedback.html" class="active"><span>Feedback</span></a>
-                <a href="trainer-availability.html"><span>Availability</span></a>
             </nav>
         </aside>
 
+        <!-- Header -->
         <header class="header">
             <button class="menu-toggle" id="menuToggle">☰</button>
-            <h1>Class Feedbacks</h1>
+            <h1>Classes Feedback</h1>
             <button class="logout-btn" id="logoutBtn">Logout</button>
         </header>
 
+        <!-- Main Content -->
         <main class="main-content">
             <div class="container">
+                <!-- Trainer Greeting -->
                 <div class="trainer-greeting">
-                    <h2>Welcome, <span id="trainerName">Trainer</span>!</h2>
+                    <h2>Class Feedback, <span id="trainerName">Trainer</span>!</h2>
                 </div>
-                
+
+                <!-- Filter Section -->
                 <div class="filter-section">
                     <div class="filter-buttons">
-                        <button id="showAllBtn" class="filter-btn active">All Classes</button>
-                        <button id="showMineBtn" class="filter-btn">My Classes Only</button>
+                        <button class="filter-btn active" onclick="filterClasses('all')">All Classes</button>
+                        <button class="filter-btn" onclick="filterClasses('my')">My Classes Only</button>
                     </div>
-                    
                     <div class="rating-filter">
-                        <label for="ratingFilter">Filter by Rating:</label>
-                        <select id="ratingFilter">
-                            <option value="">All Ratings</option>
-                            <option value="5">★★★★★ (5 stars)</option>
-                            <option value="4">★★★★☆ (4 stars)</option>
-                            <option value="3">★★★☆☆ (3 stars)</option>
-                            <option value="2">★★☆☆☆ (2 stars)</option>
-                            <option value="1">★☆☆☆☆ (1 star)</option>
+                        <label for="minRating">Min Rating:</label>
+                        <select id="minRating" onchange="applyRatingFilter()">
+                            <option value="0">All Ratings</option>
+                            <option value="1">1+ Stars</option>
+                            <option value="2">2+ Stars</option>
+                            <option value="3">3+ Stars</option>
+                            <option value="4">4+ Stars</option>
+                            <option value="5">5 Stars</option>
                         </select>
                     </div>
                 </div>
 
-                <div id="feedbackLoading" class="loading">Loading classes and feedback...</div>
-                <div id="classesList"></div>
+                <!-- Loading State -->
+                <div id="loading" class="loading">Loading feedback...</div>
+
+                <!-- Classes Container -->
+                <div id="classesContainer"></div>
             </div>
         </main>
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
+        const API_URL = 'http://localhost:8080';
+        let allClassesData = [];
+        let originalClassesData = [];
+        let currentFilter = 'all';
+        let currentMinRating = 0;
+        let trainerId = null;
+
+        document.addEventListener('DOMContentLoaded', async function () {
+            // ✅ AUTHENTICATION CHECK
             const menuToggle = document.getElementById('menuToggle');
             const sidebar = document.querySelector('.sidebar');
             const logoutBtn = document.getElementById('logoutBtn');
             const authUser = JSON.parse(localStorage.getItem('authUser'));
 
+            // Check if trainer is logged in
             if (!authUser || !authUser.user || authUser.role !== "trainer" || (Date.now() - authUser.timestamp > 3600000)) {
                 localStorage.removeItem('authUser');
                 window.location.href = '../trainer-login.html';
                 return;
             }
-            
+
             menuToggle.addEventListener('click', () => sidebar.classList.toggle('collapsed'));
-            
             logoutBtn.addEventListener('click', () => {
                 localStorage.removeItem('authUser');
                 window.location.href = '../trainer-login.html';
             });
-            
-            document.addEventListener('click', (e) => {
-                if (window.innerWidth <= 768 && !sidebar.contains(e.target) && !menuToggle.contains(e.target)) {
-                    sidebar.classList.remove('collapsed');
-                }
-            });
 
-            // Set trainer name
-            document.getElementById('trainerName').textContent = authUser.user.name || 'Trainer';
+            // Display trainer name
+            document.getElementById('trainerName').textContent = authUser.user.name;
+            trainerId = authUser.user.trainer_id || authUser.user.trainerid || authUser.user.id;
 
-            // Sample data - replace with actual API calls
-            const sampleClasses = [
-                {
-                    class_id: '1',
-                    class_name: 'Morning Yoga',
-                    schedule: 'Mon, Wed, Fri 7:00 AM - 8:00 AM',
-                    capacity: 20,
-                    current_enrollment: 15,
-                    trainer_name: authUser.user.name || 'You',
-                    trainer_id: authUser.user.trainerid || 'T001',
-                    isMine: true,
-                    feedbacks: [
-                        {
-                            rating: 5,
-                            comment: 'Excellent class! The instructor was very knowledgeable and supportive.',
-                            date_submitted: '2024-01-15T10:30:00Z',
-                            member_name: 'John Smith'
-                        },
-                        {
-                            rating: 4,
-                            comment: 'Great session, but the room was a bit crowded.',
-                            date_submitted: '2024-01-14T09:15:00Z',
-                            member_name: 'Sarah Johnson'
-                        },
-                        {
-                            rating: 5,
-                            comment: 'Perfect way to start the day!',
-                            date_submitted: '2024-01-13T08:45:00Z',
-                            member_name: 'Mike Davis'
-                        }
-                    ]
-                },
-                {
-                    class_id: '2',
-                    class_name: 'HIIT Training',
-                    schedule: 'Tue, Thu 5:00 PM - 6:00 PM',
-                    capacity: 15,
-                    current_enrollment: 12,
-                    trainer_name: 'Jane Wilson',
-                    trainer_id: 'T002',
-                    isMine: false,
-                    feedbacks: [
-                        {
-                            rating: 3,
-                            comment: 'Good workout but too intense for beginners.',
-                            date_submitted: '2024-01-16T18:20:00Z',
-                            member_name: 'Robert Brown'
-                        },
-                        {
-                            rating: 4,
-                            comment: 'Challenging but rewarding!',
-                            date_submitted: '2024-01-15T17:30:00Z',
-                            member_name: 'Emily Clark'
-                        }
-                    ]
-                },
-                {
-                    class_id: '3',
-                    class_name: 'Strength Training',
-                    schedule: 'One-time 2024-01-20, 6:00 PM - 7:00 PM',
-                    capacity: 20,
-                    current_enrollment: 8,
-                    trainer_name: authUser.user.name || 'You',
-                    trainer_id: authUser.user.trainerid || 'T001',
-                    isMine: true,
-                    feedbacks: []
-                }
-            ];
+            // Load all feedback
+            await loadAllFeedback();
+        });
 
-            let allClasses = sampleClasses;
-            let trainerClasses = sampleClasses.filter(cls => cls.isMine);
-            let currentFeedbackRatingFilter = "";
+        // ✅ LOAD ALL FEEDBACK
+        async function loadAllFeedback() {
+            const loading = document.getElementById('loading');
+            const container = document.getElementById('classesContainer');
 
-            // Load classes
-            setTimeout(() => {
-                document.getElementById('feedbackLoading').style.display = 'none';
-                renderClasses(allClasses);
-            }, 1000);
-
-            // Filter button handlers
-            document.getElementById('showAllBtn').addEventListener('click', function() {
-                document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
-                this.classList.add('active');
-                renderClasses(allClasses);
-            });
-
-            document.getElementById('showMineBtn').addEventListener('click', function() {
-                document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
-                this.classList.add('active');
-                renderClasses(trainerClasses);
-            });
-
-            // Rating filter handler
-            document.getElementById('ratingFilter').addEventListener('change', function() {
-                currentFeedbackRatingFilter = this.value;
-                const activeFilter = document.querySelector('.filter-btn.active').id;
-                if (activeFilter === 'showMineBtn') {
-                    renderClasses(trainerClasses);
-                } else {
-                    renderClasses(allClasses);
-                }
-            });
-
-            function renderClasses(classes) {
-                const classesList = document.getElementById('classesList');
+            try {
+                // ✅ FETCH ALL TRAINERS FIRST
+                const trainersResp = await fetch(`${API_URL}/api/trainers`);
+                if (!trainersResp.ok) throw new Error('Failed to fetch trainers');
                 
-                if (!classes || classes.length === 0) {
-                    classesList.innerHTML = '<div class="no-classes">No classes found.</div>';
+                const trainersData = await trainersResp.json();
+                const allTrainers = trainersData.data || [];
+                
+                // Create a map of trainer_id -> trainer name
+                const trainerMap = {};
+                allTrainers.forEach(trainer => {
+                    const tid = trainer.trainer_id || trainer.trainerid || trainer._id;
+                    trainerMap[tid] = trainer.name;
+                });
+
+                // ✅ FETCH ALL CLASSES
+                const classesResp = await fetch(`${API_URL}/api/classes`);
+                if (!classesResp.ok) throw new Error('Failed to fetch classes');
+                
+                const classesData = await classesResp.json();
+                const allClasses = classesData.data || [];
+
+                // ✅ FETCH ALL FEEDBACKS
+                const feedbackResp = await fetch(`${API_URL}/api/feedbacks/admin/all`);
+                if (!feedbackResp.ok) throw new Error('Failed to fetch feedbacks');
+                
+                const feedbackData = await feedbackResp.json();
+                const allFeedbacks = feedbackData.feedbacks || [];
+
+                // Organize feedbacks by class_id
+                const feedbacksByClass = {};
+                allFeedbacks.forEach(fb => {
+                    const classId = fb.class_id;
+                    if (!feedbacksByClass[classId]) {
+                        feedbacksByClass[classId] = [];
+                    }
+                    feedbacksByClass[classId].push(fb);
+                });
+
+                // ✅ COMBINE CLASS DATA WITH FEEDBACKS AND TRAINER NAMES
+                const classesWithFeedback = allClasses.map(cls => {
+                    const classId = cls.class_id || cls.classid || cls._id;
+                    const feedbacks = feedbacksByClass[classId] || [];
+                    const classTrainerId = cls.trainer_id || cls.trainerid;
+                    const isMyClass = classTrainerId === trainerId;
+                    
+                    // ✅ GET TRAINER NAME FROM MAP
+                    const trainerName = trainerMap[classTrainerId] || 'Unknown Trainer';
+
+                    return {
+                        ...cls,
+                        feedbacks: feedbacks,
+                        originalFeedbacks: feedbacks,
+                        isMyClass,
+                        classId,
+                        trainerName  // ✅ ADD TRAINER NAME
+                    };
+                }).filter(cls => cls.feedbacks.length > 0);
+
+                // Store both original and working copy
+                originalClassesData = JSON.parse(JSON.stringify(classesWithFeedback));
+                allClassesData = classesWithFeedback;
+
+                loading.style.display = 'none';
+
+                if (allClassesData.length === 0) {
+                    container.innerHTML = '<div class="no-classes">No feedback available yet.</div>';
                     return;
                 }
 
-                let html = '';
-                classes.forEach(cls => {
-                    // Filter feedbacks by rating if filter is set
-                    let feedbacks = cls.feedbacks || [];
-                    if (currentFeedbackRatingFilter) {
-                        feedbacks = feedbacks.filter(fb => String(fb.rating) === currentFeedbackRatingFilter);
-                    }
+                renderClasses();
 
-                    html += `
-                        <div class="class-card ${cls.isMine ? 'my-class' : ''}">
-                            <div class="class-header">
-                                <h3>${cls.class_name}</h3>
-                                <div class="class-meta">
-                                    <span class="schedule">${cls.schedule || 'No schedule'}</span>
-                                    <span class="enrollment">${cls.current_enrollment}/${cls.capacity} enrolled</span>
-                                    ${cls.isMine ? '<span class="my-class-badge">Your Class</span>' : ''}
-                                </div>
-                            </div>
-                            
-                            <div class="trainer-info">
-                                <strong>Trainer:</strong> ${cls.trainer_name}
-                            </div>
+            } catch (err) {
+                console.error('Error loading feedback:', err);
+                loading.style.display = 'none';
+                container.innerHTML = '<div class="no-classes">Failed to load feedback. Please try again.</div>';
+            }
+        }
 
-                            <div class="feedback-section">
-                                <h4>Member Feedback ${feedbacks.length > 0 ? `(${feedbacks.length})` : ''}</h4>
-                                
-                                ${feedbacks.length > 0 ? `
-                                    <div class="feedback-list">
-                                        ${feedbacks.map(fb => `
-                                            <div class="feedback-item">
-                                                <div class="feedback-header">
-                                                    <div class="star-rating">
-                                                        ${generateStars(fb.rating)}
-                                                        <span class="rating-number">${fb.rating}/5</span>
-                                                    </div>
-                                                    <span class="feedback-date">${new Date(fb.date_submitted).toLocaleDateString()}</span>
-                                                </div>
-                                                <div class="feedback-comment">${fb.comment || 'No comment provided'}</div>
-                                                <div class="feedback-meta">
-                                                    <strong>From:</strong> ${fb.member_name || 'Anonymous Member'}
-                                                </div>
-                                            </div>
-                                        `).join('')}
-                                    </div>
-                                ` : `
-                                    <div class="no-feedbacks">
-                                        ${currentFeedbackRatingFilter ? 
-                                            'No feedbacks with this rating yet.' : 
-                                            'No feedbacks yet for this class.'
-                                        }
-                                    </div>
-                                `}
+        // ✅ FILTER CLASSES
+        function filterClasses(type) {
+            currentFilter = type;
+            
+            // Update button states
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            renderClasses();
+        }
+
+        // ✅ APPLY RATING FILTER
+        function applyRatingFilter() {
+            currentMinRating = parseInt(document.getElementById('minRating').value);
+            renderClasses();
+        }
+
+        // ✅ RENDER CLASSES
+        function renderClasses() {
+            const container = document.getElementById('classesContainer');
+            
+            // Start with original data (deep copy to avoid mutation)
+            let filtered = JSON.parse(JSON.stringify(originalClassesData));
+
+            // Filter by class ownership first
+            if (currentFilter === 'my') {
+                filtered = filtered.filter(cls => cls.isMyClass);
+            }
+
+            // Filter feedbacks by rating for each class
+            if (currentMinRating > 0) {
+                filtered = filtered.map(cls => {
+                    const filteredFeedbacks = cls.originalFeedbacks.filter(fb => fb.rating >= currentMinRating);
+                    return { 
+                        ...cls, 
+                        feedbacks: filteredFeedbacks,
+                        feedbackCount: filteredFeedbacks.length
+                    };
+                }).filter(cls => cls.feedbacks.length > 0);
+            }
+
+            if (filtered.length === 0) {
+                container.innerHTML = '<div class="no-classes">No classes match the selected filters.</div>';
+                return;
+            }
+
+            let html = '';
+
+            filtered.forEach(cls => {
+                const className = cls.class_name || cls.classname || 'Unnamed Class';
+                const schedule = cls.schedule || 'Not scheduled';
+                const trainerName = cls.trainerName || 'Unknown Trainer';  // ✅ USE TRAINER NAME
+                const avgRating = calculateAverageRating(cls.feedbacks);
+                const myClassBadge = cls.isMyClass ? '<span class="my-class-badge">My Class</span>' : '';
+                const myClassCls = cls.isMyClass ? 'my-class' : '';
+
+                html += `
+                    <div class="class-card ${myClassCls}">
+                        <div class="class-header">
+                            <h3>${className}</h3>
+                            <div class="class-meta">
+                                ${myClassBadge}
+                                <div class="schedule">${schedule}</div>
+                                <div class="enrollment">${cls.feedbacks.length} Feedback${cls.feedbacks.length !== 1 ? 's' : ''}</div>
                             </div>
                         </div>
-                    `;
-                });
+                        <div class="trainer-info">
+                            <strong>Trainer:</strong> ${trainerName} | <strong>Avg Rating:</strong> ${avgRating.toFixed(1)} ⭐
+                        </div>
+                        <div class="feedback-section">
+                            <h4>Student Feedback</h4>
+                            <div class="feedback-list">
+                                ${renderFeedbacks(cls.feedbacks)}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
 
-                classesList.innerHTML = html;
+            container.innerHTML = html;
+        }
+
+        // ✅ RENDER FEEDBACKS
+        function renderFeedbacks(feedbacks) {
+            if (feedbacks.length === 0) {
+                return '<div class="no-feedbacks">No feedback for this class yet.</div>';
             }
 
-            function generateStars(rating) {
-                let stars = '';
-                for (let i = 1; i <= 5; i++) {
-                    if (i <= rating) {
-                        stars += '<span class="star filled">★</span>';
-                    } else {
-                        stars += '<span class="star">★</span>';
-                    }
+            return feedbacks.map(fb => {
+                const rating = fb.rating || 0;
+                const comment = fb.comment || 'No comment provided';
+                const date = fb.date_submitted ? new Date(fb.date_submitted).toLocaleDateString() : 'Unknown date';
+                const stars = generateStars(rating);
+
+                return `
+                    <div class="feedback-item">
+                        <div class="feedback-header">
+                            <div class="star-rating">
+                                ${stars}
+                                <span class="rating-number">(${rating}/5)</span>
+                            </div>
+                            <div class="feedback-date">${date}</div>
+                        </div>
+                        <div class="feedback-comment">"${comment}"</div>
+                        <div class="feedback-meta">
+                            <strong>Member ID:</strong> ${fb.member_id}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // ✅ GENERATE STARS
+        function generateStars(rating) {
+            let stars = '';
+            for (let i = 1; i <= 5; i++) {
+                if (i <= rating) {
+                    stars += '<span class="star filled">★</span>';
+                } else {
+                    stars += '<span class="star">☆</span>';
                 }
-                return stars;
             }
-        });
+            return stars;
+        }
+
+        // ✅ CALCULATE AVERAGE RATING
+        function calculateAverageRating(feedbacks) {
+            if (feedbacks.length === 0) return 0;
+            const sum = feedbacks.reduce((acc, fb) => acc + (fb.rating || 0), 0);
+            return sum / feedbacks.length;
+        }
     </script>
 </body>
 </html>
