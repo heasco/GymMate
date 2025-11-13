@@ -1,19 +1,18 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const asyncHandler = require('../middleware/asyncHandler');
+const { protect } = require('../middleware/auth'); 
 const axios = require('axios');
 const FormData = require('form-data');
 const multer = require('multer');
 const upload = multer();
-
 const Member = require('../models/Member');
 const Enrollment = require('../models/Enrollment');
 const transporter = require('../utils/nodemailer');
-
 const router = express.Router();
 
-// GET all members (optional status filter)
-router.get('/', asyncHandler(async (req, res) => {
+
+router.get('/', protect, asyncHandler(async (req, res) => {
   const { status } = req.query;
   const filter = {};
   if (status && ['active', 'inactive', 'suspended'].includes(status)) {
@@ -24,7 +23,6 @@ router.get('/', asyncHandler(async (req, res) => {
   res.json({ success: true, count: members.length, data: members });
 }));
 
-// Search members
 router.get('/search', asyncHandler(async (req, res) => {
   const { query, type } = req.query;
   if (!query || query.trim().length < 2) {
@@ -32,7 +30,9 @@ router.get('/search', asyncHandler(async (req, res) => {
   }
   const filter = {
     $and: [
-      { $or: [{ name: { $regex: query, $options: 'i' } }, { memberId: { $regex: query, $options: 'i' } }] }
+      {
+        $or: [{ name: { $regex: query, $options: 'i' } }, { memberId: { $regex: query, $options: 'i' } }]
+      }
     ]
   };
   if (type === 'combative') {
@@ -43,8 +43,8 @@ router.get('/search', asyncHandler(async (req, res) => {
   res.json({ success: true, count: members.length, data: members });
 }));
 
-// Get one member by id/username/memberId/faceId
-router.get('/:id', asyncHandler(async (req, res) => {
+// Get one member by id/username/memberId/faceId - PROTECTED
+router.get('/:id', protect, asyncHandler(async (req, res) => {
   const { id } = req.params;
   let query = { $or: [{ memberId: id }, { username: id }, { faceId: id }] };
   if (mongoose.Types.ObjectId.isValid(id)) {
@@ -56,11 +56,13 @@ router.get('/:id', asyncHandler(async (req, res) => {
   res.json({ success: true, data: member });
 }));
 
-// Create member
-router.post('/', upload.single('faceImage'), asyncHandler(async (req, res) => {
+// Create member - PROTECTED (admin-only, e.g., add authorize('admin') if needed)
+router.post('/', protect, upload.single('faceImage'), asyncHandler(async (req, res) => {
   let memberships = req.body.memberships;
   if (typeof memberships === 'string') {
-    try { memberships = JSON.parse(memberships); } catch {
+    try {
+      memberships = JSON.parse(memberships);
+    } catch {
       return res.status(400).json({ success: false, error: 'Invalid memberships format' });
     }
   }
@@ -68,14 +70,12 @@ router.post('/', upload.single('faceImage'), asyncHandler(async (req, res) => {
   const name = rawName?.trim();
   const phone = rawPhone?.trim();
   const email = rawEmail?.trim()?.toLowerCase();
-
   if (!name || !memberships || !Array.isArray(memberships) || memberships.length === 0) {
     const errors = {};
     if (!name) errors.name = 'Name is required';
     if (!memberships || !Array.isArray(memberships) || memberships.length === 0) errors.memberships = 'At least one membership is required';
     return res.status(400).json({ success: false, error: 'Validation failed', details: errors });
   }
-
   // Username and temp password
   const nameParts = name.split(/\s+/);
   const firstName = nameParts[0].toLowerCase();
@@ -87,7 +87,6 @@ router.post('/', upload.single('faceImage'), asyncHandler(async (req, res) => {
     username = firstName + lastName + suffix;
   }
   const tempPassword = firstName + Math.floor(1000 + Math.random() * 9000);
-
   // Validate and compute membership dates
   const validatedMemberships = [];
   for (const m of memberships) {
@@ -122,7 +121,6 @@ router.post('/', upload.single('faceImage'), asyncHandler(async (req, res) => {
       });
     }
   }
-
   const newMember = new Member({
     name,
     username,
@@ -134,13 +132,17 @@ router.post('/', upload.single('faceImage'), asyncHandler(async (req, res) => {
     faceEnrolled: faceEnrolled === 'yes'
   });
   const saved = await newMember.save();
-
   if (saved.email) {
     transporter.sendMail({
       from: `"GOALS Gym" <${process.env.EMAIL_USER}>`,
       to: saved.email,
       subject: 'Welcome to GOALS Gym!',
-      html: `<p>Your account has been created.</p><p><b>Username:</b> ${saved.username}</p><p><b>Temporary Password:</b> ${tempPassword}</p>`
+      html: `
+        <h2>Your account has been created.</h2>
+        <p><strong>Username:</strong> ${saved.username}</p>
+        <p><strong>Temporary Password:</strong> ${tempPassword}</p>
+        <p>Please change your password on first login.</p>
+      `
     }).catch(err => console.error('Welcome email error:', err));
   }
 
@@ -176,36 +178,32 @@ router.post('/', upload.single('faceImage'), asyncHandler(async (req, res) => {
   });
 }));
 
-// Legacy: profile update
-router.put('/:id/profile', asyncHandler(async (req, res) => {
+// Legacy: profile update - PROTECTED
+router.put('/:id/profile', protect, asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { phone, email } = req.body || {};
   const updates = {};
   if (typeof phone !== 'undefined') updates.phone = phone ? phone.trim() : '';
   if (typeof email !== 'undefined') updates.email = email ? email.trim().toLowerCase() : '';
-
   if (updates.phone && updates.phone !== '' && !/^\+63\d{10}$/.test(updates.phone)) {
     return res.status(400).json({ success: false, error: 'Invalid Philippine phone format. Use +63XXXXXXXXXX' });
   }
-  if (updates.email && updates.email !== '' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(updates.email)) {
+  if (updates.email && updates.email !== '' && !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(updates.email)) {
     return res.status(400).json({ success: false, error: 'Invalid email address' });
   }
-
   let query = { memberId: id };
   if (mongoose.Types.ObjectId.isValid(id)) query = { $or: [{ memberId: id }, { _id: new mongoose.Types.ObjectId(id) }] };
-
   const member = await Member.findOneAndUpdate(query, { $set: updates }, { new: true, runValidators: true }).lean();
   if (!member) return res.status(404).json({ success: false, error: 'Member not found' });
   delete member.password;
   res.json({ success: true, message: 'Profile updated successfully', data: member });
 }));
 
-// General update (name, phone, email, status, memberships)
-router.put('/:id', asyncHandler(async (req, res) => {
+// General update (name, phone, email, status, memberships) - PROTECTED
+router.put('/:id', protect, asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { name, phone, email, status, memberships } = req.body || {};
   const updates = {};
-
   if (typeof name !== 'undefined') updates.name = name?.trim();
   if (typeof phone !== 'undefined') updates.phone = phone ? phone.trim() : '';
   if (typeof email !== 'undefined') updates.email = email ? email.trim().toLowerCase() : '';
@@ -215,14 +213,12 @@ router.put('/:id', asyncHandler(async (req, res) => {
     }
     updates.status = status;
   }
-
   if (updates.phone && updates.phone !== '' && !/^\+63\d{10}$/.test(updates.phone)) {
     return res.status(400).json({ success: false, error: 'Invalid Philippine phone format. Use +63XXXXXXXXXX' });
   }
-  if (updates.email && updates.email !== '' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(updates.email)) {
+  if (updates.email && updates.email !== '' && !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(updates.email)) {
     return res.status(400).json({ success: false, error: 'Invalid email address' });
   }
-
   if (Array.isArray(memberships)) {
     const validated = memberships.map(m => {
       if (!m?.type || !['monthly', 'combative'].includes(m.type)) {
@@ -244,28 +240,36 @@ router.put('/:id', asyncHandler(async (req, res) => {
     // Recompute endDate on save via pre('validate'), but set a hint for combative expiry window
     updates.memberships = validated.map(m => {
       if (m.type === 'monthly') {
-        const end = new Date(m.startDate); end.setMonth(end.getMonth() + m.duration);
+        const end = new Date(m.startDate);
+        end.setMonth(end.getMonth() + m.duration);
         return { ...m, endDate: end };
       } else {
-        const end = new Date(m.startDate); end.setMonth(end.getMonth() + 1);
+        const end = new Date(m.startDate);
+        end.setMonth(end.getMonth() + 1);
         return { ...m, endDate: end };
       }
     });
   }
-
   let query = { memberId: id };
   if (mongoose.Types.ObjectId.isValid(id)) query = { $or: [{ memberId: id }, { _id: new mongoose.Types.ObjectId(id) }] };
-
   const updated = await Member.findOneAndUpdate(query, { $set: updates }, { new: true, runValidators: true });
   if (!updated) return res.status(404).json({ success: false, error: 'Member not found' });
-
-  res.json({ success: true, message: 'Member updated', data: {
-    memberId: updated.memberId, name: updated.name, phone: updated.phone, email: updated.email, status: updated.status, memberships: updated.memberships
-  } });
+  res.json({
+    success: true,
+    message: 'Member updated',
+    data: {
+      memberId: updated.memberId,
+      name: updated.name,
+      phone: updated.phone,
+      email: updated.email,
+      status: updated.status,
+      memberships: updated.memberships
+    }
+  });
 }));
 
-// Archive limited to inactive/suspended
-router.patch('/:id/archive', asyncHandler(async (req, res) => {
+// Archive limited to inactive/suspended - PROTECTED
+router.patch('/:id/archive', protect, asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { status } = req.body;
   if (!['inactive', 'suspended'].includes(status)) {
@@ -275,11 +279,15 @@ router.patch('/:id/archive', asyncHandler(async (req, res) => {
   if (mongoose.Types.ObjectId.isValid(id)) query = { $or: [{ memberId: id }, { _id: new mongoose.Types.ObjectId(id) }] };
   const updated = await Member.findOneAndUpdate(query, { $set: { status } }, { new: true });
   if (!updated) return res.status(404).json({ success: false, error: 'Member not found' });
-  res.json({ success: true, message: `Member ${status} successfully`, data: { memberId: updated.memberId, name: updated.name, status: updated.status } });
+  res.json({
+    success: true,
+    message: `Member ${status} successfully`,
+    data: { memberId: updated.memberId, name: updated.name, status: updated.status }
+  });
 }));
 
-// Set status including active
-router.patch('/:id/status', asyncHandler(async (req, res) => {
+// Set status including active - PROTECTED
+router.patch('/:id/status', protect, asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { status } = req.body;
   if (!['active', 'inactive', 'suspended'].includes(status)) {
@@ -289,7 +297,11 @@ router.patch('/:id/status', asyncHandler(async (req, res) => {
   if (mongoose.Types.ObjectId.isValid(id)) query = { $or: [{ memberId: id }, { _id: new mongoose.Types.ObjectId(id) }] };
   const updated = await Member.findOneAndUpdate(query, { $set: { status } }, { new: true });
   if (!updated) return res.status(404).json({ success: false, error: 'Member not found' });
-  res.json({ success: true, message: `Member status set to ${status}`, data: { memberId: updated.memberId, name: updated.name, status: updated.status } });
+  res.json({
+    success: true,
+    message: `Member status set to ${status}`,
+    data: { memberId: updated.memberId, name: updated.name, status: updated.status }
+  });
 }));
 
 module.exports = router;

@@ -1,3 +1,78 @@
+// Utility for authenticated API calls (adds security header for /api/ routes) with timeout - Handles full URLs
+async function apiFetch(endpoint, options = {}, timeoutMs = 10000) {
+  console.log('apiFetch called for:', endpoint);  // DEBUG (remove in production if needed)
+  const token = sessionStorage.getItem('token');
+  if (!token) {
+    console.log('No token - redirecting to login');  // DEBUG
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('authUser');
+    sessionStorage.removeItem('role');
+    window.location.href = '../member-login.html';
+    return;
+  }
+
+  // Use endpoint directly if it's already a full URL; otherwise prepend base
+  let url = endpoint;
+  if (!endpoint.startsWith('http://') && !endpoint.startsWith('https://')) {
+    url = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+      ? `http://localhost:8080${endpoint}`
+      : endpoint;
+  }
+
+  const headers = { 
+    ...options.headers, 
+    'Authorization': `Bearer ${token}`,
+    'Content-Type': 'application/json' // Default for JSON calls
+  };
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const response = await fetch(url, { ...options, headers, signal: controller.signal });
+    clearTimeout(timeoutId);
+
+    if (response.status === 401) {
+      console.log('401 Unauthorized - clearing auth and redirecting');  // DEBUG
+      sessionStorage.removeItem('token');
+      sessionStorage.removeItem('authUser');
+      sessionStorage.removeItem('role');
+      window.location.href = '../member-login.html';
+      return;
+    }
+    if (!response.ok) throw new Error(`API error: ${response.status}`);
+    return await response.json();
+  } catch (error) {
+    clearTimeout(timeoutId);
+    if (error.name === 'AbortError') {
+      throw new Error(`API timeout after ${timeoutMs}ms`);
+    }
+    throw error;
+  }
+}
+
+// ✅ INITIAL AUTH CHECK - Token + Role ('member') + Timestamp (runs immediately)
+(function checkAuth() {
+  console.log('Auth check starting for member-feedback');  // DEBUG
+  const authUser = JSON.parse(sessionStorage.getItem('authUser') || 'null'); 
+  const token = sessionStorage.getItem('token');
+  const role = sessionStorage.getItem('role');
+  
+  console.log('Auth details:', { authUser: authUser ? authUser.username || authUser.email : null, token: !!token, role });  // DEBUG: Hide sensitive data
+  
+  // Check timestamp (1 hour) + token + member role
+  if (!authUser || (Date.now() - (authUser.timestamp || 0)) > 3600000 || !token || role !== 'member') { 
+    console.log('Auth failed - clearing and redirecting');  // DEBUG
+    sessionStorage.removeItem('authUser'); 
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('role');
+    window.location.href = '../member-login.html'; 
+    return;
+  } 
+  
+  console.log('Member authenticated:', authUser.username || authUser.email, 'Role:', role);
+})();
+
 // Configuration
 const SERVER_URL = 'http://localhost:8080';
 
@@ -10,7 +85,7 @@ const $ = id => document.getElementById(id);
 
 function getAuth() {
     try {
-        return JSON.parse(localStorage.getItem('authUser') || 'null');
+        return JSON.parse(sessionStorage.getItem('authUser') || 'null');
     } catch (e) {
         console.error('[Auth] Error:', e);
         return null;
@@ -24,10 +99,12 @@ function memberIdFromAuth() {
     return user.memberId || user.member_id || user._id || user.id || null;
 }
 
-
+// Logout function (ENHANCED: Clears token + role)
 function logout() {
-    localStorage.removeItem('authUser');
-    localStorage.removeItem('memberData');
+    sessionStorage.removeItem('authUser');
+    sessionStorage.removeItem('memberData');
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('role');
     window.location.href = '../member-login.html';
 }
 
@@ -134,18 +211,9 @@ function loadMemberName() {
     }
 }
 
-
-// Load ATTENDED Classes ONLY
+// Load ATTENDED Classes ONLY (ENHANCED: Token + role check; fetch → apiFetch, including Promise.all)
 async function loadAttendedClasses() {
     console.log('[LoadClasses] Starting...');
-    
-    const classSelect = $('classSelect');
-    if (!classSelect) {
-        console.error('[LoadClasses] classSelect not found!');
-        return;
-    }
-    
-    classSelect.innerHTML = '<option value="">Loading classes...</option>';
     
     const memberId = memberIdFromAuth();
     console.log('[LoadClasses] Member ID:', memberId);
@@ -156,21 +224,34 @@ async function loadAttendedClasses() {
         return;
     }
 
+    // ENHANCED: Token + role check
+    const token = sessionStorage.getItem('token');
+    const role = sessionStorage.getItem('role');
+    const authUser = getAuth();
+    if (!token || role !== 'member' || !authUser || (Date.now() - (authUser.timestamp || 0)) > 3600000) {
+        console.log('[LoadClasses] Invalid session - logging out');  // DEBUG
+        sessionStorage.removeItem('token');
+        sessionStorage.removeItem('authUser');
+        sessionStorage.removeItem('role');
+        window.location.href = '../member-login.html';
+        return;
+    }
+
+    const classSelect = $('classSelect');
+    if (!classSelect) {
+        console.error('[LoadClasses] classSelect not found!');
+        return;
+    }
+    
+    classSelect.innerHTML = '<option value="">Loading classes...</option>';
+
     try {
         // Use the NEW /attended route
         const url = `${SERVER_URL}/api/enrollments/member/${encodeURIComponent(memberId)}/attended`;
         console.log('[LoadClasses] Fetching:', url);
         
-        const response = await fetch(url);
-        console.log('[LoadClasses] Response status:', response.status);
-        
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error('[LoadClasses] Error:', errorText);
-            throw new Error(`HTTP ${response.status}`);
-        }
-
-        const data = await response.json();
+        // TOKENIZED: GET via apiFetch
+        const data = await apiFetch(url);
         console.log('[LoadClasses] Data received:', data);
         
         const enrollments = data.data || [];
@@ -182,27 +263,26 @@ async function loadAttendedClasses() {
             return;
         }
 
-        // Fetch class details
+        // Fetch class details (TOKENIZED: Promise.all with apiFetch)
         console.log('[LoadClasses] Fetching class details...');
         const classDetails = await Promise.all(
             enrollments.map(async (enrollment) => {
                 try {
                     const classUrl = `${SERVER_URL}/api/classes/${encodeURIComponent(enrollment.class_id)}`;
-                    const classResponse = await fetch(classUrl);
                     
-                    if (classResponse.ok) {
-                        const classData = await classResponse.json();
-                        return {
-                            enrollment_id: enrollment.enrollment_id || enrollment._id,
-                            class_id: enrollment.class_id,
-                            class_name: classData.data?.class_name || 'Unnamed Class',
-                            trainer_id: classData.data?.trainer_id || '',
-                            session_date: enrollment.session_date,
-                            session_time: enrollment.session_time,
-                            attendance_status: enrollment.attendance_status,
-                            status: enrollment.status
-                        };
-                    }
+                    // TOKENIZED: GET via apiFetch
+                    const classData = await apiFetch(classUrl);
+                    
+                    return {
+                        enrollment_id: enrollment.enrollment_id || enrollment._id,
+                        class_id: enrollment.class_id,
+                        class_name: classData.data?.class_name || 'Unnamed Class',
+                        trainer_id: classData.data?.trainer_id || '',
+                        session_date: enrollment.session_date,
+                        session_time: enrollment.session_time,
+                        attendance_status: enrollment.attendance_status,
+                        status: enrollment.status
+                    };
                 } catch (error) {
                     console.error(`[LoadClasses] Error fetching class ${enrollment.class_id}:`, error);
                 }
@@ -236,13 +316,26 @@ async function loadAttendedClasses() {
     }
 }
 
-// View My Feedback
+// View My Feedback (ENHANCED: Token + role check; fetch → apiFetch, including Promise.all)
 async function viewMyFeedback() {
     console.log('[ViewFeedback] Loading feedback...');
     
     const memberId = memberIdFromAuth();
     if (!memberId) {
         logout();
+        return;
+    }
+
+    // ENHANCED: Token + role check
+    const token = sessionStorage.getItem('token');
+    const role = sessionStorage.getItem('role');
+    const authUser = getAuth();
+    if (!token || role !== 'member' || !authUser || (Date.now() - (authUser.timestamp || 0)) > 3600000) {
+        console.log('[ViewFeedback] Invalid session - logging out');  // DEBUG
+        sessionStorage.removeItem('token');
+        sessionStorage.removeItem('authUser');
+        sessionStorage.removeItem('role');
+        window.location.href = '../member-login.html';
         return;
     }
 
@@ -258,13 +351,8 @@ async function viewMyFeedback() {
     feedbackList.innerHTML = '<p style="text-align: center; padding: 2rem;">Loading your feedback...</p>';
 
     try {
-        const response = await fetch(`${SERVER_URL}/api/feedbacks/member/${encodeURIComponent(memberId)}`);
-        
-        if (!response.ok) {
-            throw new Error('Failed to load feedback');
-        }
-
-        const data = await response.json();
+        // TOKENIZED: GET via apiFetch
+        const data = await apiFetch(`${SERVER_URL}/api/feedbacks/member/${encodeURIComponent(memberId)}`);
         console.log('[ViewFeedback] Feedback data:', data);
         
         const feedbacks = data.feedbacks || [];
@@ -274,18 +362,17 @@ async function viewMyFeedback() {
             return;
         }
 
-        // Fetch class names for each feedback
+        // Fetch class names for each feedback (TOKENIZED: Promise.all with apiFetch)
         const feedbacksWithClasses = await Promise.all(
             feedbacks.map(async (feedback) => {
                 try {
-                    const classResponse = await fetch(`${SERVER_URL}/api/classes/${encodeURIComponent(feedback.class_id)}`);
-                    if (classResponse.ok) {
-                        const classData = await classResponse.json();
-                        return {
-                            ...feedback,
-                            class_name: classData.data?.class_name || 'Unknown Class'
-                        };
-                    }
+                    // TOKENIZED: GET via apiFetch
+                    const classData = await apiFetch(`${SERVER_URL}/api/classes/${encodeURIComponent(feedback.class_id)}`);
+                    
+                    return {
+                        ...feedback,
+                        class_name: classData.data?.class_name || 'Unknown Class'
+                    };
                 } catch (error) {
                     console.error(`[ViewFeedback] Error fetching class ${feedback.class_id}:`, error);
                 }
@@ -316,7 +403,7 @@ async function viewMyFeedback() {
     }
 }
 
-// Submit Feedback
+// Submit Feedback (ENHANCED: Token + role check; fetch → apiFetch)
 async function submitFeedback() {
     console.log('[Submit] Starting...');
     
@@ -326,6 +413,19 @@ async function submitFeedback() {
 
     if (!memberId) {
         logout();
+        return;
+    }
+
+    // ENHANCED: Token + role check
+    const token = sessionStorage.getItem('token');
+    const role = sessionStorage.getItem('role');
+    const authUser = getAuth();
+    if (!token || role !== 'member' || !authUser || (Date.now() - (authUser.timestamp || 0)) > 3600000) {
+        console.log('[Submit] Invalid session - logging out');  // DEBUG
+        sessionStorage.removeItem('token');
+        sessionStorage.removeItem('authUser');
+        sessionStorage.removeItem('role');
+        window.location.href = '../member-login.html';
         return;
     }
 
@@ -353,11 +453,9 @@ async function submitFeedback() {
     try {
         console.log('[Submit] Submitting feedback for:', selectedClass.class_name);
         
-        const response = await fetch(`${SERVER_URL}/api/feedbacks`, {
+        // TOKENIZED: POST via apiFetch (merges your options)
+        const data = await apiFetch(`${SERVER_URL}/api/feedbacks`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
             body: JSON.stringify({
                 class_id: selectedClass.class_id,
                 member_id: memberId,
@@ -366,13 +464,9 @@ async function submitFeedback() {
                 comment: comment
             })
         });
-
-        const data = await response.json();
         console.log('[Submit] Response:', data);
 
-        if (!response.ok) {
-            throw new Error(data.error || data.message || 'Failed to send feedback');
-        }
+        if (data.error || data.message) throw new Error(data.error || data.message || 'Failed to send feedback');
 
         // Success
         showMessage('Thank you for your feedback! 🎉', 'success');

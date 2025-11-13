@@ -1,607 +1,712 @@
 const SERVER_URL = 'http://localhost:8080';
+
 let faceImageBlob = null;
 let faceSuccessfullyCaptured = false;
 let selectedMember = null;
 
+// Utility for authenticated API calls (adds security header for /api/ routes)
+async function apiFetch(endpoint, options = {}) {
+  const token = sessionStorage.getItem('token');
+  if (!token) {
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('authUser');
+    sessionStorage.removeItem('role');
+    window.location.href = '../admin-login.html';
+    return;
+  }
+
+  const url = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+    ? `${SERVER_URL}${endpoint}`
+    : endpoint;
+
+  const headers = { ...options.headers, 'Authorization': `Bearer ${token}` };
+
+  // For JSON: Add Content-Type
+  if (options.body && typeof options.body === 'string' && !options.headers?.['Content-Type']) {
+    headers['Content-Type'] = 'application/json';
+  }
+  // For FormData: Don't override Content-Type (browser sets multipart)
+
+  const response = await fetch(url, { ...options, headers });
+
+  if (response.status === 401) {
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('authUser');
+    sessionStorage.removeItem('role');
+    window.location.href = '../admin-login.html';
+    return;
+  }
+  if (!response.ok) throw new Error(`API error: ${response.status}`);
+  return response.json();
+}
+
 document.addEventListener('DOMContentLoaded', () => {
-    setupSidebarAndSession();
-    initializeForm();
+  const token = sessionStorage.getItem('token');
+  const role = sessionStorage.getItem('role');
+  if (!token || role !== 'admin') {
+    window.location.href = '../admin-login.html';
+    return;
+  }
+  setupSidebarAndSession();
+  initializeForm();
 });
 
 // Format date to readable format: "Month Day, Year"
 function formatDate(date) {
-    const options = { year: 'numeric', month: 'long', day: 'numeric' };
-    return new Date(date).toLocaleDateString('en-US', options);
+  const options = { year: 'numeric', month: 'long', day: 'numeric' };
+  return new Date(date).toLocaleDateString('en-US', options);
 }
 
 function setupSidebarAndSession() {
-    const menuToggle = document.getElementById('menuToggle');
-    const sidebar = document.querySelector('.sidebar');
-    const logoutBtn = document.getElementById('logoutBtn');
-    const authUser = JSON.parse(localStorage.getItem('authUser'));
+  const menuToggle = document.getElementById('menuToggle');
+  const sidebar = document.querySelector('.sidebar');
+  const logoutBtn = document.getElementById('logoutBtn');
+  const authUser = JSON.parse(sessionStorage.getItem('authUser') || '{}');
 
+  if (menuToggle && sidebar) {
     menuToggle.addEventListener('click', () => sidebar.classList.toggle('collapsed'));
+  }
 
-    if (!authUser || (Date.now() - authUser.timestamp > 3600000)) {
-        localStorage.removeItem('authUser');
-        window.location.href = '../admin-login.html';
-        return;
-    }
+  if (!authUser || (Date.now() - authUser.timestamp > 3600000)) {
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('authUser');
+    sessionStorage.removeItem('role');
+    window.location.href = '../admin-login.html';
+    return;
+  }
 
+  if (logoutBtn) {
     logoutBtn.addEventListener('click', () => {
-        localStorage.removeItem('authUser');
-        window.location.href = '../admin-login.html';
+      sessionStorage.removeItem('token');
+      sessionStorage.removeItem('authUser');
+      sessionStorage.removeItem('role');
+      window.location.href = '../admin-login.html';
     });
+  }
 
-    document.addEventListener('click', (e) => {
-        if (window.innerWidth <= 768 && !sidebar.contains(e.target) && !menuToggle.contains(e.target)) {
-            sidebar.classList.remove('collapsed');
-        }
+  // Mobile sidebar click outside
+  document.addEventListener('click', (e) => {
+    if (window.innerWidth <= 768 && sidebar && menuToggle && !sidebar.contains(e.target) && !menuToggle.contains(e.target)) {
+      sidebar.classList.remove('collapsed');
+    }
+  });
+
+  // Overflow handling on collapse (mobile)
+  if (sidebar) {
+    sidebar.addEventListener('transitionend', () => {
+      if (window.innerWidth <= 768 && sidebar.classList.contains('collapsed')) {
+        document.body.style.overflow = 'hidden';
+      } else {
+        document.body.style.overflow = 'auto';
+      }
     });
+  }
 }
 
 function initializeForm() {
-    const memberForm = document.getElementById('memberForm');
+  const memberForm = document.getElementById('memberForm');
 
-    // ✅ Setup Birthdate Calendar Icon
-    setupDatePicker('birthdate', 'birthdateDisplay', 'birthdateIcon');
+  // Setup Birthdate Calendar Icon
+  setupDatePicker('birthdate', 'birthdateDisplay', 'birthdateIcon');
 
-    // ✅ Setup Join Date Calendar Icon
-    const today = new Date();
-    const joinDateInput = document.getElementById('joinDate');
-    const joinDateDisplay = document.getElementById('joinDateDisplay');
+  // Setup Join Date Calendar Icon
+  const today = new Date();
+  const joinDateInput = document.getElementById('joinDate');
+  const joinDateDisplay = document.getElementById('joinDateDisplay');
 
-    joinDateInput.valueAsDate = today;
-    joinDateDisplay.value = formatDate(today);
+  if (joinDateInput) joinDateInput.valueAsDate = today;
+  if (joinDateDisplay) joinDateDisplay.value = formatDate(today);
 
-    setupDatePicker('joinDate', 'joinDateDisplay', 'joinDateIcon');
+  setupDatePicker('joinDate', 'joinDateDisplay', 'joinDateIcon');
 
-    // Membership type toggles
-    document.getElementById('monthlyCheckbox').addEventListener('change', function () {
-        document.getElementById('monthlyDetails').style.display = this.checked ? "block" : "none";
+  // Membership type toggles
+  const monthlyCheckbox = document.getElementById('monthlyCheckbox');
+  const combativeCheckbox = document.getElementById('combativeCheckbox');
+  if (monthlyCheckbox) {
+    monthlyCheckbox.addEventListener('change', function () {
+      document.getElementById('monthlyDetails').style.display = this.checked ? "block" : "none";
     });
-
-    document.getElementById('combativeCheckbox').addEventListener('change', function () {
-        document.getElementById('combativeDetails').style.display = this.checked ? "block" : "none";
+  }
+  if (combativeCheckbox) {
+    combativeCheckbox.addEventListener('change', function () {
+      document.getElementById('combativeDetails').style.display = this.checked ? "block" : "none";
     });
+  }
 
-    // Form submission
+  // Form submission
+  if (memberForm) {
     memberForm.addEventListener('submit', handleFormSubmit);
+  }
 
-    // Face capture functionality
-    setupFaceCapture();
+  // Face capture functionality
+  setupFaceCapture();
 
-    // Renewal modal functionality
-    setupRenewalModal();
+  // Renewal modal functionality
+  setupRenewalModal();
 }
 
-// ✅ UPDATED: Universal Date Picker Setup Function
+// Universal Date Picker Setup Function
 function setupDatePicker(dateInputId, displayInputId, iconId) {
-    const dateInput = document.getElementById(dateInputId);
-    const displayInput = document.getElementById(displayInputId);
-    const icon = document.getElementById(iconId);
+  const dateInput = document.getElementById(dateInputId);
+  const displayInput = document.getElementById(displayInputId);
+  const icon = document.getElementById(iconId);
 
-    if (!dateInput || !displayInput || !icon) return;
+  if (!dateInput || !displayInput || !icon) return;
 
-    // When icon is clicked, trigger the hidden date input
-    icon.addEventListener('click', (e) => {
-        e.stopPropagation();
-        e.preventDefault();
-        dateInput.click(); // Click the hidden date input
-    });
+  // When icon is clicked, trigger the hidden date input
+  icon.addEventListener('click', (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+    dateInput.click(); // Click the hidden date input
+  });
 
-    // Also allow clicking the display input to open calendar
-    displayInput.addEventListener('click', (e) => {
-        e.stopPropagation();
-        e.preventDefault();
-        dateInput.click();
-    });
+  // Also allow clicking the display input to open calendar
+  displayInput.addEventListener('click', (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+    dateInput.click();
+  });
 
-    // When date is selected, update the display field
-    dateInput.addEventListener('change', function () {
-        if (this.value) {
-            displayInput.value = formatDate(this.value);
-        }
-    });
+  // When date is selected, update the display field
+  dateInput.addEventListener('change', function () {
+    if (this.value) {
+      displayInput.value = formatDate(this.value);
+    }
+  });
 }
 
 function setupRenewalModal() {
-    const renewBtn = document.getElementById('renewBtn');
-    const modal = document.getElementById('renewalModal');
-    const closeBtn = document.getElementById('closeRenewalBtn');
-    const searchBtn = document.getElementById('searchBtn');
-    const renewalForm = document.getElementById('renewalForm');
+  const renewBtn = document.getElementById('renewBtn');
+  const modal = document.getElementById('renewalModal');
+  const closeBtn = document.getElementById('closeRenewalBtn');
+  const searchBtn = document.getElementById('searchBtn');
+  const renewalForm = document.getElementById('renewalForm');
 
-    // FIX: Prevent checkbox labels from triggering date picker in renewal form
-    const renewalCheckboxLabels = document.querySelectorAll('.renewal-checkbox');
-    renewalCheckboxLabels.forEach(label => {
-        label.addEventListener('click', (e) => {
-            e.stopPropagation();
-            e.preventDefault();
-            const checkbox = label.querySelector('input[type="checkbox"]');
-            if (checkbox && e.target !== checkbox) {
-                checkbox.checked = !checkbox.checked;
-                const event = new Event('change', { bubbles: true });
-                checkbox.dispatchEvent(event);
-            }
-        });
+  // Prevent checkbox labels from triggering date picker in renewal form
+  const renewalCheckboxLabels = document.querySelectorAll('.renewal-checkbox');
+  renewalCheckboxLabels.forEach(label => {
+    label.addEventListener('click', (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      const checkbox = label.querySelector('input[type="checkbox"]');
+      if (checkbox && e.target !== checkbox) {
+        checkbox.checked = !checkbox.checked;
+        const event = new Event('change', { bubbles: true });
+        checkbox.dispatchEvent(event);
+      }
     });
+  });
 
-    // Open modal
-    if (renewBtn) {
-        renewBtn.addEventListener('click', function (e) {
-            e.preventDefault();
-            e.stopPropagation();
-            modal.style.display = 'flex';
-            resetRenewalModal();
-        });
-    }
+  // Open modal
+  if (renewBtn) {
+    renewBtn.addEventListener('click', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (modal) modal.style.display = 'flex';
+      resetRenewalModal();
+    });
+  }
 
-    // Close modal
+  // Close modal
+  if (closeBtn) {
     closeBtn.addEventListener('click', () => {
-        modal.style.display = 'none';
+      if (modal) modal.style.display = 'none';
     });
+  }
 
-    // Close on outside click
+  // Close on outside click
+  if (modal) {
     modal.addEventListener('click', (e) => {
-        if (e.target === modal) {
-            modal.style.display = 'none';
-        }
+      if (e.target === modal) {
+        modal.style.display = 'none';
+      }
     });
+  }
 
-    // Search member
-    searchBtn.addEventListener('click', searchMember);
-    document.getElementById('searchMember').addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            searchMember();
-        }
+  // Search member
+  if (searchBtn) searchBtn.addEventListener('click', searchMember);
+  const searchInput = document.getElementById('searchMember');
+  if (searchInput) {
+    searchInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        searchMember();
+      }
     });
+  }
 
-    // Renewal checkboxes
-    document.getElementById('renewMonthly').addEventListener('change', function () {
-        document.getElementById('renewMonthlyDetails').style.display = this.checked ? 'block' : 'none';
-        updateRenewalInfo();
+  // Renewal checkboxes
+  const renewMonthly = document.getElementById('renewMonthly');
+  const renewCombative = document.getElementById('renewCombative');
+  if (renewMonthly) {
+    renewMonthly.addEventListener('change', function () {
+      document.getElementById('renewMonthlyDetails').style.display = this.checked ? 'block' : 'none';
+      updateRenewalInfo();
     });
-
-    document.getElementById('renewCombative').addEventListener('change', function () {
-        document.getElementById('renewCombativeDetails').style.display = this.checked ? 'block' : 'none';
-        updateRenewalInfo();
+  }
+  if (renewCombative) {
+    renewCombative.addEventListener('change', function () {
+      document.getElementById('renewCombativeDetails').style.display = this.checked ? 'block' : 'none';
+      updateRenewalInfo();
     });
+  }
 
-    // Duration changes
-    document.getElementById('renewalDate').addEventListener('change', updateRenewalInfo);
-    document.getElementById('renewMonthlyDuration').addEventListener('input', updateRenewalInfo);
-    document.getElementById('renewCombativeSessions').addEventListener('input', updateRenewalInfo);
+  // Duration changes
+  const renewalDate = document.getElementById('renewalDate');
+  const renewMonthlyDuration = document.getElementById('renewMonthlyDuration');
+  const renewCombativeSessions = document.getElementById('renewCombativeSessions');
+  if (renewalDate) renewalDate.addEventListener('change', updateRenewalInfo);
+  if (renewMonthlyDuration) renewMonthlyDuration.addEventListener('input', updateRenewalInfo);
+  if (renewCombativeSessions) renewCombativeSessions.addEventListener('input', updateRenewalInfo);
 
-    // Renewal form submission
+  // Renewal form submission
+  if (renewalForm) {
     renewalForm.addEventListener('submit', handleRenewal);
+  }
 }
 
 function resetRenewalModal() {
-    document.getElementById('searchMember').value = '';
-    document.getElementById('searchResults').innerHTML = '';
-    document.getElementById('selectedMemberSection').style.display = 'none';
-    document.getElementById('renewalForm').reset();
+  const searchMemberInput = document.getElementById('searchMember');
+  const searchResults = document.getElementById('searchResults');
+  const selectedMemberSection = document.getElementById('selectedMemberSection');
+  const renewalForm = document.getElementById('renewalForm');
 
-    const today = new Date();
-    const renewalDateInput = document.getElementById('renewalDate');
-    if (renewalDateInput) {
-        renewalDateInput.valueAsDate = today;
-    }
+  if (searchMemberInput) searchMemberInput.value = '';
+  if (searchResults) searchResults.innerHTML = '';
+  if (selectedMemberSection) selectedMemberSection.style.display = 'none';
+  if (renewalForm) renewalForm.reset();
 
-    document.getElementById('renewMonthlyDetails').style.display = 'none';
-    document.getElementById('renewCombativeDetails').style.display = 'none';
-    document.getElementById('renewalInfoBox').style.display = 'none';
-    selectedMember = null;
+  const today = new Date();
+  const renewalDateInput = document.getElementById('renewalDate');
+  if (renewalDateInput) renewalDateInput.valueAsDate = today;
+
+  document.getElementById('renewMonthlyDetails').style.display = 'none';
+  document.getElementById('renewCombativeDetails').style.display = 'none';
+  document.getElementById('renewalInfoBox').style.display = 'none';
+  selectedMember = null;
 }
 
 async function searchMember() {
-    const query = document.getElementById('searchMember').value.trim();
-    const resultsDiv = document.getElementById('searchResults');
+  const query = document.getElementById('searchMember')?.value.trim();
+  const resultsDiv = document.getElementById('searchResults');
 
-    if (!query || query.length < 2) {
-        showMessage('Please enter at least 2 characters', 'error');
-        return;
+  if (!query || query.length < 2) {
+    showMessage('Please enter at least 2 characters', 'error');
+    return;
+  }
+
+  try {
+    // Secure search with apiFetch (GET, returns {success: true, data: [...]})
+    const result = await apiFetch(`/api/members/search?query=${encodeURIComponent(query)}`);
+
+    if (!result.success) {
+      throw new Error(result.error || 'Search failed');
     }
 
-    try {
-        const authUser = JSON.parse(localStorage.getItem('authUser'));
-        const response = await fetch(`${SERVER_URL}/api/members/search?query=${encodeURIComponent(query)}`, {
-            headers: {
-                'Authorization': `Bearer ${authUser.token}`
-            }
-        });
-
-        const result = await response.json();
-
-        if (!response.ok || !result.success) {
-            throw new Error(result.error || 'Search failed');
-        }
-
-        if (result.data.length === 0) {
-            resultsDiv.innerHTML = '<p class="no-results">No members found</p>';
-            return;
-        }
-
-        resultsDiv.innerHTML = result.data.map(member => `
-                    <div class="search-result-item" onclick='selectMemberForRenewal(${JSON.stringify(member).replace(/'/g, "&apos;")})'>
-                        <div class="result-info">
-                            <strong>${member.memberId}</strong> - ${member.name}
-                            <br>
-                            <small>Status: <span class="status-${member.status}">${member.status}</span></small>
-                        </div>
-                    </div>
-                `).join('');
-
-    } catch (error) {
-        showMessage('Error searching members: ' + error.message, 'error');
+    if (result.data.length === 0) {
+      if (resultsDiv) resultsDiv.innerHTML = '<p class="no-results">No members found</p>';
+      return;
     }
+
+    if (resultsDiv) {
+      resultsDiv.innerHTML = result.data.map(member => `
+        <div class="search-result-item" onclick='selectMemberForRenewal(${JSON.stringify(member).replace(/'/g, "&apos;")})'>
+          <div class="result-info">
+            <strong>${member.memberId}</strong> - ${member.name}
+            <br>
+            <small>Status: <span class="status-${member.status}">${member.status}</span></small>
+          </div>
+        </div>
+      `).join('');
+    }
+  } catch (error) {
+    showMessage('Error searching members: ' + error.message, 'error');
+  }
 }
 
 function selectMemberForRenewal(member) {
-    selectedMember = member;
-    document.getElementById('searchResults').innerHTML = '';
-    document.getElementById('selectedMemberSection').style.display = 'block';
+  selectedMember = member;
+  document.getElementById('searchResults').innerHTML = '';
+  document.getElementById('selectedMemberSection').style.display = 'block';
 
-    const memberInfoCard = document.getElementById('memberInfoCard');
+  const memberInfoCard = document.getElementById('memberInfoCard');
 
-    let membershipHTML = '';
-    if (member.memberships && member.memberships.length > 0) {
-        membershipHTML = member.memberships.map(m => {
-            const endDate = new Date(m.endDate);
-            const isExpired = endDate < new Date();
-            return `
-                        <div class="membership-item ${isExpired ? 'expired' : m.status}">
-                            <span class="membership-type">${m.type.toUpperCase()}</span>
-                            <span class="membership-status">${m.status}</span>
-                            <span class="membership-date">Expires: ${formatDate(endDate)}</span>
-                        </div>
-                    `;
-        }).join('');
-    } else {
-        membershipHTML = '<p class="no-membership">No active memberships</p>';
-    }
+  let membershipHTML = '';
+  if (member.memberships && member.memberships.length > 0) {
+    membershipHTML = member.memberships.map(m => {
+      const endDate = new Date(m.endDate);
+      const isExpired = endDate < new Date();
+      return `
+        <div class="membership-item ${isExpired ? 'expired' : m.status}">
+          <span class="membership-type">${m.type.toUpperCase()}</span>
+          <span class="membership-status">${m.status}</span>
+          <span class="membership-date">Expires: ${formatDate(endDate)}</span>
+        </div>
+      `;
+    }).join('');
+  } else {
+    membershipHTML = '<p class="no-membership">No active memberships</p>';
+  }
 
+  if (memberInfoCard) {
     memberInfoCard.innerHTML = `
-                <h4><i class="fas fa-user-circle"></i> ${member.name}</h4>
-                <p><strong>Member ID:</strong> ${member.memberId}</p>
-                <p><strong>Status:</strong> <span class="status-badge status-${member.status}">${member.status}</span></p>
-                <div class="membership-list">
-                    <strong>Current Memberships:</strong>
-                    ${membershipHTML}
-                </div>
-            `;
+      <h4><i class="fas fa-user-circle"></i> ${member.name}</h4>
+      <p><strong>Member ID:</strong> ${member.memberId}</p>
+      <p><strong>Status:</strong> <span class="status-badge status-${member.status}">${member.status}</span></p>
+      <div class="membership-list">
+        <strong>Current Memberships:</strong>
+        ${membershipHTML}
+      </div>
+    `;
+  }
 }
 
 function updateRenewalInfo() {
-    if (!selectedMember) return;
+  if (!selectedMember) return;
 
-    const renewalDateInput = document.getElementById('renewalDate');
-    if (!renewalDateInput.value) return;
+  const renewalDateInput = document.getElementById('renewalDate');
+  if (!renewalDateInput?.value) return;
 
-    const renewalDate = new Date(renewalDateInput.value);
-    const monthlyChecked = document.getElementById('renewMonthly').checked;
-    const combativeChecked = document.getElementById('renewCombative').checked;
-    const infoBox = document.getElementById('renewalInfoBox');
+  const renewalDate = new Date(renewalDateInput.value);
+  const monthlyChecked = document.getElementById('renewMonthly').checked;
+  const combativeChecked = document.getElementById('renewCombative').checked;
+  const infoBox = document.getElementById('renewalInfoBox');
 
-    if (!monthlyChecked && !combativeChecked) {
-        infoBox.style.display = 'none';
-        return;
-    }
+  if (!monthlyChecked && !combativeChecked) {
+    if (infoBox) infoBox.style.display = 'none';
+    return;
+  }
 
-    let infoHTML = '<strong><i class="fas fa-info-circle"></i> Renewal Summary:</strong><br><br>';
+  let infoHTML = '<strong><i class="fas fa-info-circle"></i> Renewal Summary:</strong><br><br>';
 
-    if (monthlyChecked) {
-        const duration = parseInt(document.getElementById('renewMonthlyDuration').value) || 1;
-        const currentMembership = selectedMember.memberships?.find(m => m.type === 'monthly');
-        const endDate = calculateNewEndDate(renewalDate, currentMembership?.endDate, duration, 'monthly');
+  if (monthlyChecked) {
+    const duration = parseInt(document.getElementById('renewMonthlyDuration').value) || 1;
+    const currentMembership = selectedMember.memberships?.find(m => m.type === 'monthly');
+    const endDate = calculateNewEndDate(renewalDate, currentMembership?.endDate, duration, 'monthly');
 
-        infoHTML += `
-                    <div class="info-item">
-                        <strong>Monthly Membership:</strong><br>
-                        <span class="detail-line">Start Date: ${formatDate(renewalDate)}</span><br>
-                        <span class="detail-line">End Date: ${formatDate(endDate)}</span><br>
-                        <span class="detail-line">Duration: ${duration} month(s)</span>
-                    </div>
-                `;
-    }
+    infoHTML += `
+      <div class="info-item">
+        <strong>Monthly Membership:</strong><br>
+        <span class="detail-line">Start Date: ${formatDate(renewalDate)}</span><br>
+        <span class="detail-line">End Date: ${formatDate(endDate)}</span><br>
+        <span class="detail-line">Duration: ${duration} month(s)</span>
+      </div>
+    `;
+  }
 
-    if (combativeChecked) {
-        const sessions = parseInt(document.getElementById('renewCombativeSessions').value) || 12;
-        const currentMembership = selectedMember.memberships?.find(m => m.type === 'combative');
-        const endDate = calculateNewEndDate(renewalDate, currentMembership?.endDate, 1, 'combative');
+  if (combativeChecked) {
+    const sessions = parseInt(document.getElementById('renewCombativeSessions').value) || 12;
+    const currentMembership = selectedMember.memberships?.find(m => m.type === 'combative');
+    const endDate = calculateNewEndDate(renewalDate, currentMembership?.endDate, 1, 'combative');
 
-        infoHTML += `
-                    <div class="info-item">
-                        <strong>Combative Membership:</strong><br>
-                        <span class="detail-line">Start Date: ${formatDate(renewalDate)}</span><br>
-                        <span class="detail-line">End Date: ${formatDate(endDate)}</span><br>
-                        <span class="detail-line">Sessions: ${sessions}</span><br>
-                        <span class="detail-line">Duration: 1 month</span>
-                    </div>
-                `;
-    }
+    infoHTML += `
+      <div class="info-item">
+        <strong>Combative Membership:</strong><br>
+        <span class="detail-line">Start Date: ${formatDate(renewalDate)}</span><br>
+        <span class="detail-line">End Date: ${formatDate(endDate)}</span><br>
+        <span class="detail-line">Sessions: ${sessions}</span><br>
+        <span class="detail-line">Duration: 1 month</span>
+      </div>
+    `;
+  }
 
+  if (infoBox) {
     infoBox.innerHTML = infoHTML;
     infoBox.style.display = 'block';
+  }
 }
 
 function calculateNewEndDate(renewalDate, currentEndDateStr, durationMonths, membershipType) {
-    const renewal = new Date(renewalDate);
-    const currentEnd = currentEndDateStr ? new Date(currentEndDateStr) : null;
+  const renewal = new Date(renewalDate);
+  const currentEnd = currentEndDateStr ? new Date(currentEndDateStr) : null;
 
-    if (membershipType === 'combative' && currentEnd) {
-        const twoMonthsAgo = new Date(renewal);
-        twoMonthsAgo.setMonth(twoMonthsAgo.getMonth() - 2);
+  if (membershipType === 'combative' && currentEnd) {
+    const twoMonthsAgo = new Date(renewal);
+    twoMonthsAgo.setMonth(twoMonthsAgo.getMonth() - 2);
 
-        if (currentEnd < twoMonthsAgo) {
-            const newEnd = new Date(renewal);
-            newEnd.setMonth(newEnd.getMonth() + durationMonths);
-            return newEnd;
-        }
+    if (currentEnd < twoMonthsAgo) {
+      const newEnd = new Date(renewal);
+      newEnd.setMonth(newEnd.getMonth() + durationMonths);
+      return newEnd;
     }
+  }
 
-    if (currentEnd && renewal < currentEnd) {
-        const newEnd = new Date(currentEnd);
-        newEnd.setMonth(newEnd.getMonth() + durationMonths);
-        return newEnd;
-    } else {
-        const newEnd = new Date(renewal);
-        newEnd.setMonth(newEnd.getMonth() + durationMonths);
-        return newEnd;
-    }
+  if (currentEnd && renewal < currentEnd) {
+    const newEnd = new Date(currentEnd);
+    newEnd.setMonth(newEnd.getMonth() + durationMonths);
+    return newEnd;
+  } else {
+    const newEnd = new Date(renewal);
+    newEnd.setMonth(newEnd.getMonth() + durationMonths);
+    return newEnd;
+  }
 }
 
 async function handleRenewal(e) {
-    e.preventDefault();
+  e.preventDefault();
 
-    if (!selectedMember) {
-        showMessage('Please select a member first', 'error');
-        return;
-    }
+  if (!selectedMember) {
+    showMessage('Please select a member first', 'error');
+    return;
+  }
 
-    const monthlyChecked = document.getElementById('renewMonthly').checked;
-    const combativeChecked = document.getElementById('renewCombative').checked;
+  const monthlyChecked = document.getElementById('renewMonthly').checked;
+  const combativeChecked = document.getElementById('renewCombative').checked;
 
-    if (!monthlyChecked && !combativeChecked) {
-        showMessage('Please select at least one membership type to renew', 'error');
-        return;
-    }
+  if (!monthlyChecked && !combativeChecked) {
+    showMessage('Please select at least one membership type to renew', 'error');
+    return;
+  }
 
-    const submitBtn = e.target.querySelector('button[type="submit"]');
-    const originalText = submitBtn.innerHTML;
+  const submitBtn = e.target.querySelector('button[type="submit"]');
+  const originalText = submitBtn?.innerHTML;
+  if (submitBtn) {
     submitBtn.disabled = true;
     submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+  }
 
-    try {
-        const renewalDate = new Date(document.getElementById('renewalDate').value);
-        const updatedMemberships = [];
+  try {
+    const renewalDate = new Date(document.getElementById('renewalDate').value);
+    const updatedMemberships = [];
 
-        if (selectedMember.memberships) {
-            selectedMember.memberships.forEach(m => {
-                if (m.type === 'monthly' && !monthlyChecked) {
-                    updatedMemberships.push(m);
-                } else if (m.type === 'combative' && !combativeChecked) {
-                    updatedMemberships.push(m);
-                }
-            });
+    if (selectedMember.memberships) {
+      selectedMember.memberships.forEach(m => {
+        if (m.type === 'monthly' && !monthlyChecked) {
+          updatedMemberships.push(m);
+        } else if (m.type === 'combative' && !combativeChecked) {
+          updatedMemberships.push(m);
         }
-
-        if (monthlyChecked) {
-            const duration = parseInt(document.getElementById('renewMonthlyDuration').value) || 1;
-            const currentMembership = selectedMember.memberships?.find(m => m.type === 'monthly');
-            const endDate = calculateNewEndDate(renewalDate, currentMembership?.endDate, duration, 'monthly');
-
-            updatedMemberships.push({
-                type: 'monthly',
-                duration: duration,
-                startDate: renewalDate.toISOString(),
-                endDate: endDate.toISOString(),
-                status: 'active'
-            });
-        }
-
-        if (combativeChecked) {
-            const sessions = parseInt(document.getElementById('renewCombativeSessions').value) || 12;
-            const currentMembership = selectedMember.memberships?.find(m => m.type === 'combative');
-            const endDate = calculateNewEndDate(renewalDate, currentMembership?.endDate, 1, 'combative');
-
-            updatedMemberships.push({
-                type: 'combative',
-                duration: sessions,
-                remainingSessions: sessions,
-                startDate: renewalDate.toISOString(),
-                endDate: endDate.toISOString(),
-                status: 'active'
-            });
-        }
-
-        const authUser = JSON.parse(localStorage.getItem('authUser'));
-        const response = await fetch(`${SERVER_URL}/api/members/${selectedMember._id}`, {
-            method: 'PUT',
-            headers: {
-                'Authorization': `Bearer ${authUser.token}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                memberships: updatedMemberships,
-                status: 'active'
-            })
-        });
-
-        const result = await response.json();
-
-        if (response.ok && result.success) {
-            showMessage('Membership renewed successfully!', 'success');
-            setTimeout(() => {
-                document.getElementById('renewalModal').style.display = 'none';
-                resetRenewalModal();
-            }, 2000);
-        } else {
-            throw new Error(result.error || 'Failed to renew membership');
-        }
-
-    } catch (error) {
-        showMessage('Error: ' + error.message, 'error');
-    } finally {
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = originalText;
+      });
     }
+
+    if (monthlyChecked) {
+      const duration = parseInt(document.getElementById('renewMonthlyDuration').value) || 1;
+      const currentMembership = selectedMember.memberships?.find(m => m.type === 'monthly');
+      const endDate = calculateNewEndDate(renewalDate, currentMembership?.endDate, duration, 'monthly');
+
+      updatedMemberships.push({
+        type: 'monthly',
+        duration: duration,
+        startDate: renewalDate.toISOString(),
+        endDate: endDate.toISOString(),
+        status: 'active'
+      });
+    }
+
+    if (combativeChecked) {
+      const sessions = parseInt(document.getElementById('renewCombativeSessions').value) || 12;
+      const currentMembership = selectedMember.memberships?.find(m => m.type === 'combative');
+      const endDate = calculateNewEndDate(renewalDate, currentMembership?.endDate, 1, 'combative');
+
+      updatedMemberships.push({
+        type: 'combative',
+        duration: sessions,
+        remainingSessions: sessions,
+        startDate: renewalDate.toISOString(),
+        endDate: endDate.toISOString(),
+        status: 'active'
+      });
+    }
+
+    // Secure PUT with apiFetch (JSON body)
+    const result = await apiFetch(`/api/members/${selectedMember._id}`, {
+      method: 'PUT',
+      body: JSON.stringify({
+        memberships: updatedMemberships,
+        status: 'active'
+      })
+    });
+
+    if (result.success) {
+      showMessage('Membership renewed successfully!', 'success');
+      setTimeout(() => {
+        document.getElementById('renewalModal').style.display = 'none';
+        resetRenewalModal();
+      }, 2000);
+    } else {
+      throw new Error(result.error || 'Failed to renew membership');
+    }
+  } catch (error) {
+    showMessage('Error: ' + error.message, 'error');
+  } finally {
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = originalText;
+    }
+  }
 }
 
 async function handleFormSubmit(e) {
-    e.preventDefault();
-    const btn = e.target.querySelector('button[type="submit"]');
-    const originalText = btn.textContent;
+  e.preventDefault();
+  const btn = e.target.querySelector('button[type="submit"]');
+  const originalText = btn?.textContent;
 
+  if (btn) {
     btn.disabled = true;
     btn.textContent = 'Adding...';
+  }
 
-    const memberships = [];
-    if (document.getElementById('monthlyCheckbox').checked) {
-        memberships.push({
-            type: 'monthly',
-            duration: parseInt(document.getElementById('monthlyDuration').value)
-        });
+  const memberships = [];
+  if (document.getElementById('monthlyCheckbox').checked) {
+    memberships.push({
+      type: 'monthly',
+      duration: parseInt(document.getElementById('monthlyDuration').value)
+    });
+  }
+  if (document.getElementById('combativeCheckbox').checked) {
+    memberships.push({
+      type: 'combative',
+      duration: parseInt(document.getElementById('combativeSessions').value)
+    });
+  }
+
+  if (memberships.length === 0) {
+    showMessage("Please select at least one membership type", "error");
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = originalText;
     }
-    if (document.getElementById('combativeCheckbox').checked) {
-        memberships.push({
-            type: 'combative',
-            duration: parseInt(document.getElementById('combativeSessions').value)
-        });
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append('name', document.getElementById('memberName').value.trim());
+  formData.append('birthdate', document.getElementById('birthdate').value);
+  formData.append('joinDate', document.getElementById('joinDate').value);
+  formData.append('phone', document.getElementById('phone').value.trim() || '');
+  formData.append('email', document.getElementById('email').value.trim() || '');
+  formData.append('faceEnrolled', faceSuccessfullyCaptured ? 'yes' : 'no');
+  formData.append('memberships', JSON.stringify(memberships));
+
+  if (faceImageBlob) {
+    formData.append('faceImage', faceImageBlob, 'face.jpg');
+  }
+
+  try {
+    // Secure POST with apiFetch (FormData for image/blob)
+    const result = await apiFetch('/api/members', {
+      method: 'POST',
+      body: formData // Multipart: Backend multer parses fields + file; generates PKL via app.py
+    });
+
+    if (result.success) {
+      showMessage('Member added successfully!', 'success');
+      setTimeout(() => {
+        document.getElementById('memberForm').reset();
+
+        // Reset join date to today
+        const today = new Date();
+        document.getElementById('joinDate').valueAsDate = today;
+        document.getElementById('joinDateDisplay').value = formatDate(today);
+        document.getElementById('birthdateDisplay').value = '';
+
+        document.getElementById('monthlyDetails').style.display = 'none';
+        document.getElementById('combativeDetails').style.display = 'none';
+        document.getElementById('faceStatus').textContent = '';
+        faceSuccessfullyCaptured = false;
+        faceImageBlob = null;
+        document.getElementById('message').className = 'message hidden';
+      }, 2000);
+    } else {
+      throw new Error(result.error || 'Failed to add member');
     }
-
-    if (memberships.length === 0) {
-        showMessage("Please select at least one membership type", "error");
-        btn.disabled = false;
-        btn.textContent = originalText;
-        return;
+  } catch (error) {
+    console.error('Add member error:', error);
+    showMessage('Network error: ' + error.message, 'error');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = originalText;
     }
-
-    const formData = new FormData();
-    formData.append('name', document.getElementById('memberName').value.trim());
-    formData.append('birthdate', document.getElementById('birthdate').value);
-    formData.append('joinDate', document.getElementById('joinDate').value);
-    formData.append('phone', document.getElementById('phone').value.trim() || '');
-    formData.append('email', document.getElementById('email').value.trim() || '');
-    formData.append('faceEnrolled', faceSuccessfullyCaptured ? 'yes' : 'no');
-    formData.append('memberships', JSON.stringify(memberships));
-
-    if (faceImageBlob) {
-        formData.append('faceImage', faceImageBlob, 'face.jpg');
-    }
-
-    try {
-        const authUser = JSON.parse(localStorage.getItem('authUser'));
-        const response = await fetch(`${SERVER_URL}/api/members`, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${authUser.token}`
-            },
-            body: formData
-        });
-
-        const result = await response.json();
-
-        if (response.ok) {
-            showMessage('Member added successfully!', 'success');
-            setTimeout(() => {
-                document.getElementById('memberForm').reset();
-
-                // Reset join date to today
-                const today = new Date();
-                document.getElementById('joinDate').valueAsDate = today;
-                document.getElementById('joinDateDisplay').value = formatDate(today);
-                document.getElementById('birthdateDisplay').value = '';
-
-                document.getElementById('monthlyDetails').style.display = 'none';
-                document.getElementById('combativeDetails').style.display = 'none';
-                document.getElementById('faceStatus').textContent = '';
-                faceSuccessfullyCaptured = false;
-                document.getElementById('message').className = 'message hidden';
-            }, 2000);
-        } else {
-            showMessage(result.error || 'Failed to add member', 'error');
-        }
-    } catch (error) {
-        showMessage('Network error: ' + error.message, 'error');
-    } finally {
-        btn.disabled = false;
-        btn.textContent = originalText;
-    }
+  }
 }
 
 function setupFaceCapture() {
-    const openBtn = document.getElementById('openFacePaneBtn');
-    const closeBtn = document.getElementById('closeFacePaneBtn');
-    const captureBtn = document.getElementById('captureFaceBtn');
-    const confirmBtn = document.getElementById('confirmFaceBtn');
-    const facePane = document.getElementById('facePane');
-    const video = document.getElementById('camera');
-    const canvas = document.getElementById('snapshot');
-    const faceStatus = document.getElementById('faceStatus');
-    const resultMsg = document.getElementById('faceResultMsg');
+  const openBtn = document.getElementById('openFacePaneBtn');
+  const closeBtn = document.getElementById('closeFacePaneBtn');
+  const captureBtn = document.getElementById('captureFaceBtn');
+  const confirmBtn = document.getElementById('confirmFaceBtn');
+  const facePane = document.getElementById('facePane');
+  const video = document.getElementById('camera');
+  const canvas = document.getElementById('snapshot');
+  const faceStatus = document.getElementById('faceStatus');
+  const resultMsg = document.getElementById('faceResultMsg');
 
-    let stream = null;
+  let stream = null;
 
+  if (openBtn) {
     openBtn.addEventListener('click', async () => {
-        try {
-            stream = await navigator.mediaDevices.getUserMedia({ video: true });
-            video.srcObject = stream;
-            video.style.display = 'block';
-            canvas.style.display = 'none';
-            facePane.style.display = 'flex';
-            confirmBtn.disabled = true;
-            resultMsg.textContent = '';
-        } catch (err) {
-            alert('Camera access denied or unavailable');
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        if (video) {
+          video.srcObject = stream;
+          video.style.display = 'block';
         }
+        if (canvas) canvas.style.display = 'none';
+        if (facePane) facePane.style.display = 'flex';
+        if (confirmBtn) confirmBtn.disabled = true;
+        if (resultMsg) resultMsg.textContent = '';
+      } catch (err) {
+        alert('Camera access denied or unavailable');
+      }
     });
+  }
 
+  if (closeBtn) {
     closeBtn.addEventListener('click', () => {
-        if (stream) {
-            stream.getTracks().forEach(track => track.stop());
-        }
-        facePane.style.display = 'none';
-        video.style.display = 'block';
-        canvas.style.display = 'none';
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+      }
+      if (facePane) facePane.style.display = 'none';
+      if (video) video.style.display = 'block';
+      if (canvas) canvas.style.display = 'none';
     });
+  }
 
+  if (captureBtn) {
     captureBtn.addEventListener('click', () => {
+      if (video && canvas) {
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
         const ctx = canvas.getContext('2d');
         ctx.drawImage(video, 0, 0);
 
         canvas.toBlob(blob => {
-            faceImageBlob = blob;
+          faceImageBlob = blob;
         }, 'image/jpeg');
+      }
 
-        video.style.display = 'none';
-        canvas.style.display = 'block';
-        confirmBtn.disabled = false;
-        resultMsg.textContent = 'Photo captured! Review and confirm or retake.';
+      if (video) video.style.display = 'none';
+      if (canvas) canvas.style.display = 'block';
+      if (confirmBtn) confirmBtn.disabled = false;
+      if (resultMsg) resultMsg.textContent = 'Photo captured! Review and confirm or retake.';
     });
+  }
 
+  if (confirmBtn) {
     confirmBtn.addEventListener('click', () => {
-        faceSuccessfullyCaptured = true;
+      faceSuccessfullyCaptured = true;
+      if (faceStatus) {
         faceStatus.textContent = '✓ Face Captured';
         faceStatus.className = 'fp-status-message success';
+      }
 
-        if (stream) {
-            stream.getTracks().forEach(track => track.stop());
-        }
-        facePane.style.display = 'none';
-        resultMsg.textContent = '';
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+      }
+      if (facePane) facePane.style.display = 'none';
+      if (resultMsg) resultMsg.textContent = '';
     });
+  }
 }
 
 function showMessage(text, type) {
-    const messageDiv = document.getElementById('message');
+  const messageDiv = document.getElementById('message');
+  if (messageDiv) {
     messageDiv.textContent = text;
     messageDiv.className = `message ${type}`;
     setTimeout(() => {
-        messageDiv.className = 'message hidden';
+      messageDiv.className = 'message hidden';
     }, 5000);
+  }
 }

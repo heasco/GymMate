@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Attendance - GOALS Gym</title>
+  <!-- Base admin styles (same include as other member pages) -->
+  <link rel="stylesheet" href="../admin/admin-css/admin-mainpage.css" />
+  <!-- Page-specific member styles -->
+  <link rel="stylesheet" href="./member-css/member-attendance.css" />
+</head>
+<body>
+  <div class="admin-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <h2>GOALS Gym Member</h2>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="member-dashboard.html"><span>Dashboard</span></a>
+        <a href="member-attendance.html" class="active"><span>Attendance</span></a>
+        <a href="member-classes.html"><span>Schedule</span></a>
+        <a href="manage-member-enrollment.html"><span>Enroll</span></a>
+        <a href="member-profile.html"><span>Profile</span></a>
+        <a href="send-class-feedback.html"><span>Feedback</span></a>
+      </nav>
+    </aside>
+
+    <!-- Header -->
+    <header class="header">
+      <button class="menu-toggle" id="menuToggle"></button>
+      <h1>Member Attendance</h1>
+      <button class="logout-btn" id="logoutBtn">Logout</button>
+    </header>
+
+    <!-- Main -->
+    <main class="main-content">
+      <div class="container">
+        <!-- Greeting -->
+        <div class="member-greeting">
+          <h2>Welcome, <span id="memberName">Member</span>!</h2>
+          <p class="subtitle">View your past check-ins and class attendance by day.</p>
+          <div class="member-badge" id="memberIdBadge">Loading...</div>
+        </div>
+
+        <!-- Summary + Calendar -->
+        <div class="dashboard-grid">
+          <!-- Summary -->
+          <div class="dashboard-card">
+            <div class="card-header">
+              <h3>Attendance Summary</h3>
+            </div>
+            <div class="card-body">
+              <div class="profile-info">
+                <div class="info-item">
+                  <span class="info-label">Month</span>
+                  <span class="info-value" id="summaryMonth">—</span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">Total Days Attended</span>
+                  <span class="info-value" id="totalAttendance">0</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Calendar -->
+          <div class="dashboard-card full-width">
+            <div class="card-header">
+              <h3>Monthly View</h3>
+            </div>
+            <div class="card-body">
+              <div class="calendar-controls">
+                <div class="view-tabs">
+                  <button class="view-tab active" disabled>Monthly View</button>
+                </div>
+                <div class="month-nav">
+                  <button id="prevMonthBtn" class="nav-btn" aria-label="Previous Month">‹</button>
+                  <div class="month-title" id="monthTitle">Month YYYY</div>
+                  <button id="nextMonthBtn" class="nav-btn" aria-label="Next Month">›</button>
+                </div>
+              </div>
+
+              <div id="calendarContainer" class="calendar-container">
+                <div class="calendar-grid" id="calendarGrid">
+                  <!-- Header -->
+                  <div class="calendar-header">
+                    <div class="calendar-header-day">SUN</div>
+                    <div class="calendar-header-day">MON</div>
+                    <div class="calendar-header-day">TUE</div>
+                    <div class="calendar-header-day">WED</div>
+                    <div class="calendar-header-day">THU</div>
+                    <div class="calendar-header-day">FRI</div>
+                    <div class="calendar-header-day">SAT</div>
+                  </div>
+                  <!-- Days injected by JS -->
+                </div>
+                <div id="calendarLoading" class="loading-state">Loading calendar...</div>
+                <div id="calendarError" class="error-state" style="display:none;"></div>
+              </div>
+
+              <div class="legend">
+                <span class="legend-item"><span class="legend-dot attended"></span> Attended</span>
+                <span class="legend-item"><span class="legend-dot today"></span> Today</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Error display -->
+        <div id="error" class="error-state" style="display:none;"></div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Attendance Modal -->
+  <div id="attendanceModal" class="modal-overlay" style="display:none;">
+    <div class="modal-container">
+      <div class="modal-header">
+        <h3 id="attendanceModalTitle">Attendance</h3>
+        <button class="close-btn" id="closeAttendanceModal">×</button>
+      </div>
+      <div class="modal-body">
+        <div id="attendanceModalBody" class="attendance-list">
+          <!-- Filled by JS -->
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="action-btn secondary" id="modalCloseBtn">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Page script -->
+  <script src="./member-js/member-attendance.js"></script>
+</body>
+</html>

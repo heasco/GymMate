@@ -7,17 +7,14 @@ const Member = require('../models/Member');
 
 const router = express.Router();
 
-// Helper: resolve member by either custom memberId (e.g., MEM-0008) or Mongo _id
 async function findMemberByFlexibleId(id) {
   if (!id) return null;
 
-  // If it's a valid ObjectId, try that first
   if (mongoose.Types.ObjectId.isValid(id)) {
     const byObjectId = await Member.findOne({ _id: new mongoose.Types.ObjectId(id) });
     if (byObjectId) return byObjectId;
   }
 
-  // Fallback to memberId, and then username (optional)
   const byMemberId = await Member.findOne({ memberId: id });
   if (byMemberId) return byMemberId;
 
@@ -31,7 +28,7 @@ async function findMemberByFlexibleId(id) {
 router.post('/', asyncHandler(async (req, res) => {
   const { class_id, member_id, session_date, session_time, member_name } = req.body;
 
-  // Validate required fields
+
   if (!class_id || !member_id || !session_date || !session_time) {
     return res.status(400).json({
       success: false,

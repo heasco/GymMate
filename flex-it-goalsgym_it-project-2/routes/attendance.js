@@ -4,6 +4,11 @@ const Attendance = require('../models/Attendance');
 const Member = require('../models/Member');
 const Enrollment = require('../models/Enrollment');
 
+// Add these for the new route (matches your other files like enrollments.js)
+const asyncHandler = require('../middleware/asyncHandler');
+const { protect } = require('../middleware/auth');
+const mongoose = require('mongoose');  // For ObjectId.isValid (standard in Mongoose projects)
+
 router.post('/log', async (req, res) => {
   const { faceId, attendedType, classId } = req.body;
   try {
@@ -198,7 +203,6 @@ router.get('/today', async (req, res) => {
     }
 });
 
-
 router.get('/logs/today', async (req, res) => {
   try {
     const now = new Date();
@@ -220,5 +224,43 @@ router.get('/logs/today', async (req, res) => {
   }
 });
 
+// NEW: GET /member/:id?start&end - Fetch member-specific logs by date range (for calendar)
+router.get('/member/:id', protect, asyncHandler(async (req, res) => {
+  const { start, end } = req.query;
+  const memberId = req.params.id;
+
+  // Optional: Self-access check (members view only own; admins/trainers can view all)
+  const userRole = req.user.role;
+  if (userRole === 'member' && req.user.id !== memberId) {
+    return res.status(403).json({ success: false, error: 'Access denied: Cannot view other member\'s attendance' });
+  }
+
+  if (!mongoose.Types.ObjectId.isValid(memberId)) {
+    return res.status(400).json({ success: false, error: 'Invalid member ID' });
+  }
+
+  const filter = { memberId: new mongoose.Types.ObjectId(memberId) };
+
+  if (start && end) {
+    const startDate = new Date(start);
+    const endDate = new Date(end);
+    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime()) || startDate > endDate) {
+      return res.status(400).json({ success: false, error: 'Invalid date range' });
+    }
+    filter.timestamp = { $gte: startDate, $lte: endDate };
+  }
+
+  // Fetch all logs (login/logout pairs) sorted by timestamp for frontend aggregation
+  const logs = await Attendance.find(filter)
+    .sort({ timestamp: 1 })  // Ascending for first/last per day
+    .select('logType timestamp attendedType classId')  // Relevant fields only
+    .lean();
+
+  res.json({
+    success: true,
+    data: logs,
+    count: logs.length
+  });
+}));
 
 module.exports = router;

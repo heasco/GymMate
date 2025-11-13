@@ -1,3 +1,78 @@
+// Utility for authenticated API calls (adds security header for /api/ routes) with timeout - Handles full URLs
+async function apiFetch(endpoint, options = {}, timeoutMs = 10000) {
+  console.log('apiFetch called for:', endpoint);  // DEBUG (remove in production if needed)
+  const token = sessionStorage.getItem('token');
+  if (!token) {
+    console.log('No token - redirecting to login');  // DEBUG
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('authUser');
+    sessionStorage.removeItem('role');
+    window.location.href = '../trainer-login.html';
+    return;
+  }
+
+  // Use endpoint directly if it's already a full URL; otherwise prepend base
+  let url = endpoint;
+  if (!endpoint.startsWith('http://') && !endpoint.startsWith('https://')) {
+    url = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+      ? `http://localhost:8080${endpoint}`
+      : endpoint;
+  }
+
+  const headers = { 
+    ...options.headers, 
+    'Authorization': `Bearer ${token}`,
+    'Content-Type': 'application/json' // Default for JSON calls
+  };
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const response = await fetch(url, { ...options, headers, signal: controller.signal });
+    clearTimeout(timeoutId);
+
+    if (response.status === 401) {
+      console.log('401 Unauthorized - clearing auth and redirecting');  // DEBUG
+      sessionStorage.removeItem('token');
+      sessionStorage.removeItem('authUser');
+      sessionStorage.removeItem('role');
+      window.location.href = '../trainer-login.html';
+      return;
+    }
+    if (!response.ok) throw new Error(`API error: ${response.status}`);
+    return await response.json();
+  } catch (error) {
+    clearTimeout(timeoutId);
+    if (error.name === 'AbortError') {
+      throw new Error(`API timeout after ${timeoutMs}ms`);
+    }
+    throw error;
+  }
+}
+
+// ✅ INITIAL AUTH CHECK - Token + Role ('trainer') + Timestamp (runs immediately)
+(function checkAuth() {
+  console.log('Auth check starting for trainer-feedback');  // DEBUG
+  const authUser = JSON.parse(sessionStorage.getItem('authUser') || 'null'); 
+  const token = sessionStorage.getItem('token');
+  const role = sessionStorage.getItem('role');
+  
+  console.log('Auth details:', { authUser: authUser ? (authUser.username || authUser.email || authUser.name) : null, token: !!token, role });  // DEBUG: Hide sensitive data
+  
+  // Check timestamp (1 hour) + token + trainer role
+  if (!authUser || (Date.now() - (authUser.timestamp || 0)) > 3600000 || !token || role !== 'trainer') { 
+    console.log('Auth failed - clearing and redirecting');  // DEBUG
+    sessionStorage.removeItem('authUser'); 
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('role');
+    window.location.href = '../trainer-login.html'; 
+    return;
+  } 
+  
+  console.log('Trainer authenticated:', authUser.username || authUser.email || authUser.name, 'Role:', role);
+})();
+
 const API_URL = 'http://localhost:8080';
 let allClassesData = [];
 let originalClassesData = [];
@@ -8,8 +83,8 @@ let trainerId = null;
 document.addEventListener('DOMContentLoaded', async function () {
     // 🔍 DEBUG: Log the raw authUser to diagnose structure
     console.log('=== TRAINER FEEDBACK AUTH DEBUG ===');
-    const authUser = JSON.parse(localStorage.getItem('authUser'));
-    console.log('Raw authUser from localStorage:', authUser);
+    const authUser = JSON.parse(sessionStorage.getItem('authUser'));
+    console.log('Raw authUser from sessionStorage:', authUser);
     if (authUser) {
         console.log('authUser keys:', Object.keys(authUser));
         console.log('authUser.role:', authUser.role);
@@ -18,34 +93,48 @@ document.addEventListener('DOMContentLoaded', async function () {
         if (authUser.user) console.log('authUser.user keys:', Object.keys(authUser.user));
     }
 
+
     // FIXED AUTH CHECK: Support both wrapped (authUser.user) and flattened structures
     const user = authUser?.user || authUser; // Fallback to flattened structure
     const role = authUser?.role;
     const timestamp = authUser?.timestamp || 0;
 
-    if (!authUser || !user || role !== "trainer" || (Date.now() - timestamp > 3600000)) {
+
+    // ENHANCED: Token + role + timestamp check (in addition to existing check)
+    const token = sessionStorage.getItem('token');
+    if (!authUser || !user || role !== "trainer" || (Date.now() - timestamp > 3600000) || !token) {
         console.log('Auth check failed - logging out');
-        localStorage.removeItem('authUser');
+        sessionStorage.removeItem('authUser');
+        sessionStorage.removeItem('token');
+        sessionStorage.removeItem('role');
         window.location.href = '../trainer-login.html';
         return;
     }
 
+
     console.log('Auth check passed! Using user:', user);
     console.log('Extracted trainer ID:', user.trainer_id || user.trainerid || user.trainerId || user.id || user._id);
+
 
     const menuToggle = document.getElementById('menuToggle');
     const sidebar = document.querySelector('.sidebar');
     const logoutBtn = document.getElementById('logoutBtn');
 
+
     if (menuToggle) menuToggle.addEventListener('click', () => sidebar.classList.toggle('collapsed'));
     if (logoutBtn) logoutBtn.addEventListener('click', () => {
-        localStorage.removeItem('authUser');
+        // ENHANCED: Clear token + role
+        sessionStorage.removeItem('authUser');
+        sessionStorage.removeItem('token');
+        sessionStorage.removeItem('role');
         window.location.href = '../trainer-login.html';
     });
+
 
     // FIXED: Display trainer name from extracted user
     const trainerNameEl = document.getElementById('trainerName');
     if (trainerNameEl) trainerNameEl.textContent = user.name || 'Trainer';
+
 
     // FIXED: Trainer ID extraction with more fallbacks
     trainerId = user.trainer_id || user.trainerid || user.trainerId || user.id || user._id;
@@ -55,24 +144,51 @@ document.addEventListener('DOMContentLoaded', async function () {
         return;
     }
 
+
     console.log('Trainer ID:', trainerId);
+
+
+    // ENHANCED: Token + role check before loading feedback
+    if (!token || role !== 'trainer' || !authUser || (Date.now() - (authUser.timestamp || 0)) > 3600000) {
+        console.log('Invalid session before API - logging out');  // DEBUG
+        sessionStorage.removeItem('token');
+        sessionStorage.removeItem('authUser');
+        sessionStorage.removeItem('role');
+        window.location.href = '../trainer-login.html';
+        return;
+    }
+
 
     // Load all feedback
     await loadAllFeedback();
 });
 
-// ✅ LOAD ALL FEEDBACK
+
+// ✅ LOAD ALL FEEDBACK (TOKENIZED)
 async function loadAllFeedback() {
     const loading = document.getElementById('loading');
     const container = document.getElementById('classesContainer');
 
-    try {
-        // ✅ FETCH ALL TRAINERS FIRST
-        const trainersResp = await fetch(`${API_URL}/api/trainers`);
-        if (!trainersResp.ok) throw new Error('Failed to fetch trainers');
 
-        const trainersData = await trainersResp.json();
+    try {
+        // ENHANCED: Token + role check before API calls
+        const token = sessionStorage.getItem('token');
+        const authUser = JSON.parse(sessionStorage.getItem('authUser') || 'null');
+        const role = sessionStorage.getItem('role');
+        if (!token || role !== 'trainer' || !authUser || (Date.now() - (authUser.timestamp || 0)) > 3600000) {
+            console.log('Invalid session in loadAllFeedback - logging out');  // DEBUG
+            sessionStorage.removeItem('token');
+            sessionStorage.removeItem('authUser');
+            sessionStorage.removeItem('role');
+            window.location.href = '../trainer-login.html';
+            return;
+        }
+
+
+        // ✅ FETCH ALL TRAINERS FIRST (TOKENIZED)
+        const trainersData = await apiFetch(`${API_URL}/api/trainers`);
         const allTrainers = trainersData.data || [];
+
 
         // Create a map of trainer_id -> trainer name
         const trainerMap = {};
@@ -81,21 +197,19 @@ async function loadAllFeedback() {
             trainerMap[tid] = trainer.name;
         });
 
-        // ✅ FETCH ALL CLASSES
-        const classesResp = await fetch(`${API_URL}/api/classes`);
-        if (!classesResp.ok) throw new Error('Failed to fetch classes');
 
-        const classesData = await classesResp.json();
+        // ✅ FETCH ALL CLASSES (TOKENIZED)
+        const classesData = await apiFetch(`${API_URL}/api/classes`);
         const allClasses = classesData.data || [];
 
-        // ✅ FETCH ALL FEEDBACKS
-        const feedbackResp = await fetch(`${API_URL}/api/feedbacks/admin/all`);
-        if (!feedbackResp.ok) throw new Error('Failed to fetch feedbacks');
 
-        const feedbackData = await feedbackResp.json();
+        // ✅ FETCH ALL FEEDBACKS (TOKENIZED)
+        const feedbackData = await apiFetch(`${API_URL}/api/feedbacks/admin/all`);
         const allFeedbacks = feedbackData.feedbacks || [];
 
+
         console.log('Loaded trainers:', allTrainers.length, 'classes:', allClasses.length, 'feedbacks:', allFeedbacks.length);
+
 
         // Organize feedbacks by class_id
         const feedbacksByClass = {};
@@ -107,6 +221,7 @@ async function loadAllFeedback() {
             feedbacksByClass[classId].push(fb);
         });
 
+
         // ✅ COMBINE CLASS DATA WITH FEEDBACKS AND TRAINER NAMES
         const classesWithFeedback = allClasses.map(cls => {
             const classId = cls.class_id || cls.classid || cls._id;
@@ -114,8 +229,10 @@ async function loadAllFeedback() {
             const classTrainerId = cls.trainer_id || cls.trainerid;
             const isMyClass = classTrainerId === trainerId;
 
+
             // ✅ GET TRAINER NAME FROM MAP
             const trainerName = trainerMap[classTrainerId] || 'Unknown Trainer';
+
 
             return {
                 ...cls,
@@ -127,18 +244,23 @@ async function loadAllFeedback() {
             };
         }).filter(cls => cls.feedbacks.length > 0);
 
+
         // Store both original and working copy
         originalClassesData = JSON.parse(JSON.stringify(classesWithFeedback));
         allClassesData = classesWithFeedback;
 
+
         loading.style.display = 'none';
+
 
         if (allClassesData.length === 0) {
             container.innerHTML = '<div class="no-classes">No feedback available yet.</div>';
             return;
         }
 
+
         renderClasses();
+
 
     } catch (err) {
         console.error('Error loading feedback:', err);
@@ -147,9 +269,11 @@ async function loadAllFeedback() {
     }
 }
 
+
 // ✅ FILTER CLASSES (FIXED: Accept button param instead of event)
 function filterClasses(type, button) {
     currentFilter = type;
+
 
     // Update button states
     document.querySelectorAll('.filter-btn').forEach(btn => {
@@ -157,8 +281,10 @@ function filterClasses(type, button) {
     });
     button.classList.add('active');
 
+
     renderClasses();
 }
+
 
 // ✅ APPLY RATING FILTER
 function applyRatingFilter() {
@@ -166,17 +292,21 @@ function applyRatingFilter() {
     renderClasses();
 }
 
+
 // ✅ RENDER CLASSES
 function renderClasses() {
     const container = document.getElementById('classesContainer');
 
+
     // Start with original data (deep copy to avoid mutation)
     let filtered = JSON.parse(JSON.stringify(originalClassesData));
+
 
     // Filter by class ownership first
     if (currentFilter === 'my') {
         filtered = filtered.filter(cls => cls.isMyClass);
     }
+
 
     // Filter feedbacks by rating for each class
     if (currentMinRating > 0) {
@@ -190,12 +320,15 @@ function renderClasses() {
         }).filter(cls => cls.feedbacks.length > 0);
     }
 
+
     if (filtered.length === 0) {
         container.innerHTML = '<div class="no-classes">No classes match the selected filters.</div>';
         return;
     }
 
+
     let html = '';
+
 
     filtered.forEach(cls => {
         const className = cls.class_name || cls.classname || 'Unnamed Class';
@@ -204,6 +337,7 @@ function renderClasses() {
         const avgRating = calculateAverageRating(cls.feedbacks);
         const myClassBadge = cls.isMyClass ? '<span class="my-class-badge">My Class</span>' : '';
         const myClassCls = cls.isMyClass ? 'my-class' : '';
+
 
         html += `
                     <div class="class-card ${myClassCls}">
@@ -228,8 +362,10 @@ function renderClasses() {
                 `;
     });
 
+
     container.innerHTML = html;
 }
+
 
 // ✅ RENDER FEEDBACKS
 function renderFeedbacks(feedbacks) {
@@ -237,11 +373,13 @@ function renderFeedbacks(feedbacks) {
         return '<div class="no-feedbacks">No feedback for this class yet.</div>';
     }
 
+
     return feedbacks.map(fb => {
         const rating = fb.rating || 0;
         const comment = fb.comment || 'No comment provided';
         const date = fb.date_submitted ? new Date(fb.date_submitted).toLocaleDateString() : 'Unknown date';
         const stars = generateStars(rating);
+
 
         return `
                     <div class="feedback-item">
@@ -261,6 +399,7 @@ function renderFeedbacks(feedbacks) {
     }).join('');
 }
 
+
 // ✅ GENERATE STARS
 function generateStars(rating) {
     let stars = '';
@@ -273,6 +412,7 @@ function generateStars(rating) {
     }
     return stars;
 }
+
 
 // ✅ CALCULATE AVERAGE RATING
 function calculateAverageRating(feedbacks) {

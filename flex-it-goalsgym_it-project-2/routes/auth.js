@@ -1,6 +1,7 @@
 // routes/auth.js
 const express = require('express');
 const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 const asyncHandler = require('../middleware/asyncHandler');
 const Admin = require('../models/Admin');
 const Member = require('../models/Member');
@@ -8,23 +9,22 @@ const Trainer = require('../models/Trainer');
 const router = express.Router();
 
 /**
- * UNIFIED LOGIN ENDPOINT (NEW - handles all 3 roles)
+ * UNIFIED LOGIN ENDPOINT (handles all 3 roles)
  * POST /api/login
  * body: { username, password, role }
  */
 router.post('/login', asyncHandler(async (req, res) => {
   const { username, password, role } = req.body || {};
-  
   if (!username || !password || !role) {
-    return res.status(400).json({ 
-      success: false, 
-      message: 'Username, password, and role are required' 
+    return res.status(400).json({
+      success: false,
+      message: 'Username, password, and role are required'
     });
   }
 
   let user;
   let Model;
-  
+
   // Select the correct model based on role
   if (role === 'admin') {
     Model = Admin;
@@ -33,41 +33,46 @@ router.post('/login', asyncHandler(async (req, res) => {
   } else if (role === 'trainer') {
     Model = Trainer;
   } else {
-    return res.status(400).json({ 
-      success: false, 
-      message: 'Invalid role specified' 
+    return res.status(400).json({
+      success: false,
+      message: 'Invalid role specified'
     });
   }
 
   // Find user in the appropriate collection
   user = await Model.findOne({ username: username.trim() }).lean();
-  
   if (!user) {
-    return res.status(401).json({ 
-      success: false, 
-      message: 'Invalid credentials' 
+    return res.status(401).json({
+      success: false,
+      message: 'Invalid credentials'
     });
   }
 
   // Verify password
   const isPasswordValid = await bcrypt.compare(password, user.password);
-  
   if (!isPasswordValid) {
-    return res.status(401).json({ 
-      success: false, 
-      message: 'Invalid credentials' 
+    return res.status(401).json({
+      success: false,
+      message: 'Invalid credentials'
     });
   }
 
   // Remove password from response
   delete user.password;
-  
   // Add role to user object for frontend
   user.role = role;
 
-  res.json({ 
-    success: true, 
-    user: user,
+  // Generate JWT token
+  const token = jwt.sign(
+    { id: user._id, username: user.username, role: role },
+    process.env.JWT_SECRET,
+    { expiresIn: process.env.JWT_EXPIRES_IN || '30d' }
+  );
+
+  res.json({
+    success: true,
+    token,
+    user,
     message: 'Login successful'
   });
 }));
@@ -85,7 +90,15 @@ router.post('/admin/login', asyncHandler(async (req, res) => {
   const ok = await bcrypt.compare(password, admin.password);
   if (!ok) return res.status(401).json({ success: false, error: 'Invalid credentials' });
   delete admin.password;
-  res.json({ success: true, data: admin });
+
+  // Generate JWT token
+  const token = jwt.sign(
+    { id: admin._id, username: admin.username, role: 'admin' },
+    process.env.JWT_SECRET,
+    { expiresIn: process.env.JWT_EXPIRES_IN || '30d' }
+  );
+
+  res.json({ success: true, token, data: admin });
 }));
 
 /**
@@ -101,7 +114,15 @@ router.post('/member/login', asyncHandler(async (req, res) => {
   const ok = await bcrypt.compare(password, member.password);
   if (!ok) return res.status(401).json({ success: false, error: 'Invalid credentials' });
   delete member.password;
-  res.json({ success: true, data: member });
+
+  // Generate JWT token
+  const token = jwt.sign(
+    { id: member._id, username: member.username, role: 'member' },
+    process.env.JWT_SECRET,
+    { expiresIn: process.env.JWT_EXPIRES_IN || '30d' }
+  );
+
+  res.json({ success: true, token, data: member });
 }));
 
 /**
@@ -117,7 +138,15 @@ router.post('/trainer/login', asyncHandler(async (req, res) => {
   const ok = await bcrypt.compare(password, trainer.password);
   if (!ok) return res.status(401).json({ success: false, error: 'Invalid credentials' });
   delete trainer.password;
-  res.json({ success: true, data: trainer });
+
+  // Generate JWT token
+  const token = jwt.sign(
+    { id: trainer._id, username: trainer.username, role: 'trainer' },
+    process.env.JWT_SECRET,
+    { expiresIn: process.env.JWT_EXPIRES_IN || '30d' }
+  );
+
+  res.json({ success: true, token, data: trainer });
 }));
 
 module.exports = router;

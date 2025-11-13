@@ -1,3 +1,78 @@
+// Utility for authenticated API calls (adds security header for /api/ routes) with timeout - FIXED: Handles full URLs
+async function apiFetch(endpoint, options = {}, timeoutMs = 10000) {
+  console.log('apiFetch called for:', endpoint);  // DEBUG (remove in production if needed)
+  const token = sessionStorage.getItem('token');
+  if (!token) {
+    console.log('No token - redirecting to login');  // DEBUG
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('authUser');
+    sessionStorage.removeItem('role');
+    window.location.href = '../member-login.html';
+    return;
+  }
+
+  // FIXED: Use endpoint directly if it's already a full URL; otherwise prepend base
+  let url = endpoint;
+  if (!endpoint.startsWith('http://') && !endpoint.startsWith('https://')) {
+    url = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+      ? `http://localhost:8080${endpoint}`
+      : endpoint;
+  }
+
+  const headers = { 
+    ...options.headers, 
+    'Authorization': `Bearer ${token}`,
+    'Content-Type': 'application/json' // Default for JSON calls
+  };
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const response = await fetch(url, { ...options, headers, signal: controller.signal });
+    clearTimeout(timeoutId);
+
+    if (response.status === 401) {
+      console.log('401 Unauthorized - clearing auth and redirecting');  // DEBUG
+      sessionStorage.removeItem('token');
+      sessionStorage.removeItem('authUser');
+      sessionStorage.removeItem('role');
+      window.location.href = '../member-login.html';
+      return;
+    }
+    if (!response.ok) throw new Error(`API error: ${response.status}`);
+    return await response.json();
+  } catch (error) {
+    clearTimeout(timeoutId);
+    if (error.name === 'AbortError') {
+      throw new Error(`API timeout after ${timeoutMs}ms`);
+    }
+    throw error;
+  }
+}
+
+// ✅ INITIAL AUTH CHECK - Token + Role ('member') + Timestamp (runs immediately)
+(function checkAuth() {
+  console.log('Auth check starting for member-profile');  // DEBUG
+  const authUser = JSON.parse(sessionStorage.getItem('authUser') || 'null'); 
+  const token = sessionStorage.getItem('token');
+  const role = sessionStorage.getItem('role');
+  
+  console.log('Auth details:', { authUser: authUser ? authUser.username || authUser.email : null, token: !!token, role });  // DEBUG: Hide sensitive data
+  
+  // Check timestamp (1 hour) + token + member role
+  if (!authUser || (Date.now() - (authUser.timestamp || 0)) > 3600000 || !token || role !== 'member') { 
+    console.log('Auth failed - clearing and redirecting');  // DEBUG
+    sessionStorage.removeItem('authUser'); 
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('role');
+    window.location.href = '../member-login.html'; 
+    return;
+  } 
+  
+  console.log('Member authenticated:', authUser.username || authUser.email, 'Role:', role);
+})();
+
 const API_URL = 'http://localhost:8080';
 
 // Utility functions
@@ -5,7 +80,7 @@ const $ = id => document.getElementById(id);
 
 function getAuth() {
     try {
-        return JSON.parse(localStorage.getItem('authUser') || 'null');
+        return JSON.parse(sessionStorage.getItem('authUser') || 'null');
     } catch (e) {
         console.error('[Auth] Error parsing authUser:', e);
         return null;
@@ -30,7 +105,6 @@ function memberIdFromAuth() {
     return id;
 }
 
-
 // Format date to "Month Day, Year"
 function formatDate(dateString) {
     if (!dateString) return 'N/A';
@@ -45,10 +119,12 @@ function formatDate(dateString) {
     }
 }
 
-// Logout function
+// Logout function (ENHANCED: Clears token + role)
 function logout() {
-    localStorage.removeItem('authUser');
-    localStorage.removeItem('memberData');
+    sessionStorage.removeItem('authUser');
+    sessionStorage.removeItem('memberData');
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('role');
     window.location.href = '../member-login.html';
 }
 
@@ -83,7 +159,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// Load member profile
+// Load member profile (ENHANCED: Token + role check; fetch → apiFetch)
 async function loadProfile() {
     console.log('[Profile] Starting to load profile...');
     
@@ -95,6 +171,19 @@ async function loadProfile() {
         return logout();
     }
 
+    // ENHANCED: Token + role check
+    const token = sessionStorage.getItem('token');
+    const role = sessionStorage.getItem('role');
+    const authUser = getAuth();
+    if (!token || role !== 'member' || !authUser || (Date.now() - (authUser.timestamp || 0)) > 3600000) {
+        console.log('[Profile] Invalid session - logging out');  // DEBUG
+        sessionStorage.removeItem('token');
+        sessionStorage.removeItem('authUser');
+        sessionStorage.removeItem('role');
+        window.location.href = '../member-login.html';
+        return;
+    }
+
     if ($('profileMsg')) {
         $('profileMsg').style.display = "none";
     }
@@ -103,16 +192,8 @@ async function loadProfile() {
         const url = `${API_URL}/api/members/${encodeURIComponent(memberId)}`;
         console.log('[Profile] Fetching from URL:', url);
         
-        const res = await fetch(url);
-        console.log('[Profile] Response status:', res.status);
-        
-        if (!res.ok) {
-            const errorText = await res.text();
-            console.error('[Profile] Error response:', errorText);
-            throw new Error(`Failed to load member profile: ${res.status}`);
-        }
-        
-        const response = await res.json();
+        // TOKENIZED: GET via apiFetch
+        const response = await apiFetch(url);
         console.log('[Profile] Response data:', response);
         
         const member = response.data || response;
@@ -203,7 +284,7 @@ async function loadProfile() {
     }
 }
 
-// Update member profile
+// Update member profile (ENHANCED: Token + role check; fetch → apiFetch)
 async function updateProfile() {
     console.log('[Update] Starting profile update...');
     
@@ -211,6 +292,19 @@ async function updateProfile() {
     if (!memberId) {
         console.error('[Update] No member ID, logging out');
         return logout();
+    }
+
+    // ENHANCED: Token + role check
+    const token = sessionStorage.getItem('token');
+    const role = sessionStorage.getItem('role');
+    const authUser = getAuth();
+    if (!token || role !== 'member' || !authUser || (Date.now() - (authUser.timestamp || 0)) > 3600000) {
+        console.log('[Update] Invalid session - logging out');  // DEBUG
+        sessionStorage.removeItem('token');
+        sessionStorage.removeItem('authUser');
+        sessionStorage.removeItem('role');
+        window.location.href = '../member-login.html';
+        return;
     }
 
     const email = $('profileEmail').value.trim();
@@ -226,24 +320,21 @@ async function updateProfile() {
         const url = `${API_URL}/api/members/${encodeURIComponent(memberId)}/profile`;
         console.log('[Update] PUT to URL:', url);
         
-        const res = await fetch(url, {
+        // TOKENIZED: PUT via apiFetch (merges your options)
+        const responseData = await apiFetch(url, {
             method: "PUT",
-            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ email, phone })
         });
-
-        console.log('[Update] Response status:', res.status);
-        const responseData = await res.json();
         console.log('[Update] Response data:', responseData);
 
-        if (!res.ok) throw new Error(responseData.error || responseData.message || 'Update failed');
+        if (responseData.error || responseData.message) throw new Error(responseData.error || responseData.message || 'Update failed');
 
-        // Update localStorage with new data
+        // Update sessionStorage with new data
         const auth = getAuth();
         if (auth && responseData.data) {
             auth.user = responseData.data;
-            localStorage.setItem('authUser', JSON.stringify(auth));
-            console.log('[Update] Updated localStorage');
+            sessionStorage.setItem('authUser', JSON.stringify(auth));
+            console.log('[Update] Updated sessionStorage');
         }
 
         if ($('profileMsg')) {

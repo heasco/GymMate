@@ -1,3 +1,78 @@
+// Utility for authenticated API calls (adds security header for /api/ routes) with timeout
+async function apiFetch(endpoint, options = {}, timeoutMs = 10000) {
+    console.log('apiFetch called for:', endpoint);  // DEBUG (kept for troubleshooting)
+    const token = sessionStorage.getItem('token');
+    if (!token) {
+        console.log('No token - redirecting to login');  // DEBUG
+        sessionStorage.removeItem('token');
+        sessionStorage.removeItem('authUser');
+        sessionStorage.removeItem('role');
+        window.location.href = '../member-login.html';
+        return;
+    }
+
+    // Use endpoint directly if it's already a full URL; otherwise prepend base
+    let url = endpoint;
+    if (!endpoint.startsWith('http://') && !endpoint.startsWith('https://')) {
+        url = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+            ? `http://localhost:8080${endpoint}`
+            : endpoint;
+    }
+
+    const headers = {
+        ...options.headers,
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json' // Default for JSON calls
+    };
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+        const response = await fetch(url, { ...options, headers, signal: controller.signal });
+        clearTimeout(timeoutId);
+
+        if (response.status === 401) {
+            console.log('401 Unauthorized - clearing auth and redirecting');  // DEBUG
+            sessionStorage.removeItem('token');
+            sessionStorage.removeItem('authUser');
+            sessionStorage.removeItem('role');
+            window.location.href = '../member-login.html';
+            return;
+        }
+        if (!response.ok) throw new Error(`API error: ${response.status}`);
+        return response.json();
+    } catch (error) {
+        clearTimeout(timeoutId);
+        if (error.name === 'AbortError') {
+            throw new Error(`API timeout after ${timeoutMs}ms`);
+        }
+        throw error;
+    }
+}
+
+// ✅ ENHANCED AUTH CHECK - Token + Role ('member') + Timestamp (MUST BE FIRST, no other changes)
+(function checkAuth() {
+    console.log('Auth check starting for member-classes');  // DEBUG
+    const authUser = JSON.parse(sessionStorage.getItem('authUser') || 'null');
+    const token = sessionStorage.getItem('token');
+    const role = sessionStorage.getItem('role');
+
+    console.log('Auth details:', { authUser, token: !!token, role });  // DEBUG: Hide actual token
+
+    // Check timestamp (1 hour) + token + member role
+    if (!authUser || (Date.now() - (authUser.timestamp || 0)) > 3600000 || !token || role !== 'member') {
+        console.log('Auth failed - clearing and redirecting');  // DEBUG
+        sessionStorage.removeItem('authUser');
+        sessionStorage.removeItem('token');
+        sessionStorage.removeItem('role');
+        window.location.href = '../member-login.html';
+        return;
+    }
+
+    console.log('Member authenticated:', authUser.username || authUser.email, 'Role:', role);
+})();
+
 // Server configuration
 const SERVER_URL = 'http://localhost:8080';
 
@@ -9,7 +84,7 @@ let pendingFeedback = { enrollmentId: null, classId: null, className: '', traine
 let currentMonthDate = new Date();
 
 // DOM Ready
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     initializePage();
     loadEnrollments();
     setupModalEvents();
@@ -19,12 +94,12 @@ document.addEventListener('DOMContentLoaded', function() {
 // Initialize page
 function initializePage() {
     // Set member name
-    const memberName = localStorage.getItem('memberName') || 'Member';
+    const memberName = sessionStorage.getItem('memberName') || 'Member';
     document.getElementById('memberName').textContent = memberName;
-    
+
     // Setup sidebar and logout
     setupSidebarAndSession();
-    
+
     // Setup calendar tabs
     setupCalendarTabs();
 }
@@ -34,29 +109,33 @@ function setupSidebarAndSession() {
     const menuToggle = document.getElementById('menuToggle');
     const sidebar = document.querySelector('.sidebar');
     const logoutBtn = document.getElementById('logoutBtn');
-    
+
     // Menu toggle functionality
     if (menuToggle) {
         menuToggle.addEventListener('click', () => {
             sidebar.classList.toggle('collapsed');
         });
     }
-    
-    // Session check
-    const authUser = JSON.parse(localStorage.getItem('authUser'));
-    if (!authUser || (Date.now() - authUser.timestamp > 3600000)) {
-        localStorage.removeItem('authUser');
-        window.location.href = 'file:///C:/Users/Admin/OneDrive/Desktop/ThesisPROJECT/flex-it-goalsgym_it-project-2/flex-it-goalsgym_it-project-2/public/member-login.html';
+
+    // Session check (ENHANCED: Now includes token + role check, fixed redirect)
+    const authUser = JSON.parse(sessionStorage.getItem('authUser'));
+    const token = sessionStorage.getItem('token');
+    const role = sessionStorage.getItem('role');
+    if (!authUser || (Date.now() - authUser.timestamp > 3600000) || !token || role !== 'member') {
+        sessionStorage.removeItem('authUser');
+        sessionStorage.removeItem('token');
+        sessionStorage.removeItem('role');
+        window.location.href = '../member-login.html';
         return;
     }
-    
+
     // Logout functionality
     if (logoutBtn) {
         logoutBtn.addEventListener('click', () => {
             manualLogout();
         });
     }
-    
+
     // Close sidebar when clicking outside on mobile
     document.addEventListener('click', (e) => {
         if (window.innerWidth <= 768 && sidebar && !sidebar.contains(e.target) && menuToggle && !menuToggle.contains(e.target)) {
@@ -65,21 +144,23 @@ function setupSidebarAndSession() {
     });
 }
 
-// MANUAL LOGOUT FUNCTION - You can call this from anywhere
+// MANUAL LOGOUT FUNCTION - You can call this from anywhere (ENHANCED: Clears token + role too, fixed redirect)
 function manualLogout() {
     console.log("Manual logout triggered");
-    
+
     // Clear all user data
-    localStorage.removeItem('authUser');
-    localStorage.removeItem('memberData');
-    localStorage.removeItem('memberName');
-    
+    sessionStorage.removeItem('authUser');
+    sessionStorage.removeItem('memberData');
+    sessionStorage.removeItem('memberName');
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('role');
+
     // Show confirmation message
     showToast('Logging out...', 'info');
-    
+
     // Redirect to login page after short delay
     setTimeout(() => {
-        window.location.href = 'file:///C:/Users/Admin/OneDrive/Desktop/ThesisPROJECT/flex-it-goalsgym_it-project-2/flex-it-goalsgym_it-project-2/public/member-login.html';;
+        window.location.href = '../member-login.html';
     }, 1000);
 }
 
@@ -87,12 +168,12 @@ function manualLogout() {
 function setupManualLogout() {
     // Add a manual logout button to the page (optional)
     addManualLogoutButton();
-    
+
     // You can also call manualLogout() from browser console
     window.manualLogout = manualLogout;
-    
+
     // Add keyboard shortcut (Ctrl + L for logout)
-    document.addEventListener('keydown', function(e) {
+    document.addEventListener('keydown', function (e) {
         if (e.ctrlKey && e.key === 'l') {
             e.preventDefault();
             manualLogout();
@@ -119,16 +200,20 @@ function addManualLogoutButton() {
         font-size: 12px;
     `;
     manualLogoutBtn.onclick = manualLogout;
-    
+
     // Add to page
     document.body.appendChild(manualLogoutBtn);
 }
 
-// Quick manual logout function you can call from browser console
+// Quick manual logout function you can call from browser console (ENHANCED: Clears token + role, fixed redirect)
 function quickLogout() {
     console.log('🚪 Quick logout triggered!');
-    localStorage.clear();
-    window.location.href = 'file:///C:/Users/Admin/OneDrive/Desktop/ThesisPROJECT/flex-it-goalsgym_it-project-2/flex-it-goalsgym_it-project-2/public/member-login.html';;
+    sessionStorage.removeItem('authUser');
+    sessionStorage.removeItem('memberData');
+    sessionStorage.removeItem('memberName');
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('role');
+    window.location.href = '../member-login.html';
 }
 
 // Make it available globally
@@ -138,41 +223,41 @@ window.quickLogout = quickLogout;
 function setupCalendarTabs() {
     const tabs = document.querySelectorAll('.view-tab');
     const datePicker = document.getElementById('calendarDate');
-    
+
     // Set today's date
     const today = new Date();
     datePicker.value = today.toISOString().split('T')[0];
-    
+
     tabs.forEach(tab => {
-        tab.addEventListener('click', function() {
+        tab.addEventListener('click', function () {
             // Remove active class from all tabs
             tabs.forEach(t => t.classList.remove('active'));
             // Add active class to clicked tab
             this.classList.add('active');
-            
+
             // Handle different views
             const view = this.dataset.view;
             switchCalendarView(view);
         });
     });
-    
+
     // Setup date picker
-    datePicker.addEventListener('change', function() {
+    datePicker.addEventListener('change', function () {
         const activeTab = document.querySelector('.view-tab.active');
         if (activeTab) {
             switchCalendarView(activeTab.dataset.view);
         }
     });
-    
+
     // Initialize with monthly view
     switchCalendarView('month');
 }
 
-// Load enrollments
+// Load enrollments (SECURE: Now uses apiFetch)
 async function loadEnrollments() {
     const memberId = getMemberIdFromAuth();
     if (!memberId) {
-        window.location.href = 'file:///C:/Users/Admin/OneDrive/Desktop/ThesisPROJECT/flex-it-goalsgym_it-project-2/flex-it-goalsgym_it-project-2/public/member-login.html';
+        window.location.href = '../member-login.html';
         return;
     }
 
@@ -187,11 +272,8 @@ async function loadEnrollments() {
     tableBody.innerHTML = '';
 
     try {
-        const response = await fetch(`${SERVER_URL}/api/enrollments/member/${encodeURIComponent(memberId)}`);
-        if (!response.ok) throw new Error('Failed to load enrollments');
-
-        const data = await response.json();
-        allEnrollments = data.data || [];
+        const data = await apiFetch(`/api/enrollments/member/${encodeURIComponent(memberId)}`);
+        allEnrollments = data.data || [];  // No .ok check needed—apiFetch throws on HTTP error
 
         if (allEnrollments.length === 0) {
             loadingElement.textContent = 'You have no upcoming enrollments.';
@@ -201,7 +283,7 @@ async function loadEnrollments() {
         }
 
         // Pre-fetch all class names for better performance
-        const uniqueClassIds = [...new Set(allEnrollments.map(enrollment => 
+        const uniqueClassIds = [...new Set(allEnrollments.map(enrollment =>
             typeof enrollment.class_id === 'string' ? enrollment.class_id : (enrollment.class_id?._id || enrollment.class_id)
         ).filter(id => id))];
 
@@ -210,18 +292,18 @@ async function loadEnrollments() {
 
         loadingElement.style.display = 'none';
 
-        // Render enrollment rows
+        // Render enrollment rows (unchanged)
         const renderPromises = allEnrollments.map(async (enrollment) => {
             const className = await getClassName(enrollment);
             const day = enrollment.session_day || '';
-            const date = enrollment.session_date ? new Date(enrollment.session_date).toLocaleDateString() : 
-                        (enrollment.enrollment_date ? new Date(enrollment.enrollment_date).toLocaleDateString() : '');
+            const date = enrollment.session_date ? new Date(enrollment.session_date).toLocaleDateString() :
+                (enrollment.enrollment_date ? new Date(enrollment.enrollment_date).toLocaleDateString() : '');
             const time = enrollment.session_time || '';
             const status = enrollment.attendance_status || enrollment.status || 'scheduled';
             const statusInfo = getStatusClass(status);
 
-            const classIdStr = typeof enrollment.class_id === 'string' ? enrollment.class_id : 
-                              (enrollment.class_id?._id || enrollment.class_id);
+            const classIdStr = typeof enrollment.class_id === 'string' ? enrollment.class_id :
+                (enrollment.class_id?._id || enrollment.class_id);
 
             let cancelButton = '';
             if (status === 'scheduled' || status === 'active') {
@@ -237,18 +319,18 @@ async function loadEnrollments() {
 
             const row = document.createElement('tr');
             row.innerHTML = `
-                <td>${escapeHtml(className)}</td>
-                <td>${escapeHtml(day)}</td>
-                <td>${escapeHtml(date)}</td>
-                <td>${escapeHtml(time)}</td>
-                <td><span class="status-badge ${statusInfo.class}">${statusInfo.label}</span></td>
-                <td>
-                    <div class="action-buttons">
-                        ${cancelButton}
-                        ${feedbackButton}
-                    </div>
-                </td>
-            `;
+            <td>${escapeHtml(className)}</td>
+            <td>${escapeHtml(day)}</td>
+            <td>${escapeHtml(date)}</td>
+            <td>${escapeHtml(time)}</td>
+            <td><span class="status-badge ${statusInfo.class}">${statusInfo.label}</span></td>
+            <td>
+                <div class="action-buttons">
+                ${cancelButton}
+                ${feedbackButton}
+                </div>
+            </td>
+        `;
             tableBody.appendChild(row);
         });
 
@@ -257,7 +339,7 @@ async function loadEnrollments() {
 
     } catch (error) {
         console.error('Error loading enrollments:', error);
-        errorElement.textContent = error.message || 'Error loading enrollments';
+        errorElement.textContent = `Failed to load enrollments: ${error.message}`;  // Enhanced message for debugging
         errorElement.style.display = 'block';
         loadingElement.style.display = 'none';
     }
@@ -266,13 +348,12 @@ async function loadEnrollments() {
     switchCalendarView('month');
 }
 
-
 // Get member ID from auth
 function getMemberIdFromAuth() {
     try {
-        const authUser = JSON.parse(localStorage.getItem('authUser') || 'null');
+        const authUser = JSON.parse(sessionStorage.getItem('authUser') || 'null');
         if (!authUser) return null;
-        
+
         const user = authUser.user || authUser;  // ✅ FIXED: Support both old and new login structure
         return user.memberId || user.member_id || user._id || user.id || null;
     } catch (error) {
@@ -280,7 +361,6 @@ function getMemberIdFromAuth() {
         return null;
     }
 }
-
 
 // Status helper function
 function getStatusClass(status) {
@@ -295,24 +375,21 @@ function getStatusClass(status) {
     return statusMap[status.toLowerCase()] || { class: 'status-active', label: 'Unknown' };
 }
 
-// Class name helper functions
+// Class name helper functions (SECURE: Now uses apiFetch)
 async function getClassNameById(classId) {
     if (classNameCache[classId]) {
         return classNameCache[classId];
     }
-    
+
     try {
-        const response = await fetch(`${SERVER_URL}/api/classes/${encodeURIComponent(classId)}`);
-        if (response.ok) {
-            const data = await response.json();
-            const className = data.data?.class_name || classId;
-            classNameCache[classId] = className;
-            return className;
-        }
+        const response = await apiFetch(`/api/classes/${encodeURIComponent(classId)}`);
+        const className = response.data?.class_name || classId;
+        classNameCache[classId] = className;
+        return className;
     } catch (error) {
         console.warn('Failed to fetch class name:', error);
     }
-    
+
     classNameCache[classId] = classId;
     return classId;
 }
@@ -320,16 +397,16 @@ async function getClassNameById(classId) {
 function getClassName(enrollment) {
     if (enrollment.class_name) return enrollment.class_name;
     if (enrollment.class_id && enrollment.class_id.class_name) return enrollment.class_id.class_name;
-    
+
     if (typeof enrollment.class_id === 'string' || enrollment.class_id) {
         const classIdStr = typeof enrollment.class_id === 'string' ? enrollment.class_id : (enrollment.class_id?._id || enrollment.class_id);
         return getClassNameById(classIdStr);
     }
-    
+
     return 'Unnamed Class';
 }
 
-// Render remaining sessions
+// Render remaining sessions (SECURE: Now uses apiFetch)
 async function renderRemainingSessions() {
     const memberId = getMemberIdFromAuth();
     const remainingSessionsElement = document.getElementById('remainingSessions');
@@ -341,29 +418,26 @@ async function renderRemainingSessions() {
     }
 
     try {
-        const response = await fetch(`${SERVER_URL}/api/members/${encodeURIComponent(memberId)}`);
-        if (response.ok) {
-            const data = await response.json();
-            const member = data.data;
-            const memberships = member.memberships || [];
+        const response = await apiFetch(`/api/members/${encodeURIComponent(memberId)}`);
+        const member = response.data;
+        const memberships = member.memberships || [];
 
-            let combativeSessions = '—';
-            let membershipText = 'No active membership';
+        let combativeSessions = '—';
+        let membershipText = 'No active membership';
 
-            memberships.forEach(membership => {
-                if ((membership.type || '').toLowerCase().includes('combative')) {
-                    if (membership.remainingSessions !== undefined && membership.remainingSessions !== null) {
-                        combativeSessions = parseInt(membership.remainingSessions);
-                    } else if (membership.remaining !== undefined && membership.remaining !== null) {
-                        combativeSessions = parseInt(membership.remaining);
-                    }
-                    membershipText = `${membership.type} Membership`;
+        memberships.forEach(membership => {
+            if ((membership.type || '').toLowerCase().includes('combative')) {
+                if (membership.remainingSessions !== undefined && membership.remainingSessions !== null) {
+                    combativeSessions = parseInt(membership.remainingSessions);
+                } else if (membership.remaining !== undefined && membership.remaining !== null) {
+                    combativeSessions = parseInt(membership.remaining);
                 }
-            });
+                membershipText = `${membership.type} Membership`;
+            }
+        });
 
-            remainingSessionsElement.textContent = combativeSessions !== '—' ? combativeSessions : '0';
-            membershipInfoElement.textContent = membershipText;
-        }
+        remainingSessionsElement.textContent = combativeSessions !== '—' ? combativeSessions : '0';
+        membershipInfoElement.textContent = membershipText;
     } catch (error) {
         console.error('Error loading remaining sessions:', error);
         remainingSessionsElement.textContent = '—';
@@ -374,9 +448,9 @@ async function renderRemainingSessions() {
 // Calendar view functions
 function switchCalendarView(view) {
     const calendarContainer = document.getElementById('calendarContainer');
-    
+
     calendarContainer.innerHTML = '<div class="loading-state">Loading ' + view + ' view...</div>';
-    
+
     setTimeout(() => {
         if (view === 'today') {
             generateTodayView();
@@ -441,29 +515,29 @@ function generateWeekView() {
     const calendarContainer = document.getElementById('calendarContainer');
     const datePicker = document.getElementById('calendarDate');
     const selectedDate = datePicker ? new Date(datePicker.value) : new Date();
-    
+
     // Get start of week (Sunday)
     const startOfWeek = new Date(selectedDate);
     startOfWeek.setDate(selectedDate.getDate() - selectedDate.getDay());
-    
+
     const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    
+
     let html = `
         <div class="week-view">
             <div class="week-header">
     `;
-    
+
     // Generate week header
     for (let i = 0; i < 7; i++) {
         const currentDay = new Date(startOfWeek);
         currentDay.setDate(startOfWeek.getDate() + i);
-        
+
         const isToday = currentDay.toDateString() === new Date().toDateString();
         const dayName = dayNames[i];
         const date = currentDay.getDate();
         const month = monthNames[currentDay.getMonth()];
-        
+
         html += `
             <div class="week-day-header ${isToday ? 'today' : ''}">
                 <div class="day-name">${dayName}</div>
@@ -471,170 +545,169 @@ function generateWeekView() {
             </div>
         `;
     }
-    
+
     html += `</div><div class="week-grid">`;
-    
+
     // Generate week grid with time slots
     const timeSlots = [
         '6:00 AM', '7:00 AM', '8:00 AM', '9:00 AM', '10:00 AM', '11:00 AM',
         '12:00 PM', '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM', '5:00 PM', '6:00 PM', '7:00 PM'
     ];
-    
+
     timeSlots.forEach(time => {
         html += `<div class="time-slot">${time}</div>`;
-        
+
         for (let i = 0; i < 7; i++) {
             const currentDay = new Date(startOfWeek);
             currentDay.setDate(startOfWeek.getDate() + i);
             const dateStr = currentDay.toISOString().split('T')[0];
-            
+
             const dayEnrollments = allEnrollments.filter(enrollment => {
                 const enrollmentDate = new Date(enrollment.session_date);
-                return enrollmentDate.toISOString().split('T')[0] === dateStr && 
-                       enrollment.session_time === time;
+                return enrollmentDate.toISOString().split('T')[0] === dateStr &&
+                    enrollment.session_time === time;
             });
-            
+
             const hasClass = dayEnrollments.length > 0;
-            
+
             html += `
                 <div class="week-cell ${hasClass ? 'has-class' : ''}">
-                    ${hasClass ? 
-                        dayEnrollments.map(enrollment => {
-                            const className = classNameCache[typeof enrollment.class_id === 'string' ? enrollment.class_id : (enrollment.class_id?._id || enrollment.class_id)] || getClassName(enrollment);
-                            const status = enrollment.attendance_status || enrollment.status || 'scheduled';
-                            const statusInfo = getStatusClass(status);
-                            return `
-                                <div class="week-event">
-                                    <strong>${className}</strong>
-                                    <small>${statusInfo.label}</small>
-                                </div>
-                            `;
-                        }).join('') 
-                        : ''
-                    }
+                    ${hasClass ?
+                dayEnrollments.map(enrollment => {
+                    const className = classNameCache[typeof enrollment.class_id === 'string' ? enrollment.class_id : (enrollment.class_id?._id || enrollment.class_id)] || getClassName(enrollment);
+                    const status = enrollment.attendance_status || enrollment.status || 'scheduled';
+                    const statusInfo = getStatusClass(status);
+                    return `
+                            <div class="week-event">
+                                <strong>${className}</strong>
+                                <small>${statusInfo.label}</small>
+                            </div>
+                        `;
+                }).join('')
+                : ''
+            }
                 </div>
             `;
         }
     });
-    
+
     html += `</div></div>`;
     calendarContainer.innerHTML = html;
 }
 
 function generateMonthView() {
-  const calendarContainer = document.getElementById('calendarContainer');
-  
-  // ✅ Use global currentMonthDate instead of date picker
-  const year = currentMonthDate.getFullYear();
-  const month = currentMonthDate.getMonth();
-  const today = new Date();
-  
-  // Get first day of month and last day of month
-  const firstDay = new Date(year, month, 1);
-  const lastDay = new Date(year, month + 1, 0);
-  const daysInMonth = lastDay.getDate();
-  const startingDay = firstDay.getDay(); // 0=Sunday, 1=Monday, etc.
-  
-  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-  
-  let html = `<div class="month-view">
+    const calendarContainer = document.getElementById('calendarContainer');
+
+    // ✅ Use global currentMonthDate instead of date picker
+    const year = currentMonthDate.getFullYear();
+    const month = currentMonthDate.getMonth();
+    const today = new Date();
+
+    // Get first day of month and last day of month
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const daysInMonth = lastDay.getDate();
+    const startingDay = firstDay.getDay(); // 0=Sunday, 1=Monday, etc.
+
+    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+    let html = `<div class="month-view">
     <div class="month-header">
-        <button class="month-nav-btn" id="prevMonth" title="Previous Month">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="15 18 9 12 15 6"></polyline>
-            </svg>
-        </button>
-        <h4>${monthNames[month]} ${year}</h4>
-        <button class="month-nav-btn" id="nextMonth" title="Next Month">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="9 18 15 12 9 6"></polyline>
-            </svg>
-        </button>
+         <button class="month-nav-btn" id="prevMonth" title="Previous Month">
+             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                 <polyline points="15 18 9 12 15 6"></polyline>
+             </svg>
+         </button>
+         <h4>${monthNames[month]} ${year}</h4>
+         <button class="month-nav-btn" id="nextMonth" title="Next Month">
+             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                 <polyline points="9 18 15 12 9 6"></polyline>
+             </svg>
+         </button>
     </div>
     <div class="calendar-grid">`;
-  
-  // Generate day headers (Sun, Mon, Tue, etc.) - IN A ROW
-  dayNames.forEach(day => {
-    html += `<div class="calendar-header-day">${day}</div>`;
-  });
-  
-  // Generate empty cells for days before the first day of the month
-  for (let i = 0; i < startingDay; i++) {
-    html += `<div class="calendar-day empty"></div>`;
-  }
-  
-  // Generate days of the month - IN A GRID
-  for (let day = 1; day <= daysInMonth; day++) {
-    const currentDate = new Date(year, month, day);
-    const isToday = currentDate.toDateString() === today.toDateString();
-    const dateStr = currentDate.toISOString().split('T')[0];
-    
-    const dayEnrollments = allEnrollments.filter(enrollment => {
-      if (!enrollment.session_date) return false;
-      const enrollmentDate = new Date(enrollment.session_date);
-      return enrollmentDate.toISOString().split('T')[0] === dateStr;
-    });
-    
-    html += `<div class="calendar-day${isToday ? ' today' : ''}">
-      <span class="calendar-day-number">${day}</span>
-      <div class="calendar-day-classes">`;
-    
-    if (dayEnrollments.length > 0) {
-      // Show up to 3 classes to avoid overflow
-      dayEnrollments.slice(0, 3).forEach(enrollment => {
-        const className = classNameCache[typeof enrollment.class_id === 'string' ? enrollment.class_id : enrollment.class_id?.id || enrollment.class_id] || getClassName(enrollment);
-        const status = enrollment.attendance_status || enrollment.status || 'scheduled';
-        const statusInfo = getStatusClass(status);
-        const shortName = className.length > 12 ? className.substring(0, 12) + '...' : className;
-        
-        html += `<div class="calendar-class" title="${className} - ${statusInfo.label}">
-          <span>${shortName}</span>
-          <span class="calendar-status ${statusInfo.class}">${statusInfo.label.charAt(0)}</span>
-        </div>`;
-      });
-      
-      // Show "+X more" if there are more classes
-      if (dayEnrollments.length > 3) {
-        html += `<div class="calendar-class">+${dayEnrollments.length - 3} more</div>`;
-      }
-    }
-    
-    html += `</div></div>`;
-  }
-  
-  // Calculate how many empty cells we need at the end to complete the grid (6 rows × 7 columns = 42 cells)
-  const totalCells = 42;
-  const usedCells = startingDay + daysInMonth;
-  const remainingCells = totalCells - usedCells;
-  
-  for (let i = 0; i < remainingCells; i++) {
-    html += `<div class="calendar-day empty"></div>`;
-  }
-  
-  html += `</div></div>`; // Close calendar-grid and month-view
-  
-  calendarContainer.innerHTML = html;
-  
-  // ✅ Add month navigation event listeners
-  const prevMonthBtn = document.getElementById('prevMonth');
-  const nextMonthBtn = document.getElementById('nextMonth');
-  
-  if (prevMonthBtn) {
-    prevMonthBtn.addEventListener('click', () => {
-      currentMonthDate.setMonth(currentMonthDate.getMonth() - 1);
-      generateMonthView();
-    });
-  }
-  
-  if (nextMonthBtn) {
-    nextMonthBtn.addEventListener('click', () => {
-      currentMonthDate.setMonth(currentMonthDate.getMonth() + 1);
-      generateMonthView();
-    });
-  }
-}
 
+    // Generate day headers (Sun, Mon, Tue, etc.) - IN A ROW
+    dayNames.forEach(day => {
+        html += `<div class="calendar-header-day">${day}</div>`;
+    });
+
+    // Generate empty cells for days before the first day of the month
+    for (let i = 0; i < startingDay; i++) {
+        html += `<div class="calendar-day empty"></div>`;
+    }
+
+    // Generate days of the month - IN A GRID
+    for (let day = 1; day <= daysInMonth; day++) {
+        const currentDate = new Date(year, month, day);
+        const isToday = currentDate.toDateString() === today.toDateString();
+        const dateStr = currentDate.toISOString().split('T')[0];
+
+        const dayEnrollments = allEnrollments.filter(enrollment => {
+            if (!enrollment.session_date) return false;
+            const enrollmentDate = new Date(enrollment.session_date);
+            return enrollmentDate.toISOString().split('T')[0] === dateStr;
+        });
+
+        html += `<div class="calendar-day${isToday ? ' today' : ''}">
+     <span class="calendar-day-number">${day}</span>
+     <div class="calendar-day-classes">`;
+
+        if (dayEnrollments.length > 0) {
+            // Show up to 3 classes to avoid overflow
+            dayEnrollments.slice(0, 3).forEach(enrollment => {
+                const className = classNameCache[typeof enrollment.class_id === 'string' ? enrollment.class_id : enrollment.class_id?.id || enrollment.class_id] || getClassName(enrollment);
+                const status = enrollment.attendance_status || enrollment.status || 'scheduled';
+                const statusInfo = getStatusClass(status);
+                const shortName = className.length > 12 ? className.substring(0, 12) + '...' : className;
+
+                html += `<div class="calendar-class" title="${className} - ${statusInfo.label}">
+         <span>${shortName}</span>
+         <span class="calendar-status ${statusInfo.class}">${statusInfo.label.charAt(0)}</span>
+       </div>`;
+            });
+
+            // Show "+X more" if there are more classes
+            if (dayEnrollments.length > 3) {
+                html += `<div class="calendar-class">+${dayEnrollments.length - 3} more</div>`;
+            }
+        }
+
+        html += `</div></div>`;
+    }
+
+    // Calculate how many empty cells we need at the end to complete the grid (6 rows × 7 columns = 42 cells)
+    const totalCells = 42;
+    const usedCells = startingDay + daysInMonth;
+    const remainingCells = totalCells - usedCells;
+
+    for (let i = 0; i < remainingCells; i++) {
+        html += `<div class="calendar-day empty"></div>`;
+    }
+
+    html += `</div></div>`; // Close calendar-grid and month-view
+
+    calendarContainer.innerHTML = html;
+
+    // ✅ Add month navigation event listeners
+    const prevMonthBtn = document.getElementById('prevMonth');
+    const nextMonthBtn = document.getElementById('nextMonth');
+
+    if (prevMonthBtn) {
+        prevMonthBtn.addEventListener('click', () => {
+            currentMonthDate.setMonth(currentMonthDate.getMonth() - 1);
+            generateMonthView();
+        });
+    }
+
+    if (nextMonthBtn) {
+        nextMonthBtn.addEventListener('click', () => {
+            currentMonthDate.setMonth(currentMonthDate.getMonth() + 1);
+            generateMonthView();
+        });
+    }
+}
 
 // Modal functions
 function setupModalEvents() {
@@ -642,20 +715,20 @@ function setupModalEvents() {
     document.getElementById('cancelNo').addEventListener('click', () => {
         closeModal('cancelModal');
     });
-    
+
     document.getElementById('cancelYes').addEventListener('click', async () => {
         const id = pendingCancelId;
         if (!id) return;
         closeModal('cancelModal');
         await performCancel(id);
     });
-    
+
     // Feedback modal buttons
     document.getElementById('feedbackCancel').addEventListener('click', () => {
         closeModal('feedbackModal');
         pendingFeedback = { enrollmentId: null, classId: null, className: '', trainerId: null };
     });
-    
+
     document.getElementById('feedbackSend').addEventListener('click', sendFeedback);
 }
 
@@ -666,25 +739,22 @@ function openCancelModal(event) {
     document.getElementById('cancelModal').style.display = 'flex';
 }
 
-async function openFeedbackModal(event) {
+async function openFeedbackModal(event) {  // SECURE: Now uses apiFetch for trainerId
     const button = event.target;
     const enrollmentId = button.getAttribute('data-en');
     const classId = button.getAttribute('data-cl');
     const className = button.getAttribute('data-name') || '';
-    
+
     let trainerId = null;
     if (classId) {
         try {
-            const response = await fetch(`${SERVER_URL}/api/classes/${encodeURIComponent(classId)}`);
-            if (response.ok) {
-                const data = await response.json();
-                trainerId = data.data?.trainer_id || null;
-            }
+            const response = await apiFetch(`/api/classes/${encodeURIComponent(classId)}`);
+            trainerId = response.data?.trainer_id || null;
         } catch (error) {
             console.error('Error fetching class details:', error);
         }
     }
-    
+
     pendingFeedback = { enrollmentId, classId, className, trainerId };
     document.getElementById('feedbackTitle').textContent = `Send Feedback - ${className}`;
     document.getElementById('feedbackClassInfo').textContent = `Class: ${className}`;
@@ -693,26 +763,25 @@ async function openFeedbackModal(event) {
     document.getElementById('feedbackModal').style.display = 'flex';
 }
 
-async function sendFeedback() {
+async function sendFeedback() {  // SECURE: Now uses apiFetch
     const rating = document.getElementById('feedbackRating').value;
     const comment = document.getElementById('feedbackComment').value.trim();
-    
+
     if (!pendingFeedback || !pendingFeedback.classId) {
         showToast('Missing class information', 'error');
         return;
     }
-    
+
     if (!rating) {
         showToast('Please select a rating', 'warning');
         return;
     }
-    
+
     const memberId = getMemberIdFromAuth();
     if (!memberId) {
         showToast('Please login again', 'error');
         return;
     }
-    
     try {
         const payload = {
             class_id: pendingFeedback.classId,
@@ -721,25 +790,21 @@ async function sendFeedback() {
             rating: parseInt(rating),
             comment: comment || ''
         };
-        
-        const response = await fetch(`${SERVER_URL}/api/feedbacks`, {
+
+        const data = await apiFetch('/api/feedbacks', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
             body: JSON.stringify(payload)
         });
-        
-        const data = await response.json();
-        
-        if (!response.ok) {
+
+        // Validate backend response (adjust 'success' key if your backend uses different, e.g., 'status')
+        if (!data.success && data.error) {
             throw new Error(data.error || data.message || 'Failed to send feedback');
         }
-        
+
         showToast('Feedback sent successfully!', 'success');
         closeModal('feedbackModal');
         pendingFeedback = { enrollmentId: null, classId: null, className: '', trainerId: null };
-        
+
     } catch (error) {
         console.error('Error sending feedback:', error);
         showToast('Failed to send feedback: ' + error.message, 'error');
@@ -748,13 +813,12 @@ async function sendFeedback() {
 
 async function performCancel(enrollmentId) {
     try {
-        const response = await fetch(`${SERVER_URL}/api/enrollments/${encodeURIComponent(enrollmentId)}/cancel`, {
-            method: 'PUT'
+        const data = await apiFetch(`/api/enrollments/${encodeURIComponent(enrollmentId)}/cancel`, {
+            method: 'PUT'  // Change to 'POST' if backend expects it
         });
         
-        const data = await response.json();
-        
-        if (!response.ok) {
+        // Validate backend response
+        if (!data.success && data.error) {
             throw new Error(data.error || data.message || 'Failed to cancel enrollment');
         }
         
@@ -796,7 +860,7 @@ function showToast(message, type = 'info') {
         `;
         document.body.appendChild(container);
     }
-    
+
     // Create toast element
     const toast = document.createElement('div');
     toast.style.cssText = `
@@ -808,7 +872,7 @@ function showToast(message, type = 'info') {
         backdrop-filter: blur(10px);
         animation: slideIn 0.3s ease;
     `;
-    
+
     // Set background color based on type
     const colors = {
         success: 'linear-gradient(135deg, #28a745, #20c997)',
@@ -816,12 +880,12 @@ function showToast(message, type = 'info') {
         warning: 'linear-gradient(135deg, #ffc107, #fd7e14)',
         info: 'linear-gradient(135deg, var(--primary), var(--highlight))'
     };
-    
+
     toast.style.background = colors[type] || colors.info;
     toast.textContent = message;
-    
+
     container.appendChild(toast);
-    
+
     // Remove toast after 5 seconds
     setTimeout(() => {
         if (toast.parentNode) {

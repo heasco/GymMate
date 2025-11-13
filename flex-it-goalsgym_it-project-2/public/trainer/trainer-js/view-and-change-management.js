@@ -1,13 +1,90 @@
+// Utility for authenticated API calls (adds security header for /api/ routes) with timeout - Handles full URLs, GET/PUT
+async function apiFetch(endpoint, options = {}, timeoutMs = 10000) {
+  console.log('apiFetch called for:', endpoint, 'method:', options.method || 'GET');  // DEBUG (remove in production if needed)
+  const token = sessionStorage.getItem('token');
+  if (!token) {
+    console.log('No token - redirecting to login');  // DEBUG
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('authUser');
+    sessionStorage.removeItem('role');
+    window.location.href = '../trainer-login.html';
+    return;
+  }
+
+  // Use endpoint directly if it's already a full URL; otherwise prepend base
+  let url = endpoint;
+  if (!endpoint.startsWith('http://') && !endpoint.startsWith('https://')) {
+    url = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+      ? `http://localhost:8080${endpoint}`
+      : endpoint;
+  }
+
+  const headers = { 
+    ...options.headers, 
+    'Authorization': `Bearer ${token}`,
+    'Content-Type': 'application/json' // Default for JSON calls
+  };
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const response = await fetch(url, { ...options, headers, signal: controller.signal });
+    clearTimeout(timeoutId);
+
+    if (response.status === 401) {
+      console.log('401 Unauthorized - clearing auth and redirecting');  // DEBUG
+      sessionStorage.removeItem('token');
+      sessionStorage.removeItem('authUser');
+      sessionStorage.removeItem('role');
+      window.location.href = '../trainer-login.html';
+      return;
+    }
+    if (!response.ok) throw new Error(`API error: ${response.status}`);
+    return await response.json();
+  } catch (error) {
+    clearTimeout(timeoutId);
+    if (error.name === 'AbortError') {
+      throw new Error(`API timeout after ${timeoutMs}ms`);
+    }
+    throw error;
+  }
+}
+
+// ✅ INITIAL AUTH CHECK - Token + Role ('trainer') + Timestamp (runs immediately)
+(function checkAuth() {
+  console.log('Auth check starting for trainer-schedule');  // DEBUG
+  const authUser = JSON.parse(sessionStorage.getItem('authUser') || 'null'); 
+  const token = sessionStorage.getItem('token');
+  const role = sessionStorage.getItem('role');
+  
+  console.log('Auth details:', { authUser: authUser ? (authUser.username || authUser.email || authUser.name) : null, token: !!token, role });  // DEBUG: Hide sensitive data
+  
+  // Check timestamp (1 hour) + token + trainer role
+  if (!authUser || (Date.now() - (authUser.timestamp || 0)) > 3600000 || !token || role !== 'trainer') { 
+    console.log('Auth failed - clearing and redirecting');  // DEBUG
+    sessionStorage.removeItem('authUser'); 
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('role');
+    window.location.href = '../trainer-login.html'; 
+    return;
+  } 
+  
+  console.log('Trainer authenticated:', authUser.username || authUser.email || authUser.name, 'Role:', role);
+})();
+
 const API_URL = 'http://localhost:8080';
+
 document.addEventListener('DOMContentLoaded', async function () {
     const menuToggle = document.getElementById('menuToggle');
     const sidebar = document.querySelector('.sidebar');
     const logoutBtn = document.getElementById('logoutBtn');
-    const authUser = JSON.parse(localStorage.getItem('authUser'));
+    const authUser = JSON.parse(sessionStorage.getItem('authUser'));
+
 
     // 🔍 DEBUG: Log the raw authUser to diagnose structure
     console.log('=== TRAINER SCHEDULE AUTH DEBUG ===');
-    console.log('Raw authUser from localStorage:', authUser);
+    console.log('Raw authUser from sessionStorage:', authUser);
     if (authUser) {
         console.log('authUser keys:', Object.keys(authUser));
         console.log('authUser.role:', authUser.role);
@@ -16,51 +93,76 @@ document.addEventListener('DOMContentLoaded', async function () {
         if (authUser.user) console.log('authUser.user keys:', Object.keys(authUser.user));
     }
 
+
     // FIXED AUTH CHECK: Support both wrapped (authUser.user) and flattened structures
     const user = authUser?.user || authUser; // Fallback to flattened structure
     const role = authUser?.role;
     const timestamp = authUser?.timestamp || 0;
 
-    if (!authUser || !user || role !== "trainer" || (Date.now() - timestamp > 3600000)) {
+
+    // ENHANCED: Token + role + timestamp check (in addition to existing check)
+    const token = sessionStorage.getItem('token');
+    if (!authUser || !user || role !== "trainer" || (Date.now() - timestamp > 3600000) || !token) {
         console.log('Auth check failed - logging out');
-        localStorage.removeItem('authUser');
+        sessionStorage.removeItem('authUser');
+        sessionStorage.removeItem('token');
+        sessionStorage.removeItem('role');
         window.location.href = '../trainer-login.html';
         return;
     }
 
+
     console.log('Auth check passed! Using user:', user);
     console.log('Extracted trainer ID:', user.trainer_id || user.trainerid || user.trainerId || user.id || user._id);
 
+
     if (menuToggle) menuToggle.addEventListener('click', () => sidebar.classList.toggle('collapsed'));
     if (logoutBtn) logoutBtn.addEventListener('click', () => {
-        localStorage.removeItem('authUser');
+        // ENHANCED: Clear token + role
+        sessionStorage.removeItem('authUser');
+        sessionStorage.removeItem('token');
+        sessionStorage.removeItem('role');
         window.location.href = '../trainer-login.html';
     });
+
 
     // FIXED: Display trainer name from extracted user
     const trainerNameEl = document.getElementById('trainerName');
     if (trainerNameEl) trainerNameEl.textContent = user.name || 'Trainer';
 
+
     const classesContainer = document.getElementById('classesContainer');
     const loading = document.getElementById('classesLoading');
+
 
     if (!classesContainer || !loading) {
         console.error('Missing DOM elements');
         return;
     }
 
+
     try {
+        // ENHANCED: Token + role check before loading classes
+        if (!token || role !== 'trainer' || !authUser || (Date.now() - (authUser.timestamp || 0)) > 3600000) {
+            console.log('Invalid session before API - logging out');  // DEBUG
+            sessionStorage.removeItem('token');
+            sessionStorage.removeItem('authUser');
+            sessionStorage.removeItem('role');
+            window.location.href = '../trainer-login.html';
+            return;
+        }
+
+
         // FIXED: Trainer ID extraction with more fallbacks
         const trainerId = user.trainer_id || user.trainerid || user.trainerId || user.id || user._id;
         if (!trainerId) {
             throw new Error('No valid trainer ID found');
         }
 
-        console.log('Fetching classes for trainer ID:', trainerId);
-        const resp = await fetch(`${API_URL}/api/classes`);
-        if (!resp.ok) throw new Error(`Failed to fetch classes: ${resp.status} ${resp.statusText}`);
 
-        const data = await resp.json();
+        console.log('Fetching classes for trainer ID:', trainerId);
+        // TOKENIZED: Use apiFetch for GET classes
+        const data = await apiFetch(`${API_URL}/api/classes`);
         console.log('Classes API response:', data);
         const allClasses = data.data || [];
         const trainerClasses = allClasses.filter(c => {
@@ -69,33 +171,36 @@ document.addEventListener('DOMContentLoaded', async function () {
         });
         console.log('Filtered classes:', trainerClasses.length);
 
+
         loading.style.display = 'none';
+
 
         if (trainerClasses.length === 0) {
             classesContainer.innerHTML = '<div class="no-classes">No classes assigned to you yet.</div>';
             return;
         }
 
+
         const classesWithEnrollment = await Promise.all(trainerClasses.map(async c => {
             const cid = c.class_id || c.classid || c._id;
             let enrolledCount = 0;
 
+
             try {
-                const enrollResp = await fetch(`${API_URL}/api/classes/${cid}/enrollments`);
-                if (enrollResp.ok) {
-                    const enroll = await enrollResp.json();
-                    enrolledCount = (enroll.data || []).length;
-                } else {
-                    console.error(`Enrollments fetch failed for ${cid}: ${enrollResp.status}`);
-                }
+                // TOKENIZED: Use apiFetch for GET enrollments
+                const enroll = await apiFetch(`${API_URL}/api/classes/${cid}/enrollments`);
+                enrolledCount = (enroll.data || []).length;
             } catch (err) {
-                console.error('Error fetching enrollments:', err);
+                console.error(`Enrollments fetch failed for ${cid}:`, err);
             }
+
 
             return { ...c, enrolledCount };
         }));
 
+
         renderClasses(classesWithEnrollment, trainerId);
+
 
     } catch (err) {
         console.error('Error loading classes:', err);
@@ -104,9 +209,11 @@ document.addEventListener('DOMContentLoaded', async function () {
     }
 });
 
+
 function parseScheduleDays(schedule) {
     const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     const activeDays = [];
+
 
     days.forEach(day => {
         if (schedule.includes(day)) {
@@ -114,12 +221,15 @@ function parseScheduleDays(schedule) {
         }
     });
 
+
     return activeDays;
 }
+
 
 function renderClasses(classes, trainerId) {
     const container = document.getElementById('classesContainer');
     let html = '';
+
 
     classes.forEach(cls => {
         const classId = cls.class_id || cls.classid || cls._id;
@@ -128,6 +238,7 @@ function renderClasses(classes, trainerId) {
         const schedule = cls.schedule || 'Not scheduled';
         const capacity = cls.capacity || '-';
         const enrolled = cls.enrolledCount || 0;
+
 
         const activeDays = parseScheduleDays(schedule);
         const dayChecks = {
@@ -139,6 +250,7 @@ function renderClasses(classes, trainerId) {
             'Sat': activeDays.includes('Sat'),
             'Sun': activeDays.includes('Sun')
         };
+
 
         html += `
                     <div class="class-card" data-class-id="${classId}">
@@ -167,6 +279,7 @@ function renderClasses(classes, trainerId) {
                                 <i class="fa-solid fa-calendar-days btn-icon"></i> One-Time Event
                             </button>
                         </div>
+
 
                         <div class="schedule-options" id="weeklyOptions-${classId}">
                             <label class="section-label">
@@ -218,6 +331,7 @@ function renderClasses(classes, trainerId) {
                             </div>
                         </div>
 
+
                         <div class="schedule-options" id="onetimeOptions-${classId}" style="display: none;">
                             <label class="section-label">
                                 <i class="fa-solid fa-calendar-days label-icon"></i> Select Date:
@@ -242,6 +356,7 @@ function renderClasses(classes, trainerId) {
                             </div>
                         </div>
 
+
                         <div class="form-actions" style="margin-top: 1.5rem;">
                             <button class="save-btn" onclick="saveSchedule('${classId}', '${trainerId}')">Save Changes</button>
                             <button class="save-btn" onclick="toggleEditForm('${classId}')" style="background: #666;">Cancel</button>
@@ -252,7 +367,9 @@ function renderClasses(classes, trainerId) {
                 `;
     });
 
+
     container.innerHTML = html;
+
 
     const today = new Date().toISOString().split('T')[0];
     document.querySelectorAll('input[type="date"]').forEach(input => {
@@ -260,10 +377,12 @@ function renderClasses(classes, trainerId) {
     });
 }
 
+
 function setScheduleType(classId, type) {
     const weeklyOptions = document.getElementById(`weeklyOptions-${classId}`);
     const onetimeOptions = document.getElementById(`onetimeOptions-${classId}`);
     const buttons = document.querySelectorAll(`[data-class-id="${classId}"] .schedule-type-btn`);
+
 
     buttons.forEach((btn, idx) => {
         if ((type === 'weekly' && idx === 0) || (type === 'onetime' && idx === 1)) {
@@ -272,6 +391,7 @@ function setScheduleType(classId, type) {
             btn.classList.remove('active');
         }
     });
+
 
     if (type === 'weekly') {
         weeklyOptions.style.display = 'block';
@@ -282,6 +402,7 @@ function setScheduleType(classId, type) {
     }
 }
 
+
 function toggleEditForm(classId) {
     const form = document.getElementById(`editForm-${classId}`);
     if (form.style.display === 'none') {
@@ -291,18 +412,37 @@ function toggleEditForm(classId) {
     }
 }
 
+
+// TOKENIZED: SAVE SCHEDULE
 async function saveSchedule(classId, trainerId) {
     const statusDiv = document.getElementById(`status-${classId}`);
     const activeType = document.querySelector(`[data-class-id="${classId}"] .schedule-type-btn.active`);
     const isWeekly = activeType.textContent.includes('Weekly');
 
+
     let scheduleText = '';
 
+
     try {
+        // ENHANCED: Token + role check before API call
+        const token = sessionStorage.getItem('token');
+        const authUser = JSON.parse(sessionStorage.getItem('authUser') || 'null');
+        const role = sessionStorage.getItem('role');
+        if (!token || role !== 'trainer' || !authUser || (Date.now() - (authUser.timestamp || 0)) > 3600000) {
+            console.log('Invalid session in saveSchedule - logging out');  // DEBUG
+            sessionStorage.removeItem('token');
+            sessionStorage.removeItem('authUser');
+            sessionStorage.removeItem('role');
+            window.location.href = '../trainer-login.html';
+            return;
+        }
+
+
         if (isWeekly) {
             const days = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
             const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
             const selectedDays = [];
+
 
             days.forEach((day, idx) => {
                 const checkbox = document.getElementById(`${day}-${classId}`);
@@ -311,6 +451,7 @@ async function saveSchedule(classId, trainerId) {
                 }
             });
 
+
             if (selectedDays.length === 0) {
                 statusDiv.textContent = 'Please select at least one day';
                 statusDiv.className = 'edit-status error';
@@ -318,8 +459,10 @@ async function saveSchedule(classId, trainerId) {
                 return;
             }
 
+
             const startTime = document.getElementById(`startTime-${classId}`).value;
             const endTime = document.getElementById(`endTime-${classId}`).value;
+
 
             if (!startTime || !endTime) {
                 statusDiv.textContent = 'Please select start and end times';
@@ -328,12 +471,15 @@ async function saveSchedule(classId, trainerId) {
                 return;
             }
 
+
             scheduleText = `${selectedDays.join(', ')} ${formatTime(startTime)} - ${formatTime(endTime)}`;
+
 
         } else {
             const eventDate = document.getElementById(`eventDate-${classId}`).value;
             const eventStartTime = document.getElementById(`eventStartTime-${classId}`).value;
             const eventEndTime = document.getElementById(`eventEndTime-${classId}`).value;
+
 
             if (!eventDate || !eventStartTime || !eventEndTime) {
                 statusDiv.textContent = 'Please fill in all fields';
@@ -342,48 +488,51 @@ async function saveSchedule(classId, trainerId) {
                 return;
             }
 
+
             const date = new Date(eventDate);
             const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
             scheduleText = `${dateStr} ${formatTime(eventStartTime)} - ${formatTime(eventEndTime)}`;
         }
 
+
         statusDiv.textContent = 'Updating schedule...';
         statusDiv.className = 'edit-status';
         statusDiv.style.display = 'block';
 
-        // FIXED: Use optional auth token (fallback to empty if not set)
-        const authToken = localStorage.getItem('authToken') || '';
-        const response = await fetch(`${API_URL}/api/classes/${classId}`, {
+
+        // TOKENIZED: Use apiFetch for PUT (standardized to 'token')
+        const result = await apiFetch(`${API_URL}/api/classes/${classId}`, {
             method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                ...(authToken && { 'Authorization': `Bearer ${authToken}` }) // Only add if token exists
-            },
             body: JSON.stringify({
                 schedule: scheduleText,
                 trainer_id: trainerId
             })
         });
 
-        const result = await response.json();
+
         console.log('Schedule update response:', result);
 
-        if (response.ok) {
-            statusDiv.textContent = '✓ Schedule updated successfully!';
-            statusDiv.className = 'edit-status success';
 
-            const scheduleDisplay = document.querySelector(`[data-class-id="${classId}"] .current-schedule`);
-            if (scheduleDisplay) {
-                scheduleDisplay.textContent = scheduleText;
-            }
-
-            setTimeout(() => {
-                toggleEditForm(classId);
-                statusDiv.style.display = 'none';
-            }, 2000);
-        } else {
+        if (result.error) {
             throw new Error(result.error || 'Failed to update schedule');
         }
+
+
+        statusDiv.textContent = '✓ Schedule updated successfully!';
+        statusDiv.className = 'edit-status success';
+
+
+        const scheduleDisplay = document.querySelector(`[data-class-id="${classId}"] .current-schedule`);
+        if (scheduleDisplay) {
+            scheduleDisplay.textContent = scheduleText;
+        }
+
+
+        setTimeout(() => {
+            toggleEditForm(classId);
+            statusDiv.style.display = 'none';
+        }, 2000);
+
 
     } catch (err) {
         console.error('Error updating schedule:', err);
@@ -392,6 +541,7 @@ async function saveSchedule(classId, trainerId) {
         statusDiv.style.display = 'block';
     }
 }
+
 
 function formatTime(time24) {
     const [hours, minutes] = time24.split(':');
