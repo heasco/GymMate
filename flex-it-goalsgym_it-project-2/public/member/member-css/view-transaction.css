@@ -1,0 +1,208 @@
+/* ========================================
+   VIEW TRANSACTIONS - GOALS GYM THEME
+   Matches member-dashboard.css / attendance
+======================================== */
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0;
+}
+
+/* Greeting (reuse attendance look) */
+.member-greeting {
+  background: rgba(30, 30, 30, 0.9);
+  padding: 2rem;
+  border-radius: var(--radius);
+  margin: 0 auto 2rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(10px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.member-greeting h2 {
+  color: var(--accent);
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 0 0 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.member-greeting .subtitle {
+  color: var(--neutral);
+  opacity: 0.9;
+  margin-bottom: 1rem;
+}
+
+.member-badge {
+  display: inline-block;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--highlight) 100%);
+  color: var(--accent);
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 4px 12px rgba(179, 0, 0, 0.3);
+}
+
+/* Card shell */
+.dashboard-card {
+  background: rgba(30, 30, 30, 0.9);
+  border-radius: var(--radius);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+  margin-bottom: 2rem;
+}
+
+.dashboard-card.full-width {
+  width: 100%;
+}
+
+.card-header {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--highlight) 100%);
+  padding: 1.5rem 2rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.card-header h3 {
+  color: var(--accent);
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.card-body {
+  padding: 1.5rem;
+}
+
+/* Summary row */
+.summary-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+}
+
+.summary-item {
+  flex: 1 1 200px;
+  padding: 0.75rem 1rem;
+  background: rgba(0, 0, 0, 0.35);
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.summary-label {
+  color: var(--accent);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-size: 0.85rem;
+}
+
+.summary-value {
+  color: var(--neutral);
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+/* Table */
+.table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  border-radius: var(--radius);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.transactions-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 720px;
+}
+
+.transactions-table thead {
+  background: rgba(0, 0, 0, 0.7);
+}
+
+.transactions-table th,
+.transactions-table td {
+  padding: 0.75rem 1rem;
+  font-size: 0.9rem;
+}
+
+.transactions-table th {
+  text-align: left;
+  color: var(--accent);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.transactions-table td {
+  color: var(--neutral);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.transactions-table tbody tr:nth-child(even) {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.transactions-table tbody tr:hover {
+  background: rgba(179, 0, 0, 0.12);
+}
+
+.right-align {
+  text-align: right;
+}
+
+/* States */
+.loading-state {
+  color: var(--neutral);
+  text-align: center;
+  padding: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.error-state {
+  background: rgba(220, 53, 69, 0.1);
+  color: #dc3545;
+  border: 1px solid #dc3545;
+  border-radius: var(--radius);
+  padding: 0.75rem 1rem;
+  text-align: center;
+  margin-bottom: 0.75rem;
+}
+
+.empty-state {
+  color: var(--neutral);
+  text-align: center;
+  padding: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .member-greeting {
+    padding: 1.5rem;
+  }
+
+  .card-header {
+    padding: 1.1rem 1.4rem;
+  }
+
+  .card-body {
+    padding: 1.1rem;
+  }
+}

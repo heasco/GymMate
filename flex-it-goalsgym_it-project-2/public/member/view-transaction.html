@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Transactions - GOALS Gym</title>
+  <!-- Base admin styles (same include as other member pages) -->
+  <link rel="stylesheet" href="../admin/admin-css/admin-mainpage.css" />
+  <!-- Page-specific member styles -->
+  <link rel="stylesheet" href="./member-css/view-transaction.css" />
+</head>
+<body>
+  <div class="admin-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <h2>GOALS Gym Member</h2>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="member-dashboard.html"><span>Dashboard</span></a>
+        <a href="member-attendance.html"><span>Attendance</span></a>
+        <a href="member-classes.html"><span>Schedule</span></a>
+        <a href="manage-member-enrollment.html"><span>Enroll</span></a>
+        <a href="member-profile.html"><span>Profile</span></a>
+        <a href="send-class-feedback.html"><span>Feedback</span></a>
+        <a href="view-transaction.html" class="active"><span>Transactions</span></a>
+      </nav>
+    </aside>
+
+    <!-- Header -->
+    <header class="header">
+      <button class="menu-toggle" id="menuToggle"></button>
+      <h1>Member Transactions</h1>
+      <button class="logout-btn" id="logoutBtn">Logout</button>
+    </header>
+
+    <!-- Main -->
+    <main class="main-content">
+      <div class="container">
+        <!-- Greeting -->
+        <div class="member-greeting">
+          <h2>WELCOME, <span id="memberName">MEMBER</span>!</h2>
+          <p class="subtitle">
+            Review your membership payments and other transactions.
+          </p>
+          <div class="member-badge" id="memberIdBadge">Loading...</div>
+        </div>
+
+        <!-- Summary + Table -->
+        <div class="dashboard-card">
+          <div class="card-header">
+            <h3>Transaction Summary</h3>
+          </div>
+          <div class="card-body">
+            <div class="summary-row">
+              <div class="summary-item">
+                <span class="summary-label">Total Transactions</span>
+                <span class="summary-value" id="totalTransactions">0</span>
+              </div>
+              <div class="summary-item">
+                <span class="summary-label">Total Amount Paid</span>
+                <span class="summary-value" id="totalAmount">₱0.00</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Transactions Table -->
+        <div class="dashboard-card full-width">
+          <div class="card-header">
+            <h3>Your Transaction History</h3>
+          </div>
+          <div class="card-body">
+            <div id="transactionsLoading" class="loading-state">
+              Loading transactions...
+            </div>
+            <div id="transactionsError" class="error-state" style="display:none;"></div>
+
+            <div class="table-wrapper">
+              <table class="transactions-table">
+                <thead>
+                  <tr>
+                    <th>Transaction ID</th>
+                    <th>Date</th>
+                    <th>Description</th>
+                    <th>Payment Method</th>
+                    <th class="right-align">Amount (₱)</th>
+                  </tr>
+                </thead>
+                <tbody id="transactionsBody">
+                  <!-- Filled by JS -->
+                </tbody>
+              </table>
+            </div>
+
+            <div id="noTransactions" class="empty-state" style="display:none;">
+              No transactions found yet.
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Page script -->
+  <script src="./member-js/view-transaction.js"></script>
+</body>
+</html>

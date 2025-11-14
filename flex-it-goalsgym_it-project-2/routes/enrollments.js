@@ -177,6 +177,66 @@ router.get('/class/:classId', asyncHandler(async (req, res) => {
   });
 }));
 
+// GET /api/enrollments/member/:memberId/enhanced - Enhanced member enrollments with class names
+router.get('/member/:memberId/enhanced', asyncHandler(async (req, res) => {
+    const memberId = req.params.memberId;
+
+    try {
+        console.log('Getting enhanced enrollments for member:', memberId);
+
+        // Get enrollments for the member
+        const enrollments = await Enrollment.find({
+            member_id: memberId,
+            status: 'active'
+        }).lean();
+
+        console.log('Raw enrollments found:', enrollments.length);
+
+        // Get all classes once to avoid multiple queries
+        const allClasses = await Class.find({}).lean();
+        const classMap = {};
+        allClasses.forEach(cls => {
+            classMap[cls.class_id] = {
+                class_name: cls.class_name,
+                trainer_name: cls.trainer_name,
+                schedule: cls.schedule
+            };
+        });
+
+        console.log('Classes map created with', Object.keys(classMap).length, 'classes');
+
+        // Match enrollments with classes
+        const enhancedEnrollments = await Promise.all(
+            enrollments.map(async (enrollment) => {
+                const classInfo = classMap[enrollment.class_id];
+                
+                return {
+                    ...enrollment,
+                    class_name: classInfo ? classInfo.class_name : 'Class Not Found',
+                    class_trainer: classInfo ? classInfo.trainer_name : 'Unknown Trainer',
+                    class_schedule: classInfo ? classInfo.schedule : 'Unknown Schedule'
+                };
+            })
+        );
+
+        console.log('Enhanced enrollments processed:', enhancedEnrollments.length);
+
+        return res.json({
+            success: true,
+            count: enhancedEnrollments.length,
+            data: enhancedEnrollments
+        });
+
+    } catch (error) {
+        console.error('Error in enhanced enrollments route:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Error loading enhanced enrollments',
+            error: error.message
+        });
+    }
+}));
+
 // PUT /api/enrollments/:id/cancel - Cancel enrollment and refund session
 router.put('/:id/cancel', asyncHandler(async (req, res) => {
   const enrollmentId = req.params.id;

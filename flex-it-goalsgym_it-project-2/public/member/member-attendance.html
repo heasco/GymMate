@@ -23,6 +23,7 @@
         <a href="manage-member-enrollment.html"><span>Enroll</span></a>
         <a href="member-profile.html"><span>Profile</span></a>
         <a href="send-class-feedback.html"><span>Feedback</span></a>
+        <a href="view-transaction.html"><span>Transactions</span></a>
       </nav>
     </aside>
 
@@ -43,9 +44,9 @@
           <div class="member-badge" id="memberIdBadge">Loading...</div>
         </div>
 
-        <!-- Summary + Calendar -->
+        <!-- Summary + Streak + Lifetime -->
         <div class="dashboard-grid">
-          <!-- Summary -->
+          <!-- Attendance Summary (with its own month switcher) -->
           <div class="dashboard-card">
             <div class="card-header">
               <h3>Attendance Summary</h3>
@@ -54,7 +55,23 @@
               <div class="profile-info">
                 <div class="info-item">
                   <span class="info-label">Month</span>
-                  <span class="info-value" id="summaryMonth">—</span>
+                  <div class="summary-month-nav">
+                    <button
+                      id="prevSummaryMonthBtn"
+                      class="nav-btn"
+                      aria-label="Previous summary month"
+                    >
+                      ‹
+                    </button>
+                    <span class="info-value" id="summaryMonth">—</span>
+                    <button
+                      id="nextSummaryMonthBtn"
+                      class="nav-btn"
+                      aria-label="Next summary month"
+                    >
+                      ›
+                    </button>
+                  </div>
                 </div>
                 <div class="info-item">
                   <span class="info-label">Total Days Attended</span>
@@ -64,45 +81,80 @@
             </div>
           </div>
 
-          <!-- Calendar -->
-          <div class="dashboard-card full-width">
+          <!-- Streak card -->
+          <div class="dashboard-card">
             <div class="card-header">
-              <h3>Monthly View</h3>
+              <h3>Streak</h3>
             </div>
             <div class="card-body">
-              <div class="calendar-controls">
-                <div class="view-tabs">
-                  <button class="view-tab active" disabled>Monthly View</button>
+              <div class="profile-info">
+                <div class="info-item">
+                  <span class="info-label">Current Streak</span>
+                  <span class="info-value" id="currentStreak">0</span>
                 </div>
-                <div class="month-nav">
-                  <button id="prevMonthBtn" class="nav-btn" aria-label="Previous Month">‹</button>
-                  <div class="month-title" id="monthTitle">Month YYYY</div>
-                  <button id="nextMonthBtn" class="nav-btn" aria-label="Next Month">›</button>
+                <div class="info-item">
+                  <span class="info-label">Longest Streak</span>
+                  <span class="info-value" id="longestStreak">0</span>
                 </div>
               </div>
+            </div>
+          </div>
 
-              <div id="calendarContainer" class="calendar-container">
-                <div class="calendar-grid" id="calendarGrid">
-                  <!-- Header -->
-                  <div class="calendar-header">
-                    <div class="calendar-header-day">SUN</div>
-                    <div class="calendar-header-day">MON</div>
-                    <div class="calendar-header-day">TUE</div>
-                    <div class="calendar-header-day">WED</div>
-                    <div class="calendar-header-day">THU</div>
-                    <div class="calendar-header-day">FRI</div>
-                    <div class="calendar-header-day">SAT</div>
-                  </div>
-                  <!-- Days injected by JS -->
+          <!-- Lifetime total card -->
+          <div class="dashboard-card">
+            <div class="card-header">
+              <h3>Total Days Attended</h3>
+            </div>
+            <div class="card-body">
+              <div class="profile-info">
+                <div class="info-item">
+                  <span class="info-label">All-Time Days</span>
+                  <span class="info-value" id="lifetimeAttendance">0</span>
                 </div>
-                <div id="calendarLoading" class="loading-state">Loading calendar...</div>
-                <div id="calendarError" class="error-state" style="display:none;"></div>
               </div>
+            </div>
+          </div>
+        </div>
 
-              <div class="legend">
-                <span class="legend-item"><span class="legend-dot attended"></span> Attended</span>
-                <span class="legend-item"><span class="legend-dot today"></span> Today</span>
+        <!-- Calendar (kept as before, now below the three cards) -->
+        <div class="dashboard-card full-width">
+          <div class="card-header">
+            <h3>Monthly View</h3>
+          </div>
+          <div class="card-body">
+            <div class="calendar-controls">
+              <div class="month-nav">
+                <button id="prevMonthBtn" class="nav-btn" aria-label="Previous Month">‹</button>
+                <div class="month-title" id="monthTitle">Month YYYY</div>
+                <button id="nextMonthBtn" class="nav-btn" aria-label="Next Month">›</button>
               </div>
+            </div>
+
+            <div id="calendarContainer" class="calendar-container">
+              <div class="calendar-grid" id="calendarGrid">
+                <!-- Header -->
+                <div class="calendar-header">
+                  <div class="calendar-header-day">SUN</div>
+                  <div class="calendar-header-day">MON</div>
+                  <div class="calendar-header-day">TUE</div>
+                  <div class="calendar-header-day">WED</div>
+                  <div class="calendar-header-day">THU</div>
+                  <div class="calendar-header-day">FRI</div>
+                  <div class="calendar-header-day">SAT</div>
+                </div>
+                <!-- Days injected by JS -->
+              </div>
+              <div id="calendarLoading" class="loading-state">Loading calendar...</div>
+              <div id="calendarError" class="error-state" style="display:none;"></div>
+            </div>
+
+            <div class="legend">
+              <span class="legend-item">
+                <span class="legend-dot attended"></span> Attended
+              </span>
+              <span class="legend-item">
+                <span class="legend-dot today"></span> Today
+              </span>
             </div>
           </div>
         </div>

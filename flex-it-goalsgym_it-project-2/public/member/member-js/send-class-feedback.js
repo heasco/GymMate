@@ -317,91 +317,164 @@ async function loadAttendedClasses() {
 }
 
 // View My Feedback (ENHANCED: Token + role check; fetch → apiFetch, including Promise.all)
+// View My Feedback (ENHANCED: now supports deleting member feedback)
 async function viewMyFeedback() {
-    console.log('[ViewFeedback] Loading feedback...');
-    
-    const memberId = memberIdFromAuth();
-    if (!memberId) {
-        logout();
-        return;
+  console.log('[ViewFeedback] Loading feedback...');
+  const memberId = memberIdFromAuth();
+  if (!memberId) {
+    logout();
+    return;
+  }
+
+  // ENHANCED: Token + role check
+  const token = sessionStorage.getItem('token');
+  const role = sessionStorage.getItem('role');
+  const authUser = getAuth();
+  if (
+    !token ||
+    role !== 'member' ||
+    !authUser ||
+    (Date.now() - (authUser.timestamp || 0)) > 3600000
+  ) {
+    console.log('[ViewFeedback] Invalid session - logging out');
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('authUser');
+    sessionStorage.removeItem('role');
+    window.location.href = '../member-login.html';
+    return;
+  }
+
+  const modal = $('feedbackModal');
+  const feedbackList = $('feedbackList');
+  if (!modal || !feedbackList) {
+    console.error('[ViewFeedback] Modal elements not found');
+    return;
+  }
+
+  modal.style.display = 'block';
+  feedbackList.innerHTML = 'Loading your feedback...';
+
+  try {
+    // GET all feedbacks for this member
+    const data = await apiFetch(
+      `${SERVER_URL}/api/feedbacks/member/${encodeURIComponent(memberId)}`
+    );
+    console.log('[ViewFeedback] Feedback data:', data);
+    const feedbacks = data.feedbacks || [];
+
+    if (feedbacks.length === 0) {
+      feedbackList.innerHTML = "You haven't sent any feedback yet.";
+      return;
     }
 
-    // ENHANCED: Token + role check
-    const token = sessionStorage.getItem('token');
-    const role = sessionStorage.getItem('role');
-    const authUser = getAuth();
-    if (!token || role !== 'member' || !authUser || (Date.now() - (authUser.timestamp || 0)) > 3600000) {
-        console.log('[ViewFeedback] Invalid session - logging out');  // DEBUG
-        sessionStorage.removeItem('token');
-        sessionStorage.removeItem('authUser');
-        sessionStorage.removeItem('role');
-        window.location.href = '../member-login.html';
-        return;
-    }
-
-    const modal = $('feedbackModal');
-    const feedbackList = $('feedbackList');
-    
-    if (!modal || !feedbackList) {
-        console.error('[ViewFeedback] Modal elements not found');
-        return;
-    }
-
-    modal.style.display = 'block';
-    feedbackList.innerHTML = '<p style="text-align: center; padding: 2rem;">Loading your feedback...</p>';
-
-    try {
-        // TOKENIZED: GET via apiFetch
-        const data = await apiFetch(`${SERVER_URL}/api/feedbacks/member/${encodeURIComponent(memberId)}`);
-        console.log('[ViewFeedback] Feedback data:', data);
-        
-        const feedbacks = data.feedbacks || [];
-
-        if (feedbacks.length === 0) {
-            feedbackList.innerHTML = '<p style="text-align: center; padding: 2rem; color: var(--neutral);">You haven\'t sent any feedback yet.</p>';
-            return;
+    // Fetch class names for each feedback
+    const feedbacksWithClasses = await Promise.all(
+      feedbacks.map(async (feedback) => {
+        try {
+          const classData = await apiFetch(
+            `${SERVER_URL}/api/classes/${encodeURIComponent(
+              feedback.class_id
+            )}`
+          );
+          return {
+            ...feedback,
+            class_name: classData.data?.class_name || 'Unknown Class',
+          };
+        } catch (error) {
+          console.error(
+            `[ViewFeedback] Error fetching class ${feedback.class_id}:`,
+            error
+          );
         }
+        return { ...feedback, class_name: 'Unknown Class' };
+      })
+    );
 
-        // Fetch class names for each feedback (TOKENIZED: Promise.all with apiFetch)
-        const feedbacksWithClasses = await Promise.all(
-            feedbacks.map(async (feedback) => {
-                try {
-                    // TOKENIZED: GET via apiFetch
-                    const classData = await apiFetch(`${SERVER_URL}/api/classes/${encodeURIComponent(feedback.class_id)}`);
-                    
-                    return {
-                        ...feedback,
-                        class_name: classData.data?.class_name || 'Unknown Class'
-                    };
-                } catch (error) {
-                    console.error(`[ViewFeedback] Error fetching class ${feedback.class_id}:`, error);
-                }
-                return { ...feedback, class_name: 'Unknown Class' };
-            })
-        );
+    // Render feedback items with delete button
+    feedbackList.innerHTML = feedbacksWithClasses
+      .map((fb) => {
+        const stars = '⭐'.repeat(fb.rating || 0);
+        const date = formatDate(fb.createdAt || fb.date_submitted);
+        const commentSafe = (fb.comment || '')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;');
 
-        // Display feedbacks
-        feedbackList.innerHTML = feedbacksWithClasses.map(fb => {
-            const stars = '⭐'.repeat(fb.rating);
-            const date = formatDate(fb.createdAt || fb.date_submitted);
-            
-            return `
-                <div class="feedback-item">
-                    <div class="feedback-header">
-                        <h4>${fb.class_name}</h4>
-                        <span class="feedback-date">${date}</span>
-                    </div>
-                    <div class="feedback-rating">${stars} (${fb.rating}/5)</div>
-                    <div class="feedback-comment">${fb.comment || 'No comment provided'}</div>
-                </div>
-            `;
-        }).join('');
+        return `
+          <div class="feedback-item" data-feedback-id="${fb.feedback_id}">
+            <div class="feedback-header">
+              <h4>${fb.class_name}</h4>
+              <span class="feedback-date">${date}</span>
+            </div>
+            <div class="feedback-rating">${stars}</div>
+            <div class="feedback-comment">${commentSafe}</div>
+            <div class="feedback-actions">
+              <button
+                type="button"
+                class="feedback-delete-btn"
+                data-feedback-id="${fb.feedback_id}"
+              >
+                Delete Feedback
+              </button>
+            </div>
+          </div>
+        `;
+      })
+      .join('');
 
-    } catch (error) {
-        console.error('[ViewFeedback] Error:', error);
-        feedbackList.innerHTML = `<p style="text-align: center; padding: 2rem; color: var(--error);">Failed to load feedback: ${error.message}</p>`;
-    }
+    // Wire up delete buttons
+    document.querySelectorAll('.feedback-delete-btn').forEach((btn) => {
+      btn.addEventListener('click', async (e) => {
+        const feedbackId = e.currentTarget.getAttribute('data-feedback-id');
+        const itemEl = e.currentTarget.closest('.feedback-item');
+        await handleDeleteFeedback(feedbackId, itemEl);
+      });
+    });
+  } catch (error) {
+    console.error('[ViewFeedback] Error:', error);
+    feedbackList.innerHTML = `Failed to load feedback: ${error.message}`;
+  }
 }
+
+// Delete a single feedback document for this member
+async function handleDeleteFeedback(feedbackId, itemEl) {
+  if (!feedbackId) return;
+
+  const confirmDelete = window.confirm(
+    'Are you sure you want to delete this feedback?'
+  );
+  if (!confirmDelete) return;
+
+  try {
+    const res = await apiFetch(
+      `${SERVER_URL}/api/feedbacks/${encodeURIComponent(feedbackId)}`,
+      { method: 'DELETE' }
+    );
+
+    if (!res || res.success === false) {
+      throw new Error(res?.error || 'Failed to delete feedback.');
+    }
+
+    showMessage('Feedback deleted successfully.', 'success');
+
+    // Remove from DOM
+    if (itemEl && itemEl.parentElement) {
+      itemEl.parentElement.removeChild(itemEl);
+    }
+
+    // If no feedbacks remain, show empty message
+    const remaining = document.querySelectorAll('.feedback-item');
+    if (!remaining.length) {
+      const feedbackList = $('feedbackList');
+      if (feedbackList) {
+        feedbackList.innerHTML = "You haven't sent any feedback yet.";
+      }
+    }
+  } catch (error) {
+    console.error('[DeleteFeedback] Error:', error);
+    showMessage(`Failed to delete feedback: ${error.message}`, 'error');
+  }
+}
+
 
 // Submit Feedback (ENHANCED: Token + role check; fetch → apiFetch)
 async function submitFeedback() {

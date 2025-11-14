@@ -55,4 +55,50 @@ router.post('/', asyncHandler(async (req, res) => {
   });
 }));
 
+// GET /api/transactions/member/:id
+// Returns all transactions for a given member (by mongoId or memberId)
+router.get(
+  '/member/:id',
+  asyncHandler(async (req, res) => {
+    const { id } = req.params;
+
+    // Find member by either ObjectId or memberId string
+    let memberQuery = { memberId: id };
+
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      memberQuery = {
+        $or: [{ _id: new mongoose.Types.ObjectId(id) }, { memberId: id }],
+      };
+    }
+
+    const member = await Member.findOne(memberQuery).lean();
+    if (!member) {
+      return res
+        .status(404)
+        .json({ success: false, error: 'Member not found' });
+    }
+
+    // Transactions store member_id as member.memberId (or fallback _id)
+    const memberKey = member.memberId || member._id.toString();
+
+    const transactions = await Transaction.find({ member_id: memberKey })
+      .sort({ payment_date: -1, createdAt: -1 })
+      .lean();
+
+    return res.json({
+      success: true,
+      count: transactions.length,
+      data: transactions.map((t) => ({
+        transaction_id: t.transaction_id,
+        member_id: t.member_id,
+        amount: t.amount,
+        payment_method: t.payment_method,
+        payment_date: t.payment_date,
+        description: t.description,
+        createdAt: t.createdAt,
+      })),
+    });
+  })
+);
+
 module.exports = router;

@@ -555,3 +555,28 @@
 .action-btn.primary:hover {
     background: var(--highlight);
 }
+
+.feedback-actions {
+    margin-top: 1rem;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.feedback-delete-btn {
+    background: transparent;
+    border: 1px solid #dc3545;
+    color: #dc3545;
+    padding: 0.4rem 0.9rem;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.feedback-delete-btn:hover {
+    background: #dc3545;
+    color: #ffffff;
+}
