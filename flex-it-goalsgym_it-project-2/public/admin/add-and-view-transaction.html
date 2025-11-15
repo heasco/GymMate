@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Add & View Transactions - GOALS Gym</title>
+  <link rel="stylesheet" href="./admin-css/admin-mainpage.css" />
+  <link rel="stylesheet" href="./admin-css/add-and-view-transaction.css" />
+</head>
+<body>
+  <div class="admin-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <h2>GOALS Gym Admin</h2>
+      </div>
+      <nav class="sidebar-nav">
+                <a href="./admin-mainpage.html"><span>Dashboard</span></a>
+                <a href="./add-classes.html"><span>Add Classes</span></a>
+                <a href="./add-member.html"><span>Add Member</span></a>
+                <a href="./manage-members.html"><span>Manage Member</span></a>
+                <a href="./add-trainer.html"><span>Add Trainer</span></a>
+                <a href="./manage-trainer.html"><span>Manage Trainer</span></a>
+                <a href="./manage-class-enrollment.html"><span>Manage Enrollment</span></a>
+                <a href="./add-and-view-transaction.html"  class="active"><span>Add & View Transaction</span></a>
+                <a href="./view-classes-and-feedback.html"><span>View Classes</span></a>
+                <a href="./trainer-schedule-management.html"><span>Trainer Schedule Management</span></a>
+                <a href="./attendance-checker.html"><span>Attendance System</span></a>
+        </a>
+      </nav>
+    </aside>
+
+    <!-- Header -->
+    <header class="header">
+      <button class="menu-toggle" id="menuToggle">☰</button>
+      <h1>Transactions</h1>
+      <button class="logout-btn" id="logoutBtn">Logout</button>
+    </header>
+
+    <!-- Main -->
+    <main class="main-content">
+      <div class="container">
+        <div id="serverStatus" class="server-status">
+          Checking server connection...
+        </div>
+
+        <!-- Centered Add/View toggle -->
+        <div class="tx-toggle-wrapper">
+          <div class="tx-toggle-bar">
+            <button id="tabAdd" class="tx-toggle-btn" type="button">
+              ADD TRANSACTION
+            </button>
+            <button id="tabView" class="tx-toggle-btn active" type="button">
+              VIEW TRANSACTIONS
+            </button>
+          </div>
+        </div>
+
+        <!-- ADD TRANSACTION -->
+        <section id="addSection" class="hidden">
+          <!-- Step Indicator -->
+          <div class="step-indicator">
+            <div class="step active" id="step1">
+              <div class="step-number">1</div>
+              <div class="step-title">Select Member</div>
+            </div>
+            <div class="step" id="step2">
+              <div class="step-number">2</div>
+              <div class="step-title">Enter Details</div>
+            </div>
+            <div class="step" id="step3">
+              <div class="step-number">3</div>
+              <div class="step-title">Confirm</div>
+            </div>
+          </div>
+
+          <!-- Step 1 -->
+          <div class="card" id="step1Card">
+            <h2>Step 1: Select Member</h2>
+            <div class="form-group">
+              <label for="memberSearch">Search Member</label>
+              <input
+                type="text"
+                id="memberSearch"
+                placeholder="Search by name or Member ID..."
+              />
+              <div id="searchLoading" class="loading hidden">
+                Searching members...
+              </div>
+              <div id="searchResults" class="search-results hidden"></div>
+            </div>
+            <div id="selectedMemberInfo" class="member-info hidden"></div>
+          </div>
+
+          <!-- Step 2 -->
+          <div class="card" id="step2Card">
+            <h2>Step 2: Enter Transaction Details</h2>
+            <form id="transactionForm">
+              <div class="form-group">
+                <label for="amount">Amount (₱)</label>
+                <input
+                  type="number"
+                  id="amount"
+                  min="1"
+                  step="0.01"
+                  placeholder="Enter amount paid"
+                />
+              </div>
+
+              <div class="form-group">
+                <label for="paymentMethod">Payment Method</label>
+                <select id="paymentMethod">
+                  <option value="">-- Select Payment Method --</option>
+                  <option value="cash">Cash</option>
+                  <option value="e-wallet">E-Wallet</option>
+                  <option value="bank">Bank Transfer / Deposit</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="paymentDate">Payment Date</label>
+                <div class="date-with-popup">
+                  <input type="date" id="paymentDate" />
+                  <button
+                    type="button"
+                    id="paymentDateIcon"
+                    class="mini-calendar-btn"
+                    title="Pick date"
+                  >
+                    📅
+                  </button>
+                  <div
+                    id="paymentDatePopup"
+                    class="mini-calendar-popup hidden"
+                    data-target-input="paymentDate"
+                  >
+                    <div class="mini-calendar-header">
+                      <button
+                        type="button"
+                        class="mini-cal-nav"
+                        data-dir="-1"
+                      >
+                        ‹
+                      </button>
+                      <span class="mini-calendar-title"></span>
+                      <button
+                        type="button"
+                        class="mini-cal-nav"
+                        data-dir="1"
+                      >
+                        ›
+                      </button>
+                    </div>
+                    <div class="mini-calendar-grid"></div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="description">Description / Notes</label>
+                <textarea
+                  id="description"
+                  placeholder="Optional: membership renewal, walk-in session, etc."
+                ></textarea>
+              </div>
+            </form>
+          </div>
+
+          <!-- Step 3 -->
+          <div class="card" id="step3Card">
+            <h2>Step 3: Confirm Transaction</h2>
+            <div id="confirmationSummary">
+              Please select a member and enter details first.
+            </div>
+            <button id="submitTransactionBtn" type="button" disabled>
+              Confirm & Save Transaction
+            </button>
+            <div id="resultMessage" class="hidden"></div>
+            <div id="transactionResult" class="hidden"></div>
+          </div>
+        </section>
+
+        <!-- VIEW TRANSACTIONS -->
+        <section id="viewSection">
+          <div class="card">
+            <h2>View Transactions</h2>
+
+            <!-- Filters -->
+            <div class="tx-filters">
+              <div class="form-group tx-filter-item">
+                <label for="txSearch">Search Member / Transaction ID</label>
+                <input
+                  type="text"
+                  id="txSearch"
+                  placeholder="Search by member name, Member ID, or TRX-0001..."
+                />
+              </div>
+
+              <div class="form-group tx-filter-item tx-date-filter">
+                <label for="txDate">Filter by Date</label>
+                <div class="date-with-popup">
+                  <input type="date" id="txDate" />
+                  <button
+                    type="button"
+                    id="txDateIcon"
+                    class="mini-calendar-btn"
+                    title="Pick date"
+                  >
+                    📅
+                  </button>
+                  <div
+                    id="txDatePopup"
+                    class="mini-calendar-popup hidden"
+                    data-target-input="txDate"
+                  >
+                    <div class="mini-calendar-header">
+                      <button
+                        type="button"
+                        class="mini-cal-nav"
+                        data-dir="-1"
+                      >
+                        ‹
+                      </button>
+                      <span class="mini-calendar-title"></span>
+                      <button
+                        type="button"
+                        class="mini-cal-nav"
+                        data-dir="1"
+                      >
+                        ›
+                      </button>
+                    </div>
+                    <div class="mini-calendar-grid"></div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-group tx-filter-actions">
+                <label>&nbsp;</label>
+                <div class="tx-filter-buttons">
+                  <button type="button" id="txSearchBtn">Search</button>
+                  <button type="button" id="txResetBtn">Reset</button>
+                </div>
+              </div>
+            </div>
+
+            <div id="txViewStatus" class="loading">
+              Loading latest 10 transactions...
+            </div>
+            <div id="txViewError" class="error hidden"></div>
+
+            <div class="tx-table-wrapper">
+              <table class="tx-table">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Transaction ID</th>
+                    <th>Member</th>
+                    <th>Payment Method</th>
+                    <th class="right-align">Amount (₱)</th>
+                    <th>Description</th>
+                    <th class="center-align">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="txTableBody"></tbody>
+              </table>
+            </div>
+
+            <div id="txEmpty" class="empty-state hidden">
+              No transactions found for the current criteria.
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- Edit Transaction Modal (hidden until JS adds is-open) -->
+      <div id="editTxOverlay" class="edit-tx-overlay">
+        <div class="edit-tx-panel">
+          <div class="edit-tx-header">
+            <h2>Edit Transaction</h2>
+            <button type="button" id="editTxCloseBtn" class="edit-tx-close">
+              ✕
+            </button>
+          </div>
+          <div id="editTxMessage" class="hidden"></div>
+          <form id="editTxForm">
+            <div class="form-group">
+              <label>Transaction ID</label>
+              <input type="text" id="editTxId" disabled />
+            </div>
+            <div class="form-group">
+              <label>Member</label>
+              <input type="text" id="editTxMember" disabled />
+            </div>
+            <div class="form-group">
+              <label for="editAmount">Amount (₱)</label>
+              <input type="number" id="editAmount" min="1" step="0.01" />
+            </div>
+            <div class="form-group">
+              <label for="editMethod">Payment Method</label>
+              <select id="editMethod">
+                <option value="">-- Keep current --</option>
+                <option value="cash">Cash</option>
+                <option value="e-wallet">E-Wallet</option>
+                <option value="bank">Bank Transfer / Deposit</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="editDate">Payment Date</label>
+              <div class="date-with-popup">
+                <input type="date" id="editDate" />
+                <button
+                  type="button"
+                  id="editDateIcon"
+                  class="mini-calendar-btn"
+                  title="Pick date"
+                >
+                  📅
+                </button>
+                <div
+                  id="editDatePopup"
+                  class="mini-calendar-popup hidden"
+                  data-target-input="editDate"
+                >
+                  <div class="mini-calendar-header">
+                    <button
+                      type="button"
+                      class="mini-cal-nav"
+                      data-dir="-1"
+                    >
+                      ‹
+                    </button>
+                    <span class="mini-calendar-title"></span>
+                    <button
+                      type="button"
+                      class="mini-cal-nav"
+                      data-dir="1"
+                    >
+                      ›
+                    </button>
+                  </div>
+                  <div class="mini-calendar-grid"></div>
+                </div>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="editDesc">Description</label>
+              <textarea id="editDesc"></textarea>
+            </div>
+            <div class="edit-tx-footer">
+              <button
+                type="button"
+                id="editTxCancelBtn"
+                class="secondary-btn"
+              >
+                Cancel
+              </button>
+              <button type="submit" id="editTxSaveBtn">
+                Save Changes
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="./admin-js/add-and-view-transaction.js"></script>
+</body>
+</html>

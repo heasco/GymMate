@@ -108,7 +108,7 @@
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.sidebar.collapsed + .header {
+.sidebar.collapsed+.header {
     width: calc(100% - 70px);
 }
 
@@ -172,7 +172,7 @@
     min-height: 100vh;
 }
 
-.sidebar.collapsed + .header + .main-content {
+.sidebar.collapsed+.header+.main-content {
     margin-left: 70px;
 }
 
@@ -193,14 +193,14 @@
     border: 1px solid;
 }
 
-.server-connected { 
-    background: rgba(40, 167, 69, 0.1); 
+.server-connected {
+    background: rgba(40, 167, 69, 0.1);
     color: #28a745;
     border-color: #28a745;
 }
 
-.server-disconnected { 
-    background: rgba(220, 53, 69, 0.1); 
+.server-disconnected {
+    background: rgba(220, 53, 69, 0.1);
     color: #dc3545;
     border-color: #dc3545;
 }
@@ -501,33 +501,34 @@ button:disabled {
 
 /* Responsive Design */
 @media (max-width: 1024px) {
+
     .sidebar,
     .sidebar.collapsed {
         width: 70px;
     }
-    
+
     .sidebar-nav a span {
         display: none;
     }
-    
+
     .sidebar.collapsed .sidebar-nav a span {
         display: inline;
     }
-    
+
     .menu-toggle {
         display: block;
     }
-    
+
     .header {
         width: 100%;
     }
-    
+
     .main-content {
         margin-left: 70px;
         padding: 90px 1rem 1rem;
     }
-    
-    .sidebar.collapsed + .header + .main-content {
+
+    .sidebar.collapsed+.header+.main-content {
         margin-left: 280px;
     }
 }
@@ -536,31 +537,31 @@ button:disabled {
     .header {
         padding: 1rem;
     }
-    
+
     .header h1 {
         font-size: 1.4rem;
     }
-    
+
     .card {
         padding: 2rem;
     }
-    
+
     .step-indicator {
         flex-direction: column;
         gap: 1rem;
     }
-    
+
     .step-indicator::before {
         display: none;
     }
-    
+
     .step {
         display: flex;
         align-items: center;
         gap: 1rem;
         text-align: left;
     }
-    
+
     .step-title {
         font-size: 0.85rem;
     }
@@ -570,42 +571,42 @@ button:disabled {
     .header {
         padding: 0.8rem;
     }
-    
+
     .header h1 {
         font-size: 1.2rem;
     }
-    
+
     .menu-toggle {
         font-size: 1.3rem;
         padding: 0.4rem;
     }
-    
+
     .logout-btn {
         padding: 0.6rem 1rem;
         font-size: 0.9rem;
         min-width: 80px;
     }
-    
+
     .main-content {
         padding: 80px 0.8rem 0.8rem;
     }
-    
+
     .card {
         padding: 1.5rem;
     }
-    
+
     .card h2 {
         font-size: 1.4rem;
     }
-    
+
     .form-group {
         margin-bottom: 1rem;
     }
-    
+
     .form-group label {
         font-size: 0.9rem;
     }
-    
+
     input[type="text"],
     input[type="number"],
     input[type="date"],
@@ -614,10 +615,522 @@ button:disabled {
         padding: 0.8rem 1rem;
         font-size: 0.9rem;
     }
-    
+
     button {
         padding: 0.8rem 1.5rem;
         font-size: 0.9rem;
+        width: 100%;
+    }
+}
+
+/* ========================================
+   Add & View transaction toggle / table
+======================================== */
+
+.tx-toggle-bar {
+    display: inline-flex;
+    margin-bottom: 1.5rem;
+    gap: 0.75rem;
+}
+
+.tx-toggle-btn {
+    padding: 0.7rem 1.8rem;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    background: transparent;
+    color: var(--neutral);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    box-shadow: none;
+}
+
+.tx-toggle-btn.active {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--highlight) 100%);
+    color: var(--accent);
+    border-color: transparent;
+    box-shadow: 0 0 20px rgba(179, 0, 0, 0.5);
+}
+
+/* View section filters */
+.tx-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.25rem;
+    margin-bottom: 1.5rem;
+}
+
+.tx-filter-item {
+    flex: 1 1 220px;
+}
+
+.tx-filter-actions {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    flex: 0 0 200px;
+}
+
+.tx-filter-buttons {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.tx-date-filter .tx-date-input {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.tx-date-icon-btn {
+    background: rgba(0, 0, 0, 0.6);
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.4);
+}
+
+/* Table */
+.tx-table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    border-radius: var(--radius);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(0, 0, 0, 0.35);
+    margin-top: 0.5rem;
+}
+
+.tx-table {
+    width: 100%;
+    min-width: 780px;
+    border-collapse: collapse;
+}
+
+.tx-table thead {
+    background: rgba(0, 0, 0, 0.7);
+}
+
+.tx-table th,
+.tx-table td {
+    padding: 0.75rem 1rem;
+    font-size: 0.9rem;
+}
+
+.tx-table th {
+    color: var(--accent);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+    text-align: left;
+}
+
+.tx-table td {
+    color: var(--neutral);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.tx-table tbody tr:nth-child(even) {
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.tx-table tbody tr:hover {
+    background: rgba(179, 0, 0, 0.14);
+}
+
+.tx-table td small {
+    font-size: 0.8rem;
+    opacity: 0.8;
+}
+
+.right-align {
+    text-align: right;
+}
+
+/* States */
+.empty-state {
+    color: var(--neutral);
+    text-align: center;
+    padding: 0.75rem;
+    margin-top: 0.75rem;
+}
+
+.hidden {
+    display: none;
+}
+
+#txViewStatus {
+    margin-bottom: 0.75rem;
+}
+
+#txViewError {
+    margin-bottom: 0.75rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .tx-filters {
+        flex-direction: column;
+    }
+
+    .tx-filter-actions {
+        flex: 1 1 auto;
+    }
+
+    .tx-toggle-bar {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .tx-toggle-btn {
+        flex: 1 1 0;
+        text-align: center;
+        padding: 0.6rem 0.4rem;
+        font-size: 0.85rem;
+    }
+}
+
+/* ========================================
+   Centered Add / View toggle
+======================================== */
+
+.tx-toggle-wrapper {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+}
+
+.tx-toggle-bar {
+    display: inline-flex;
+    gap: 0.75rem;
+    padding: 0.25rem;
+    background: rgba(0, 0, 0, 0.6);
+    border-radius: 999px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
+}
+
+.tx-toggle-btn {
+    padding: 0.7rem 1.8rem;
+    border-radius: 999px;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    background: rgba(0, 0, 0, 0.8);
+    color: rgba(255, 255, 255, 0.7);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6);
+    min-width: 200px;
+    font-size: 0.9rem;
+}
+
+.tx-toggle-btn:hover {
+    background: rgba(179, 0, 0, 0.25);
+    border-color: rgba(179, 0, 0, 0.6);
+    color: #ffffff;
+    transform: translateY(-2px);
+}
+
+.tx-toggle-btn.active {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--highlight) 100%);
+    color: var(--accent);
+    border-color: var(--primary);
+    box-shadow: 0 4px 18px rgba(179, 0, 0, 0.7);
+}
+
+/* ========================================
+   Date + mini calendar
+======================================== */
+
+.date-with-popup {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.date-with-popup input[type="date"] {
+    flex: 1;
+}
+
+.mini-calendar-btn {
+    background: rgba(0, 0, 0, 0.8);
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--accent);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.7);
+}
+
+.mini-calendar-btn:hover {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--highlight) 100%);
+}
+
+/* Popup */
+.mini-calendar-popup {
+    position: absolute;
+    top: 110%;
+    right: 0;
+    width: 260px;
+    background: rgba(10, 10, 10, 0.98);
+    border-radius: var(--radius);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.7);
+    z-index: 1200;
+    padding: 0.75rem;
+}
+
+.mini-calendar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+}
+
+.mini-calendar-title {
+    color: var(--accent);
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.mini-cal-nav {
+    background: rgba(0, 0, 0, 0.7);
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.mini-calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 0.25rem;
+    margin-top: 0.25rem;
+}
+
+.mini-calendar-grid button {
+    padding: 0.4rem 0;
+    font-size: 0.8rem;
+    border-radius: 4px;
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--neutral);
+    box-shadow: none;
+}
+
+.mini-calendar-grid button.mini-cal-day-header {
+    font-weight: 600;
+    color: var(--accent);
+    cursor: default;
+}
+
+.mini-calendar-grid button.mini-cal-day-disabled {
+    opacity: 0.3;
+    cursor: default;
+}
+
+.mini-calendar-grid button.mini-cal-day {
+    cursor: pointer;
+}
+
+.mini-calendar-grid button.mini-cal-day:hover {
+    background: rgba(179, 0, 0, 0.25);
+    border-color: rgba(179, 0, 0, 0.7);
+    color: #ffffff;
+}
+
+.mini-calendar-grid button.mini-cal-day-selected {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--highlight) 100%);
+    color: #ffffff;
+}
+
+/* ========================================
+   Table actions (Edit / Delete)
+======================================== */
+
+.center-align {
+    text-align: center;
+}
+
+.tx-actions {
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.tx-action-btn {
+    padding: 0.3rem 0.7rem;
+    font-size: 0.75rem;
+    border-radius: 999px;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    border: 1px solid transparent;
+    background: rgba(0, 0, 0, 0.7);
+    color: var(--neutral);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.4);
+}
+
+.tx-action-btn.edit {
+    border-color: #17a2b8;
+    color: #17a2b8;
+}
+
+.tx-action-btn.edit:hover {
+    background: #17a2b8;
+    color: #ffffff;
+}
+
+.tx-action-btn.delete {
+    border-color: #dc3545;
+    color: #dc3545;
+}
+
+.tx-action-btn.delete:hover {
+    background: #dc3545;
+    color: #ffffff;
+}
+
+@media (max-width: 768px) {
+    .tx-toggle-bar {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .tx-toggle-btn {
+        flex: 1 1 0;
+        text-align: center;
+        padding: 0.6rem 0.4rem;
+        font-size: 0.85rem;
+        min-width: auto;
+    }
+}
+
+/* ========================================
+   Edit Transaction side panel
+======================================== */
+.edit-tx-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 1400;
+  display: none;              /* hidden by default */
+  justify-content: center;
+  align-items: center;
+}
+
+.edit-tx-overlay.is-open {
+  display: flex;
+}
+
+.edit-tx-panel {
+  width: 420px;
+  max-width: 95%;
+  background: rgba(20, 20, 20, 0.98);
+  border-radius: var(--radius);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.8);
+  padding: 1.8rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  animation: fadeInScale 0.2s ease-out;
+}
+
+@keyframes fadeInScale {
+  from {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.edit-tx-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.edit-tx-header h2 {
+  color: var(--accent);
+  font-size: 1.2rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.edit-tx-close {
+  background: none;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  font-size: 1rem;
+  box-shadow: none;
+}
+
+.edit-tx-panel .form-group {
+  margin-bottom: 1rem;
+}
+
+.edit-tx-panel input[type="text"][disabled] {
+  opacity: 0.7;
+}
+
+.edit-tx-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.secondary-btn {
+  background: rgba(0, 0, 0, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: var(--neutral);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.4);
+}
+
+.secondary-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+#editTxMessage {
+  margin-bottom: 0.75rem;
+}
+
+/* Reuse success/error styles inside panel */
+#editTxMessage.success {
+    background: rgba(40, 167, 69, 0.1);
+    color: #28a745;
+    border: 1px solid #28a745;
+    border-radius: var(--radius);
+    padding: 0.75rem 1rem;
+}
+
+#editTxMessage.error {
+  background: rgba(220, 53, 69, 0.1);
+  color: #dc3545;
+  border: 1px solid #dc3545;
+  border-radius: var(--radius);
+  padding: 0.75rem 1rem;
+}
+
+@media (max-width: 600px) {
+    .edit-tx-panel {
         width: 100%;
     }
 }
