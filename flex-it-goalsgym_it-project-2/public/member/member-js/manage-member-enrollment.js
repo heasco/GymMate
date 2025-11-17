@@ -1,45 +1,378 @@
-// Utility for authenticated API calls (adds security header for /api/ routes) with timeout - Handles full URLs
-async function apiFetch(endpoint, options = {}, timeoutMs = 10000) {
-  console.log('apiFetch called for:', endpoint);  // DEBUG (remove in production if needed)
-  const token = sessionStorage.getItem('token');
-  if (!token) {
-    console.log('No token - redirecting to login');  // DEBUG
-    sessionStorage.removeItem('token');
-    sessionStorage.removeItem('authUser');
-    sessionStorage.removeItem('role');
+// ========================================
+// Member Enrollment - Secure API + Idle + Session
+// ========================================
+
+const SERVER_URL = 'http://localhost:8080';
+const API_URL = SERVER_URL;
+const $ = (id) => document.getElementById(id);
+
+const MEMBER_SESSION_MAX_AGE_MS = 2 * 60 * 60 * 1000; // 2 hours
+const MEMBER_IDLE_WARNING_MS = 15 * 60 * 1000;        // 15 minutes
+
+// Idle tracking (member only)
+let memberLastActivity = Date.now();
+let memberIdleWarningShown = false;
+
+// Member-scoped storage keys (avoid admin/trainer interference)
+const MEMBER_KEYS = {
+  token: 'member_token',
+  authUser: 'member_authUser',
+  role: 'member_role',
+  logoutEvent: 'memberLogoutEvent',
+};
+
+// --------------------------------------
+// Member storage helpers (namespaced)
+// --------------------------------------
+const MemberStore = {
+  set(token, userPayload) {
+    try {
+      const authUser = {
+        ...(userPayload || {}),
+        timestamp: Date.now(),
+        role: 'member',
+        token,
+      };
+
+      // Prefer localStorage for cross-tab; mirror to sessionStorage
+      localStorage.setItem(MEMBER_KEYS.token, token);
+      localStorage.setItem(MEMBER_KEYS.authUser, JSON.stringify(authUser));
+      localStorage.setItem(MEMBER_KEYS.role, 'member');
+
+      sessionStorage.setItem(MEMBER_KEYS.token, token);
+      sessionStorage.setItem(MEMBER_KEYS.authUser, JSON.stringify(authUser));
+      sessionStorage.setItem(MEMBER_KEYS.role, 'member');
+    } catch (e) {
+      console.error('[MemberStore.set] failed:', e);
+    }
+  },
+
+  getToken() {
+    return (
+      sessionStorage.getItem(MEMBER_KEYS.token) ||
+      localStorage.getItem(MEMBER_KEYS.token) ||
+      null
+    );
+  },
+
+  getAuthUser() {
+    const raw =
+      sessionStorage.getItem(MEMBER_KEYS.authUser) ||
+      localStorage.getItem(MEMBER_KEYS.authUser);
+    if (!raw) return null;
+    try {
+      return JSON.parse(raw);
+    } catch (e) {
+      console.error('[MemberStore.getAuthUser] parse error:', e);
+      return null;
+    }
+  },
+
+  getRole() {
+    return (
+      sessionStorage.getItem(MEMBER_KEYS.role) ||
+      localStorage.getItem(MEMBER_KEYS.role) ||
+      null
+    );
+  },
+
+  hasSession() {
+    const token =
+      localStorage.getItem(MEMBER_KEYS.token) ||
+      sessionStorage.getItem(MEMBER_KEYS.token);
+    const authUser =
+      localStorage.getItem(MEMBER_KEYS.authUser) ||
+      sessionStorage.getItem(MEMBER_KEYS.authUser);
+    const role =
+      localStorage.getItem(MEMBER_KEYS.role) ||
+      sessionStorage.getItem(MEMBER_KEYS.role);
+    return !!token && !!authUser && role === 'member';
+  },
+
+  clear() {
+    localStorage.removeItem(MEMBER_KEYS.token);
+    localStorage.removeItem(MEMBER_KEYS.authUser);
+    localStorage.removeItem(MEMBER_KEYS.role);
+
+    sessionStorage.removeItem(MEMBER_KEYS.token);
+    sessionStorage.removeItem(MEMBER_KEYS.authUser);
+    sessionStorage.removeItem(MEMBER_KEYS.role);
+  },
+};
+
+// --------------------------------------
+// Backward‑compatible bootstrap
+// Copy valid member session from generic keys into member_* once
+// --------------------------------------
+function bootstrapMemberFromGenericIfNeeded() {
+  try {
+    if (MemberStore.hasSession()) return;
+
+    const genToken =
+      localStorage.getItem('token') || sessionStorage.getItem('token');
+    const genRole =
+      localStorage.getItem('role') || sessionStorage.getItem('role');
+    const genAuthRaw =
+      localStorage.getItem('authUser') || sessionStorage.getItem('authUser');
+
+    if (!genToken || !genRole || genRole !== 'member' || !genAuthRaw) return;
+
+    const genAuth = JSON.parse(genAuthRaw);
+    MemberStore.set(genToken, genAuth);
+  } catch (e) {
+    console.error('[bootstrapMemberFromGenericIfNeeded] failed:', e);
+  }
+}
+
+// --------------------------------------
+// Idle helpers
+// --------------------------------------
+function markMemberActivity() {
+  memberLastActivity = Date.now();
+  memberIdleWarningShown = false;
+}
+
+// Idle banner at top (like the other member modules)
+function showMemberIdleBanner() {
+  let banner = document.getElementById('memberIdleBanner');
+  if (!banner) {
+    banner = document.createElement('div');
+    banner.id = 'memberIdleBanner';
+    banner.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 9999;
+      background: linear-gradient(135deg, #111, #333);
+      color: #f5f5f5;
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-radius: 0 0 8px 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+      font-size: 0.95rem;
+    `;
+
+    const textSpan = document.createElement('span');
+    textSpan.textContent =
+      "You've been idle for 15 minutes. Stay logged in or logout?";
+
+    const stayBtn = document.createElement('button');
+    stayBtn.textContent = 'Stay Logged In';
+    stayBtn.style.cssText = `
+      padding: 6px 12px;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      background: #28a745;
+      color: #fff;
+      font-weight: 600;
+    `;
+
+    const logoutBtn = document.createElement('button');
+    logoutBtn.textContent = 'Logout';
+    logoutBtn.style.cssText = `
+      padding: 6px 12px;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      background: #dc3545;
+      color: #fff;
+      font-weight: 600;
+    `;
+
+    stayBtn.addEventListener('click', () => {
+      const token = MemberStore.getToken();
+      const authUser = MemberStore.getAuthUser();
+      if (token && authUser) {
+        authUser.timestamp = Date.now();
+        MemberStore.set(token, authUser);
+      }
+      markMemberActivity();
+      memberIdleWarningShown = true;
+      hideMemberIdleBanner();
+      showToast('You are still logged in.', 'info');
+    });
+
+    logoutBtn.addEventListener('click', () => {
+      memberLogout('user chose logout after idle warning (enrollment)');
+    });
+
+    banner.appendChild(textSpan);
+    banner.appendChild(stayBtn);
+    banner.appendChild(logoutBtn);
+    document.body.appendChild(banner);
+  } else {
+    banner.style.display = 'flex';
+  }
+}
+
+function hideMemberIdleBanner() {
+  const banner = document.getElementById('memberIdleBanner');
+  if (banner) banner.style.display = 'none';
+}
+
+// 15-minute idle watcher + 2-hour hard cap (MemberStore-based)
+function setupMemberIdleWatcher() {
+  ['mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart'].forEach((evt) => {
+    window.addEventListener(evt, markMemberActivity, { passive: true });
+  });
+
+  setInterval(() => {
+    bootstrapMemberFromGenericIfNeeded();
+
+    const token = MemberStore.getToken();
+    const role = MemberStore.getRole();
+    const authUser = MemberStore.getAuthUser();
+
+    if (!token || !authUser || role !== 'member') return;
+
+    // 2-hour absolute session max
+    try {
+      const ts = authUser.timestamp || 0;
+      if (!ts || Date.now() - ts > MEMBER_SESSION_MAX_AGE_MS) {
+        console.log(
+          'Member session exceeded 2 hours (manage-member-enrollment idle watcher).'
+        );
+        memberLogout('session max age exceeded in enrollment idle watcher');
+        return;
+      }
+    } catch (e) {
+      console.error('Failed to parse authUser in idle watcher:', e);
+      memberLogout('invalid authUser JSON in enrollment idle watcher');
+      return;
+    }
+
+    // 15-minute idle warning with banner
+    const idleFor = Date.now() - memberLastActivity;
+    if (!memberIdleWarningShown && idleFor >= MEMBER_IDLE_WARNING_MS) {
+      console.log(
+        "You've been idle for 15 minutes on manage-member-enrollment page."
+      );
+      memberIdleWarningShown = true;
+      showMemberIdleBanner();
+    }
+  }, 30000);
+}
+
+// --------------------------------------
+// Centralized logout (member-scoped)
+// --------------------------------------
+function memberLogout(reason) {
+  console.log('[Logout] Member logout (enrollment):', reason || 'no reason');
+
+  // Clear member_* keys
+  MemberStore.clear();
+
+  // Also clear legacy generic keys if they currently represent a member session
+  try {
+    const genericRole =
+      localStorage.getItem('role') || sessionStorage.getItem('role');
+
+    if (genericRole === 'member') {
+      localStorage.removeItem('token');
+      localStorage.removeItem('authUser');
+      localStorage.removeItem('role');
+
+      sessionStorage.removeItem('token');
+      sessionStorage.removeItem('authUser');
+      sessionStorage.removeItem('role');
+    }
+  } catch (e) {
+    console.error('[memberLogout] failed to clear generic member keys:', e);
+  }
+
+  // Notify other member tabs in this browser
+  localStorage.setItem(MEMBER_KEYS.logoutEvent, Date.now().toString());
+
+  window.location.href = '../member-login.html';
+}
+
+// Backwards-compatible quickLogout wrapper used in the rest of this file
+function quickLogout() {
+  console.log('🚪 Quick logout from manage-member-enrollment');
+  memberLogout('quickLogout');
+}
+
+// Cross‑tab member logout sync
+window.addEventListener('storage', (event) => {
+  if (event.key === MEMBER_KEYS.logoutEvent) {
+    console.log('[Member Logout] enrollment page sees logout from another tab');
+    MemberStore.clear();
     window.location.href = '../member-login.html';
+  }
+});
+
+// ========================================
+// Utility for authenticated API calls
+// Token + role + 2-hour max + timestamp refresh
+// ========================================
+async function apiFetch(endpoint, options = {}, timeoutMs = 10000) {
+  console.log('apiFetch called for:', endpoint); // DEBUG
+
+  bootstrapMemberFromGenericIfNeeded();
+
+  const token = MemberStore.getToken();
+  const role = MemberStore.getRole();
+  const authUser = MemberStore.getAuthUser();
+
+  if (!token || !authUser || role !== 'member') {
+    console.log('No valid member token/authUser/role - redirecting to login'); // DEBUG
+    memberLogout('missing member session in enrollment apiFetch');
+    return;
+  }
+
+  // 2-hour session max check + refresh timestamp
+  try {
+    const ts = authUser.timestamp || 0;
+    if (!ts || Date.now() - ts > MEMBER_SESSION_MAX_AGE_MS) {
+      console.log('Session max age exceeded in apiFetch (member-enrollment).'); // DEBUG
+      memberLogout('session max age exceeded in enrollment apiFetch');
+      return;
+    }
+    authUser.timestamp = Date.now();
+    MemberStore.set(token, authUser);
+  } catch (e) {
+    console.error('Failed to parse authUser in member-enrollment apiFetch:', e);
+    memberLogout('invalid authUser JSON in enrollment apiFetch');
     return;
   }
 
   // Use endpoint directly if it's already a full URL; otherwise prepend base
   let url = endpoint;
   if (!endpoint.startsWith('http://') && !endpoint.startsWith('https://')) {
-    url = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-      ? `http://localhost:8080${endpoint}`
-      : endpoint;
+    url =
+      window.location.hostname === 'localhost' ||
+      window.location.hostname === '127.0.0.1'
+        ? `${SERVER_URL}${endpoint}`
+        : endpoint;
   }
 
-  const headers = { 
-    ...options.headers, 
-    'Authorization': `Bearer ${token}`,
-    'Content-Type': 'application/json' // Default for JSON calls
+  const headers = {
+    ...options.headers,
+    Authorization: `Bearer ${token}`,
+    'Content-Type': 'application/json',
   };
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
-    const response = await fetch(url, { ...options, headers, signal: controller.signal });
+    const response = await fetch(url, {
+      ...options,
+      headers,
+      signal: controller.signal,
+    });
     clearTimeout(timeoutId);
 
-    if (response.status === 401) {
-      console.log('401 Unauthorized - clearing auth and redirecting');  // DEBUG
-      sessionStorage.removeItem('token');
-      sessionStorage.removeItem('authUser');
-      sessionStorage.removeItem('role');
-      window.location.href = '../member-login.html';
+    if (response.status === 401 || response.status === 403) {
+      console.log('401/403 Unauthorized - clearing auth and redirecting'); // DEBUG
+      memberLogout('401/403 from enrollment apiFetch');
       return;
     }
+
     if (!response.ok) throw new Error(`API error: ${response.status}`);
     return await response.json();
   } catch (error) {
@@ -51,59 +384,69 @@ async function apiFetch(endpoint, options = {}, timeoutMs = 10000) {
   }
 }
 
-// ✅ INITIAL AUTH CHECK - Token + Role ('member') + Timestamp (runs immediately)
+// ✅ INITIAL AUTH CHECK - Token + Role ('member') + Timestamp (2 hours)
 (function checkAuth() {
-  console.log('Auth check starting for member-enrollment');  // DEBUG
-  const authUser = JSON.parse(sessionStorage.getItem('authUser') || 'null'); 
-  const token = sessionStorage.getItem('token');
-  const role = sessionStorage.getItem('role');
-  
-  console.log('Auth details:', { authUser: authUser ? authUser.username || authUser.email : null, token: !!token, role });  // DEBUG: Hide sensitive data
-  
-  // Check timestamp (1 hour) + token + member role
-  if (!authUser || (Date.now() - (authUser.timestamp || 0)) > 3600000 || !token || role !== 'member') { 
-    console.log('Auth failed - clearing and redirecting');  // DEBUG
-    sessionStorage.removeItem('authUser'); 
-    sessionStorage.removeItem('token');
-    sessionStorage.removeItem('role');
-    window.location.href = '../member-login.html'; 
-    return;
-  } 
-  
-  console.log('Member authenticated:', authUser.username || authUser.email, 'Role:', role);
-})();
+  console.log('Auth check starting for member-enrollment'); // DEBUG
 
-const API_URL = 'http://localhost:8080';
-const $ = (id) => document.getElementById(id);
+  bootstrapMemberFromGenericIfNeeded();
+
+  const authUser = MemberStore.getAuthUser();
+  const token = MemberStore.getToken();
+  const role = MemberStore.getRole();
+
+  console.log('Auth details:', {
+    authUser: authUser ? authUser.username || authUser.email : null,
+    token: !!token,
+    role,
+  }); // DEBUG
+
+  if (
+    !authUser ||
+    !token ||
+    role !== 'member' ||
+    Date.now() - (authUser.timestamp || 0) > MEMBER_SESSION_MAX_AGE_MS
+  ) {
+    console.log('Auth failed - clearing and redirecting'); // DEBUG
+    memberLogout('failed auth in member-enrollment checkAuth');
+    return;
+  }
+
+  console.log(
+    'Member authenticated:',
+    authUser.username || authUser.email,
+    'Role:',
+    role
+  );
+})();
 
 console.log('=== manage-member-enrollment.js loaded successfully ===');
 
 // ========== AUTH & MEMBER ID UTILS ==========
 function getAuth() {
-  try { 
-    return JSON.parse(sessionStorage.getItem('authUser') || 'null'); 
-  } catch { 
-    return null; 
+  try {
+    return JSON.parse(sessionStorage.getItem('authUser') || 'null');
+  } catch {
+    return null;
   }
 }
 
 function memberIdFromAuth() {
-    const a = getAuth();
-    if (!a) return null;
-    const u = a.user || a; 
-    return u.memberId || u.member_id || u._id || u.id || null;
+  const a = getAuth();
+  if (!a) return null;
+  const u = a.user || a;
+  return u.memberId || u.member_id || u._id || u.id || null;
 }
 
-// Logout function (ENHANCED: Clears token + role)
+// Legacy logout helper, now just call quickLogout
 function logout() {
-  sessionStorage.removeItem('authUser');
-  sessionStorage.removeItem('token');
-  sessionStorage.removeItem('role');
-  window.location.href = '../member-login.html';
+  quickLogout();
 }
 
 function escapeHtml(s) {
-  return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  return String(s || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
 }
 
 // Helper function to get today's date in YYYY-MM-DD format
@@ -147,21 +490,27 @@ function showLoadingState(show = true) {
 
 // ========== DOM READY ==========
 document.addEventListener('DOMContentLoaded', async () => {
+  // Start idle watcher for this page
+  setupMemberIdleWatcher();
+  markMemberActivity();
+
   console.log('=== DOM Content Loaded ===');
-  
+
   const auth = getAuth();
   console.log('Auth check:', auth ? 'Authenticated' : 'Not authenticated');
 
-  // ENHANCED: Token + role + timestamp check (in addition to role check)
+  // ENHANCED: Token + role + timestamp (2h)
   const token = sessionStorage.getItem('token');
   const role = sessionStorage.getItem('role');
-  if (!auth || (Date.now() - (auth.timestamp || 0)) > 3600000 || !token || role !== 'member') {
-      console.warn('Authentication failed, redirecting to login');
-      sessionStorage.removeItem('token');
-      sessionStorage.removeItem('authUser');
-      sessionStorage.removeItem('role');
-      window.location.href = "../member-login.html";
-      return;
+  if (
+    !auth ||
+    Date.now() - (auth.timestamp || 0) > MEMBER_SESSION_MAX_AGE_MS ||
+    !token ||
+    role !== 'member'
+  ) {
+    console.warn('Authentication failed, redirecting to login');
+    quickLogout();
+    return;
   }
 
   showLoadingState(true);
@@ -172,7 +521,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   switchView('calendar');
   ensureCartVisible();
   showLoadingState(false);
-  
+
   console.log('=== Initialization complete ===');
 });
 
@@ -180,41 +529,70 @@ document.addEventListener('DOMContentLoaded', async () => {
 async function loadInitialData() {
   try {
     console.log('Loading initial data...');
-    
+
     const memberId = memberIdFromAuth();
     if (!memberId) throw new Error('No member ID in auth');
-    
+
     console.log('Member ID:', memberId);
 
-    // ENHANCED: Token + role check
+    // ENHANCED: Token + role + timestamp
     const token = sessionStorage.getItem('token');
     const role = sessionStorage.getItem('role');
     const authUser = getAuth();
-    if (!token || role !== 'member' || !authUser || (Date.now() - (authUser.timestamp || 0)) > 3600000) {
-        console.log('loadInitialData: Invalid session - logging out');  // DEBUG
-        sessionStorage.removeItem('token');
-        sessionStorage.removeItem('authUser');
-        sessionStorage.removeItem('role');
-        window.location.href = '../member-login.html';
-        return;
+    if (
+      !token ||
+      role !== 'member' ||
+      !authUser ||
+      Date.now() - (authUser.timestamp || 0) > MEMBER_SESSION_MAX_AGE_MS
+    ) {
+      console.log('loadInitialData: Invalid session - logging out'); // DEBUG
+      quickLogout();
+      return;
     }
 
-    const memberPromise = timedFetch(`${API_URL}/api/members/${encodeURIComponent(memberId)}`, 'Member API');
+    const memberPromise = timedFetch(
+      `${API_URL}/api/members/${encodeURIComponent(memberId)}`,
+      'Member API'
+    );
     const classesPromise = timedFetch(`${API_URL}/api/classes`, 'Classes API');
-    const enrollmentsPromise = timedFetch(`${API_URL}/api/enrollments/member/${encodeURIComponent(memberId)}`, 'Enrollments API');
+    const enrollmentsPromise = timedFetch(
+      `${API_URL}/api/enrollments/member/${encodeURIComponent(memberId)}`,
+      'Enrollments API'
+    );
 
     const [memberData, classesData, enrollmentsData] = await Promise.all([
-      memberPromise.catch(err => { console.error('Member load failed:', err); return { success: false, data: null }; }),
-      classesPromise.catch(err => { console.error('Classes load failed:', err); return { success: false, data: [] }; }),
-      enrollmentsPromise.catch(err => { console.error('Enrollments load failed:', err); return { success: false, data: [] }; })
+      memberPromise.catch((err) => {
+        console.error('Member load failed:', err);
+        return { success: false, data: null };
+      }),
+      classesPromise.catch((err) => {
+        console.error('Classes load failed:', err);
+        return { success: false, data: [] };
+      }),
+      enrollmentsPromise.catch((err) => {
+        console.error('Enrollments load failed:', err);
+        return { success: false, data: [] };
+      }),
     ]);
 
     console.log('Raw Member Response:', memberData);
-    memberInfo = (memberData && memberData.success && memberData.data) ? memberData.data : memberData || null;
-    console.log('Parsed memberInfo:', { hasMemberships: !!memberInfo?.memberships, membershipsLength: memberInfo?.memberships?.length });
+    memberInfo =
+      memberData && memberData.success && memberData.data ? memberData.data : memberData || null;
+    console.log('Parsed memberInfo:', {
+      hasMemberships: !!memberInfo?.memberships,
+      membershipsLength: memberInfo?.memberships?.length,
+    });
 
-    availableClasses = Array.isArray(classesData?.data) ? classesData.data : (Array.isArray(classesData) ? classesData : []);
-    memberEnrollments = Array.isArray(enrollmentsData?.data) ? enrollmentsData.data : (Array.isArray(enrollmentsData) ? enrollmentsData : []);
+    availableClasses = Array.isArray(classesData?.data)
+      ? classesData.data
+      : Array.isArray(classesData)
+      ? classesData
+      : [];
+    memberEnrollments = Array.isArray(enrollmentsData?.data)
+      ? enrollmentsData.data
+      : Array.isArray(enrollmentsData)
+      ? enrollmentsData
+      : [];
 
     console.log('Classes loaded:', availableClasses.length);
     console.log('Enrollments loaded:', memberEnrollments.length);
@@ -242,7 +620,8 @@ function ensureCartVisible() {
 // ========== VIEW STATES & UTILS ==========
 function showErrorState(msg = 'Failed to load classes.') {
   const c = $('calendarContainer');
-  if (c) c.innerHTML = `<div class="error-state" style="padding: 2rem; text-align: center; color: #dc3545;">${msg}</div>`;
+  if (c)
+    c.innerHTML = `<div class="error-state" style="padding: 2rem; text-align: center; color: #dc3545;">${msg}</div>`;
 }
 
 // ========== SESSION LOGIC ==========
@@ -262,7 +641,12 @@ function updateSessionCounter(forceCart = false, tempOffset = 0) {
   if (!Array.isArray(memberships)) memberships = [];
 
   const combative = memberships
-    .filter(m => m.type && m.type.toLowerCase() === 'combative' && (m.status || '').toLowerCase() === 'active')
+    .filter(
+      (m) =>
+        m.type &&
+        m.type.toLowerCase() === 'combative' &&
+        (m.status || '').toLowerCase() === 'active'
+    )
     .sort((a, b) => new Date(b.startDate) - new Date(a.startDate))[0];
 
   if (!combative) {
@@ -277,7 +661,10 @@ function updateSessionCounter(forceCart = false, tempOffset = 0) {
   const totalSessionsPerMonth = combative.sessionsPerMonth || null;
 
   if (forceCart && enrollCart.length > 0) {
-    tempRemainingSessions = Math.max(0, realRemainingSessions - enrollCart.length + tempOffset);
+    tempRemainingSessions = Math.max(
+      0,
+      realRemainingSessions - enrollCart.length + tempOffset
+    );
     if (remainingSessionSpan) {
       remainingSessionSpan.innerHTML = `${tempRemainingSessions} <small style="color:#999;">(projected)</small>`;
     }
@@ -300,9 +687,10 @@ function updateSessionCounter(forceCart = false, tempOffset = 0) {
   if (confirmBtn) {
     const canConfirm = enrollCart.length > 0 && realRemainingSessions >= enrollCart.length;
     confirmBtn.disabled = !canConfirm;
-    confirmBtn.textContent = enrollCart.length > 0 ? `Confirm All (${enrollCart.length})` : 'Confirm All Enrollments';
+    confirmBtn.textContent =
+      enrollCart.length > 0 ? `Confirm All (${enrollCart.length})` : 'Confirm All Enrollments';
   }
-  
+
   console.log('Session counter updated - Real:', realRemainingSessions, 'Temp:', tempRemainingSessions);
 }
 
@@ -319,64 +707,78 @@ function renderCalendarGrid() {
     console.error('calendarContainer not found');
     return;
   }
-  
+
   const year = currentCalendarDate.getFullYear();
   const month = currentCalendarDate.getMonth();
-  
+
   // Add aria-labels and titles to nav buttons so they are explicit and accessible
   let html = `<div class="calendar-header">
     <button class="calendar-nav-btn" id="prevMonth" aria-label="Previous month" title="Previous month">‹</button>
     <span id="currentMonthDisplay"></span>
     <button class="calendar-nav-btn" id="nextMonth" aria-label="Next month" title="Next month">›</button></div>
     <div class="calendar-grid">`;
-  
+
   const weekdays = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
-  weekdays.forEach(day => { html += `<div class="calendar-header-day">${day}</div>`; });
-  
+  weekdays.forEach((day) => {
+    html += `<div class="calendar-header-day">${day}</div>`;
+  });
+
   const firstDay = new Date(year, month, 1);
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const startingDay = firstDay.getDay();
-  
+
   let cellIndex = 0;
-  
+
   for (let i = 0; i < startingDay; i++) {
     html += `<div class="calendar-cell calendar-cell-empty"><div class="calendar-day-number"></div><div class="calendar-day-content"></div></div>`;
     cellIndex++;
   }
-  
+
   for (let day = 1; day <= daysInMonth; day++) {
-    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(
+      2,
+      '0'
+    )}`;
     const todayStr = getTodayDateString();
     const isToday = dateStr === todayStr;
-    const isPast = dateStr < todayStr; 
+    const isPast = dateStr < todayStr;
     const dayClasses = getClassesForDate(dateStr);
 
-    
     let classChips = '';
     if (dayClasses.length > 0) {
-      classChips = dayClasses.slice(0, 2).map(cls => 
-        `<div class="class-chip">${escapeHtml(cls.class_name || 'Class')}</div>`
-      ).join('');
+      classChips = dayClasses
+        .slice(0, 2)
+        .map(
+          (cls) =>
+            `<div class="class-chip">${escapeHtml(cls.class_name || 'Class')}</div>`
+        )
+        .join('');
       if (dayClasses.length > 2) {
         classChips += `<div class="class-chip">+${dayClasses.length - 2} more</div>`;
       }
     }
-    
-    html += `<div class="calendar-cell${isToday ? ' calendar-cell-today' : ''}${isPast ? ' past-date' : ''}${dayClasses.length > 0 ? ' has-classes' : ''}" data-date="${dateStr}"${isPast ? ' style="pointer-events: none; opacity: 0.5; cursor: not-allowed;"' : ''}>
+
+    html += `<div class="calendar-cell${
+      isToday ? ' calendar-cell-today' : ''
+    }${isPast ? ' past-date' : ''}${dayClasses.length > 0 ? ' has-classes' : ''}" data-date="${dateStr}"${
+      isPast
+        ? ' style="pointer-events: none; opacity: 0.5; cursor: not-allowed;"'
+        : ''
+    }>
       <div class="calendar-day-number">${day}</div>
       <div class="calendar-day-content"><div class="calendar-day-classes">${classChips}</div></div></div>`;
-    
+
     cellIndex++;
   }
-  
+
   while (cellIndex % 7 !== 0) {
     html += `<div class="calendar-cell calendar-cell-empty"><div class="calendar-day-number"></div><div class="calendar-day-content"></div></div>`;
     cellIndex++;
   }
-  
+
   html += '</div>';
   container.innerHTML = html;
-  
+
   // ensure title is set immediately so month is always visible
   updateCalendarTitle();
   // ensure navigation buttons exist and have handlers
@@ -385,7 +787,7 @@ function renderCalendarGrid() {
   // rebind click handler for cells
   document.removeEventListener('click', handleCalendarClick, true);
   document.addEventListener('click', handleCalendarClick, true);
-  
+
   console.log('Calendar rendered with', availableClasses.length, 'total classes');
 }
 
@@ -405,10 +807,12 @@ function renderCalendarNavigation() {
 function handleCalendarClick(event) {
   const cell = event.target.closest('.calendar-cell');
   if (!cell || cell.classList.contains('calendar-cell-empty')) return;
-  
+
   const dateStr = cell.getAttribute('data-date');
   if (!dateStr) return;
-  
+
+  markMemberActivity();
+
   // ✅ Prevent clicking past dates
   const todayStr = getTodayDateString();
   if (dateStr < todayStr) {
@@ -416,7 +820,7 @@ function handleCalendarClick(event) {
     return;
   }
 
-  // Original logic: Open modal if has classes (assuming showDayModal call is bound elsewhere or via event bubbling)
+  // Original logic: Open modal if has classes
   if (cell.classList.contains('has-classes')) {
     const classes = getClassesForDate(dateStr);
     showDayModal(dateStr, classes);
@@ -425,9 +829,11 @@ function handleCalendarClick(event) {
 
 function getClassesForDate(dateStr) {
   const date = new Date(dateStr);
-  const dayName = date.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
-  
-  const matchingClasses = availableClasses.filter(cls => {
+  const dayName = date
+    .toLocaleDateString('en-US', { weekday: 'long' })
+    .toLowerCase();
+
+  const matchingClasses = availableClasses.filter((cls) => {
     const schedule = (cls.schedule || '').toLowerCase();
     if (schedule.includes(dayName)) {
       return true;
@@ -438,16 +844,21 @@ function getClassesForDate(dateStr) {
     }
     return false;
   });
-  
+
   return matchingClasses;
 }
 
 function showDayModal(dateStr, classes) {
+  markMemberActivity();
+
   const date = new Date(dateStr);
   const formattedDate = date.toLocaleDateString('en-US', {
-    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
   });
-  
+
   let modalContent = `
     <div class="day-modal">
       <div class="day-modal-header">
@@ -461,11 +872,11 @@ function showDayModal(dateStr, classes) {
       </div>
       <div class="day-modal-content">
   `;
-  
+
   if (classes.length === 0) {
     modalContent += '<div class="no-classes">No classes scheduled for this date</div>';
   } else {
-    classes.forEach(cls => {
+    classes.forEach((cls) => {
       const classId = cls.class_id || cls._id;
       const className = cls.class_name || 'Unnamed Class';
       const trainer = cls.trainer_name || cls.trainer_id || 'TBD';
@@ -478,7 +889,9 @@ function showDayModal(dateStr, classes) {
            <div class="class-schedule">${escapeHtml(schedule)}</div>
          </div>
          <div class="class-times">
-           <button class="select-time-btn" data-class="${classId}" data-class-name="${escapeHtml(className)}">
+           <button class="select-time-btn" data-class="${classId}" data-class-name="${escapeHtml(
+        className
+      )}">
              Select Time
            </button>
          </div>
@@ -486,7 +899,7 @@ function showDayModal(dateStr, classes) {
       `;
     });
   }
-  
+
   modalContent += `
         </div>
         <div class="day-modal-footer">
@@ -494,14 +907,14 @@ function showDayModal(dateStr, classes) {
         </div>
       </div>
   `;
-  
+
   let modal = document.getElementById('dayModal');
   if (!modal) {
     modal = document.createElement('div');
     modal.id = 'dayModal';
     document.body.appendChild(modal);
   }
-  
+
   modal.innerHTML = `
     <div class="modal-overlay">
       <div class="modal-container">
@@ -510,9 +923,9 @@ function showDayModal(dateStr, classes) {
     </div>
   `;
   modal.style.display = 'flex';
-  
+
   const timeBtns = modal.querySelectorAll('.select-time-btn');
-  timeBtns.forEach(btn => {
+  timeBtns.forEach((btn) => {
     btn.addEventListener('click', function () {
       const classId = this.dataset.class;
       const className = this.dataset.className;
@@ -522,14 +935,16 @@ function showDayModal(dateStr, classes) {
 }
 
 function showTimeSelectionModal(classId, className, dateStr) {
-  const cls = availableClasses.find(c => c.class_id === classId || c._id === classId);
+  markMemberActivity();
+
+  const cls = availableClasses.find((c) => c.class_id === classId || c._id === classId);
   if (!cls) {
     showToast('Class not found', 'error');
     return;
   }
-  
+
   const timeSlots = generateTimeSlots(cls.schedule);
-  
+
   let modalContent = `
     <div class="time-modal">
       <div class="time-modal-header">
@@ -538,15 +953,17 @@ function showTimeSelectionModal(classId, className, dateStr) {
       </div>
       <div class="time-modal-content">
   `;
-  
-  timeSlots.forEach(timeSlot => {
-    const isEnrolled = memberEnrollments.some(enrollment => {
+
+  timeSlots.forEach((timeSlot) => {
+    const isEnrolled = memberEnrollments.some((enrollment) => {
       const enDate = new Date(enrollment.sessiondate);
-      return enrollment.classid === classId &&
+      return (
+        enrollment.classid === classId &&
         enDate.toISOString().split('T')[0] === dateStr &&
-        enrollment.sessiontime === timeSlot;
+        enrollment.sessiontime === timeSlot
+      );
     });
-    
+
     modalContent += `
       <div class="time-slot-item ${isEnrolled ? 'disabled' : ''}" 
            data-class="${classId}" data-date="${dateStr}" data-time="${timeSlot}">
@@ -557,7 +974,7 @@ function showTimeSelectionModal(classId, className, dateStr) {
       </div>
     `;
   });
-  
+
   modalContent += `
       </div>
       <div class="time-modal-footer">
@@ -565,14 +982,14 @@ function showTimeSelectionModal(classId, className, dateStr) {
       </div>
     </div>
   `;
-  
+
   let modal = document.getElementById('timeModal');
   if (!modal) {
     modal = document.createElement('div');
     modal.id = 'timeModal';
     document.body.appendChild(modal);
   }
-  
+
   modal.innerHTML = `
     <div class="modal-overlay">
       <div class="modal-container">
@@ -581,9 +998,9 @@ function showTimeSelectionModal(classId, className, dateStr) {
     </div>
   `;
   modal.style.display = 'flex';
-  
+
   const enrollBtns = modal.querySelectorAll('.select-enrollment-btn');
-  enrollBtns.forEach(btn => {
+  enrollBtns.forEach((btn) => {
     btn.addEventListener('click', function () {
       if (this.disabled) return;
       const classIdVal = this.closest('.time-slot-item').dataset.class;
@@ -596,10 +1013,10 @@ function showTimeSelectionModal(classId, className, dateStr) {
 
 // ========== CART MANAGEMENT ==========
 function addToEnrollmentCart(classId, dateStr, timeSlot, className) {
-  const existing = enrollCart.find(item =>
-    item.classId === classId &&
-    item.date === dateStr &&
-    item.time === timeSlot
+  markMemberActivity();
+
+  const existing = enrollCart.find(
+    (item) => item.classId === classId && item.date === dateStr && item.time === timeSlot
   );
 
   if (existing) {
@@ -609,7 +1026,10 @@ function addToEnrollmentCart(classId, dateStr, timeSlot, className) {
 
   updateSessionCounter(false, 0);
   if (realRemainingSessions < 1) {
-    showToast(`No sessions left. Real remaining: ${realRemainingSessions}. Contact admin.`, 'error');
+    showToast(
+      `No sessions left. Real remaining: ${realRemainingSessions}. Contact admin.`,
+      'error'
+    );
     return;
   }
 
@@ -617,7 +1037,7 @@ function addToEnrollmentCart(classId, dateStr, timeSlot, className) {
     classId: classId,
     className: className,
     date: dateStr,
-    time: timeSlot
+    time: timeSlot,
   });
 
   closeModal('timeModal');
@@ -625,9 +1045,10 @@ function addToEnrollmentCart(classId, dateStr, timeSlot, className) {
   updateCartDisplay();
   updateSessionCounter(true, 0);
 
-  const message = tempRemainingSessions < enrollCart.length 
-    ? `Added! Projected: ${tempRemainingSessions} (over limit—can't confirm until renewed).` 
-    : 'Added to cart! Sessions temporarily updated on screen.';
+  const message =
+    tempRemainingSessions < enrollCart.length
+      ? `Added! Projected: ${tempRemainingSessions} (over limit—can't confirm until renewed).`
+      : 'Added to cart! Sessions temporarily updated on screen.';
   showToast(message, 'success');
 }
 
@@ -641,7 +1062,9 @@ function updateCartDisplay() {
   console.log('Cart Update:', enrollCart.length, 'items');
 
   if (enrollCart.length === 0) {
-    if (cartContent) cartContent.innerHTML = '<p>No temporary selections. Add from calendar or list.</p>';
+    if (cartContent)
+      cartContent.innerHTML =
+        '<p>No temporary selections. Add from calendar or list.</p>';
     if (confirmBtn) {
       confirmBtn.disabled = true;
       confirmBtn.textContent = 'Confirm All Enrollments';
@@ -654,12 +1077,18 @@ function updateCartDisplay() {
   enrollCart.forEach((item, index) => {
     const dateObj = new Date(item.date);
     const dayOfWeek = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
-    const formattedDate = dateObj.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+    const formattedDate = dateObj.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
     html += `
       <div class="cart-item">
         <div class="cart-item-info">
           <strong>${escapeHtml(item.className)}</strong><br>
-          <small>${dayOfWeek}, ${formattedDate} at ${escapeHtml(item.time)} (Temporary)</small>
+          <small>${dayOfWeek}, ${formattedDate} at ${escapeHtml(
+      item.time
+    )} (Temporary)</small>
         </div>
         <button type="button" class="cart-item-remove" onclick="removeFromCart(${index})" title="Remove">✕</button>
       </div>
@@ -669,7 +1098,9 @@ function updateCartDisplay() {
 
   updateSessionCounter(true, 0);
   if (confirmBtn) {
-    confirmBtn.disabled = tempRemainingSessions < enrollCart.length || realRemainingSessions < enrollCart.length;
+    confirmBtn.disabled =
+      tempRemainingSessions < enrollCart.length ||
+      realRemainingSessions < enrollCart.length;
     confirmBtn.textContent = `Confirm All (${enrollCart.length})`;
   }
 }
@@ -679,59 +1110,65 @@ async function enrollSingleItem(item) {
   const memberId = memberIdFromAuth();
   if (!memberId) throw new Error('Not authenticated');
 
-  // ENHANCED: Token + role check
+  // ENHANCED: Token + role + timestamp
   const token = sessionStorage.getItem('token');
   const role = sessionStorage.getItem('role');
   const authUser = getAuth();
-  if (!token || role !== 'member' || !authUser || (Date.now() - (authUser.timestamp || 0)) > 3600000) {
-      console.log('enrollSingleItem: Invalid session - logging out');  // DEBUG
-      sessionStorage.removeItem('token');
-      sessionStorage.removeItem('authUser');
-      sessionStorage.removeItem('role');
-      window.location.href = '../member-login.html';
-      return;
+  if (
+    !token ||
+    role !== 'member' ||
+    !authUser ||
+    Date.now() - (authUser.timestamp || 0) > MEMBER_SESSION_MAX_AGE_MS
+  ) {
+    console.log('enrollSingleItem: Invalid session - logging out'); // DEBUG
+    quickLogout();
+    return;
   }
 
   const body = {
-    class_id: item.classId,  
-    member_id: memberId,             
-    session_date: item.date,         
-    session_time: item.time,          
-    member_name: memberInfo?.name || 'Unknown'
+    class_id: item.classId,
+    member_id: memberId,
+    session_date: item.date,
+    session_time: item.time,
+    member_name: memberInfo?.name || 'Unknown',
   };
 
   console.log('Posting enrollment:', body);
 
-  // TOKENIZED: POST via apiFetch (merges your body; no manual Authorization needed)
+  // TOKENIZED: POST via apiFetch
   const data = await apiFetch(`${API_URL}/api/enrollments`, {
     method: 'POST',
-    body: JSON.stringify(body)
+    body: JSON.stringify(body),
   });
 
   console.log('Enrollment response:', data);
-  
+
   if (!data.success) throw new Error(data.error || 'Enrollment failed');
 
   return data;
 }
 
 async function confirmAllEnrollments() {
+  markMemberActivity();
+
   if (!enrollCart || enrollCart.length === 0) {
     showToast('No items in cart', 'warning');
     return;
   }
 
-  // ENHANCED: Token + role check
+  // ENHANCED: Token + role + timestamp
   const token = sessionStorage.getItem('token');
   const role = sessionStorage.getItem('role');
   const authUser = getAuth();
-  if (!token || role !== 'member' || !authUser || (Date.now() - (authUser.timestamp || 0)) > 3600000) {
-      console.log('confirmAllEnrollments: Invalid session - logging out');  // DEBUG
-      sessionStorage.removeItem('token');
-      sessionStorage.removeItem('authUser');
-      sessionStorage.removeItem('role');
-      window.location.href = '../member-login.html';
-      return;
+  if (
+    !token ||
+    role !== 'member' ||
+    !authUser ||
+    Date.now() - (authUser.timestamp || 0) > MEMBER_SESSION_MAX_AGE_MS
+  ) {
+    console.log('confirmAllEnrollments: Invalid session - logging out'); // DEBUG
+    quickLogout();
+    return;
   }
 
   showLoadingState(true);
@@ -740,7 +1177,10 @@ async function confirmAllEnrollments() {
     const totalItems = enrollCart.length;
     const projectedRemaining = realRemainingSessions - totalItems;
     if (projectedRemaining < 0) {
-      showToast(`Not enough sessions: Need ${totalItems}, have ${realRemainingSessions}`, 'error');
+      showToast(
+        `Not enough sessions: Need ${totalItems}, have ${realRemainingSessions}`,
+        'error'
+      );
       showLoadingState(false);
       return;
     }
@@ -768,24 +1208,32 @@ async function confirmAllEnrollments() {
     if (successful === totalItems) {
       enrollCart = [];
       updateCartDisplay();
-      showToast(`All ${totalItems} enrollments successful! Sessions left: ${tempRemainingSessions}`, 'success');
+      showToast(
+        `All ${totalItems} enrollments successful! Sessions left: ${tempRemainingSessions}`,
+        'success'
+      );
       await loadMemberEnrollments();
       updateSessionCounter(false, 0);
     } else if (successful > 0) {
       const successIndices = [];
       for (let i = 0; i < totalItems; i++) {
-        if (!failures.find(f => f.index === i)) successIndices.push(i);
+        if (!failures.find((f) => f.index === i)) successIndices.push(i);
       }
-      successIndices.reverse().forEach(idx => enrollCart.splice(idx, 1));
+      successIndices
+        .reverse()
+        .forEach((idx) => enrollCart.splice(idx, 1));
       updateCartDisplay();
-      const errorMsg = failures.map(f => `${f.item.className}: ${f.error}`).join('; ');
+      const errorMsg = failures
+        .map((f) => `${f.item.className}: ${f.error}`)
+        .join('; ');
       showToast(`${successful}/${totalItems} successful. Errors: ${errorMsg}`, 'warning');
     } else {
-      const errorMsg = failures.map(f => `${f.item.className}: ${f.error}`).join('; ');
+      const errorMsg = failures
+        .map((f) => `${f.item.className}: ${f.error}`)
+        .join('; ');
       showToast(`No enrollments successful. Errors: ${errorMsg}`, 'error');
       updateCartDisplay();
     }
-
   } catch (error) {
     console.error('Bulk enrollment error:', error);
     showToast(`Bulk enrollment failed: ${error.message}`, 'error');
@@ -798,26 +1246,41 @@ async function loadMemberEnrollments() {
   const memberId = memberIdFromAuth();
   if (!memberId) return;
 
-  // ENHANCED: Token + role check
+  // ENHANCED: Token + role + timestamp
   const token = sessionStorage.getItem('token');
   const role = sessionStorage.getItem('role');
   const authUser = getAuth();
-  if (!token || role !== 'member' || !authUser || (Date.now() - (authUser.timestamp || 0)) > 3600000) {
-      console.log('loadMemberEnrollments: Invalid session - logging out');  // DEBUG
-      sessionStorage.removeItem('token');
-      sessionStorage.removeItem('authUser');
-      sessionStorage.removeItem('role');
-      window.location.href = '../member-login.html';
-      return;
+  if (
+    !token ||
+    role !== 'member' ||
+    !authUser ||
+    Date.now() - (authUser.timestamp || 0) > MEMBER_SESSION_MAX_AGE_MS
+  ) {
+    console.log('loadMemberEnrollments: Invalid session - logging out'); // DEBUG
+    quickLogout();
+    return;
   }
 
   try {
     const [enrollmentsData, memberData] = await Promise.all([
-      timedFetch(`${API_URL}/api/enrollments/member/${encodeURIComponent(memberId)}`, 'Reload Enrollments'),
-      timedFetch(`${API_URL}/api/members/${encodeURIComponent(memberId)}`, 'Reload Member')
+      timedFetch(
+        `${API_URL}/api/enrollments/member/${encodeURIComponent(memberId)}`,
+        'Reload Enrollments'
+      ),
+      timedFetch(
+        `${API_URL}/api/members/${encodeURIComponent(memberId)}`,
+        'Reload Member'
+      ),
     ]);
-    memberEnrollments = Array.isArray(enrollmentsData?.data) ? enrollmentsData.data : (Array.isArray(enrollmentsData) ? enrollmentsData : []);
-    memberInfo = (memberData && memberData.success && memberData.data) ? memberData.data : memberData || null;
+    memberEnrollments = Array.isArray(enrollmentsData?.data)
+      ? enrollmentsData.data
+      : Array.isArray(enrollmentsData)
+      ? enrollmentsData
+      : [];
+    memberInfo =
+      memberData && memberData.success && memberData.data
+        ? memberData.data
+        : memberData || null;
     updateSessionCounter(false, 0);
   } catch (err) {
     console.error('Reload failed:', err);
@@ -851,16 +1314,16 @@ function renderListView() {
     }
     return;
   }
-  
+
   let html = '<div class="classes-grid-container">';
-  availableClasses.forEach(cls => {
+  availableClasses.forEach((cls) => {
     const classId = cls.class_id || cls._id;
     const className = cls.class_name || 'Unnamed Class';
     const trainerName = cls.trainer_name || cls.trainer_id || 'TBD';
     const capacity = cls.capacity || 10;
     const currentEnrollment = cls.current_enrollment || 0;
     const isFull = currentEnrollment >= capacity;
-    
+
     html += `
       <div class="class-card">
         <div class="class-card-content">
@@ -868,8 +1331,11 @@ function renderListView() {
           <div class="class-schedule">${escapeHtml(cls.schedule || 'Schedule TBD')}</div>
           <div class="class-trainer">Trainer: ${escapeHtml(trainerName)}</div>
           <div class="class-capacity">
-            ${isFull ? '<span class="status-full">FULL</span>' :
-            `<span class="status-open">${currentEnrollment}/${capacity} spots</span>`}
+            ${
+              isFull
+                ? '<span class="status-full">FULL</span>'
+                : `<span class="status-open">${currentEnrollment}/${capacity} spots</span>`
+            }
           </div>
           <div class="class-description">
             <p>${escapeHtml(cls.description || 'No description available')}</p>
@@ -887,23 +1353,29 @@ function renderListView() {
 }
 
 function showClassForEnrollment(classId) {
-  const cls = availableClasses.find(c => c.class_id === classId || c._id === classId);
+  markMemberActivity();
+
+  const cls = availableClasses.find((c) => c.class_id === classId || c._id === classId);
   if (!cls) {
     showToast('Class not found', 'error');
     return;
   }
-  
+
   const timeSlots = generateTimeSlots(cls.schedule);
   const className = cls.class_name || 'Unnamed Class';
-  
+
   let modalContent = `
     <div class="single-class-modal">
       <div class="modal-header">
         <h2>${escapeHtml(className)}</h2>
         <div class="modal-subheader">
-          <p><strong>Trainer:</strong> ${escapeHtml(cls.trainer_name || cls.trainer_id || 'TBD')}</p>
+          <p><strong>Trainer:</strong> ${escapeHtml(
+            cls.trainer_name || cls.trainer_id || 'TBD'
+          )}</p>
           <p><strong>Schedule:</strong> ${escapeHtml(cls.schedule || 'Schedule TBD')}</p>
-          <p><strong>Description:</strong> ${escapeHtml(cls.description || 'No description')}</p>
+          <p><strong>Description:</strong> ${escapeHtml(
+            cls.description || 'No description'
+          )}</p>
         </div>
       </div>
       <div class="modal-body">
@@ -911,21 +1383,22 @@ function showClassForEnrollment(classId) {
           <h4>Select Date and Time</h4>
           <label for="enrollDatePicker">Date:</label>
           <input type="date" id="enrollDatePicker" value="${getTodayDateString()}" min="${getTodayDateString()}" class="date-picker" style="width:100%;padding:0.5rem;margin-bottom:1rem;border:1px solid #ccc;border-radius:4px;">
-             class="date-picker" style="width: 100%; padding: 0.5rem; margin-bottom: 1rem; border: 1px solid #ccc; border-radius: 4px;">
           <label>Time Slot:</label>
           <div class="time-slots" style="margin-top: 0.5rem;">
   `;
-  
-  timeSlots.forEach(timeSlot => {
+
+  timeSlots.forEach((timeSlot) => {
     modalContent += `
-      <button class="time-slot-btn" data-class="${classId}" data-class-name="${escapeHtml(className)}" 
+      <button class="time-slot-btn" data-class="${classId}" data-class-name="${escapeHtml(
+      className
+    )}" 
               data-date="${new Date().toISOString().split('T')[0]}" data-time="${timeSlot}"
               style="margin: 0.5rem; padding: 0.8rem 1.5rem; border: 2px solid #ccc; background: white; cursor: pointer; border-radius: 4px;">
         ${timeSlot}
       </button>
     `;
   });
-  
+
   modalContent += `
           </div>
         </div>
@@ -935,14 +1408,14 @@ function showClassForEnrollment(classId) {
       </div>
     </div>
   `;
-  
+
   let modal = document.getElementById('singleClassModal');
   if (!modal) {
     modal = document.createElement('div');
     modal.id = 'singleClassModal';
     document.body.appendChild(modal);
   }
-  
+
   modal.innerHTML = `
     <div class="modal-overlay" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 9999;">
       <div class="modal-container" style="background: white; padding: 2rem; border-radius: 8px; max-width: 600px; width: 90%; max-height: 90vh; overflow-y: auto;">
@@ -951,35 +1424,38 @@ function showClassForEnrollment(classId) {
     </div>
   `;
   modal.style.display = 'flex';
-  
+
   const datePicker = document.getElementById('enrollDatePicker');
   if (datePicker) {
-    datePicker.addEventListener('change', function() {
+    datePicker.addEventListener('change', function () {
       const inputValue = this.value;
       const minDate = getTodayDateString();
-      
+
       // ✅ Validate past dates
       if (inputValue < minDate) {
-        showToast('Cannot select past dates. Please choose today or a future date.', 'error');
+        showToast(
+          'Cannot select past dates. Please choose today or a future date.',
+          'error'
+        );
         this.value = minDate;
         return;
       }
-      
+
       const timeBtns = modal.querySelectorAll('.time-slot-btn');
-      timeBtns.forEach(btn => {
+      timeBtns.forEach((btn) => {
         btn.dataset.date = this.value;
       });
       console.log('Date changed to:', this.value);
     });
   }
 
-  
   const timeSlotBtns = modal.querySelectorAll('.time-slot-btn');
-  timeSlotBtns.forEach(btn => {
+  timeSlotBtns.forEach((btn) => {
     btn.addEventListener('click', function (e) {
       e.preventDefault();
-      
-      timeSlotBtns.forEach(b => {
+      markMemberActivity();
+
+      timeSlotBtns.forEach((b) => {
         b.style.background = 'white';
         b.style.borderColor = '#ccc';
         b.style.color = '#000';
@@ -987,22 +1463,22 @@ function showClassForEnrollment(classId) {
       this.style.background = '#28a745';
       this.style.color = 'white';
       this.style.borderColor = '#28a745';
-      
+
       const classIdVal = this.dataset.class;
       const classNameVal = this.dataset.className;
       const dateVal = this.dataset.date;
       const timeVal = this.dataset.time;
-      
+
       console.log('Adding to cart:', { classIdVal, classNameVal, dateVal, timeVal });
-      
+
       addToEnrollmentCart(classIdVal, dateVal, timeVal, classNameVal);
-      
+
       setTimeout(() => {
         modal.style.display = 'none';
       }, 500);
     });
   });
-  
+
   console.log('Modal opened for class:', className);
 }
 
@@ -1019,17 +1495,23 @@ function setupEventListeners() {
   const calendarTab = $('tabCalendar');
   const listTab = $('tabList');
   const confirmBtn = $('confirmCartBtn');
-  
+
   if (calendarTab) {
-    calendarTab.addEventListener('click', () => switchView('calendar'));
+    calendarTab.addEventListener('click', () => {
+      markMemberActivity();
+      switchView('calendar');
+    });
   }
   if (listTab) {
-    listTab.addEventListener('click', () => switchView('list'));
+    listTab.addEventListener('click', () => {
+      markMemberActivity();
+      switchView('list');
+    });
   }
   if (confirmBtn) {
     confirmBtn.addEventListener('click', confirmAllEnrollments);
   }
-  
+
   document.addEventListener('click', function (e) {
     if (e.target.classList.contains('modal-overlay')) {
       closeModal('dayModal');
@@ -1044,7 +1526,7 @@ function switchView(view) {
   const listView = $('listView');
   const tabCalendar = $('tabCalendar');
   const tabList = $('tabList');
-  
+
   if (view === 'calendar') {
     if (calendarView) calendarView.style.display = 'block';
     if (listView) listView.style.display = 'none';
@@ -1058,25 +1540,30 @@ function switchView(view) {
     if (tabCalendar) tabCalendar.classList.remove('active');
     renderListView();
   }
+  markMemberActivity();
 }
 
 function previousMonth() {
   currentCalendarDate.setMonth(currentCalendarDate.getMonth() - 1);
   renderCalendarGrid();
   updateCalendarTitle();
+  markMemberActivity();
 }
 
 function nextMonth() {
   currentCalendarDate.setMonth(currentCalendarDate.getMonth() + 1);
   renderCalendarGrid();
   updateCalendarTitle();
+  markMemberActivity();
 }
 
 // ========== TIME SLOT FOR CLASS ==========
 function generateTimeSlots(schedule) {
   const timeSlotRanges = [];
   if (typeof schedule === 'string') {
-    const match = schedule.match(/(\d{1,2}:\d{2}\s?[AP]M)\s*-\s*(\d{1,2}:\d{2}\s?[AP]M)/i);
+    const match = schedule.match(
+      /(\d{1,2}:\d{2}\s?[AP]M)\s*-\s*(\d{1,2}:\d{2}\s?[AP]M)/i
+    );
     if (match) {
       timeSlotRanges.push(`${match[1]} - ${match[2]}`);
       return timeSlotRanges;
@@ -1089,8 +1576,18 @@ function generateTimeSlots(schedule) {
 
 function updateCalendarTitle() {
   const monthNames = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
   ];
   const monthName = monthNames[currentCalendarDate.getMonth()];
   const year = currentCalendarDate.getFullYear();

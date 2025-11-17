@@ -1,92 +1,354 @@
-// Utility for authenticated API calls (adds security header for /api/ routes)
+// ========================================
+// MANAGE CLASS ENROLLMENT - Admin
+// (Auth + shared fetch + init + health)
+// ========================================
+
+const SERVER_URL = 'http://localhost:8080';
+const ADMIN_SESSION_MAX_AGE_MS = 2 * 60 * 60 * 1000; // 2 hours
+
+// --------------------------------------
+// Admin-scoped storage keys (avoid cross-role interference)
+// --------------------------------------
+const ADMIN_KEYS = {
+  token: 'admin_token',
+  authUser: 'admin_authUser',
+  role: 'admin_role',
+  logoutEvent: 'adminLogoutEvent',
+};
+
+// --------------------------------------
+// Admin storage helpers (namespaced)
+// --------------------------------------
+const AdminStore = {
+  set(token, userPayload) {
+    try {
+      const authUser = {
+        ...(userPayload || {}),
+        timestamp: Date.now(),
+        role: 'admin',
+        token,
+      };
+
+      localStorage.setItem(ADMIN_KEYS.token, token);
+      localStorage.setItem(ADMIN_KEYS.authUser, JSON.stringify(authUser));
+      localStorage.setItem(ADMIN_KEYS.role, 'admin');
+
+      sessionStorage.setItem(ADMIN_KEYS.token, token);
+      sessionStorage.setItem(ADMIN_KEYS.authUser, JSON.stringify(authUser));
+      sessionStorage.setItem(ADMIN_KEYS.role, 'admin');
+    } catch (e) {
+      console.error('[AdminStore.set] failed:', e);
+    }
+  },
+
+  getToken() {
+    return (
+      sessionStorage.getItem(ADMIN_KEYS.token) ||
+      localStorage.getItem(ADMIN_KEYS.token) ||
+      null
+    );
+  },
+
+  getAuthUser() {
+    const raw =
+      sessionStorage.getItem(ADMIN_KEYS.authUser) ||
+      localStorage.getItem(ADMIN_KEYS.authUser);
+    if (!raw) return null;
+    try {
+      return JSON.parse(raw);
+    } catch (e) {
+      console.error('[AdminStore.getAuthUser] parse error:', e);
+      return null;
+    }
+  },
+
+  hasSession() {
+    return (
+      (localStorage.getItem(ADMIN_KEYS.token) ||
+        sessionStorage.getItem(ADMIN_KEYS.token)) &&
+      (localStorage.getItem(ADMIN_KEYS.authUser) ||
+        sessionStorage.getItem(ADMIN_KEYS.authUser)) &&
+      ((localStorage.getItem(ADMIN_KEYS.role) ||
+        sessionStorage.getItem(ADMIN_KEYS.role)) === 'admin')
+    );
+  },
+
+  clear() {
+    localStorage.removeItem(ADMIN_KEYS.token);
+    localStorage.removeItem(ADMIN_KEYS.authUser);
+    localStorage.removeItem(ADMIN_KEYS.role);
+
+    sessionStorage.removeItem(ADMIN_KEYS.token);
+    sessionStorage.removeItem(ADMIN_KEYS.authUser);
+    sessionStorage.removeItem(ADMIN_KEYS.role);
+  },
+};
+
+// --------------------------------------
+// Backward‑compatible bootstrap
+// Copy valid admin session from generic keys into admin_* once
+// --------------------------------------
+function bootstrapAdminFromGenericIfNeeded() {
+  try {
+    if (AdminStore.hasSession()) return;
+
+    const genToken = localStorage.getItem('token');
+    const genRole = localStorage.getItem('role');
+    const genAuthRaw = localStorage.getItem('authUser');
+
+    if (!genToken || !genRole || genRole !== 'admin' || !genAuthRaw) return;
+
+    const genAuth = JSON.parse(genAuthRaw);
+    AdminStore.set(genToken, genAuth);
+  } catch (e) {
+    console.error('[bootstrapAdminFromGenericIfNeeded] failed:', e);
+  }
+}
+
+// --------------------------------------
+// Shared auth helpers (admin‑only)
+// --------------------------------------
+function getApiBase() {
+  return (window.location.hostname === 'localhost' ||
+    window.location.hostname === '127.0.0.1')
+    ? SERVER_URL
+    : '';
+}
+
+function getToken() {
+  return AdminStore.getToken();
+}
+
+// Clear ONLY admin‑scoped auth (do not touch member/trainer keys)
+// Clear admin-scoped auth and legacy generic admin keys
+function clearAdminAuth() {
+  // Clear admin_* keys
+  AdminStore.clear();
+
+  // Also clear legacy generic keys if they currently represent an admin session.
+  // This prevents login.js from auto-redirecting back into admin after logout.
+  try {
+    const genericRole =
+      localStorage.getItem('role') || sessionStorage.getItem('role');
+
+    if (genericRole === 'admin') {
+      localStorage.removeItem('token');
+      localStorage.removeItem('authUser');
+      localStorage.removeItem('role');
+
+      sessionStorage.removeItem('token');
+      sessionStorage.removeItem('authUser');
+      sessionStorage.removeItem('role');
+    }
+  } catch (e) {
+    console.error('[clearAdminAuth] failed to clear generic admin keys:', e);
+  }
+}
+
+
+// Centralized admin logout used by this page
+function adminLogout(reason) {
+  console.log('[Admin Logout]:', reason || 'no reason');
+  clearAdminAuth();
+  // Notify only admin tabs in this browser
+  localStorage.setItem(ADMIN_KEYS.logoutEvent, Date.now().toString());
+  window.location.href = '../admin-login.html';
+}
+
+// Centralized admin auth check for this page
+function ensureAdminAuthOrLogout(loginPath) {
+  try {
+    // Make sure admin_* keys are populated from generic keys once
+    if (!AdminStore.hasSession()) {
+      bootstrapAdminFromGenericIfNeeded();
+    }
+
+    if (!AdminStore.hasSession()) {
+      adminLogout('missing admin session');
+      return false;
+    }
+
+    const authUser = AdminStore.getAuthUser();
+    if (!authUser || authUser.role !== 'admin') {
+      adminLogout('invalid or non-admin authUser');
+      return false;
+    }
+
+    const ts = authUser.timestamp || 0;
+    if (!ts || Date.now() - ts > ADMIN_SESSION_MAX_AGE_MS) {
+      adminLogout('admin session max age exceeded');
+      return false;
+    }
+
+    // Refresh timestamp on page auth check
+    authUser.timestamp = Date.now();
+    AdminStore.set(AdminStore.getToken(), authUser);
+
+    // Cross-tab logout: listen for adminLogoutEvent only
+    window.addEventListener('storage', (event) => {
+      if (event.key === ADMIN_KEYS.logoutEvent) {
+        adminLogout('adminLogoutEvent from another tab (requireAuth)');
+      }
+    });
+
+    return true;
+  } catch (e) {
+    console.error('Auth check failed in ensureAdminAuthOrLogout:', e);
+    adminLogout('exception in ensureAdminAuthOrLogout');
+    return false;
+  }
+}
+
+/**
+ * Require a valid auth session for this page.
+ * - expectedRole: 'admin' | 'member' | 'trainer'
+ * - loginPath: relative path to the corresponding login page
+ *
+ * For this admin page, we delegate to ensureAdminAuthOrLogout
+ * but keep the same signature so call sites remain unchanged.
+ */
+function requireAuth(expectedRole, loginPath) {
+  return ensureAdminAuthOrLogout(loginPath);
+}
+
+// Cross‑tab admin logout sync (admin_* only)
+window.addEventListener('storage', (event) => {
+  if (event.key === ADMIN_KEYS.logoutEvent) {
+    adminLogout('adminLogoutEvent from another tab (global listener)');
+  }
+});
+
+// ------------------------------
+// Shared secure fetch (admin‑only)
+// ------------------------------
 async function apiFetch(endpoint, options = {}) {
-  const token = sessionStorage.getItem('token');
-  if (!token) {
-    sessionStorage.removeItem('token');
-    sessionStorage.removeItem('authUser');
-    sessionStorage.removeItem('role');
-    window.location.href = '../admin-login.html';
+  // Guard with centralized auth
+  const ok = ensureAdminAuthOrLogout('../admin-login.html');
+  if (!ok) return;
+
+  const token = AdminStore.getToken();
+  const authUser = AdminStore.getAuthUser();
+
+  if (!token || !authUser) {
+    adminLogout('missing token/authUser in admin apiFetch');
     return;
   }
 
-  const url = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-    ? `${SERVER_URL}${endpoint}`
-    : endpoint;
+  // Timestamp check (same logic as requireAuth)
+  try {
+    const ts = authUser.timestamp || 0;
+    if (!ts || Date.now() - ts > ADMIN_SESSION_MAX_AGE_MS) {
+      adminLogout('admin session max age exceeded in apiFetch');
+      return;
+    }
+    // refresh timestamp on successful use
+    authUser.timestamp = Date.now();
+    AdminStore.set(token, authUser);
+  } catch (e) {
+    console.error('Failed to refresh authUser in apiFetch:', e);
+    adminLogout('invalid authUser JSON in admin apiFetch');
+    return;
+  }
 
-  const headers = { 
-    ...options.headers, 
-    'Authorization': `Bearer ${token}`,
-    'Content-Type': 'application/json' // Default for this file's JSON calls
+  const url =
+    window.location.hostname === 'localhost' ||
+    window.location.hostname === '127.0.0.1'
+      ? `${SERVER_URL}${endpoint}`
+      : endpoint;
+
+  const headers = {
+    ...options.headers,
+    Authorization: `Bearer ${token}`,
+    'Content-Type': 'application/json', // default for this file
   };
 
   const response = await fetch(url, { ...options, headers });
 
   if (response.status === 401) {
-    sessionStorage.removeItem('token');
-    sessionStorage.removeItem('authUser');
-    sessionStorage.removeItem('role');
-    window.location.href = '../admin-login.html';
+    // Invalid/expired session OR token revoked from another device
+    console.log('401 from apiFetch, logging out admin only');
+    // Broadcast admin logout, keep member/trainer sessions intact
+    localStorage.setItem(ADMIN_KEYS.logoutEvent, Date.now().toString());
+    adminLogout('401 from admin apiFetch');
     return;
   }
-  if (!response.ok) throw new Error(`API error: ${response.status}`);
+
+  if (!response.ok) {
+    throw new Error(`API error: ${response.status}`);
+  }
+
   return response.json();
 }
 
-// ✅ SIMPLE AUTH CHECK - MUST BE FIRST 
-const authUser = JSON.parse(sessionStorage.getItem('authUser') || 'null'); 
-if (!authUser || (Date.now() - (authUser.timestamp || 0)) > 3600000) { 
-  sessionStorage.removeItem('authUser'); 
-  window.location.href = '../admin-login.html'; 
-} 
+// ------------------------------
+// Page state
+// ------------------------------
+let debounceTimeout;
+let selectedMember = null;
+let selectedClass = null;
+let bulkEnrollments = []; // { member, classId, sessionDate, sessionTime }
+let allClasses = [];
+let allMembers = []; // latest ACTIVE members from server
+let currentView = 'list';
+let selectedDate = null;
+const dayOfWeekNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
-// Complete Fixed JS: Strict Active + Combative Sessions Filter, Autocomplete Hide, Bulk Button Wired 
-const SERVER_URL = 'http://localhost:8080'; 
-let debounceTimeout; 
-let selectedMember = null; 
-let selectedClass = null; 
-let bulkEnrollments = []; // { member, classId, sessionDate, sessionTime } 
-let allClasses = []; 
-let allMembers = []; // holds latest ACTIVE members pulled from server 
-let currentView = 'list'; 
-let selectedDate = null; 
-const dayOfWeekNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']; 
+// ------------------------------
+// Sidebar + session handling
+// ------------------------------
+function setupSidebarAndSession() {
+  const menuToggle = document.getElementById('menuToggle');
+  const sidebar = document.querySelector('.sidebar');
+  const logoutBtn = document.getElementById('logoutBtn');
 
-document.addEventListener('DOMContentLoaded', async function() { 
-  console.log('=== INIT START ==='); 
-
-  // Additional JWT security check (after timestamp)
-  const token = sessionStorage.getItem('token');
-  const role = sessionStorage.getItem('role');
-  if (!token || role !== 'admin') {
-    sessionStorage.removeItem('token');
-    sessionStorage.removeItem('authUser');
-    sessionStorage.removeItem('role');
-    window.location.href = '../admin-login.html';
+  // Security: Check timestamp again before wiring UI
+  try {
+    const authUser = AdminStore.getAuthUser();
+    const ts = authUser?.timestamp || 0;
+    if (!authUser || !ts || Date.now() - ts > ADMIN_SESSION_MAX_AGE_MS) {
+      adminLogout('admin session max age exceeded in setupSidebarAndSession');
+      return;
+    }
+  } catch (e) {
+    console.error('Auth parse failed in setupSidebarAndSession:', e);
+    adminLogout('invalid authUser JSON in setupSidebarAndSession');
     return;
   }
 
-  // Menu Toggle & Logout 
-  const menuToggle = document.getElementById('menuToggle'); 
-  const sidebar = document.querySelector('.sidebar'); 
-  const logoutBtn = document.getElementById('logoutBtn'); 
+  if (menuToggle && sidebar) {
+    menuToggle.addEventListener('click', () => sidebar.classList.toggle('collapsed'));
+  }
 
-  if (menuToggle && sidebar) { 
-    menuToggle.addEventListener('click', () => sidebar.classList.toggle('collapsed')); 
-  } 
-
-  // ✅ LOGOUT - Clears token + authUser + role
-  if (logoutBtn) { 
-    logoutBtn.addEventListener('click', () => { 
-      sessionStorage.removeItem('token');
-      sessionStorage.removeItem('authUser'); 
-      sessionStorage.removeItem('role');
-      window.location.href = '../admin-login.html'; 
-    }); 
-  } 
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', async () => {
+      const token = getToken();
+      try {
+        if (token) {
+          const logoutUrl = `${getApiBase()}/api/logout`;
+          await fetch(logoutUrl, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${token}` },
+          });
+        }
+      } catch (e) {
+        console.error('Logout error:', e);
+      } finally {
+        // Admin-only logout
+        localStorage.setItem(ADMIN_KEYS.logoutEvent, Date.now().toString());
+        adminLogout('manual admin logout button');
+      }
+    });
+  }
 
   // Close sidebar when clicking outside on mobile
   document.addEventListener('click', (e) => {
-    if (window.innerWidth <= 768 && sidebar && menuToggle && !sidebar.contains(e.target) && !menuToggle.contains(e.target)) {
+    if (
+      window.innerWidth <= 768 &&
+      sidebar &&
+      menuToggle &&
+      !sidebar.contains(e.target) &&
+      !menuToggle.contains(e.target)
+    ) {
       sidebar.classList.remove('collapsed');
     }
   });
@@ -101,92 +363,130 @@ document.addEventListener('DOMContentLoaded', async function() {
       }
     });
   }
+}
 
-  // Init: Simple Fetches 
-  await checkServerConnection(); 
-  await Promise.all([fetchClasses(), fetchMembers('')]); 
-  setupEventListeners(); 
+// ------------------------------
+// DOM Ready
+// ------------------------------
+document.addEventListener('DOMContentLoaded', async function () {
+  console.log('=== INIT START ===');
 
-  const calendarMonth = document.getElementById('calendarMonth'); 
-  if (calendarMonth) calendarMonth.value = new Date().toISOString().slice(0, 7); 
-  else console.warn('calendarMonth not found'); 
+  // Unified auth gate (admin only)
+  const ok = requireAuth('admin', '../admin-login.html');
+  if (!ok) return;
 
-  generateCalendar(); 
-  updateBulkEnrollDisplay(); 
-  switchView('list'); 
+  // Sidebar + logout wiring
+  setupSidebarAndSession();
 
-  // Default date to today for list view 
-  const sessionDateInput = document.getElementById('sessionDate'); 
-  if (sessionDateInput) { 
-    // Set minimum date to today using local timezone 
-    const today = new Date(); 
-    const year = today.getFullYear(); 
-    const month = String(today.getMonth() + 1).padStart(2, '0'); 
-    const day = String(today.getDate()).padStart(2, '0'); 
-    const minDate = `${year}-${month}-${day}`; 
-    sessionDateInput.setAttribute('min', minDate); 
+  // Init: Simple fetches
+  await checkServerConnection();
+  await Promise.all([fetchClasses(), fetchMembers('')]);
+  setupEventListeners();
 
-    // Block manual input of past dates - STRICTER VALIDATION 
-    sessionDateInput.addEventListener('change', (e) => { 
-      const inputValue = e.target.value; 
-      if (!inputValue) return; // Allow empty 
+  const calendarMonth = document.getElementById('calendarMonth');
+  if (calendarMonth) {
+    calendarMonth.value = new Date().toISOString().slice(0, 7);
+  } else {
+    console.warn('calendarMonth not found');
+  }
 
-      // Compare date strings directly (YYYY-MM-DD format) 
-      if (inputValue < minDate) { 
-        showError('Cannot select past dates. Please choose today or a future date.'); 
-        e.target.value = minDate; // Reset to today 
-      } 
-    }); 
+  generateCalendar();
+  updateBulkEnrollDisplay();
+  switchView('list');
 
-    // Also validate on blur (when user leaves the field) 
-    sessionDateInput.addEventListener('blur', (e) => { 
-      const inputValue = e.target.value; 
-      if (!inputValue) return; 
-      if (inputValue < minDate) { 
-        showError('Cannot select past dates. Please choose today or a future date.'); 
-        e.target.value = minDate; 
-      } 
-    }); 
-    console.log('✅ sessionDate input restricted to future dates, min:', minDate); 
-  } else { 
-    console.warn('sessionDate input not found'); 
-  } 
+  // Default date to today for list view (with future-date restriction)
+  const sessionDateInput = document.getElementById('sessionDate');
+  if (sessionDateInput) {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    const minDate = `${year}-${month}-${day}`;
+    sessionDateInput.setAttribute('min', minDate);
 
-  console.log('=== INIT COMPLETE ==='); 
-  domCheck(); // Run diagnostic 
-}); 
+    // Block manual input of past dates
+    const enforceMin = (e) => {
+      const inputValue = e.target.value;
+      if (!inputValue) return;
+      if (inputValue < minDate) {
+        showError('Cannot select past dates. Please choose today or a future date.');
+        e.target.value = minDate;
+      }
+    };
 
-// DOM Diagnostic: Check All Expected Elements 
-function domCheck() { 
-  console.log('=== DOM CHECK START ==='); 
-  const ids = ['classSelect', 'membersTableBody', 'addToBulkBtn', 'bulkEnrollPanel', 'bulkEnrollList', 'confirmBulkBtn', 'sessionDate', 'sessionTime', 'timeSlots', 'sessionsTableBody', 'emptyCartMsg', 'sessionDetailsSection', 'addPanelToCartBtn', 'panelMemberSelect', 'memberSearch', 'autocompleteSuggestions', 'serverStatus']; 
-  ids.forEach(id => { 
-    const el = document.getElementById(id); 
-    if (el) console.log(`✓ Found: #${id}`); 
-    else console.error(`✗ MISSING: #${id} (update HTML or JS)`); 
-  }); 
-  console.log('=== DOM CHECK END ==='); 
-} 
+    sessionDateInput.addEventListener('change', enforceMin);
+    sessionDateInput.addEventListener('blur', enforceMin);
 
-async function checkServerConnection() { 
-  const statusElement = document.getElementById('serverStatus'); 
-  try { 
-    const response = await fetch(`${SERVER_URL}/health`); 
-    const isConnected = response.ok; 
-    if (statusElement) { 
-      statusElement.className = `server-status ${isConnected ? 'server-connected' : 'server-disconnected'}`; 
-      statusElement.textContent = isConnected ? 'Connected to server successfully' : 'Cannot connect to server. Please try again later.'; 
-      statusElement.style.display = 'block'; 
-    } 
-    console.log('Server check:', isConnected ? 'OK' : 'Failed'); 
-  } catch (error) { 
-    if (statusElement) { 
-      statusElement.className = 'server-status server-disconnected'; 
-      statusElement.textContent = 'Cannot connect to server. Please try again later.'; 
-      statusElement.style.display = 'block'; 
-    } 
-    console.error('Server connection error:', error); 
-  } 
+    console.log('✅ sessionDate input restricted to future dates, min:', minDate);
+  } else {
+    console.warn('sessionDate input not found');
+  }
+
+  console.log('=== INIT COMPLETE ===');
+  domCheck(); // Run diagnostic
+});
+
+// ------------------------------
+// DOM Diagnostic: Check All Expected Elements
+// ------------------------------
+function domCheck() {
+  console.log('=== DOM CHECK START ===');
+  const ids = [
+    'classSelect',
+    'membersTableBody',
+    'addToBulkBtn',
+    'bulkEnrollPanel',
+    'bulkEnrollList',
+    'confirmBulkBtn',
+    'sessionDate',
+    'sessionTime',
+    'timeSlots',
+    'sessionsTableBody',
+    'emptyCartMsg',
+    'sessionDetailsSection',
+    'addPanelToCartBtn',
+    'panelMemberSelect',
+    'memberSearch',
+    'autocompleteSuggestions',
+    'serverStatus',
+  ];
+  ids.forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) console.log(`✓ Found: #${id}`);
+    else console.error(`✗ MISSING: #${id} (update HTML or JS)`);
+  });
+  console.log('=== DOM CHECK END ===');
+}
+
+// ------------------------------
+// Server health check (now via apiFetch)
+// ------------------------------
+async function checkServerConnection() {
+  const statusElement = document.getElementById('serverStatus');
+  try {
+    // Can be public in backend, but apiFetch keeps things consistent
+    const result = await apiFetch('/health');
+    const isConnected = !!result;
+
+    if (statusElement) {
+      statusElement.className = `server-status ${
+        isConnected ? 'server-connected' : 'server-disconnected'
+      }`;
+      statusElement.textContent = isConnected
+        ? 'Connected to server successfully'
+        : 'Cannot connect to server. Please try again later.';
+      statusElement.style.display = 'block';
+    }
+
+    console.log('Server check:', isConnected ? 'OK' : 'Failed');
+  } catch (error) {
+    if (statusElement) {
+      statusElement.className = 'server-status server-disconnected';
+      statusElement.textContent = 'Cannot connect to server. Please try again later.';
+      statusElement.style.display = 'block';
+    }
+    console.error('Server connection error:', error);
+  }
 }
 
 async function fetchClasses() { 

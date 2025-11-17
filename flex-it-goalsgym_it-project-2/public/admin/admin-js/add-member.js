@@ -4,35 +4,271 @@ let faceImageBlob = null;
 let faceSuccessfullyCaptured = false;
 let selectedMember = null;
 
-// Utility for authenticated API calls (adds security header for /api/ routes)
+// --------------------------------------
+// Admin session configuration
+// --------------------------------------
+const ADMIN_SESSION_MAX_AGE_MS = 2 * 60 * 60 * 1000; // 2 hours
+
+// Admin-scoped storage keys to avoid cross-role interference
+const ADMIN_KEYS = {
+  token: 'admin_token',
+  authUser: 'admin_authUser',
+  role: 'admin_role',
+  logoutEvent: 'adminLogoutEvent',
+};
+
+// --------------------------------------
+// Admin storage helpers (namespaced)
+// --------------------------------------
+const AdminStore = {
+  set(token, userPayload) {
+    try {
+      const authUser = {
+        ...(userPayload || {}),
+        timestamp: Date.now(),
+        role: 'admin',
+        token,
+      };
+
+      localStorage.setItem(ADMIN_KEYS.token, token);
+      localStorage.setItem(ADMIN_KEYS.authUser, JSON.stringify(authUser));
+      localStorage.setItem(ADMIN_KEYS.role, 'admin');
+
+      sessionStorage.setItem(ADMIN_KEYS.token, token);
+      sessionStorage.setItem(ADMIN_KEYS.authUser, JSON.stringify(authUser));
+      sessionStorage.setItem(ADMIN_KEYS.role, 'admin');
+    } catch (e) {
+      console.error('[AdminStore.set] failed:', e);
+    }
+  },
+
+  getToken() {
+    return (
+      sessionStorage.getItem(ADMIN_KEYS.token) ||
+      localStorage.getItem(ADMIN_KEYS.token) ||
+      null
+    );
+  },
+
+  getAuthUser() {
+    const raw =
+      sessionStorage.getItem(ADMIN_KEYS.authUser) ||
+      localStorage.getItem(ADMIN_KEYS.authUser);
+    if (!raw) return null;
+    try {
+      return JSON.parse(raw);
+    } catch (e) {
+      console.error('[AdminStore.getAuthUser] parse error:', e);
+      return null;
+    }
+  },
+
+  hasSession() {
+    return (
+      (localStorage.getItem(ADMIN_KEYS.token) ||
+        sessionStorage.getItem(ADMIN_KEYS.token)) &&
+      (localStorage.getItem(ADMIN_KEYS.authUser) ||
+        sessionStorage.getItem(ADMIN_KEYS.authUser)) &&
+      ((localStorage.getItem(ADMIN_KEYS.role) ||
+        sessionStorage.getItem(ADMIN_KEYS.role)) === 'admin')
+    );
+  },
+
+  clear() {
+    localStorage.removeItem(ADMIN_KEYS.token);
+    localStorage.removeItem(ADMIN_KEYS.authUser);
+    localStorage.removeItem(ADMIN_KEYS.role);
+
+    sessionStorage.removeItem(ADMIN_KEYS.token);
+    sessionStorage.removeItem(ADMIN_KEYS.authUser);
+    sessionStorage.removeItem(ADMIN_KEYS.role);
+  },
+};
+
+// --------------------------------------
+// Backward‑compatible bootstrap
+// Copy valid admin session from generic keys into admin_* once
+// --------------------------------------
+function bootstrapAdminFromGenericIfNeeded() {
+  try {
+    if (AdminStore.hasSession()) return;
+
+    const genToken = localStorage.getItem('token');
+    const genRole = localStorage.getItem('role');
+    const genAuthRaw = localStorage.getItem('authUser');
+
+    if (!genToken || !genRole || genRole !== 'admin' || !genAuthRaw) return;
+
+    const genAuth = JSON.parse(genAuthRaw);
+    AdminStore.set(genToken, genAuth);
+  } catch (e) {
+    console.error('[bootstrapAdminFromGenericIfNeeded] failed:', e);
+  }
+}
+
+// ------------------------------
+// Shared auth helpers (admin only)
+// ------------------------------
+function clearLocalAuth() {
+  // Clear admin-scoped keys
+  AdminStore.clear();
+
+  // Also clear legacy generic keys if they currently represent an admin session.
+  // This prevents login.js from auto-redirecting back into admin after logout.
+  try {
+    const genericRole =
+      localStorage.getItem('role') || sessionStorage.getItem('role');
+
+    if (genericRole === 'admin') {
+      localStorage.removeItem('token');
+      localStorage.removeItem('authUser');
+      localStorage.removeItem('role');
+
+      sessionStorage.removeItem('token');
+      sessionStorage.removeItem('authUser');
+      sessionStorage.removeItem('role');
+    }
+  } catch (e) {
+    console.error('[Admin clearLocalAuth] failed to clear generic keys:', e);
+  }
+}
+
+
+function getApiBase() {
+  return window.location.hostname === 'localhost' ||
+    window.location.hostname === '127.0.0.1'
+    ? SERVER_URL
+    : '';
+}
+
+function getToken() {
+  return AdminStore.getToken();
+}
+
+function adminLogout(reason, loginPath = '../admin-login.html') {
+  console.log('[Admin Logout]:', reason || 'no reason');
+  clearLocalAuth();
+  // Notify admin tabs only
+  localStorage.setItem(ADMIN_KEYS.logoutEvent, Date.now().toString());
+  window.location.href = loginPath;
+}
+
+// Centralized admin auth check
+function ensureAdminAuthOrLogout(loginPath) {
+  try {
+    // Populate admin_* from generic admin keys if needed
+    if (!AdminStore.hasSession()) {
+      bootstrapAdminFromGenericIfNeeded();
+    }
+
+    if (!AdminStore.hasSession()) {
+      adminLogout('missing admin session', loginPath);
+      return false;
+    }
+
+    const authUser = AdminStore.getAuthUser();
+    if (!authUser || authUser.role !== 'admin') {
+      adminLogout('invalid or non-admin authUser', loginPath);
+      return false;
+    }
+
+    const ts = authUser.timestamp || 0;
+    if (!ts || Date.now() - ts > ADMIN_SESSION_MAX_AGE_MS) {
+      adminLogout('admin session max age exceeded', loginPath);
+      return false;
+    }
+
+    // Refresh timestamp on successful check
+    authUser.timestamp = Date.now();
+    AdminStore.set(AdminStore.getToken(), authUser);
+
+    // Cross-tab logout: listen for adminLogoutEvent
+    window.addEventListener('storage', (event) => {
+      if (event.key === ADMIN_KEYS.logoutEvent) {
+        adminLogout('adminLogoutEvent from another tab', loginPath);
+      }
+    });
+
+    return true;
+  } catch (e) {
+    console.error('Auth check failed:', e);
+    adminLogout('exception in ensureAdminAuthOrLogout', loginPath);
+    return false;
+  }
+}
+
+/**
+ * Require a valid auth session for this page.
+ * - expectedRole: 'admin' | 'member' | 'trainer'
+ * - loginPath: relative path to the corresponding login page
+ *
+ * For this admin module we delegate to ensureAdminAuthOrLogout,
+ * keeping the signature unchanged at the call site.
+ */
+function requireAuth(expectedRole, loginPath) {
+  return ensureAdminAuthOrLogout(loginPath);
+}
+
+// Global cross‑tab admin logout sync (admin_* only)
+window.addEventListener('storage', (event) => {
+  if (event.key === ADMIN_KEYS.logoutEvent) {
+    adminLogout('adminLogoutEvent from another tab (global)', '../admin-login.html');
+  }
+});
+
+// ------------------------------
+// Utility for authenticated API calls
+// ------------------------------
 async function apiFetch(endpoint, options = {}) {
-  const token = sessionStorage.getItem('token');
-  if (!token) {
-    sessionStorage.removeItem('token');
-    sessionStorage.removeItem('authUser');
-    sessionStorage.removeItem('role');
-    window.location.href = '../admin-login.html';
+  const ok = ensureAdminAuthOrLogout('../admin-login.html');
+  if (!ok) return;
+
+  const token = AdminStore.getToken();
+  const authUser = AdminStore.getAuthUser();
+
+  if (!token || !authUser) {
+    adminLogout('missing token/authUser in admin apiFetch', '../admin-login.html');
     return;
   }
 
-  const url = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-    ? `${SERVER_URL}${endpoint}`
-    : endpoint;
-
-  const headers = { ...options.headers, 'Authorization': `Bearer ${token}` };
-
-  // For JSON: Add Content-Type
-  if (options.body && typeof options.body === 'string' && !options.headers?.['Content-Type']) {
-    headers['Content-Type'] = 'application/json';
+  // Basic timestamp check (same as requireAuth)
+  try {
+    const ts = authUser.timestamp || 0;
+    if (!ts || Date.now() - ts > ADMIN_SESSION_MAX_AGE_MS) {
+      adminLogout('admin session max age exceeded in apiFetch', '../admin-login.html');
+      return;
+    }
+    // Refresh timestamp on successful API use
+    authUser.timestamp = Date.now();
+    AdminStore.set(token, authUser);
+  } catch (e) {
+    console.error('Failed to refresh authUser in apiFetch:', e);
+    adminLogout('invalid authUser JSON in apiFetch', '../admin-login.html');
+    return;
   }
-  // For FormData: Don't override Content-Type (browser sets multipart)
+
+  const url =
+    window.location.hostname === 'localhost' ||
+    window.location.hostname === '127.0.0.1'
+      ? `${SERVER_URL}${endpoint}`
+      : endpoint;
+
+  const isFormData =
+    typeof FormData !== 'undefined' && options.body instanceof FormData;
+
+  const headers = {
+    ...options.headers,
+    Authorization: `Bearer ${token}`,
+    ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
+  };
 
   const response = await fetch(url, { ...options, headers });
 
   if (response.status === 401) {
-    sessionStorage.removeItem('token');
-    sessionStorage.removeItem('authUser');
-    sessionStorage.removeItem('role');
+    // Session invalid/expired OR logged in from another browser:
+    // clear, broadcast admin logout to other tabs, and redirect.
+    clearLocalAuth();
+    localStorage.setItem(ADMIN_KEYS.logoutEvent, Date.now().toString());
     window.location.href = '../admin-login.html';
     return;
   }
@@ -40,13 +276,13 @@ async function apiFetch(endpoint, options = {}) {
   return response.json();
 }
 
+// ------------------------------
+// Page init
+// ------------------------------
 document.addEventListener('DOMContentLoaded', () => {
-  const token = sessionStorage.getItem('token');
-  const role = sessionStorage.getItem('role');
-  if (!token || role !== 'admin') {
-    window.location.href = '../admin-login.html';
-    return;
-  }
+  const ok = requireAuth('admin', '../admin-login.html');
+  if (!ok) return;
+
   setupSidebarAndSession();
   initializeForm();
 });
@@ -57,36 +293,66 @@ function formatDate(date) {
   return new Date(date).toLocaleDateString('en-US', options);
 }
 
+// ------------------------------
+// Sidebar + session handling
+// ------------------------------
 function setupSidebarAndSession() {
   const menuToggle = document.getElementById('menuToggle');
   const sidebar = document.querySelector('.sidebar');
   const logoutBtn = document.getElementById('logoutBtn');
-  const authUser = JSON.parse(sessionStorage.getItem('authUser') || '{}');
 
-  if (menuToggle && sidebar) {
-    menuToggle.addEventListener('click', () => sidebar.classList.toggle('collapsed'));
-  }
-
-  if (!authUser || (Date.now() - authUser.timestamp > 3600000)) {
-    sessionStorage.removeItem('token');
-    sessionStorage.removeItem('authUser');
-    sessionStorage.removeItem('role');
-    window.location.href = '../admin-login.html';
+  // Extra safety: timestamp check
+  try {
+    const authUser = AdminStore.getAuthUser();
+    const ts = authUser?.timestamp || 0;
+    if (!authUser || !ts || Date.now() - ts > ADMIN_SESSION_MAX_AGE_MS) {
+      adminLogout('admin session max age exceeded in setupSidebarAndSession', '../admin-login.html');
+      return;
+    }
+  } catch (e) {
+    adminLogout('invalid authUser JSON in setupSidebarAndSession', '../admin-login.html');
     return;
   }
 
+  if (menuToggle && sidebar) {
+    menuToggle.addEventListener('click', () =>
+      sidebar.classList.toggle('collapsed')
+    );
+  }
+
   if (logoutBtn) {
-    logoutBtn.addEventListener('click', () => {
-      sessionStorage.removeItem('token');
-      sessionStorage.removeItem('authUser');
-      sessionStorage.removeItem('role');
-      window.location.href = '../admin-login.html';
+    logoutBtn.addEventListener('click', async () => {
+      const token = getToken();
+      try {
+        if (token) {
+          const logoutUrl = `${getApiBase()}/api/logout`;
+          await fetch(logoutUrl, {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+        }
+      } catch (e) {
+        console.error('Logout error:', e);
+      } finally {
+        clearLocalAuth();
+        // Notify admin tabs in this browser
+        localStorage.setItem(ADMIN_KEYS.logoutEvent, Date.now().toString());
+        window.location.href = '../admin-login.html';
+      }
     });
   }
 
   // Mobile sidebar click outside
   document.addEventListener('click', (e) => {
-    if (window.innerWidth <= 768 && sidebar && menuToggle && !sidebar.contains(e.target) && !menuToggle.contains(e.target)) {
+    if (
+      window.innerWidth <= 768 &&
+      sidebar &&
+      menuToggle &&
+      !sidebar.contains(e.target) &&
+      !menuToggle.contains(e.target)
+    ) {
       sidebar.classList.remove('collapsed');
     }
   });
@@ -103,6 +369,9 @@ function setupSidebarAndSession() {
   }
 }
 
+// ------------------------------
+// Initialize form + UI
+// ------------------------------
 function initializeForm() {
   const memberForm = document.getElementById('memberForm');
 
@@ -124,12 +393,12 @@ function initializeForm() {
   const combativeCheckbox = document.getElementById('combativeCheckbox');
   if (monthlyCheckbox) {
     monthlyCheckbox.addEventListener('change', function () {
-      document.getElementById('monthlyDetails').style.display = this.checked ? "block" : "none";
+      document.getElementById('monthlyDetails').style.display = this.checked ? 'block' : 'none';
     });
   }
   if (combativeCheckbox) {
     combativeCheckbox.addEventListener('change', function () {
-      document.getElementById('combativeDetails').style.display = this.checked ? "block" : "none";
+      document.getElementById('combativeDetails').style.display = this.checked ? 'block' : 'none';
     });
   }
 
@@ -175,6 +444,9 @@ function setupDatePicker(dateInputId, displayInputId, iconId) {
   });
 }
 
+// ------------------------------
+// Renewal modal
+// ------------------------------
 function setupRenewalModal() {
   const renewBtn = document.getElementById('renewBtn');
   const modal = document.getElementById('renewalModal');
@@ -184,7 +456,7 @@ function setupRenewalModal() {
 
   // Prevent checkbox labels from triggering date picker in renewal form
   const renewalCheckboxLabels = document.querySelectorAll('.renewal-checkbox');
-  renewalCheckboxLabels.forEach(label => {
+  renewalCheckboxLabels.forEach((label) => {
     label.addEventListener('click', (e) => {
       e.stopPropagation();
       e.preventDefault();
@@ -309,15 +581,19 @@ async function searchMember() {
     }
 
     if (resultsDiv) {
-      resultsDiv.innerHTML = result.data.map(member => `
-        <div class="search-result-item" onclick='selectMemberForRenewal(${JSON.stringify(member).replace(/'/g, "&apos;")})'>
+      resultsDiv.innerHTML = result.data
+        .map(
+          (member) => `
+        <div class="search-result-item" onclick='selectMemberForRenewal(${JSON.stringify(member).replace(/'/g, '&apos;')})'>
           <div class="result-info">
             <strong>${member.memberId}</strong> - ${member.name}
             <br>
             <small>Status: <span class="status-${member.status}">${member.status}</span></small>
           </div>
         </div>
-      `).join('');
+      `
+        )
+        .join('');
     }
   } catch (error) {
     showMessage('Error searching members: ' + error.message, 'error');
@@ -333,17 +609,19 @@ function selectMemberForRenewal(member) {
 
   let membershipHTML = '';
   if (member.memberships && member.memberships.length > 0) {
-    membershipHTML = member.memberships.map(m => {
-      const endDate = new Date(m.endDate);
-      const isExpired = endDate < new Date();
-      return `
+    membershipHTML = member.memberships
+      .map((m) => {
+        const endDate = new Date(m.endDate);
+        const isExpired = endDate < new Date();
+        return `
         <div class="membership-item ${isExpired ? 'expired' : m.status}">
           <span class="membership-type">${m.type.toUpperCase()}</span>
           <span class="membership-status">${m.status}</span>
           <span class="membership-date">Expires: ${formatDate(endDate)}</span>
         </div>
       `;
-    }).join('');
+      })
+      .join('');
   } else {
     membershipHTML = '<p class="no-membership">No active memberships</p>';
   }
@@ -380,9 +658,17 @@ function updateRenewalInfo() {
   let infoHTML = '<strong><i class="fas fa-info-circle"></i> Renewal Summary:</strong><br><br>';
 
   if (monthlyChecked) {
-    const duration = parseInt(document.getElementById('renewMonthlyDuration').value) || 1;
-    const currentMembership = selectedMember.memberships?.find(m => m.type === 'monthly');
-    const endDate = calculateNewEndDate(renewalDate, currentMembership?.endDate, duration, 'monthly');
+    const duration =
+      parseInt(document.getElementById('renewMonthlyDuration').value) || 1;
+    const currentMembership = selectedMember.memberships?.find(
+      (m) => m.type === 'monthly'
+    );
+    const endDate = calculateNewEndDate(
+      renewalDate,
+      currentMembership?.endDate,
+      duration,
+      'monthly'
+    );
 
     infoHTML += `
       <div class="info-item">
@@ -395,9 +681,17 @@ function updateRenewalInfo() {
   }
 
   if (combativeChecked) {
-    const sessions = parseInt(document.getElementById('renewCombativeSessions').value) || 12;
-    const currentMembership = selectedMember.memberships?.find(m => m.type === 'combative');
-    const endDate = calculateNewEndDate(renewalDate, currentMembership?.endDate, 1, 'combative');
+    const sessions =
+      parseInt(document.getElementById('renewCombativeSessions').value) || 12;
+    const currentMembership = selectedMember.memberships?.find(
+      (m) => m.type === 'combative'
+    );
+    const endDate = calculateNewEndDate(
+      renewalDate,
+      currentMembership?.endDate,
+      1,
+      'combative'
+    );
 
     infoHTML += `
       <div class="info-item">
@@ -416,7 +710,12 @@ function updateRenewalInfo() {
   }
 }
 
-function calculateNewEndDate(renewalDate, currentEndDateStr, durationMonths, membershipType) {
+function calculateNewEndDate(
+  renewalDate,
+  currentEndDateStr,
+  durationMonths,
+  membershipType
+) {
   const renewal = new Date(renewalDate);
   const currentEnd = currentEndDateStr ? new Date(currentEndDateStr) : null;
 
@@ -470,7 +769,7 @@ async function handleRenewal(e) {
     const updatedMemberships = [];
 
     if (selectedMember.memberships) {
-      selectedMember.memberships.forEach(m => {
+      selectedMember.memberships.forEach((m) => {
         if (m.type === 'monthly' && !monthlyChecked) {
           updatedMemberships.push(m);
         } else if (m.type === 'combative' && !combativeChecked) {
@@ -480,23 +779,39 @@ async function handleRenewal(e) {
     }
 
     if (monthlyChecked) {
-      const duration = parseInt(document.getElementById('renewMonthlyDuration').value) || 1;
-      const currentMembership = selectedMember.memberships?.find(m => m.type === 'monthly');
-      const endDate = calculateNewEndDate(renewalDate, currentMembership?.endDate, duration, 'monthly');
+      const duration =
+        parseInt(document.getElementById('renewMonthlyDuration').value) || 1;
+      const currentMembership = selectedMember.memberships?.find(
+        (m) => m.type === 'monthly'
+      );
+      const endDate = calculateNewEndDate(
+        renewalDate,
+        currentMembership?.endDate,
+        duration,
+        'monthly'
+      );
 
       updatedMemberships.push({
         type: 'monthly',
         duration: duration,
         startDate: renewalDate.toISOString(),
         endDate: endDate.toISOString(),
-        status: 'active'
+        status: 'active',
       });
     }
 
     if (combativeChecked) {
-      const sessions = parseInt(document.getElementById('renewCombativeSessions').value) || 12;
-      const currentMembership = selectedMember.memberships?.find(m => m.type === 'combative');
-      const endDate = calculateNewEndDate(renewalDate, currentMembership?.endDate, 1, 'combative');
+      const sessions =
+        parseInt(document.getElementById('renewCombativeSessions').value) || 12;
+      const currentMembership = selectedMember.memberships?.find(
+        (m) => m.type === 'combative'
+      );
+      const endDate = calculateNewEndDate(
+        renewalDate,
+        currentMembership?.endDate,
+        1,
+        'combative'
+      );
 
       updatedMemberships.push({
         type: 'combative',
@@ -504,7 +819,7 @@ async function handleRenewal(e) {
         remainingSessions: sessions,
         startDate: renewalDate.toISOString(),
         endDate: endDate.toISOString(),
-        status: 'active'
+        status: 'active',
       });
     }
 
@@ -513,8 +828,8 @@ async function handleRenewal(e) {
       method: 'PUT',
       body: JSON.stringify({
         memberships: updatedMemberships,
-        status: 'active'
-      })
+        status: 'active',
+      }),
     });
 
     if (result.success) {
@@ -536,6 +851,9 @@ async function handleRenewal(e) {
   }
 }
 
+// ------------------------------
+// Add member form submit
+// ------------------------------
 async function handleFormSubmit(e) {
   e.preventDefault();
   const btn = e.target.querySelector('button[type="submit"]');
@@ -550,18 +868,18 @@ async function handleFormSubmit(e) {
   if (document.getElementById('monthlyCheckbox').checked) {
     memberships.push({
       type: 'monthly',
-      duration: parseInt(document.getElementById('monthlyDuration').value)
+      duration: parseInt(document.getElementById('monthlyDuration').value),
     });
   }
   if (document.getElementById('combativeCheckbox').checked) {
     memberships.push({
       type: 'combative',
-      duration: parseInt(document.getElementById('combativeSessions').value)
+      duration: parseInt(document.getElementById('combativeSessions').value),
     });
   }
 
   if (memberships.length === 0) {
-    showMessage("Please select at least one membership type", "error");
+    showMessage('Please select at least one membership type', 'error');
     if (btn) {
       btn.disabled = false;
       btn.textContent = originalText;
@@ -586,7 +904,7 @@ async function handleFormSubmit(e) {
     // Secure POST with apiFetch (FormData for image/blob)
     const result = await apiFetch('/api/members', {
       method: 'POST',
-      body: formData // Multipart: Backend multer parses fields + file; generates PKL via app.py
+      body: formData, // Multipart: Backend multer parses fields + file
     });
 
     if (result.success) {
@@ -621,6 +939,9 @@ async function handleFormSubmit(e) {
   }
 }
 
+// ------------------------------
+// Face capture
+// ------------------------------
 function setupFaceCapture() {
   const openBtn = document.getElementById('openFacePaneBtn');
   const closeBtn = document.getElementById('closeFacePaneBtn');
@@ -655,7 +976,7 @@ function setupFaceCapture() {
   if (closeBtn) {
     closeBtn.addEventListener('click', () => {
       if (stream) {
-        stream.getTracks().forEach(track => track.stop());
+        stream.getTracks().forEach((track) => track.stop());
       }
       if (facePane) facePane.style.display = 'none';
       if (video) video.style.display = 'block';
@@ -671,7 +992,7 @@ function setupFaceCapture() {
         const ctx = canvas.getContext('2d');
         ctx.drawImage(video, 0, 0);
 
-        canvas.toBlob(blob => {
+        canvas.toBlob((blob) => {
           faceImageBlob = blob;
         }, 'image/jpeg');
       }
@@ -692,7 +1013,7 @@ function setupFaceCapture() {
       }
 
       if (stream) {
-        stream.getTracks().forEach(track => track.stop());
+        stream.getTracks().forEach((track) => track.stop());
       }
       if (facePane) facePane.style.display = 'none';
       if (resultMsg) resultMsg.textContent = '';
@@ -700,6 +1021,9 @@ function setupFaceCapture() {
   }
 }
 
+// ------------------------------
+// Messages
+// ------------------------------
 function showMessage(text, type) {
   const messageDiv = document.getElementById('message');
   if (messageDiv) {

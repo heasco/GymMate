@@ -6,7 +6,9 @@
     <title>Admin Login - GOALS Gym</title>
     <link rel="stylesheet" href="./style.css">
 </head>
-<body>
+
+<!-- ADDED: data-login-role so login.js knows this is the admin login page -->
+<body data-login-role="admin">
     <!-- Back Button -->
     <button class="circle-back-btn" onclick="window.location.href='./index.html'">&lt;</button>
 
@@ -27,13 +29,14 @@
                 <input type="password" id="password" name="password" class="input-field" required autocomplete="current-password">
             </div>
             
-            <!-- ADDED: Hidden role field -->
+            <!-- Hidden role field (kept as-is, must be 'admin') -->
             <input type="hidden" id="role" name="role" value="admin">
             
             <button type="submit" class="login-button">Login</button>
         </form>
         <p class="error-message" id="errorMessage"></p>
     </div>
-<script src="login.js"></script>
+
+    <script src="login.js"></script>
 </body>
 </html>

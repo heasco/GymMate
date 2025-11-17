@@ -1,85 +1,137 @@
 // ========================================
 // Member Attendance - Tokenized front-end
+// With 2-hour max session + 15min idle warning (member only)
 // ========================================
 
 // Server base for localhost; in production, apiFetch uses relative paths
 const SERVER_URL = 'http://localhost:8080';
+const MEMBER_SESSION_MAX_AGE_MS = 2 * 60 * 60 * 1000; // 2 hours
+const MEMBER_IDLE_WARNING_MS = 15 * 60 * 1000;        // 15 minutes
 
-// Secure fetch helper (same pattern as other member pages)
-async function apiFetch(endpoint, options = {}, timeoutMs = 10000) {
-  const token = sessionStorage.getItem('token');
+// Idle tracking (member only)
+let memberLastActivity = Date.now();
+let memberIdleWarningShown = false;
 
-  if (!token) {
-    sessionStorage.removeItem('authUser');
-    sessionStorage.removeItem('token');
-    sessionStorage.removeItem('role');
-    window.location.href = '../member-login.html';
-    return;
-  }
-
-  let url = endpoint;
-  if (!endpoint.startsWith('http://') && !endpoint.startsWith('https://')) {
-    url =
-      location.hostname === 'localhost' || location.hostname === '127.0.0.1'
-        ? `${SERVER_URL}${endpoint}`
-        : endpoint;
-  }
-
-  const headers = {
-    ...options.headers,
-    Authorization: `Bearer ${token}`,
-    'Content-Type': 'application/json',
-  };
-
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-
-  try {
-    const res = await fetch(url, { ...options, headers, signal: controller.signal });
-    clearTimeout(timeoutId);
-
-    if (res.status === 401) {
-      sessionStorage.removeItem('authUser');
-      sessionStorage.removeItem('token');
-      sessionStorage.removeItem('role');
-      window.location.href = '../member-login.html';
-      return;
-    }
-
-    if (!res.ok) throw new Error(`API error: ${res.status}`);
-    return await res.json();
-  } catch (e) {
-    clearTimeout(timeoutId);
-    if (e.name === 'AbortError') throw new Error(`API timeout after ${timeoutMs}ms`);
-    throw e;
-  }
-}
-
-// Initial auth check: token + role + timestamp (1 hour)
-(function checkAuth() {
-  const authUser = JSON.parse(sessionStorage.getItem('authUser') || 'null');
-  const token = sessionStorage.getItem('token');
-  const role = sessionStorage.getItem('role');
-
-  if (
-    !authUser ||
-    Date.now() - (authUser.timestamp || 0) > 3600000 ||
-    !token ||
-    role !== 'member'
-  ) {
-    sessionStorage.removeItem('authUser');
-    sessionStorage.removeItem('token');
-    sessionStorage.removeItem('role');
-    window.location.href = '../member-login.html';
-  }
-})();
+// Member-scoped storage keys (avoid admin/trainer interference)
+const MEMBER_KEYS = {
+  token: 'member_token',
+  authUser: 'member_authUser',
+  role: 'member_role',
+  logoutEvent: 'memberLogoutEvent',
+};
 
 // Utility
 const $ = (id) => document.getElementById(id);
 
+// --------------------------------------
+// Member storage helpers (namespaced)
+// --------------------------------------
+const MemberStore = {
+  set(token, userPayload) {
+    try {
+      const authUser = {
+        ...(userPayload || {}),
+        timestamp: Date.now(),
+        role: 'member',
+        token,
+      };
+
+      localStorage.setItem(MEMBER_KEYS.token, token);
+      localStorage.setItem(MEMBER_KEYS.authUser, JSON.stringify(authUser));
+      localStorage.setItem(MEMBER_KEYS.role, 'member');
+
+      sessionStorage.setItem(MEMBER_KEYS.token, token);
+      sessionStorage.setItem(MEMBER_KEYS.authUser, JSON.stringify(authUser));
+      sessionStorage.setItem(MEMBER_KEYS.role, 'member');
+    } catch (e) {
+      console.error('[MemberStore.set] failed:', e);
+    }
+  },
+
+  getToken() {
+    return (
+      sessionStorage.getItem(MEMBER_KEYS.token) ||
+      localStorage.getItem(MEMBER_KEYS.token) ||
+      null
+    );
+  },
+
+  getAuthUser() {
+    const raw =
+      sessionStorage.getItem(MEMBER_KEYS.authUser) ||
+      localStorage.getItem(MEMBER_KEYS.authUser);
+    if (!raw) return null;
+    try {
+      return JSON.parse(raw);
+    } catch (e) {
+      console.error('[MemberStore.getAuthUser] parse error:', e);
+      return null;
+    }
+  },
+
+  getRole() {
+    return (
+      sessionStorage.getItem(MEMBER_KEYS.role) ||
+      localStorage.getItem(MEMBER_KEYS.role) ||
+      null
+    );
+  },
+
+  hasSession() {
+    const token =
+      localStorage.getItem(MEMBER_KEYS.token) ||
+      sessionStorage.getItem(MEMBER_KEYS.token);
+    const authUser =
+      localStorage.getItem(MEMBER_KEYS.authUser) ||
+      sessionStorage.getItem(MEMBER_KEYS.authUser);
+    const role =
+      localStorage.getItem(MEMBER_KEYS.role) ||
+      sessionStorage.getItem(MEMBER_KEYS.role);
+    return !!token && !!authUser && role === 'member';
+  },
+
+  clear() {
+    localStorage.removeItem(MEMBER_KEYS.token);
+    localStorage.removeItem(MEMBER_KEYS.authUser);
+    localStorage.removeItem(MEMBER_KEYS.role);
+
+    sessionStorage.removeItem(MEMBER_KEYS.token);
+    sessionStorage.removeItem(MEMBER_KEYS.authUser);
+    sessionStorage.removeItem(MEMBER_KEYS.role);
+  },
+};
+
+// --------------------------------------
+// Backward‑compatible bootstrap
+// Copy valid member session from generic keys into member_* once
+// --------------------------------------
+function bootstrapMemberFromGenericIfNeeded() {
+  try {
+    if (MemberStore.hasSession()) return;
+
+    const genToken =
+      localStorage.getItem('token') || sessionStorage.getItem('token');
+    const genRole =
+      localStorage.getItem('role') || sessionStorage.getItem('role');
+    const genAuthRaw =
+      localStorage.getItem('authUser') || sessionStorage.getItem('authUser');
+
+    if (!genToken || !genRole || genRole !== 'member' || !genAuthRaw) return;
+
+    const genAuth = JSON.parse(genAuthRaw);
+    MemberStore.set(genToken, genAuth);
+  } catch (e) {
+    console.error('[bootstrapMemberFromGenericIfNeeded] failed:', e);
+  }
+}
+
+// --------------------------------------
+// Auth helpers
+// --------------------------------------
 function getAuth() {
   try {
-    return JSON.parse(sessionStorage.getItem('authUser') || 'null');
+    bootstrapMemberFromGenericIfNeeded();
+    return MemberStore.getAuthUser();
   } catch {
     return null;
   }
@@ -109,6 +161,264 @@ function fmtTime(ts) {
   return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
 }
 
+// ------------------------------
+// Idle helpers (member attendance)
+// ------------------------------
+function markMemberActivity() {
+  memberLastActivity = Date.now();
+  memberIdleWarningShown = false;
+}
+
+// Idle banner at top (like console bar)
+function showMemberIdleBanner() {
+  let banner = document.getElementById('memberIdleBanner');
+  if (!banner) {
+    banner = document.createElement('div');
+    banner.id = 'memberIdleBanner';
+    banner.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 9999;
+      background: linear-gradient(135deg, #111, #333);
+      color: #f5f5f5;
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-radius: 0 0 8px 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+      font-size: 0.95rem;
+    `;
+
+    const textSpan = document.createElement('span');
+    textSpan.textContent =
+      "You've been idle for 15 minutes. Stay logged in or logout?";
+
+    const stayBtn = document.createElement('button');
+    stayBtn.textContent = 'Stay Logged In';
+    stayBtn.style.cssText = `
+      padding: 6px 12px;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      background: #28a745;
+      color: #fff;
+      font-weight: 600;
+    `;
+
+    const logoutBtn = document.createElement('button');
+    logoutBtn.textContent = 'Logout';
+    logoutBtn.style.cssText = `
+      padding: 6px 12px;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      background: #dc3545;
+      color: #fff;
+      font-weight: 600;
+    `;
+
+    stayBtn.addEventListener('click', () => {
+      const token = MemberStore.getToken();
+      const authUser = MemberStore.getAuthUser();
+      if (token && authUser) {
+        authUser.timestamp = Date.now();
+        MemberStore.set(token, authUser);
+      }
+      markMemberActivity();
+      memberIdleWarningShown = true;
+      hideMemberIdleBanner();
+    });
+
+    logoutBtn.addEventListener('click', () => {
+      memberLogout('user chose logout after idle warning (attendance)');
+    });
+
+    banner.appendChild(textSpan);
+    banner.appendChild(stayBtn);
+    banner.appendChild(logoutBtn);
+    document.body.appendChild(banner);
+  } else {
+    banner.style.display = 'flex';
+  }
+}
+
+function hideMemberIdleBanner() {
+  const banner = document.getElementById('memberIdleBanner');
+  if (banner) banner.style.display = 'none';
+}
+
+// Centralized member logout
+function memberLogout(reason) {
+  console.log('[Member Logout] attendance page:', reason || 'no reason');
+
+  MemberStore.clear();
+
+  // Also clear generic keys if they are for member
+  try {
+    const genericRole =
+      localStorage.getItem('role') || sessionStorage.getItem('role');
+
+    if (genericRole === 'member') {
+      localStorage.removeItem('token');
+      localStorage.removeItem('authUser');
+      localStorage.removeItem('role');
+
+      sessionStorage.removeItem('token');
+      sessionStorage.removeItem('authUser');
+      sessionStorage.removeItem('role');
+    }
+  } catch (e) {
+    console.error('[memberLogout] failed clearing generic keys:', e);
+  }
+
+  // Notify other member tabs in this browser
+  localStorage.setItem(MEMBER_KEYS.logoutEvent, Date.now().toString());
+
+  window.location.href = '../member-login.html';
+}
+
+// Keep backwards-compatible quickLogout wrapper
+function quickLogout() {
+  console.log('🚪 Quick logout triggered from attendance page!');
+  memberLogout('quickLogout');
+}
+
+// Cross-tab member logout sync
+window.addEventListener('storage', (event) => {
+  if (event.key === MEMBER_KEYS.logoutEvent) {
+    console.log('[Member Logout] attendance page sees logout from another tab');
+    MemberStore.clear();
+    window.location.href = '../member-login.html';
+  }
+});
+
+// Idle watcher using MemberStore + banner
+function setupMemberIdleWatcher() {
+  ['mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart'].forEach((evt) => {
+    window.addEventListener(evt, markMemberActivity, { passive: true });
+  });
+
+  setInterval(() => {
+    bootstrapMemberFromGenericIfNeeded();
+
+    const token = MemberStore.getToken();
+    const role = MemberStore.getRole();
+    const authUser = MemberStore.getAuthUser();
+
+    if (!token || !authUser || role !== 'member') return;
+
+    try {
+      const ts = authUser.timestamp || 0;
+      if (!ts || Date.now() - ts > MEMBER_SESSION_MAX_AGE_MS) {
+        console.log('Member session exceeded 2 hours, logging out (attendance idle watcher).');
+        memberLogout('session max age exceeded in attendance idle watcher');
+        return;
+      }
+    } catch (e) {
+      console.error('Failed to parse authUser in attendance idle watcher:', e);
+      memberLogout('invalid authUser JSON in attendance idle watcher');
+      return;
+    }
+
+    const idleFor = Date.now() - memberLastActivity;
+    if (!memberIdleWarningShown && idleFor >= MEMBER_IDLE_WARNING_MS) {
+      console.log(
+        "You've been idle for 15 minutes on attendance page. Showing idle banner."
+      );
+      memberIdleWarningShown = true;
+      showMemberIdleBanner();
+    }
+  }, 30000);
+}
+
+// ------------------------------
+// Secure fetch helper (same pattern as other member pages)
+// Enhanced: token + role + 2-hour timestamp check + refresh
+// ------------------------------
+async function apiFetch(endpoint, options = {}, timeoutMs = 10000) {
+  bootstrapMemberFromGenericIfNeeded();
+
+  const token = MemberStore.getToken();
+  const role = MemberStore.getRole();
+  const authUser = MemberStore.getAuthUser();
+
+  if (!token || !authUser || role !== 'member') {
+    memberLogout('missing member session in attendance apiFetch');
+    return;
+  }
+
+  // 2-hour session max check + refresh timestamp
+  try {
+    const ts = authUser.timestamp || 0;
+    if (!ts || Date.now() - ts > MEMBER_SESSION_MAX_AGE_MS) {
+      console.log('Session max age exceeded in apiFetch (attendance).');
+      memberLogout('session max age exceeded in attendance apiFetch');
+      return;
+    }
+    authUser.timestamp = Date.now();
+    MemberStore.set(token, authUser);
+  } catch (e) {
+    console.error('Failed to parse authUser in attendance apiFetch:', e);
+    memberLogout('invalid authUser JSON in attendance apiFetch');
+    return;
+  }
+
+  let url = endpoint;
+  if (!endpoint.startsWith('http://') && !endpoint.startsWith('https://')) {
+    url =
+      location.hostname === 'localhost' || location.hostname === '127.0.0.1'
+        ? `${SERVER_URL}${endpoint}`
+        : endpoint;
+  }
+
+  const headers = {
+    ...options.headers,
+    Authorization: `Bearer ${token}`,
+    'Content-Type': 'application/json',
+  };
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const res = await fetch(url, { ...options, headers, signal: controller.signal });
+    clearTimeout(timeoutId);
+
+    if (res.status === 401 || res.status === 403) {
+      console.log('401/403 on attendance apiFetch - logging out');
+      memberLogout('401/403 from attendance apiFetch');
+      return;
+    }
+
+    if (!res.ok) throw new Error(`API error: ${res.status}`);
+    return await res.json();
+  } catch (e) {
+    clearTimeout(timeoutId);
+    if (e.name === 'AbortError') throw new Error(`API timeout after ${timeoutMs}ms`);
+    throw e;
+  }
+}
+
+// Initial auth check: token + role + timestamp (2 hours)
+(function checkAuth() {
+  bootstrapMemberFromGenericIfNeeded();
+  const authUser = MemberStore.getAuthUser();
+  const token = MemberStore.getToken();
+  const role = MemberStore.getRole();
+
+  if (
+    !authUser ||
+    !token ||
+    role !== 'member' ||
+    Date.now() - (authUser.timestamp || 0) > MEMBER_SESSION_MAX_AGE_MS
+  ) {
+    memberLogout('failed auth in attendance checkAuth');
+  }
+})();
+
 // State
 let currentMonth = new Date(); // pointer to displayed calendar month
 let minMonth = new Date(); // two months back limit
@@ -121,22 +431,23 @@ let summaryMonthDate = new Date();
 
 // DOM Ready
 document.addEventListener('DOMContentLoaded', () => {
+  setupMemberIdleWatcher();
+  markMemberActivity();
+
   // Sidebar toggle and logout
   const menuToggle = $('menuToggle');
   const sidebar = document.querySelector('.sidebar');
   if (menuToggle && sidebar) {
-    menuToggle.addEventListener('click', () => sidebar.classList.toggle('collapsed'));
+    menuToggle.addEventListener('click', () => {
+      sidebar.classList.toggle('collapsed');
+      markMemberActivity();
+    });
   }
 
   const logoutBtn = $('logoutBtn');
   if (logoutBtn) {
     logoutBtn.addEventListener('click', () => {
-      sessionStorage.removeItem('authUser');
-      sessionStorage.removeItem('memberData');
-      sessionStorage.removeItem('memberName');
-      sessionStorage.removeItem('token');
-      sessionStorage.removeItem('role');
-      window.location.href = '../member-login.html';
+      memberLogout('manual member logout from attendance page');
     });
   }
 
@@ -176,6 +487,7 @@ function setupMonthNavButtons() {
     prev.setMonth(prev.getMonth() - 1);
     if (prev >= startOfMonth(minMonth)) {
       currentMonth = prev;
+      markMemberActivity();
       updateMonthTitle();
       loadAndRenderMonth();
     }
@@ -188,6 +500,7 @@ function setupMonthNavButtons() {
     const thisMonth = startOfMonth(new Date());
     if (startOfMonth(next) <= thisMonth) {
       currentMonth = next;
+      markMemberActivity();
       updateMonthTitle();
       loadAndRenderMonth();
     }
@@ -228,7 +541,6 @@ function updateMonthTitle() {
 function renderCalendarSkeleton() {
   const grid = $('calendarGrid');
   if (!grid) return;
-  // Remove any previously rendered days, keep header (first 7 children are header)
   while (grid.children.length > 7) {
     grid.removeChild(grid.lastChild);
   }
@@ -267,7 +579,6 @@ async function loadAndRenderMonth() {
   } finally {
     if ($('calendarLoading')) $('calendarLoading').style.display = 'none';
     renderMonthDays(start, end);
-    // Monthly summary is handled separately via independent summary month
   }
 }
 
@@ -342,7 +653,6 @@ function renderMonthDays(start, end) {
   const grid = $('calendarGrid');
   if (!grid) return;
 
-  // Clear old days (keep header 7 items)
   while (grid.children.length > 7) grid.removeChild(grid.lastChild);
 
   const year = start.getFullYear();
@@ -367,20 +677,17 @@ function renderMonthDays(start, end) {
       let dayYMD = null;
 
       if (row === 0 && col < startWeekday) {
-        // Previous month filler
         dayNum = prevDay;
         const prevYear = prevMonth.getFullYear();
         const prevMon = prevMonth.getMonth();
         dayYMD = ymd(new Date(prevYear, prevMon, prevDay));
         prevDay++;
       } else if (dayCounter <= daysInMonth) {
-        // Current month day
         isCurrentMonth = true;
         dayNum = dayCounter;
         dayYMD = ymd(new Date(year, month, dayNum));
         dayCounter++;
       } else {
-        // Next month filler
         const nextDay = dayCounter - daysInMonth;
         const nextMon = new Date(year, month + 1);
         dayNum = nextDay;
@@ -398,7 +705,7 @@ function renderMonthDays(start, end) {
         const entry = monthAttendance.get(dayYMD);
         const chip = document.createElement('span');
         chip.className = 'attendance-chip';
-        chip.textContent =('  Attended ✅');
+        chip.textContent = '  Attended ✅';
         cell.appendChild(chip);
 
         cell.addEventListener('click', () => showAttendanceModal(dayYMD, entry));
@@ -448,6 +755,7 @@ function showAttendanceModal(dayYMD, entry) {
     `;
     body.appendChild(logoutItem);
   }
+
   modal.style.display = 'flex';
 
   const hideModal = () => {
@@ -462,21 +770,19 @@ function showAttendanceModal(dayYMD, entry) {
 }
 
 // ===== Independent monthly summary (summary card) =====
-
 function setupSummaryMonthNavButtons() {
   const prev = $('prevSummaryMonthBtn');
   const next = $('nextSummaryMonthBtn');
   if (!prev || !next) return;
 
-  // Go back any number of months
   prev.addEventListener('click', () => {
     summaryMonthDate.setMonth(summaryMonthDate.getMonth() - 1);
+    markMemberActivity();
     updateSummaryMonthTitle();
     loadSummaryMonthTotals();
     refreshSummaryNavDisabled();
   });
 
-  // Only move forward up to the current month
   next.addEventListener('click', () => {
     const candidate = new Date(summaryMonthDate);
     candidate.setMonth(candidate.getMonth() + 1);
@@ -484,6 +790,7 @@ function setupSummaryMonthNavButtons() {
     const thisMonth = startOfMonth(new Date());
     if (startOfMonth(candidate) <= thisMonth) {
       summaryMonthDate = candidate;
+      markMemberActivity();
       updateSummaryMonthTitle();
       loadSummaryMonthTotals();
     }
@@ -491,7 +798,6 @@ function setupSummaryMonthNavButtons() {
     refreshSummaryNavDisabled();
   });
 
-  // Initial state
   refreshSummaryNavDisabled();
 }
 
@@ -500,7 +806,6 @@ function updateSummaryMonthTitle() {
   if (el) el.textContent = fmtMonthTitle(summaryMonthDate);
 }
 
-// Disable the "next" button when the summary month is already the current month
 function refreshSummaryNavDisabled() {
   const prev = $('prevSummaryMonthBtn');
   const next = $('nextSummaryMonthBtn');
@@ -508,9 +813,6 @@ function refreshSummaryNavDisabled() {
 
   const thisMonth = startOfMonth(new Date());
   next.disabled = startOfMonth(summaryMonthDate) >= thisMonth;
-
-  // If you ever want a minimum month, add a similar check for prev here
-  // e.g. prev.disabled = startOfMonth(summaryMonthDate) <= someMinMonth;
 }
 
 // Fetch and compute total days attended in selected summary month
@@ -526,7 +828,7 @@ async function loadSummaryMonthTotals() {
     const logs = await fetchAttendanceRange(memberId, start, end);
     aggregateAttendanceInto(logs, tempMap);
   } catch (_) {
-    // Silent failure here; calendar error box handles main issues
+    // ignore
   }
 
   const totalDays = Array.from(tempMap.values()).filter(
@@ -539,8 +841,6 @@ async function loadSummaryMonthTotals() {
 }
 
 // ===== Streak + lifetime stats (all time) =====
-
-// Fetch all attendance logs for this member (no date filter)
 async function fetchAttendanceAll(memberMongoId) {
   try {
     const res = await apiFetch(
@@ -578,12 +878,11 @@ async function loadStreakAndLifetime() {
     return;
   }
 
-  // Current streak up to today (today, yesterday, etc. until gap)
+  // Current streak up to today
   let currentStreak = 0;
   let cursor = new Date();
   cursor.setHours(0, 0, 0, 0);
 
-  // Only count streak if today itself is attended
   while (true) {
     const key = ymd(cursor);
     if (daysSet.has(key)) {
@@ -598,8 +897,8 @@ async function loadStreakAndLifetime() {
     $('currentStreak').textContent = String(currentStreak);
   }
 
-  // Longest streak over all days
-  const sortedDays = Array.from(daysSet).sort(); // YYYY-MM-DD sort works lexicographically
+  // Longest streak
+  const sortedDays = Array.from(daysSet).sort();
   let longest = 0;
   let run = 0;
   let prevDate = null;
