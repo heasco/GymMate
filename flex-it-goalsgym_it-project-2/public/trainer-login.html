@@ -6,7 +6,9 @@
     <title>Trainer Login - GOALS Gym</title>
     <link rel="stylesheet" href="./style.css">
 </head>
-<body>
+
+<!-- ADDED: data-login-role so login.js knows this is the trainer login page -->
+<body data-login-role="trainer">
     <div class="login-container">
         <h1 class="login-title">Trainer Login</h1>
         <form id="loginForm">
@@ -19,7 +21,7 @@
                 <input type="password" id="password" name="password" class="input-field" required autocomplete="current-password">
             </div>
             
-            <!-- ADDED: Hidden role field -->
+            <!-- Hidden role field (kept as-is, must be 'trainer') -->
             <input type="hidden" id="role" name="role" value="trainer">
             
             <button type="submit" class="login-button">Login</button>

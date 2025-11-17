@@ -6,7 +6,9 @@
     <title>Member Login - GOALS Gym</title>
     <link rel="stylesheet" href="./style.css">
 </head>
-<body>
+
+<!-- ADDED: data-login-role so login.js knows this is the member login page -->
+<body data-login-role="member">
     <div class="login-container">
         <h1 class="login-title">Member Login</h1>
         <form id="loginForm">
@@ -19,7 +21,7 @@
                 <input type="password" id="password" name="password" class="input-field" required autocomplete="current-password">
             </div>
             
-            <!-- ADDED: Hidden role field -->
+            <!-- Hidden role field (kept as-is, must be 'member') -->
             <input type="hidden" id="role" name="role" value="member">
 
             <div class="login-buttons">
@@ -38,6 +40,7 @@
         <img src="./image/logo2.png" alt="GOALS Gym Logo" class="transparent-logo-bg">
     </div>
 
+    <!-- Shared login handler -->
     <script src="login.js"></script>
 </body>
 </html>
