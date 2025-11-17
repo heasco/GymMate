@@ -597,6 +597,153 @@ body {
     font-size: 1rem;
 }
 
+/* ---------- Rates Section ---------- */
+.rates-section {
+    padding: 5rem 0;
+    background-color: var(--darker);
+}
+
+.section-container {
+    text-align: center;
+}
+
+.rates-section h3 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.divider {
+    width: 80px;
+    height: 4px;
+    background-color: var(--primary);
+    margin: 0 auto 3rem;
+    border-radius: 2px;
+}
+
+.rates-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+    gap: 2rem;
+    margin-top: 2rem;
+}
+
+.rates-card {
+    background: linear-gradient(145deg, #1a1a1a, #2a2a2a);
+    padding: 2.5rem 2rem;
+    border-radius: var(--radius);
+    transition: var(--transition);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.rates-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    background: var(--primary);
+    transform: scaleX(0);
+    transition: var(--transition);
+}
+
+.rates-card:hover::before {
+    transform: scaleX(1);
+}
+
+.rates-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 10px 25px rgba(179, 0, 0, 0.2);
+}
+
+.rates-card h4 {
+    font-size: 1.8rem;
+    margin-bottom: 1.5rem;
+    color: var(--primary);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.rates-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+}
+
+.rates-table th {
+    background-color: rgba(179, 0, 0, 0.2);
+    color: var(--accent);
+    padding: 1rem;
+    text-align: left;
+    font-weight: 600;
+    border-bottom: 2px solid var(--primary);
+}
+
+.rates-table td {
+    padding: 1rem;
+    text-align: left;
+    color: var(--neutral);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.rates-table tr:last-child td {
+    border-bottom: none;
+}
+
+.rates-table tr:hover td {
+    background-color: rgba(179, 0, 0, 0.1);
+}
+
+.price-highlight {
+    color: var(--primary);
+    font-weight: 600;
+}
+
+.special-offer {
+    background-color: rgba(179, 0, 0, 0.1);
+    border-left: 3px solid var(--primary);
+    padding: 0.5rem 1rem;
+    margin-top: 1rem;
+    text-align: left;
+}
+
+.special-offer p {
+    color: var(--neutral);
+    font-size: 0.9rem;
+}
+
+.special-offer i {
+    color: var(--primary);
+    margin-right: 0.5rem;
+}
+
+/* ---------- Rates Section Responsive ---------- */
+@media (max-width: 768px) {
+    .rates-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .rates-card {
+        padding: 2rem 1rem;
+    }
+    
+    .rates-table th, .rates-table td {
+        padding: 0.8rem 0.5rem;
+        font-size: 0.9rem;
+    }
+    
+    .rates-section h3 {
+        font-size: 2rem;
+    }
+}
+
 /* ---------- Programs Section ---------- */
 .programs-grid {
     display: grid;
