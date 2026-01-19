@@ -146,7 +146,7 @@ function trainerLogout(reason) {
   // Notify other trainer tabs in this browser
   localStorage.setItem(TRAINER_KEYS.logoutEvent, Date.now().toString());
 
-  window.location.href = '../trainer-login.html';
+  window.location.href = '../login.html';
 }
 
 // Keep old name for compatibility with existing code
@@ -159,7 +159,7 @@ window.addEventListener('storage', (event) => {
   if (event.key === TRAINER_KEYS.logoutEvent) {
     console.log('[Trainer Logout] schedule page sees logout from another tab');
     TrainerStore.clear();
-    window.location.href = '../trainer-login.html';
+    window.location.href = '../login.html';
   }
 });
 
@@ -287,6 +287,7 @@ async function apiFetch(endpoint, options = {}, timeoutMs = 10000) {
 const API_URL = 'http://localhost:8080';
 
 document.addEventListener('DOMContentLoaded', async function () {
+  setSidebarTrainerName();
   const menuToggle = document.getElementById('menuToggle');
   const sidebar = document.querySelector('.sidebar');
   const logoutBtn = document.getElementById('logoutBtn');
@@ -411,6 +412,38 @@ document.addEventListener('DOMContentLoaded', async function () {
     }. Please try again.</div>`;
   }
 });
+
+function setSidebarTrainerName() {
+  try {
+    if (typeof bootstrapTrainerFromGenericIfNeeded === "function") {
+      bootstrapTrainerFromGenericIfNeeded();
+    }
+
+    const auth =
+      (typeof TrainerStore !== "undefined" && TrainerStore.getAuthUser && TrainerStore.getAuthUser()) ||
+      (() => {
+        try {
+          const raw =
+            sessionStorage.getItem("trainerauthUser") ||
+            localStorage.getItem("trainerauthUser") ||
+            sessionStorage.getItem("authUser") ||
+            localStorage.getItem("authUser");
+          return raw ? JSON.parse(raw) : null;
+        } catch {
+          return null;
+        }
+      })();
+
+    const user = auth?.user || auth;
+    const displayName = user?.name || user?.username || auth?.name || auth?.username || "Trainer";
+
+    const el = document.getElementById("sidebarTrainerName");
+    if (el) el.textContent = displayName;
+  } catch (e) {
+    console.error("Failed to set sidebar trainer name:", e);
+  }
+}
+
 
 function parseScheduleDays(schedule) {
   const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];

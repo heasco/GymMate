@@ -152,7 +152,7 @@ function adminLogout(reason) {
   clearAdminAuth();
   // Notify only admin tabs in this browser
   localStorage.setItem(ADMIN_KEYS.logoutEvent, Date.now().toString());
-  window.location.href = '../admin-login.html';
+  window.location.href = '../login.html';
 }
 
 // Centralized admin auth check for this page
@@ -223,7 +223,7 @@ window.addEventListener('storage', (event) => {
 // ------------------------------
 async function apiFetch(endpoint, options = {}) {
   // Guard with centralized auth
-  const ok = ensureAdminAuthOrLogout('../admin-login.html');
+  const ok = ensureAdminAuthOrLogout('../login.html');
   if (!ok) return;
 
   const token = AdminStore.getToken();
@@ -315,8 +315,17 @@ function setupSidebarAndSession() {
     return;
   }
 
+  // Display admin full name in sidebar
+  const adminNameEl = document.getElementById('adminFullName');
+  if (adminNameEl) {
+    const authUser = AdminStore.getAuthUser();
+    adminNameEl.textContent = authUser?.name ? authUser.name : 'Admin';
+  }
+
   if (menuToggle && sidebar) {
-    menuToggle.addEventListener('click', () => sidebar.classList.toggle('collapsed'));
+    menuToggle.addEventListener('click', () =>
+      sidebar.classList.toggle('collapsed')
+    );
   }
 
   if (logoutBtn) {
@@ -365,6 +374,7 @@ function setupSidebarAndSession() {
   }
 }
 
+
 // ------------------------------
 // DOM Ready
 // ------------------------------
@@ -372,7 +382,7 @@ document.addEventListener('DOMContentLoaded', async function () {
   console.log('=== INIT START ===');
 
   // Unified auth gate (admin only)
-  const ok = requireAuth('admin', '../admin-login.html');
+  const ok = requireAuth('admin', '../login.html');
   if (!ok) return;
 
   // Sidebar + logout wiring

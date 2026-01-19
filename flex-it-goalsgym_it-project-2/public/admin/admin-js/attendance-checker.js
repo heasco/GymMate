@@ -152,7 +152,7 @@ async function logout(reason) {
   // Notify admin tabs in this browser only
   localStorage.setItem(ADMIN_KEYS.logoutEvent, Date.now().toString());
 
-  window.location.href = '../admin-login.html';
+  window.location.href = '../login.html';
 }
 
 // Centralized auth check
@@ -312,7 +312,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Bootstrap from generic admin keys if needed and then verify
   bootstrapAdminFromGenericIfNeeded();
-  const ok = requireAuth('admin', '../admin-login.html');
+  const ok = requireAuth('admin', '../login.html');
   if (!ok) return;
 
   setupSidebarAndSession();
@@ -332,6 +332,7 @@ function setupSidebarAndSession() {
   try {
     const authUser = AdminStore.getAuthUser();
     const ts = authUser?.timestamp || 0;
+
     if (!authUser || !ts || Date.now() - ts > ADMIN_SESSION_MAX_AGE_MS) {
       logout('admin session max age exceeded in setupSidebarAndSession');
       return;
@@ -342,24 +343,30 @@ function setupSidebarAndSession() {
     return;
   }
 
+  // Display admin full name in sidebar
+  const adminNameEl = document.getElementById('adminFullName');
+  if (adminNameEl) {
+    const authUser = AdminStore.getAuthUser();
+    adminNameEl.textContent = authUser?.name ? authUser.name : 'Admin';
+  }
+
   if (menuToggle && sidebar) {
     menuToggle.addEventListener('click', () => {
       sidebar.classList.toggle('collapsed');
-      markAdminActivity();
+      if (typeof markAdminActivity === 'function') markAdminActivity();
     });
   }
 
   if (logoutBtn) {
     logoutBtn.addEventListener('click', async () => {
       const token = getToken();
+
       try {
         if (token) {
           const logoutUrl = `${getApiBase()}/api/logout`;
           await fetch(logoutUrl, {
             method: 'POST',
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
+            headers: { Authorization: `Bearer ${token}` },
           });
         }
       } catch (e) {
@@ -394,6 +401,7 @@ function setupSidebarAndSession() {
     });
   }
 }
+
 
 // --------------------------------------
 // Event listeners

@@ -152,7 +152,7 @@ function trainerLogout(reason) {
   // Notify other trainer tabs in this browser
   localStorage.setItem(TRAINER_KEYS.logoutEvent, Date.now().toString());
 
-  window.location.href = '../trainer-login.html';
+  window.location.href = '../login.html';
 }
 
 // Keep old name for compatibility
@@ -165,7 +165,7 @@ window.addEventListener('storage', (event) => {
   if (event.key === TRAINER_KEYS.logoutEvent) {
     console.log('[Trainer Logout] feedback page sees logout from another tab');
     TrainerStore.clear();
-    window.location.href = '../trainer-login.html';
+    window.location.href = '../login.html';
   }
 });
 
@@ -288,6 +288,7 @@ async function apiFetch(endpoint, options = {}, timeoutMs = 10000) {
 // DOM Ready
 // --------------------------------------
 document.addEventListener('DOMContentLoaded', async function () {
+  setSidebarTrainerName();
   // 🔍 DEBUG: Log the raw authUser to diagnose structure
   console.log('=== TRAINER FEEDBACK AUTH DEBUG ===');
 
@@ -364,6 +365,38 @@ document.addEventListener('DOMContentLoaded', async function () {
   // Load all feedback
   await loadAllFeedback();
 });
+
+function setSidebarTrainerName() {
+  try {
+    if (typeof bootstrapTrainerFromGenericIfNeeded === "function") {
+      bootstrapTrainerFromGenericIfNeeded();
+    }
+
+    const auth =
+      (typeof TrainerStore !== "undefined" && TrainerStore.getAuthUser && TrainerStore.getAuthUser()) ||
+      (() => {
+        try {
+          const raw =
+            sessionStorage.getItem("trainerauthUser") ||
+            localStorage.getItem("trainerauthUser") ||
+            sessionStorage.getItem("authUser") ||
+            localStorage.getItem("authUser");
+          return raw ? JSON.parse(raw) : null;
+        } catch {
+          return null;
+        }
+      })();
+
+    const user = auth?.user || auth;
+    const displayName = user?.name || user?.username || auth?.name || auth?.username || "Trainer";
+
+    const el = document.getElementById("sidebarTrainerName");
+    if (el) el.textContent = displayName;
+  } catch (e) {
+    console.error("Failed to set sidebar trainer name:", e);
+  }
+}
+
 
 // ✅ LOAD ALL FEEDBACK (TOKENIZED)
 async function loadAllFeedback() {

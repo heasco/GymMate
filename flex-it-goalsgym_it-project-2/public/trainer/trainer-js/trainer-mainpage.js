@@ -277,7 +277,7 @@ function trainerLogout(reason) {
   // Notify other trainer tabs in this browser
   localStorage.setItem(TRAINER_KEYS.logoutEvent, Date.now().toString());
 
-  window.location.href = '../trainer-login.html';
+  window.location.href = '../login.html';
 }
 
 // Backwards-compatible name used in existing code
@@ -290,7 +290,7 @@ window.addEventListener('storage', (event) => {
   if (event.key === TRAINER_KEYS.logoutEvent) {
     console.log('[Trainer Logout] dashboard sees logout from another tab');
     TrainerStore.clear();
-    window.location.href = '../trainer-login.html';
+    window.location.href = '../login.html';
   }
 });
 
@@ -448,6 +448,7 @@ document.addEventListener('DOMContentLoaded', async function () {
   // Idle tracking
   setupTrainerIdleWatcher();
   markTrainerActivity();
+  setSidebarTrainerName();
 
   // SIDEBAR & AUTH SETUP
   const menuToggle = document.getElementById('menuToggle');
@@ -703,3 +704,35 @@ document.addEventListener('DOMContentLoaded', async function () {
             </div>`;
   }
 });
+
+function setSidebarTrainerName() {
+  try {
+    if (typeof bootstrapTrainerFromGenericIfNeeded === "function") {
+      bootstrapTrainerFromGenericIfNeeded();
+    }
+
+    const auth =
+      (typeof TrainerStore !== "undefined" && TrainerStore.getAuthUser && TrainerStore.getAuthUser()) ||
+      (() => {
+        try {
+          const raw =
+            sessionStorage.getItem("trainerauthUser") ||
+            localStorage.getItem("trainerauthUser") ||
+            sessionStorage.getItem("authUser") ||
+            localStorage.getItem("authUser");
+          return raw ? JSON.parse(raw) : null;
+        } catch {
+          return null;
+        }
+      })();
+
+    const user = auth?.user || auth;
+    const displayName = user?.name || user?.username || auth?.name || auth?.username || "Trainer";
+
+    const el = document.getElementById("sidebarTrainerName");
+    if (el) el.textContent = displayName;
+  } catch (e) {
+    console.error("Failed to set sidebar trainer name:", e);
+  }
+}
+

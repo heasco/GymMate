@@ -149,7 +149,7 @@ function memberLogout(reason) {
   // Notify other member tabs in this browser
   localStorage.setItem(MEMBER_KEYS.logoutEvent, Date.now().toString());
 
-  window.location.href = '../member-login.html';
+  window.location.href = '../login.html';
 }
 
 // Cross‑tab member logout sync
@@ -157,7 +157,7 @@ window.addEventListener('storage', (event) => {
   if (event.key === MEMBER_KEYS.logoutEvent) {
     console.log('[Member Logout] transactions page sees logout from another tab');
     MemberStore.clear();
-    window.location.href = '../member-login.html';
+    window.location.href = '../login.html';
   }
 });
 
@@ -431,6 +431,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Start idle tracking for member
   setupMemberIdleWatcher();
   markMemberActivity();
+  setSidebarMemberName();
 
   // Sidebar toggle
   const menuToggle = $('menuToggle');
@@ -465,6 +466,39 @@ document.addEventListener('DOMContentLoaded', () => {
   // Load transactions
   loadTransactions();
 });
+
+function setSidebarMemberName() {
+  try {
+    if (typeof bootstrapMemberFromGenericIfNeeded === "function") {
+      bootstrapMemberFromGenericIfNeeded();
+    }
+
+    // Prefer the member-scoped authUser (memberauthUser), fallback to generic authUser
+    const auth =
+      (typeof MemberStore !== "undefined" && MemberStore.getAuthUser && MemberStore.getAuthUser()) ||
+      (() => {
+        try {
+          const raw =
+            sessionStorage.getItem("memberauthUser") ||
+            localStorage.getItem("memberauthUser") ||
+            sessionStorage.getItem("authUser") ||
+            localStorage.getItem("authUser");
+          return raw ? JSON.parse(raw) : null;
+        } catch {
+          return null;
+        }
+      })();
+
+    const user = auth?.user || auth;
+    const displayName = user?.name || user?.username || auth?.name || auth?.username || "Member";
+
+    const el = document.getElementById("sidebarMemberName");
+    if (el) el.textContent = displayName;
+  } catch (e) {
+    console.error("Failed to set sidebar member name:", e);
+  }
+}
+
 
 async function loadTransactions() {
   const loadingEl = $('transactionsLoading');

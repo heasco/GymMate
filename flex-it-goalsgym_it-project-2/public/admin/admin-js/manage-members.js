@@ -141,7 +141,7 @@ function getToken() {
   return AdminStore.getToken();
 }
 
-function adminLogout(reason, loginPath = '../admin-login.html') {
+function adminLogout(reason, loginPath = '../login.html') {
   console.log('[Admin Logout]:', reason || 'no reason');
   clearLocalAuth();
   // Notify admin tabs only
@@ -208,7 +208,7 @@ function requireAuth(expectedRole, loginPath) {
 // Global cross‑tab admin logout sync (admin_* only)
 window.addEventListener('storage', (event) => {
   if (event.key === ADMIN_KEYS.logoutEvent) {
-    adminLogout('adminLogoutEvent from another tab (global)', '../admin-login.html');
+    adminLogout('adminLogoutEvent from another tab (global)', '../login.html');
   }
 });
 
@@ -216,14 +216,14 @@ window.addEventListener('storage', (event) => {
 // Utility for authenticated API calls
 // ------------------------------
 async function apiFetch(endpoint, options = {}) {
-  const ok = ensureAdminAuthOrLogout('../admin-login.html');
+  const ok = ensureAdminAuthOrLogout('../login.html');
   if (!ok) return;
 
   const token = AdminStore.getToken();
   const authUser = AdminStore.getAuthUser();
 
   if (!token || !authUser) {
-    adminLogout('missing token/authUser in admin apiFetch', '../admin-login.html');
+    adminLogout('missing token/authUser in admin apiFetch', '../login.html');
     return;
   }
 
@@ -231,7 +231,7 @@ async function apiFetch(endpoint, options = {}) {
   try {
     const ts = authUser.timestamp || 0;
     if (!ts || Date.now() - ts > ADMIN_SESSION_MAX_AGE_MS) {
-      adminLogout('admin session max age exceeded in apiFetch', '../admin-login.html');
+      adminLogout('admin session max age exceeded in apiFetch', '../login.html');
       return;
     }
     // Refresh timestamp on successful API use
@@ -239,7 +239,7 @@ async function apiFetch(endpoint, options = {}) {
     AdminStore.set(token, authUser);
   } catch (e) {
     console.error('Failed to refresh authUser in apiFetch:', e);
-    adminLogout('invalid authUser JSON in apiFetch', '../admin-login.html');
+    adminLogout('invalid authUser JSON in apiFetch', '../login.html');
     return;
   }
 
@@ -262,7 +262,7 @@ async function apiFetch(endpoint, options = {}) {
     // clear admin, broadcast admin logout to other tabs, and redirect.
     clearLocalAuth();
     localStorage.setItem(ADMIN_KEYS.logoutEvent, Date.now().toString());
-    window.location.href = '../admin-login.html';
+    window.location.href = '../login.html';
     return;
   }
   if (!response.ok) throw new Error(`API error: ${response.status}`);
@@ -301,7 +301,7 @@ if (tabInactive) {
 // Page init
 // ------------------------------
 document.addEventListener('DOMContentLoaded', async () => {
-  const ok = requireAuth('admin', '../admin-login.html');
+  const ok = requireAuth('admin', '../login.html');
   if (!ok) return;
 
   setupSidebarAndSession();
@@ -338,12 +338,22 @@ function setupSidebarAndSession() {
     const authUser = AdminStore.getAuthUser();
     const ts = authUser?.timestamp || 0;
     if (!authUser || !ts || Date.now() - ts > ADMIN_SESSION_MAX_AGE_MS) {
-      adminLogout('admin session max age exceeded in setupSidebarAndSession', '../admin-login.html');
+      adminLogout(
+        'admin session max age exceeded in setupSidebarAndSession',
+        '../login.html'
+      );
       return;
     }
   } catch (e) {
-    adminLogout('invalid authUser JSON in setupSidebarAndSession', '../admin-login.html');
+    adminLogout('invalid authUser JSON in setupSidebarAndSession', '../login.html');
     return;
+  }
+
+  // Display admin full name in sidebar
+  const adminNameEl = document.getElementById('adminFullName');
+  if (adminNameEl) {
+    const authUser = AdminStore.getAuthUser();
+    adminNameEl.textContent = authUser?.name ? authUser.name : 'Admin';
   }
 
   if (menuToggle && sidebar) {
@@ -371,7 +381,7 @@ function setupSidebarAndSession() {
         clearLocalAuth();
         // Notify admin tabs in this browser
         localStorage.setItem(ADMIN_KEYS.logoutEvent, Date.now().toString());
-        window.location.href = '../admin-login.html';
+        window.location.href = '../login.html';
       }
     });
   }
@@ -400,6 +410,7 @@ function setupSidebarAndSession() {
     });
   }
 }
+
 
 // ------------------------------
 // Server health check

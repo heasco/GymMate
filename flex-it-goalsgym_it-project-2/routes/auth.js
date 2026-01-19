@@ -1,5 +1,4 @@
 // routes/auth.js
-
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
@@ -19,35 +18,30 @@ function signToken(payload) {
   });
 }
 
-// Helper to find user by role
-async function findUserByRole(role, username) {
-  if (role === 'admin') {
-    return Admin.findOne({ username }).lean();
-  }
-  if (role === 'trainer') {
-    return Trainer.findOne({ username }).lean();
-  }
-  if (role === 'member') {
-    // Or use email/memberId depending on your schema
-    return Member.findOne({ username }).lean();
-  }
-  return null;
-}
-
-// POST /api/login
+// POST /api/login - Unified login without requiring role upfront
 router.post(
   '/login',
   asyncHandler(async (req, res) => {
-    const { username, password, role } = req.body;
-
-    if (!username || !password || !role) {
+    const { username, password } = req.body;
+    if (!username || !password) {
       return res.status(400).json({
         success: false,
-        message: 'Username, password, and role are required.',
+        message: 'Username and password are required.',
       });
     }
 
-    const user = await findUserByRole(role, username);
+    // Search across collections to find user and determine role
+    let user = await Admin.findOne({ username }).lean();
+    let userRole = 'admin';
+    if (!user) {
+      user = await Trainer.findOne({ username }).lean();
+      userRole = 'trainer';
+    }
+    if (!user) {
+      user = await Member.findOne({ username }).lean();
+      userRole = 'member';
+    }
+
     if (!user) {
       return res.status(401).json({
         success: false,
@@ -64,15 +58,14 @@ router.post(
     }
 
     // Check if user already has an active session
-    // Check if user already has an active session
     const existingSession = await ActiveSession.findOne({
       userId: user._id,
-      role,
+      role: userRole,
       revokedAt: null,
     });
 
     if (existingSession) {
-      // Instead of blocking, revoke the old session and allow this login
+      // Revoke the old session and allow this login
       await ActiveSession.updateOne(
         { _id: existingSession._id },
         {
@@ -84,13 +77,11 @@ router.post(
       );
     }
 
-
     // Create a new session
     const jti = randomUUID();
-
     await ActiveSession.create({
       userId: user._id,
-      role,
+      role: userRole,
       jti,
       userAgent: req.headers['user-agent'] || '',
       ip: req.ip,
@@ -98,23 +89,25 @@ router.post(
 
     const token = signToken({
       id: user._id.toString(),
-      role,
+      role: userRole,
       jti,
     });
 
-    // Strip password from response
+    // Strip password and add role
     const { password: pw, ...safeUser } = user;
+    const userWithRole = { ...safeUser, role: userRole };
 
     return res.json({
       success: true,
       token,
-      user: safeUser,
+      user: userWithRole,
+      role: userRole,
       sessionId: jti,
     });
   })
 );
 
-// POST /api/logout
+// POST /api/logout (unchanged)
 router.post(
   '/logout',
   asyncHandler(async (req, res) => {
@@ -129,7 +122,6 @@ router.post(
     }
 
     const token = parts[1];
-
     let decoded;
     try {
       decoded = jwt.verify(token, process.env.JWT_SECRET);

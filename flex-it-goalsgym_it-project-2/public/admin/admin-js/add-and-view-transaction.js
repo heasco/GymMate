@@ -110,6 +110,7 @@ function bootstrapAdminFromGenericIfNeeded() {
   }
 }
 
+
 // ------------------------------
 // Shared auth helpers (admin only)
 // ------------------------------
@@ -137,7 +138,6 @@ function clearLocalAuth() {
   }
 }
 
-
 function getApiBase() {
   return (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
     ? SERVER_URL
@@ -148,7 +148,7 @@ function getToken() {
   return AdminStore.getToken();
 }
 
-function adminLogout(reason, loginPath = '../admin-login.html') {
+function adminLogout(reason, loginPath = '../login.html') {
   console.log('[Admin Logout]:', reason || 'no reason');
   clearLocalAuth();
   // Notify admin tabs only
@@ -215,20 +215,20 @@ function requireAuth(expectedRole, loginPath) {
 // Global cross‑tab admin logout sync (admin_* only)
 window.addEventListener('storage', (event) => {
   if (event.key === ADMIN_KEYS.logoutEvent) {
-    adminLogout('adminLogoutEvent from another tab (global)', '../admin-login.html');
+    adminLogout('adminLogoutEvent from another tab (global)', '../login.html');
   }
 });
 
 // ---------- Shared secure fetch ----------
 async function apiFetch(endpoint, options = {}) {
-  const ok = ensureAdminAuthOrLogout('../admin-login.html');
+  const ok = ensureAdminAuthOrLogout('../login.html');
   if (!ok) return;
 
   const token = AdminStore.getToken();
   const authUser = AdminStore.getAuthUser();
 
   if (!token || !authUser) {
-    adminLogout('missing token/authUser in admin apiFetch', '../admin-login.html');
+    adminLogout('missing token/authUser in admin apiFetch', '../login.html');
     return;
   }
 
@@ -236,7 +236,7 @@ async function apiFetch(endpoint, options = {}) {
   try {
     const ts = authUser.timestamp || 0;
     if (!ts || Date.now() - ts > ADMIN_SESSION_MAX_AGE_MS) {
-      adminLogout('admin session max age exceeded in apiFetch', '../admin-login.html');
+      adminLogout('admin session max age exceeded in apiFetch', '../login.html');
       return;
     }
     // Refresh timestamp on successful API use
@@ -244,7 +244,7 @@ async function apiFetch(endpoint, options = {}) {
     AdminStore.set(token, authUser);
   } catch (e) {
     console.error('Failed to refresh authUser in apiFetch:', e);
-    adminLogout('invalid authUser JSON in apiFetch', '../admin-login.html');
+    adminLogout('invalid authUser JSON in apiFetch', '../login.html');
     return;
   }
 
@@ -265,7 +265,7 @@ async function apiFetch(endpoint, options = {}) {
   if (res.status === 401) {
     clearLocalAuth();
     localStorage.setItem(ADMIN_KEYS.logoutEvent, Date.now().toString());
-    window.location.href = '../admin-login.html';
+    window.location.href = '../login.html';
     return;
   }
 
@@ -275,7 +275,7 @@ async function apiFetch(endpoint, options = {}) {
 
 // ---------- DOM Ready ----------
 document.addEventListener('DOMContentLoaded', async () => {
-  const ok = requireAuth('admin', '../admin-login.html');
+  const ok = requireAuth('admin', '../login.html');
   if (!ok) return;
 
   setupLayoutChrome();
@@ -311,12 +311,23 @@ function setupLayoutChrome() {
     const authUser = AdminStore.getAuthUser();
     const ts = authUser?.timestamp || 0;
     if (!authUser || !ts || Date.now() - ts > ADMIN_SESSION_MAX_AGE_MS) {
-      adminLogout('admin session max age exceeded in setupLayoutChrome', '../admin-login.html');
+      adminLogout('admin session max age exceeded in setupLayoutChrome', '../login.html');
       return;
     }
   } catch (e) {
-    adminLogout('invalid authUser JSON in setupLayoutChrome', '../admin-login.html');
+    adminLogout('invalid authUser JSON in setupLayoutChrome', '../login.html');
     return;
+  }
+
+  // Display admin full name in sidebar
+  const adminNameEl = document.getElementById('adminFullName');
+  if (adminNameEl) {
+    const authUser = AdminStore.getAuthUser();
+    if (authUser?.name) {
+      adminNameEl.textContent = authUser.name;
+    } else {
+      adminNameEl.textContent = 'Admin';
+    }
   }
 
   if (menuToggle && sidebar) {
@@ -341,7 +352,7 @@ function setupLayoutChrome() {
       } finally {
         clearLocalAuth();
         localStorage.setItem(ADMIN_KEYS.logoutEvent, Date.now().toString());
-        window.location.href = '../admin-login.html';
+        window.location.href = '../login.html';
       }
     });
   }
@@ -369,6 +380,7 @@ function setupLayoutChrome() {
     });
   }
 }
+
 
 async function checkServerConnection() {
   const statusElement = $('serverStatus');
@@ -1168,3 +1180,5 @@ function initMiniCalendar(inputId, buttonId, popupId, onSelect) {
     }
   });
 }
+
+

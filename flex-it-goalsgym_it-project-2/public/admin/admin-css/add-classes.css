@@ -29,6 +29,10 @@
     color: #dc3545;
     border-color: #dc3545;
 }
+    .main-centered {
+      max-width: 980px;
+      margin: 0 auto;
+    }
 
 .success-message {
     display: none;

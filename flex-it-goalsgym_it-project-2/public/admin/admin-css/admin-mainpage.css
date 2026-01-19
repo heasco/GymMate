@@ -477,3 +477,11 @@ body {
         padding: 0.8rem;
     }
 }
+
+.admin-fullname {
+  font-size: 0.95rem;
+  color: var(--neutral);
+  font-weight: 500;
+  opacity: 0.9;
+  text-align: center;
+}

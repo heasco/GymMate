@@ -1,179 +1,312 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Add Class - GOALS Gym</title>
-    <link rel="icon" type="image/png" href="image/logo2.png">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src='https://cdnjs.cloudflare.com/ajax/libs/fullcalendar/6.1.9/index.global.min.js'></script>
-    <link rel="stylesheet" href="./admin-css/admin-mainpage.css">
-    <link rel="stylesheet" href="./admin-css/add-classes.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Add Class - GOALS Gym</title>
+
+  <!-- Original assets -->
+  <link rel="icon" type="image/png" href="image/logo2.png" />
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+  />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/fullcalendar/6.1.9/index.global.min.js"></script>
+  <link rel="stylesheet" href="admin-css/admin-mainpage.css" />
+  <link rel="stylesheet" href="admin-css/add-classes.css" />
 </head>
-
 <body>
-    <div class="admin-container">
-        <!-- Sidebar -->
-        <aside class="sidebar">
-            <div class="sidebar-header">
-                <h2>GOALS Gym Admin</h2>
-            </div>
-            <nav class="sidebar-nav">
-                <a href="./admin-mainpage.html"><span>Dashboard</span></a>
-                <a href="./add-classes.html" class="active"><span>Add Classes</span></a>
-                <a href="./add-member.html"><span>Add Member</span></a>
-                <a href="./manage-members.html"><span>Manage Member</span></a>
-                <a href="./add-trainer.html"><span>Add Trainer</span></a>
-                <a href="./manage-trainer.html"><span>Manage Trainer</span></a>
-                <a href="./manage-class-enrollment.html"><span>Manage Enrollment</span></a>
-                <a href="./add-and-view-transaction.html"><span>Add & View Transaction</span></a>
-                <a href="./view-classes-and-feedback.html"><span>View Classes</span></a>
-                <a href="./trainer-schedule-management.html"><span>Trainer Schedule Management</span></a>
-                <a href="./attendance-checker.html"><span>Attendance System</span></a>
-            </nav>
-        </aside>
+  <div class="admin-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <h2>GOALS Gym Admin</h2>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="admin-mainpage.html"><span>Dashboard</span></a>
+        <a href="add-classes.html" class="active"><span>Add Classes</span></a>
+        <a href="add-member.html"><span>Add Members</span></a>
+        <a href="manage-members.html"><span>Manage Members</span></a>
+        <a href="add-trainer.html"><span>Add Trainers</span></a>
+        <a href="manage-trainer.html"><span>Manage Trainers</span></a>
+        <a href="manage-class-enrollment.html"><span>Manage Enrollments</span></a>
+        <a href="add-and-view-transaction.html"><span>Add / View Transactions</span></a>
+        <a href="view-classes-and-feedback.html"><span>View Classes</span></a>
+        <a href="trainer-schedule-management.html"><span>Trainer Schedule Management</span></a>
+        <a href="attendance-checker.html"><span>Attendance System</span></a>
+      </nav>
+    </aside>
 
-        <!-- Header -->
-        <header class="header">
-            <button class="menu-toggle" id="menuToggle">☰</button>
-            <h1>Add Class</h1>
-            <button class="logout-btn" id="logoutBtn">Logout</button>
-        </header>
+    <!-- Header -->
+    <header class="header">
+      <button class="menu-toggle" id="menuToggle"></button>
+      <h1>Add Class</h1>
+      <button class="logout-btn" id="logoutBtn">Logout</button>
+    </header>
 
-        <!-- Main Content -->
-        <main class="main-content">
-            <div class="container">
-                <div id="serverStatus" class="server-status">Checking server connection...</div>
-                <div id="successMessage" class="success-message"></div>
-                <div id="formSection" class="section active">
-                    <h2>Add New Class</h2>
-                    <form id="classForm">
-                        <div class="form-group">
-                            <label for="class_name">Class Name:</label>
-                            <input type="text" id="class_name" name="class_name" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="description">Description:</label>
-                            <textarea id="description" name="description" rows="3"></textarea>
-                        </div>
-                        <div class="form-group">
-                            <label for="trainer_id">Trainer:</label>
-                            <select id="trainer_id" name="trainer_id" required>
-                                <option value="">Loading trainers...</option>
-                            </select>
-                            <div id="trainerError" class="error" style="display: none;"></div>
-                        </div>
-                        <div class="form-group">
-                            <label for="capacity">Capacity:</label>
-                            <input type="number" id="capacity" name="capacity" min="1" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="schedule_type">Schedule Type:</label>
-                            <select id="schedule_type" name="schedule_type" required>
-                                <option value="">Select schedule type</option>
-                                <option value="one-time">One-time Class</option>
-                                <option value="weekly">Weekly Recurring</option>
-                                <option value="monthly">Monthly (4 weeks)</option>
-                            </select>
-                        </div>
-                        <div id="oneTimeSchedule" class="section">
-                            <div class="form-group">
-                                <label for="class_date">Class Date:</label>
-                                <input type="date" id="class_date" name="class_date">
-                            </div>
-                            <div class="form-group">
-                                <label for="one_start_time">Start Time:</label>
-                                <input type="time" id="one_start_time" name="one_start_time" min="06:00" max="22:00">
-                            </div>
-                            <div class="form-group">
-                                <label for="one_end_time">End Time:</label>
-                                <input type="time" id="one_end_time" name="one_end_time" min="06:00" max="22:00">
-                            </div>
-                        </div>
-                        <div id="recurringSchedule" class="section">
-                            <div class="form-group">
-                                <label>Select Days of Week:</label>
-                                <div class="checkbox-group">
-                                    <label><input type="checkbox" name="days" value="Monday"> Monday</label>
-                                    <label><input type="checkbox" name="days" value="Tuesday"> Tuesday</label>
-                                    <label><input type="checkbox" name="days" value="Wednesday"> Wednesday</label>
-                                    <label><input type="checkbox" name="days" value="Thursday"> Thursday</label>
-                                    <label><input type="checkbox" name="days" value="Friday"> Friday</label>
-                                    <label><input type="checkbox" name="days" value="Saturday"> Saturday</label>
-                                    <label><input type="checkbox" name="days" value="Sunday"> Sunday</label>
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label for="start_time">Start Time:</label>
-                                <input type="time" id="start_time" name="start_time" min="06:00" max="22:00">
-                            </div>
-                            <div class="form-group">
-                                <label for="end_time">End Time:</label>
-                                <input type="time" id="end_time" name="end_time" min="06:00" max="22:00">
-                            </div>
-                            <div class="form-group">
-                                <label for="start_date">Start Date:</label>
-                                <div style="position: relative;">
-                                    <input type="date" id="start_date" name="start_date" style="padding-right: 45px;">
-                                    <i class="fas fa-calendar-alt"
-                                        onclick="document.getElementById('start_date').showPicker()"
-                                        style="position: absolute; right: 15px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #666; font-size: 1.1rem; pointer-events: auto;"></i>
-                                </div>
-                            </div>
+    <!-- Main Content -->
+    <main class="main-content">
+      <div class="main-centered">
+        <div class="container">
+          <div id="serverStatus" class="server-status">
+            Checking server connection...
+          </div>
 
-                            <div class="form-group">
-                                <label for="end_date">End Date (optional):</label>
-                                <div style="position: relative;">
-                                    <input type="date" id="end_date" name="end_date" style="padding-right: 45px;">
-                                    <i class="fas fa-calendar-alt"
-                                        onclick="document.getElementById('end_date').showPicker()"
-                                        style="position: absolute; right: 15px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #666; font-size: 1.1rem; pointer-events: auto;"></i>
-                                </div>
-                            </div>
+          <div id="successMessage" class="success-message"></div>
 
-                        </div>
-                        <div id="monthlyOptions" class="section">
-                            <div class="form-group">
-                                <label for="month_start">Month Start Date:</label>
-                                <input type="date" id="month_start" name="month_start">
-                            </div>
-                            <div class="form-group">
-                                <label for="week_of_month">Week of Month:</label>
-                                <select id="week_of_month" name="week_of_month">
-                                    <option value="all">All weeks</option>
-                                    <option value="1">First week only</option>
-                                    <option value="2">Second week only</option>
-                                    <option value="3">Third week only</option>
-                                    <option value="4">Fourth week only</option>
-                                    <option value="1,3">First and Third weeks</option>
-                                    <option value="2,4">Second and Fourth weeks</option>
-                                </select>
-                            </div>
-                        </div>
-                </div>
+          <!-- Form Section -->
+          <div id="formSection" class="section active">
+            <h2>Add New Class</h2>
+
+            <form id="classForm">
+              <!-- Class name -->
+              <div class="form-group">
+                <label for="class_name">Class Name</label>
+                <input
+                  type="text"
+                  id="class_name"
+                  name="class_name"
+                  required
+                />
+              </div>
+
+              <!-- Description -->
+              <div class="form-group">
+                <label for="description">Description</label>
+                <textarea
+                  id="description"
+                  name="description"
+                  rows="3"
+                ></textarea>
+              </div>
+
+              <!-- Capacity -->
+              <div class="form-group">
+                <label for="capacity">Capacity</label>
+                <input
+                  type="number"
+                  id="capacity"
+                  name="capacity"
+                  min="1"
+                  required
+                />
+              </div>
+
+              <!-- Schedule Type (now BEFORE Trainer) -->
+              <div class="form-group">
+                <label for="schedule_type">Schedule Type</label>
+                <select id="schedule_type" name="schedule_type" required>
+                  <option value="">Select schedule type</option>
+                  <option value="one-time">One-time Class</option>
+                  <option value="weekly">Weekly Recurring</option>
+                  <option value="monthly">Monthly (4 weeks)</option>
+                </select>
+              </div>
+
+              <!-- One-time schedule section -->
+              <div id="oneTimeSchedule" class="section">
                 <div class="form-group">
-                    <label>Schedule Preview:</label>
-                    <div id="schedulePreview">Please select schedule type and complete the information above</div>
-                    <input type="hidden" id="schedule" name="schedule" required>
+                  <label for="class_date">Class Date</label>
+                  <input type="date" id="class_date" name="class_date" />
                 </div>
-                <div class="nav-buttons">
-                    <button type="submit">Add Class</button>
-                    <button type="button" onclick="showScheduleView()">View Schedule Calendar</button>
-                </div>
-                </form>
-            </div>
-            <div id="scheduleViewSection" class="section">
-                <h2>Class Schedule Calendar</h2>
-                <div id="calendar"></div>
-                <div class="nav-buttons">
-                    <button type="button" onclick="showFormView()">Back to Add Class</button>
-                </div>
-            </div>
-    </div>
-    </main>
-    </div>
-    <script src="./admin-js/add-classes.js"></script>
-</body>
 
+                <div class="form-group">
+                  <label for="one_start_time">Start Time</label>
+                  <input
+                    type="time"
+                    id="one_start_time"
+                    name="one_start_time"
+                    min="06:00"
+                    max="22:00"
+                  />
+                </div>
+
+                <div class="form-group">
+                  <label for="one_end_time">End Time</label>
+                  <input
+                    type="time"
+                    id="one_end_time"
+                    name="one_end_time"
+                    min="06:00"
+                    max="22:00"
+                  />
+                </div>
+              </div>
+
+              <!-- Recurring schedule section -->
+              <div id="recurringSchedule" class="section">
+                <div class="form-group">
+                  <label>Select Days of Week</label>
+                  <div class="checkbox-group">
+                    <label>
+                      <input type="checkbox" name="days" value="Monday" />
+                      Monday
+                    </label>
+                    <label>
+                      <input type="checkbox" name="days" value="Tuesday" />
+                      Tuesday
+                    </label>
+                    <label>
+                      <input type="checkbox" name="days" value="Wednesday" />
+                      Wednesday
+                    </label>
+                    <label>
+                      <input type="checkbox" name="days" value="Thursday" />
+                      Thursday
+                    </label>
+                    <label>
+                      <input type="checkbox" name="days" value="Friday" />
+                      Friday
+                    </label>
+                    <label>
+                      <input type="checkbox" name="days" value="Saturday" />
+                      Saturday
+                    </label>
+                    <label>
+                      <input type="checkbox" name="days" value="Sunday" />
+                      Sunday
+                    </label>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="start_time">Start Time</label>
+                  <input
+                    type="time"
+                    id="start_time"
+                    name="start_time"
+                    min="06:00"
+                    max="22:00"
+                  />
+                </div>
+
+                <div class="form-group">
+                  <label for="end_time">End Time</label>
+                  <input
+                    type="time"
+                    id="end_time"
+                    name="end_time"
+                    min="06:00"
+                    max="22:00"
+                  />
+                </div>
+
+                <!-- Weekly options -->
+                <div id="weeklyOptions" class="section">
+                  <div class="form-group">
+                    <label for="start_date">Start Date</label>
+                    <div style="position: relative;">
+                      <input
+                        type="date"
+                        id="start_date"
+                        name="start_date"
+                        style="padding-right: 45px;"
+                      />
+                      <i
+                        class="fas fa-calendar-alt"
+                        onclick="document.getElementById('start_date').showPicker()"
+                        style="position:absolute; right:15px; top:50%; transform:translateY(-50%); cursor:pointer; color:#666; font-size:1.1rem; pointer-events:auto;"
+                      ></i>
+                    </div>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="end_date">End Date (optional)</label>
+                    <div style="position: relative;">
+                      <input
+                        type="date"
+                        id="end_date"
+                        name="end_date"
+                        style="padding-right: 45px;"
+                      />
+                      <i
+                        class="fas fa-calendar-alt"
+                        onclick="document.getElementById('end_date').showPicker()"
+                        style="position:absolute; right:15px; top:50%; transform:translateY(-50%); cursor:pointer; color:#666; font-size:1.1rem; pointer-events:auto;"
+                      ></i>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Monthly options -->
+                <div id="monthlyOptions" class="section">
+                  <div class="form-group">
+                    <label for="month_start">Month Start Date</label>
+                    <input
+                      type="date"
+                      id="month_start"
+                      name="month_start"
+                    />
+                  </div>
+
+                  <div class="form-group">
+                    <label for="week_of_month">Week of Month</label>
+                    <select id="week_of_month" name="week_of_month">
+                      <option value="all">All weeks</option>
+                      <option value="1">First week only</option>
+                      <option value="2">Second week only</option>
+                      <option value="3">Third week only</option>
+                      <option value="4">Fourth week only</option>
+                      <option value="1,3">First and Third weeks</option>
+                      <option value="2,4">Second and Fourth weeks</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Schedule preview -->
+              <div class="form-group">
+                <label>Schedule Preview</label>
+                <div id="schedulePreview">
+                  Please select schedule type and complete the information above
+                </div>
+                <input
+                  type="hidden"
+                  id="schedule"
+                  name="schedule"
+                  required
+                />
+              </div>
+
+              <!-- Trainer (moved AFTER schedule) -->
+              <div class="form-group">
+                <label for="trainer_id">Trainer</label>
+                <select id="trainer_id" name="trainer_id" required>
+                  <option value="">Loading trainers...</option>
+                </select>
+                <div
+                  id="trainerError"
+                  class="error"
+                  style="display: none;"
+                ></div>
+              </div>
+
+              <!-- Buttons -->
+              <div class="nav-buttons">
+                <button type="submit">Add Class</button>
+                <button type="button" onclick="showScheduleView()">
+                  View Schedule Calendar
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Schedule view section -->
+          <div id="scheduleViewSection" class="section">
+            <h2>Class Schedule Calendar</h2>
+            <div id="calendar"></div>
+            <div class="nav-buttons">
+              <button type="button" onclick="showFormView()">
+                Back to Add Class
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- JS -->
+  <script src="admin-js/add-classes.js"></script>
+</body>
 </html>

@@ -162,7 +162,7 @@ async function adminLogout(reason) {
     // Notify only admin tabs in this browser
     localStorage.setItem(ADMIN_KEYS.logoutEvent, Date.now().toString());
     // Redirect to the same login page as before
-    window.location.href = '../admin-login.html';
+    window.location.href = '../login.html';
   }
 }
 
@@ -496,6 +496,17 @@ function setupSidebarAndSession() {
     return;
   }
 
+  // Display admin full name in sidebar
+  const adminNameEl = document.getElementById('adminFullName');
+  if (adminNameEl) {
+    const authUser = AdminStore.getAuthUser();
+    if (authUser?.name) {
+      adminNameEl.textContent = authUser.name;
+    } else {
+      adminNameEl.textContent = 'Admin';
+    }
+  }
+
   if (menuToggle && sidebar) {
     menuToggle.addEventListener('click', () => {
       sidebar.classList.toggle('collapsed');
@@ -533,3 +544,4 @@ function setupSidebarAndSession() {
     });
   }
 }
+

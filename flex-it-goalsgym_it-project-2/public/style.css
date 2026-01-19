@@ -354,7 +354,7 @@ body {
 
 
 /* Square Login Button */
-.business-nav a[href="#login"] {
+.business-nav a[href="./login.html"] {
     background: linear-gradient(135deg, #B30000 0%, #8A0000 100%);
     color: #FFFFFF;
     text-decoration: none;

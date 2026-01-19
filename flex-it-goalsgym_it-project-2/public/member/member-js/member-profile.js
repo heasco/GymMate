@@ -183,7 +183,7 @@ function memberLogout(reason) {
   // Notify other member tabs in this browser
   localStorage.setItem(MEMBER_KEYS.logoutEvent, Date.now().toString());
 
-  window.location.href = '../member-login.html';
+  window.location.href = '../login.html';
 }
 
 // Wrapper to keep existing logout() calls working
@@ -464,6 +464,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Start idle tracking
   setupMemberIdleWatcher();
   markMemberActivity();
+  setSidebarMemberName();
 
   // Logout functionality
   if ($('logoutBtn')) {
@@ -493,6 +494,39 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 });
+
+function setSidebarMemberName() {
+  try {
+    if (typeof bootstrapMemberFromGenericIfNeeded === "function") {
+      bootstrapMemberFromGenericIfNeeded();
+    }
+
+    // Prefer the member-scoped authUser (memberauthUser), fallback to generic authUser
+    const auth =
+      (typeof MemberStore !== "undefined" && MemberStore.getAuthUser && MemberStore.getAuthUser()) ||
+      (() => {
+        try {
+          const raw =
+            sessionStorage.getItem("memberauthUser") ||
+            localStorage.getItem("memberauthUser") ||
+            sessionStorage.getItem("authUser") ||
+            localStorage.getItem("authUser");
+          return raw ? JSON.parse(raw) : null;
+        } catch {
+          return null;
+        }
+      })();
+
+    const user = auth?.user || auth;
+    const displayName = user?.name || user?.username || auth?.name || auth?.username || "Member";
+
+    const el = document.getElementById("sidebarMemberName");
+    if (el) el.textContent = displayName;
+  } catch (e) {
+    console.error("Failed to set sidebar member name:", e);
+  }
+}
+
 
 // Load member profile (unchanged logic, now using MemberStore-backed apiFetch)
 async function loadProfile() {

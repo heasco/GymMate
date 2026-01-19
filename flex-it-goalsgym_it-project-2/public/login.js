@@ -1,39 +1,26 @@
-// login.js - Universal secure login handler with single-session support
-// Now role-aware per login page using data-login-role on <body>
-
+// login.js - Universal secure login handler for single login page
 const loginForm = document.getElementById('loginForm');
 const errorDiv = document.getElementById('errorMessage');
-
 let failedAttempts = 0;
 let isLocked = false;
-
 const MAX_ATTEMPTS = 5;
 const LOCKOUT_TIME = 30; // seconds
-
-// Helper to read current page role safely (admin / trainer / member)
-function getPageRole() {
-  const body = document.body;
-  if (!body || !body.dataset) return null;
-  return body.dataset.loginRole || null;
-}
 
 // Basic input sanitizer
 function sanitize(input) {
   if (typeof input !== 'string') return '';
-  return input.trim().replace(/[$]/g, '').replace(/\./g, '');
+  return input.trim().replace(/[$]/g, '').replace(/\\./g, '');
 }
 
-// Auto-redirect if already logged in in this browser
+// Auto-redirect if already logged in
 function redirectIfAlreadyLoggedIn() {
   try {
     const token = localStorage.getItem('token');
     const role = localStorage.getItem('role');
     const authUserRaw = localStorage.getItem('authUser');
-
     if (!token || !role || !authUserRaw) return;
 
     const authUser = JSON.parse(authUserRaw);
-
     // Basic expiration check: 2 hours
     const TWO_HOURS = 2 * 60 * 60 * 1000;
     if (!authUser.timestamp || Date.now() - authUser.timestamp > TWO_HOURS) {
@@ -43,17 +30,7 @@ function redirectIfAlreadyLoggedIn() {
       return;
     }
 
-    const PAGE_ROLE = getPageRole();
-
-    // Only auto-redirect if the current page is for this role.
-    // This fixes: visiting member-login.html while logged in as admin.
-    if (PAGE_ROLE && role !== PAGE_ROLE) {
-      // Different role than this login page; do NOT auto-redirect.
-      // User can choose to log in as a different role.
-      return;
-    }
-
-    // Role matches the login page (or PAGE_ROLE is not set) - auto-redirect.
+    // No page-specific role check for unified login - always redirect if valid session
     if (role === 'admin') {
       window.location.href = './admin/admin-mainpage.html';
     } else if (role === 'trainer') {
@@ -74,7 +51,6 @@ function lockout() {
   }
   const btn = loginForm ? loginForm.querySelector('.login-button') : null;
   if (btn) btn.disabled = true;
-
   setTimeout(() => {
     isLocked = false;
     failedAttempts = 0;
@@ -90,15 +66,12 @@ if (loginForm) {
   loginForm.addEventListener('submit', async function (e) {
     e.preventDefault();
     if (isLocked) return;
-
     if (errorDiv) errorDiv.textContent = '';
 
     const username = sanitize(loginForm.username.value);
     const password = sanitize(loginForm.password.value);
-    const role = sanitize(loginForm.role.value);
-
-    if (!username || !password || !role) {
-      if (errorDiv) errorDiv.textContent = 'All fields are required.';
+    if (!username || !password) {
+      if (errorDiv) errorDiv.textContent = 'Username and password are required.';
       return;
     }
 
@@ -109,44 +82,38 @@ if (loginForm) {
     }
 
     try {
-      const apiUrl =
-        window.location.hostname === 'localhost' ||
-        window.location.hostname === '127.0.0.1'
-          ? 'http://localhost:8080/api/login'
-          : '/api/login';
-
+      const apiUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+        ? 'http://localhost:8080/api/login'
+        : '/api/login';
       const response = await fetch(apiUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password, role }),
+        body: JSON.stringify({ username, password }),
       });
-
       const result = await response.json();
 
       if (response.ok && result.success) {
         const token = result.token;
+        const role = result.role;
+        if (!role) {
+          throw new Error('No role returned from server');
+        }
 
         // Store token & user in localStorage to share across tabs
         localStorage.setItem('token', token);
-
-        const authData = {
-          ...result.user,
-          timestamp: Date.now(),
-          role,
-          token,
-        };
-
+        const authData = { ...result.user, timestamp: Date.now(), role, token };
         localStorage.setItem('authUser', JSON.stringify(authData));
         localStorage.setItem('role', role);
 
-        // ALSO mirror to sessionStorage so module pages that use sessionStorage see the login
+        // Mirror to sessionStorage for module pages
         sessionStorage.setItem('token', token);
         sessionStorage.setItem('authUser', JSON.stringify(authData));
         sessionStorage.setItem('role', role);
 
-        // Broadcast login event so other tabs can react if needed
+        // Broadcast login event
         localStorage.setItem('loginEvent', Date.now().toString());
 
+        // Redirect based on role
         if (role === 'admin') {
           window.location.href = './admin/admin-mainpage.html';
         } else if (role === 'trainer') {
@@ -158,14 +125,9 @@ if (loginForm) {
         }
       } else {
         failedAttempts++;
-
-        // Backend now revokes old sessions instead of returning ALREADY_LOGGED_IN,
-        // so we just show whatever message it sends (or a generic one).
         if (errorDiv) {
-          errorDiv.textContent =
-            result.message || 'Login failed. Please check your credentials.';
+          errorDiv.textContent = result.message || 'Login failed. Please check your credentials.';
         }
-
         if (failedAttempts >= MAX_ATTEMPTS) lockout();
       }
     } catch (err) {
@@ -174,7 +136,7 @@ if (loginForm) {
     } finally {
       if (btn) {
         btn.disabled = false;
-        btn.textContent = 'Login';
+        btn.textContent = 'Sign In';
       }
     }
   });
