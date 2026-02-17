@@ -6,7 +6,7 @@ const Enrollment = require('../models/Enrollment');
 
 // Add these for the new route (matches your other files like enrollments.js)
 const asyncHandler = require('../middleware/asyncHandler');
-const { protect } = require('../middleware/auth');
+
 const mongoose = require('mongoose');  // For ObjectId.isValid (standard in Mongoose projects)
 
 router.post('/log', async (req, res) => {
@@ -225,7 +225,7 @@ router.get('/logs/today', async (req, res) => {
 });
 
 // NEW: GET /member/:id?start&end - Fetch member-specific logs by date range (for calendar)
-router.get('/member/:id', protect, asyncHandler(async (req, res) => {
+router.get('/member/:id', asyncHandler(async (req, res) => {
   const { start, end } = req.query;
   const memberId = req.params.id;
 

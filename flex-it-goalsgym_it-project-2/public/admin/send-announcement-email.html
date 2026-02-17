@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Send Announcement - GOALS Gym</title>
+  <link rel="icon" type="image/png" href="image/logo2.png">
+  <link rel="stylesheet" href="./admin-css/admin-mainpage.css">
+  <link rel="stylesheet" href="./admin-css/send-announcement-email.css">
+</head>
+<body>
+  <div class="admin-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <h2>GOALS Gym Admin</h2>
+        <p id="adminFullName" class="admin-fullname">Loading...</p>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="./admin-mainpage.html"><span>Dashboard</span></a>
+        <a href="./add-classes.html"><span>Add Classes</span></a>
+        <a href="./add-member.html"><span>Add Member</span></a>
+        <a href="./manage-members.html"><span>Manage Member</span></a>
+        <a href="./add-trainer.html"><span>Add Trainer</span></a>
+        <a href="./manage-trainer.html"><span>Manage Trainer</span></a>
+        <a href="./manage-class-enrollment.html"><span>Manage Enrollment</span></a>
+        <a href="./add-and-view-transaction.html"><span>Add & View Transaction</span></a>
+        <a href="./view-classes-and-feedback.html"><span>View Classes</span></a>
+        <a href="./trainer-schedule-management.html"><span>Trainer Schedule Management</span></a>
+        <a href="./attendance-checker.html"><span>Attendance System</span></a>
+        <a href="./send-announcement-email.html" class="active"><span>Send Announcement</span></a>
+      </nav>
+    </aside>
+
+    <!-- Header -->
+    <header class="header">
+      <button class="menu-toggle" id="menuToggle">☰</button>
+      <h1>Send Announcement</h1>
+      <button class="logout-btn" id="logoutBtn">Logout</button>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <div class="container">
+        <div id="serverStatus" class="server-status">Checking server connection...</div>
+        <div id="successMessage" class="success-message"></div>
+        <div id="errorMessage" class="error-message"></div>
+
+        <div class="view-toggle">
+          <button id="showComposeBtn" class="btn-primary active">Compose</button>
+          <button id="showHistoryBtn" class="btn-primary">History</button>
+        </div>
+
+        <div id="composeView">
+            <div class="compose-layout">
+                <div class="compose-main">
+                    <div id="sendSection" class="section active">
+                      <h2>Compose Announcement</h2>
+                      <div class="template-controls">
+                        <select id="templateSelect" class="form-control">
+                          <option value="">Select a Template</option>
+                        </select>
+                        <button type="button" id="manageTemplatesBtn" class="btn-primary">Manage Templates</button>
+                      </div>
+                      <form id="sendEmailForm">
+                        <div class="form-group">
+                          <label for="subject">Subject:</label> <br>
+                          <textarea id ="subject" type="text" id="subject" name="subject" rows="1" cols="80" required></textarea>
+                        </div>
+                        <div class="form-group">
+                          <label for="body">Body:</label>
+                          <textarea id="body" name="body" rows="18" cols="100" required></textarea>
+                        </div>
+                        <div class="nav-buttons">
+                          <button type="submit" class="btn-primary">Send Email</button>
+                        </div>
+                      </form>
+                    </div>
+                </div>
+                <div class="compose-sidebar">
+                    <button type="button" id="openRecipientModalBtn" class="btn-primary">Select Recipients</button>
+                    <div id="selectedRecipients">
+                      <h4>Selected Recipients:</h4>
+                      <ul id="selectedRecipientsList"></ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="historyView" style="display: none;">
+            <div id="historySection" class="section">
+              <h2>Sent Announcements</h2>
+              <div id="historyList" class="history-list">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>Subject</th>
+                      <th>Recipients</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="historyListBody"></tbody>
+                </table>
+              </div>
+            </div>
+        </div>
+
+
+        <!-- Template Management Modal -->
+        <div id="templateModal" class="modal">
+            <div class="modal-content">
+                <span class="close-btn" id="closeTemplateModalBtn">&times;</span>
+                <h2>Manage Email Templates</h2>
+                <div id="templateListContainer">
+                    <h3>Existing Templates</h3>
+                    <ul id="templateList"></ul>
+                </div>
+                <div id="templateFormContainer">
+                    <h3>Add/Edit Template</h3>
+                    <form id="templateForm">
+                        <input type="hidden" id="templateId">
+                        <div class="form-group">
+                            <label for="templateName">Template Name:</label>
+                            <input type="text" id="templateName" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="templateSubject">Subject:</label>
+                            <input type="text" id="templateSubject" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="templateBody">Body:</label>
+                            <textarea id="templateBody" rows="10" required></textarea>
+                        </div>
+                        <div class="nav-buttons">
+                            <button type="submit" class="btn-primary">Save Template</button>
+                            <button type="button" id="clearTemplateFormBtn" class="btn-primary">New Template</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recipient Modal -->
+        <div id="recipientModal" class="modal">
+          <div class="modal-content">
+            <span class="close-btn" id="closeRecipientModalBtn">&times;</span>
+            <h2>Select Recipients</h2>
+            <div class="recipient-controls">
+              <input type="text" id="recipient_search" placeholder="Search recipients...">
+              <button type="button" id="selectAllBtn" class="btn-primary">Select All</button>
+              <button type="button" id="clearAllBtn" class="btn-primary">Clear All</button>
+            </div>
+            <div id="recipientList" class="recipient-list">
+              <!-- Recipient checkboxes will be populated here -->
+            </div>
+            <div class="nav-buttons">
+              <button type="button" id="confirmRecipientsBtn" class="btn-primary">Confirm</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- View Announcement Modal -->
+        <div id="viewAnnouncementModal" class="modal">
+            <div class="modal-content">
+                <span class="close-btn" id="closeViewAnnouncementModalBtn">&times;</span>
+                <h2>Announcement Details</h2>
+                <div id="viewAnnouncementContent">
+                    <p><strong>Date:</strong> <span id="viewDate"></span></p>
+                    <p><strong>Subject:</strong> <span id="viewSubject"></span></p>
+                    <div>
+                        <strong>Recipients:</strong>
+                        <ul id="viewRecipients"></ul>
+                    </div>
+                    <p><strong>Body:</strong></p>
+                    <pre id="viewBody"></pre>
+                </div>
+            </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Recipient Popup -->
+  <div id="backdrop"></div>
+  <div id="recipientPopup" class="recipient-popup">
+    <div class="recipient-popup-content">
+      <span class="close-btn" id="closeRecipientPopupBtn">&times;</span>
+      <h3>All Recipients</h3>
+      <ul id="recipientPopupList" class="recipient-popup-list"></ul>
+    </div>
+  </div>
+
+<script src="./admin-js/send-announcement-email.js"></script>
+
+</body>
+</html>

@@ -10,11 +10,13 @@ const classRoutes = require('./routes/classes');
 const enrollmentRoutes = require('./routes/enrollments');
 const feedbackRoutes = require('./routes/feedbacks');
 const transactionRoutes = require('./routes/transactions');
+const announcementRoutes = require('./routes/announcements');
+const templateRoutes = require('./routes/templates');
 const healthRoutes = require('./routes/health');
 const attendanceRoutes = require('./routes/attendance');
 
 const errorHandler = require('./middleware/errorHandler');
-const { protect } = require('./middleware/auth'); // NEW: Import protect middleware
+const { protect, admin } = require('./middleware/auth'); // NEW: Import protect middleware
 const initAdmin = require('./utils/initAdmin');
 const { initEnrollmentAutoUpdate } = require('./jobs/enrollmentAutoUpdate');
 const { initMembershipExpiryReminder } = require('./jobs/membershipExpiryReminder'); // ADDED
@@ -85,6 +87,8 @@ app.use('/api/classes', protect, classRoutes);
 app.use('/api/enrollments', protect, enrollmentRoutes);
 app.use('/api/feedbacks', protect, feedbackRoutes);
 app.use('/api/transactions', protect, transactionRoutes);
+app.use('/api/announcements', protect, admin, announcementRoutes);
+app.use('/api/templates', protect, admin, templateRoutes);
 app.use('/api/attendance', protect, attendanceRoutes); // mounts /api/attendance/* etc.
 app.use('/health', healthRoutes); // Secure health checks if needed
 

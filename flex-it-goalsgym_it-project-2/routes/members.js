@@ -2,14 +2,21 @@ const express = require('express');
 const mongoose = require('mongoose');
 const asyncHandler = require('../middleware/asyncHandler');
 const { protect } = require('../middleware/auth'); 
+const Member = require('../models/Member');
+const transporter = require('../utils/nodemailer');
 const axios = require('axios');
 const FormData = require('form-data');
 const multer = require('multer');
 const upload = multer();
-const Member = require('../models/Member');
-const Enrollment = require('../models/Enrollment');
-const transporter = require('../utils/nodemailer');
 const router = express.Router();
+
+// Middleware for handling multiple image uploads
+const faceUploads = upload.fields([
+  { name: 'faceImage1', maxCount: 1 },
+  { name: 'faceImage2', maxCount: 1 },
+  { name: 'faceImage3', maxCount: 1 },
+]);
+
 
 
 router.get('/', protect, asyncHandler(async (req, res) => {
@@ -57,7 +64,7 @@ router.get('/:id', protect, asyncHandler(async (req, res) => {
 }));
 
 // Create member - PROTECTED (admin-only, e.g., add authorize('admin') if needed)
-router.post('/', protect, upload.single('faceImage'), asyncHandler(async (req, res) => {
+router.post('/', protect, faceUploads, asyncHandler(async (req, res) => {
   let memberships = req.body.memberships;
   if (typeof memberships === 'string') {
     try {
@@ -146,9 +153,11 @@ router.post('/', protect, upload.single('faceImage'), asyncHandler(async (req, r
     }).catch(err => console.error('Welcome email error:', err));
   }
 
-  if (req.file) {
+  if (req.files && req.files.faceImage1 && req.files.faceImage2 && req.files.faceImage3) {
     const fd = new FormData();
-    fd.append('image', req.file.buffer, { filename: 'face.jpg', contentType: req.file.mimetype });
+    fd.append('image1', req.files.faceImage1[0].buffer, { filename: 'face1.jpg', contentType: req.files.faceImage1[0].mimetype });
+    fd.append('image2', req.files.faceImage2[0].buffer, { filename: 'face2.jpg', contentType: req.files.faceImage2[0].mimetype });
+    fd.append('image3', req.files.faceImage3[0].buffer, { filename: 'face3.jpg', contentType: req.files.faceImage3[0].mimetype });
     fd.append('faceId', saved._id.toString());
     fd.append('name', name);
     axios.post('http://localhost:5001/api/enroll-face', fd, { headers: fd.getHeaders() })

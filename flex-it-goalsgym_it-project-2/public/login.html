@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,7 +8,11 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
+    <button type="button" id="backBtn" class="circle-back-btn" aria-label="Back to Home">
+        &#8592;
+    </button>
     <!-- Fixed centered login container styled via style.css -->
     <div class="login-container">
         <h1 class="login-title">Gym Portal Login</h1>
@@ -18,7 +23,8 @@
             </div>
             <div class="input-group">
                 <label class="input-label" for="password">Password</label>
-                <input type="password" id="password" name="password" class="input-field" required autocomplete="current-password">
+                <input type="password" id="password" name="password" class="input-field" required
+                    autocomplete="current-password">
             </div>
             <button type="submit" class="login-button">Sign In</button>
         </form>
@@ -26,4 +32,5 @@
     </div>
     <script src="login.js"></script>
 </body>
+
 </html>

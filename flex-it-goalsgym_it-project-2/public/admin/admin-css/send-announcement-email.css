@@ -1,0 +1,383 @@
+/* ========================================
+   SEND ANNOUNCEMENT PAGE - GOALS GYM THEME
+   ======================================== */
+
+body {
+    background-color: #121212;
+    color: #e0e0e0;
+}
+
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0;
+}
+
+/* Sections */
+.section {
+    display: none;
+    background: #1e1e1e;
+    padding: 2.5rem;
+    border-radius: 10px;
+    margin-bottom: 2rem;
+    border: 1px solid #333;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
+}
+
+.section.active {
+    display: block;
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.section h2 {
+    color: #b30000;
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 2px solid #ff3333;
+    padding-bottom: 0.5rem;
+}
+
+
+.view-toggle {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.compose-layout {
+    display: flex;
+    gap: 2rem;
+}
+
+.compose-main {
+    flex: 3;
+}
+
+.compose-sidebar {
+    flex: 1;
+}
+
+.btn-primary.active {
+    background: linear-gradient(135deg, #ff3333 0%, #b30000 100%);
+    box-shadow: 0 4px 15px rgba(255, 51, 51, 0.3);
+    transform: translateY(-2px);
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #ff3333 0%, #b30000 100%);
+    color: #fff;
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: 0 4px 15px rgba(255, 51, 51, 0.3);
+}
+
+.btn-primary:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(255, 51, 51, 0.5);
+}
+
+#subject {
+    font-size: 1.2rem;
+    padding: 0.8rem;
+    
+}
+
+#body {
+    min-height: 400px; /* Taller textarea */
+    font-size: 1rem;
+    line-height: 1.6;
+    padding: 0.8rem;
+}
+
+#selectedRecipients h4 {
+    color: #ff3333;
+    font-size: 1.2rem;
+    margin-top: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+#selectedRecipientsList {
+    list-style: none;
+    padding: 0;
+    color: #ccc;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+
+
+#selectedRecipientsList li {
+    padding: 5px 0;
+    border-bottom: 1px solid #444;
+}
+
+#selectedRecipientsList li:last-child {
+    border-bottom: none;
+}
+
+/* Recipient List */
+.recipient-list {
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid #444;
+    border-radius: 5px;
+    padding: 1rem;
+    background: #2a2a2a;
+}
+.recipient-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+.recipient-item input[type="checkbox"] {
+    margin-right: 10px;
+}
+.recipient-controls {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    align-items: center;
+}
+
+/* History List */
+.history-list table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #2a2a2a;
+    border-radius: 5px;
+    overflow: hidden;
+}
+.history-list th,
+.history-list td {
+    padding: 1rem 1.2rem;
+    border-bottom: 1px solid #333;
+    text-align: left;
+}
+.history-list th {
+    background: linear-gradient(135deg, #b30000 0%, #ff3333 100%);
+    color: #ffffff;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-size: 0.9rem;
+}
+.history-list tr:hover {
+    background-color: #333;
+}
+
+/* Modal Styles */
+.modal {
+    display: none; /* Hidden by default */
+    position: fixed; /* Stay in place */
+    z-index: 1000; /* Sit on top */
+    left: 0;
+    top: 0;
+    width: 100%; /* Full width */
+    height: 100%; /* Full height */
+    overflow: auto; /* Enable scroll if needed */
+    background-color: rgba(0,0,0,0.8); /* Black w/ opacity */
+}
+.modal-content {
+    background-color: #1e1e1e;
+    margin: 10% auto;
+    padding: 2rem;
+    border: 1px solid #555;
+    width: 80%;
+    max-width: 800px; /* Wider modal */
+    border-radius: 10px;
+    position: relative;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+}
+
+.close-btn {
+    color: #aaa;
+    position: absolute;
+    top: 1rem;
+    right: 1.5rem;
+    font-size: 28px;
+    font-weight: bold;
+}
+
+.close-btn:hover,
+.close-btn:focus {
+    color: white;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+/* Template Controls */
+.template-controls {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    align-items: center;
+}
+
+#templateSelect {
+    flex-grow: 1;
+    background-color: #2a2a2a; /* Darker background */
+    color: #fff;
+    border: 2px solid #444; /* Thicker border */
+    padding: 14px 18px; /* Much bigger padding */
+    font-size: 1.1rem; /* Larger text */
+    border-radius: 8px; /* Rounded corners */
+    outline: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+    
+    /* Custom Styling to remove default ugly arrow */
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    
+    /* Add a custom Red Arrow */
+    background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23ff3333%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+    background-repeat: no-repeat;
+    background-position: right 1.5rem center;
+    background-size: 0.8rem auto;
+}
+#templateSelect:hover {
+    border-color: #ff3333; /* Red border on hover */
+    background-color: #333;
+}
+
+
+/* Focus Effect (when clicked) */
+#templateSelect:focus {
+    border-color: #ff3333;
+    box-shadow: 0 0 15px rgba(255, 51, 51, 0.3); /* Red glow */
+}
+
+/* Style the dropdown options (limited support in some browsers, but helps) */
+#templateSelect option {
+    background-color: #1e1e1e;
+    color: #fff;
+    padding: 10px;
+}
+
+/* Template Modal */
+#templateModal .modal-content {
+    max-width: 1200px;
+    min-height: 700px;
+    display: flex;
+    flex-direction: column;
+}
+
+#templateListContainer {
+    margin-bottom: 2rem;
+    flex-shrink: 0;
+}
+
+#templateList {
+    list-style: none;
+    padding: 0;
+    max-height: 350px;
+    overflow-y: auto;
+}
+
+#templateFormContainer {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+#templateForm {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+#templateBody {
+    flex-grow: 1;
+    font-size: 1rem;
+    line-height: 1.6;
+}
+
+
+#templateList li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem;
+    border-bottom: 1px solid #444;
+}
+
+#templateList li:hover {
+    background-color: #333;
+}
+
+#templateList .template-name {
+    font-weight: bold;
+    cursor: pointer;
+}
+
+
+
+.recipient-popup {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: #1e1e1e;
+    padding: 2rem;
+    border-radius: 10px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
+    z-index: 1100;
+    width: 90%;
+    max-width: 500px;
+}
+.recipient-popup-content h3 {
+    color: #b30000;
+    margin-bottom: 1rem;
+}
+.recipient-popup-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    max-height: 300px;
+    overflow-y: auto;
+}
+.recipient-popup-list li {
+    padding: 5px 0;
+    border-bottom: 1px solid #444;
+}
+#backdrop {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+    z-index: 1050;
+}
+.see-more-link {
+    color: #ff3333;
+    cursor: pointer;
+    text-decoration: underline;
+}

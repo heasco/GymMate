@@ -1,6 +1,6 @@
 const SERVER_URL = 'http://localhost:8080';
 
-let faceImageBlob = null;
+let faceImageBlobs = [];
 let faceSuccessfullyCaptured = false;
 let selectedMember = null;
 
@@ -933,8 +933,10 @@ async function handleFormSubmit(e) {
   formData.append('faceEnrolled', faceSuccessfullyCaptured ? 'yes' : 'no');
   formData.append('memberships', JSON.stringify(memberships));
 
-  if (faceImageBlob) {
-    formData.append('faceImage', faceImageBlob, 'face.jpg');
+  if (faceImageBlobs.length === 3) {
+    formData.append('faceImage1', faceImageBlobs[0], 'face1.jpg');
+    formData.append('faceImage2', faceImageBlobs[1], 'face2.jpg');
+    formData.append('faceImage3', faceImageBlobs[2], 'face3.jpg');
   }
 
   try {
@@ -959,7 +961,7 @@ async function handleFormSubmit(e) {
         document.getElementById('combativeDetails').style.display = 'none';
         document.getElementById('faceStatus').textContent = '';
         faceSuccessfullyCaptured = false;
-        faceImageBlob = null;
+        faceImageBlobs = [];
         document.getElementById('message').className = 'message hidden';
       }, 2000);
     } else {
@@ -1004,6 +1006,8 @@ function setupFaceCapture() {
         if (facePane) facePane.style.display = 'flex';
         if (confirmBtn) confirmBtn.disabled = true;
         if (resultMsg) resultMsg.textContent = '';
+        faceImageBlobs = []; // Reset on open
+        captureBtn.disabled = false;
       } catch (err) {
         alert('Camera access denied or unavailable');
       }
@@ -1023,37 +1027,45 @@ function setupFaceCapture() {
 
   if (captureBtn) {
     captureBtn.addEventListener('click', () => {
-      if (video && canvas) {
+      if (video && canvas && faceImageBlobs.length < 3) {
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
         const ctx = canvas.getContext('2d');
         ctx.drawImage(video, 0, 0);
 
         canvas.toBlob((blob) => {
-          faceImageBlob = blob;
+          faceImageBlobs.push(blob);
+          const remaining = 3 - faceImageBlobs.length;
+          if (remaining > 0) {
+            resultMsg.textContent = `Photo ${faceImageBlobs.length} captured! ${remaining} more to go.`;
+          } else {
+            resultMsg.textContent = 'All 3 photos captured! Review and confirm.';
+            captureBtn.disabled = true;
+            confirmBtn.disabled = false;
+          }
         }, 'image/jpeg');
       }
 
       if (video) video.style.display = 'none';
       if (canvas) canvas.style.display = 'block';
-      if (confirmBtn) confirmBtn.disabled = false;
-      if (resultMsg) resultMsg.textContent = 'Photo captured! Review and confirm or retake.';
     });
   }
 
   if (confirmBtn) {
     confirmBtn.addEventListener('click', () => {
-      faceSuccessfullyCaptured = true;
-      if (faceStatus) {
-        faceStatus.textContent = '✓ Face Captured';
-        faceStatus.className = 'fp-status-message success';
-      }
+      if (faceImageBlobs.length === 3) {
+        faceSuccessfullyCaptured = true;
+        if (faceStatus) {
+          faceStatus.textContent = '✓ 3 Faces Captured';
+          faceStatus.className = 'fp-status-message success';
+        }
 
-      if (stream) {
-        stream.getTracks().forEach((track) => track.stop());
+        if (stream) {
+          stream.getTracks().forEach((track) => track.stop());
+        }
+        if (facePane) facePane.style.display = 'none';
+        if (resultMsg) resultMsg.textContent = '';
       }
-      if (facePane) facePane.style.display = 'none';
-      if (resultMsg) resultMsg.textContent = '';
     });
   }
 }

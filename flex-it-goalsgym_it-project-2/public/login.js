@@ -6,6 +6,14 @@ let isLocked = false;
 const MAX_ATTEMPTS = 5;
 const LOCKOUT_TIME = 30; // seconds
 
+// Back button -> index.html
+const backBtn = document.getElementById("backBtn");
+if (backBtn) {
+  backBtn.addEventListener("click", () => {
+    window.location.href = "index.html";
+  });
+}
+
 // Basic input sanitizer
 function sanitize(input) {
   if (typeof input !== 'string') return '';
