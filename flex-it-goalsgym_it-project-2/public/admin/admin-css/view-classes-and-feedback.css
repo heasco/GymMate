@@ -12,7 +12,7 @@
 .server-status {
     padding: 1rem;
     margin-bottom: 2rem;
-    border-radius: var(--radius);
+    border-radius: 8px;
     font-weight: 600;
     text-align: center;
     font-size: 0.9rem;
@@ -37,15 +37,16 @@
     display: none;
     padding: 1rem 1.5rem;
     margin-bottom: 2rem;
-    border-radius: var(--radius);
+    border-radius: 8px;
     font-weight: 600;
     text-align: center;
 }
 
 .success-message {
-    background: linear-gradient(135deg, var(--primary) 0%, var(--highlight) 100%);
-    color: var(--accent);
-    box-shadow: 0 4px 15px rgba(179, 0, 0, 0.3);
+    background: rgba(40, 167, 69, 0.1); 
+    color: #28a745; 
+    border: 1px solid #28a745;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
 }
 
 .error-message {
@@ -56,23 +57,22 @@
 
 /* Sections */
 .section {
-    background: rgba(30, 30, 30, 0.9);
+    background: #1e1e1e;
     padding: 2.5rem;
-    border-radius: var(--radius);
+    border-radius: 10px;
     margin-bottom: 2rem;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid #333;
     box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
-    backdrop-filter: blur(10px);
 }
 
 .section h2 {
-    color: var(--accent);
+    color: #fff;
     font-size: 1.8rem;
     font-weight: 700;
     margin-bottom: 1.5rem;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    border-bottom: 2px solid var(--primary);
+    border-bottom: 1px solid #444; /* Subtle grey underline */
     padding-bottom: 0.5rem;
 }
 
@@ -82,7 +82,7 @@
 }
 
 .form-group label {
-    color: var(--accent);
+    color: #ccc;
     font-weight: 600;
     margin-bottom: 0.5rem;
     display: block;
@@ -96,42 +96,44 @@ input[type="text"],
 input[type="date"] {
     width: 100%;
     padding: 1rem 1.2rem;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: var(--radius);
+    border: 1px solid #444; /* Grey Border */
+    border-radius: 8px;
     font-size: 1rem;
-    background: rgba(0, 0, 0, 0.5);
-    color: var(--accent);
+    background: #121212;
+    color: #fff;
     font-family: 'Poppins', sans-serif;
-    transition: var(--transition);
+    transition: all 0.3s ease;
 }
 
 input[type="text"]:focus,
 input[type="date"]:focus {
     outline: none;
-    border-color: var(--primary);
-    box-shadow: 0 0 0 2px rgba(179, 0, 0, 0.2);
-    background: rgba(0, 0, 0, 0.7);
+    border-color: #b30000; /* Red Focus */
+    box-shadow: 0 0 8px rgba(179, 0, 0, 0.3);
+    background: #000;
 }
 
 /* Loading and Messages */
 .loading {
     text-align: center;
     padding: 2rem;
-    color: var(--neutral);
+    color: #888;
     font-weight: 600;
-    background: rgba(0, 0, 0, 0.3);
-    border-radius: var(--radius);
+    background: #121212;
+    border-radius: 8px;
     margin: 1rem 0;
+    border: 1px solid #333;
 }
 
 .no-data {
     text-align: center;
     padding: 1.5rem;
-    color: var(--neutral);
-    background: rgba(0, 0, 0, 0.3);
-    border-radius: var(--radius);
+    color: #888;
+    background: #121212;
+    border-radius: 8px;
     margin: 1rem 0;
     font-style: italic;
+    border: 1px solid #333;
 }
 
 .error {
@@ -140,45 +142,51 @@ input[type="date"]:focus {
     color: #dc3545;
     background: rgba(220, 53, 69, 0.1);
     border: 1px solid #dc3545;
-    border-radius: var(--radius);
+    border-radius: 8px;
     margin: 1rem 0;
     font-weight: 600;
 }
 
-/* Details & Summary */
+/* --- UPDATED DETAILS & SUMMARY --- */
 details {
     margin-bottom: 1rem;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: var(--radius);
+    border: 1px solid #333; /* Grey Default */
+    border-radius: 8px;
     overflow: hidden;
-    background: rgba(0, 0, 0, 0.3);
-    transition: var(--transition);
+    background: #181818;
+    transition: all 0.3s ease;
 }
 
 details:hover {
-    border-color: var(--primary);
-    box-shadow: 0 4px 15px rgba(179, 0, 0, 0.2);
+    border-color: #666;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
 }
 
 details[open] {
-    border-color: var(--primary);
-    box-shadow: 0 4px 20px rgba(179, 0, 0, 0.25);
+    border-color: #b30000;
 }
 
 summary {
     padding: 1.5rem;
-    background: linear-gradient(135deg, var(--primary) 0%, var(--highlight) 100%);
-    color: var(--accent);
+    background-color: #121212;
+    border-bottom: 1px solid transparent;
+    color: #fff;
     cursor: pointer;
-    font-weight: 700;
+    font-weight: 600;
     font-size: 1rem;
-    transition: var(--transition);
+    transition: all 0.3s ease;
     list-style: none;
     position: relative;
 }
 
 summary:hover {
-    background: linear-gradient(135deg, var(--highlight) 0%, var(--primary) 100%);
+    background-color: #1f1f1f;
+    color: #ff3333;
+}
+
+details[open] summary {
+    background-color: #b30000;
+    color: white;
 }
 
 summary::-webkit-details-marker {
@@ -189,6 +197,7 @@ summary:after {
     content: '▶';
     position: absolute;
     right: 1.5rem;
+    font-size: 0.8rem;
     transition: transform 0.3s ease;
 }
 
@@ -198,6 +207,7 @@ details[open] summary:after {
 
 .class-details {
     padding: 2rem;
+    background: #1e1e1e;
     animation: fadeIn 0.3s ease-in-out;
 }
 
@@ -210,20 +220,20 @@ details[open] summary:after {
 .trainer-info {
     margin-bottom: 2rem;
     padding: 1.5rem;
-    background: rgba(0, 0, 0, 0.3);
-    border-radius: var(--radius);
-    border-left: 4px solid var(--primary);
+    background: #121212;
+    border-radius: 8px;
+    border-left: 4px solid #444;
 }
 
 .trainer-info h3 {
-    color: var(--primary);
+    color: #fff;
     font-size: 1.2rem;
     margin-bottom: 1rem;
     font-weight: 600;
 }
 
 .trainer-info p {
-    color: var(--neutral);
+    color: #ccc;
     margin-bottom: 0.5rem;
 }
 
@@ -234,28 +244,28 @@ details[open] summary:after {
     gap: 1rem;
     margin: 1.5rem 0;
     padding: 1.5rem;
-    background: rgba(0, 0, 0, 0.3);
-    border-radius: var(--radius);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: #121212;
+    border-radius: 8px;
+    border: 1px solid #333;
     flex-wrap: wrap;
 }
 
 .enrollment-filters label {
     margin-bottom: 0;
-    color: var(--accent);
+    color: #ccc;
 }
 
-/* Buttons */
+/* --- UPDATED BUTTONS --- */
 .btn-filter,
 .btn-next3 {
-    background: linear-gradient(135deg, var(--primary) 0%, var(--highlight) 100%);
-    color: var(--accent);
-    border: none;
+    background-color: #000;
+    color: #fff;
+    border: 1px solid #444;
     padding: 0.8rem 1.5rem;
-    border-radius: var(--radius);
+    border-radius: 6px;
     font-weight: 600;
     cursor: pointer;
-    transition: var(--transition);
+    transition: all 0.3s ease;
     text-transform: uppercase;
     letter-spacing: 0.5px;
     min-width: 120px;
@@ -263,25 +273,28 @@ details[open] summary:after {
 
 .btn-filter:hover,
 .btn-next3:hover {
+    background-color: #8b0000;
+    border-color: #ff3333;
+    color: white;
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(255, 51, 51, 0.4);
+    box-shadow: 0 4px 12px rgba(139, 0, 0, 0.4);
 }
 
 /* Session Groups */
 .session-group {
     margin: 1.5rem 0;
     padding: 1.5rem;
-    background: rgba(0, 0, 0, 0.3);
-    border-radius: var(--radius);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: #121212;
+    border-radius: 8px;
+    border: 1px solid #333;
 }
 
 .session-date {
-    color: var(--primary);
+    color: #ff3333;
     font-weight: 700;
     font-size: 1.1rem;
     margin-bottom: 1rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    border-bottom: 1px solid #333;
     padding-bottom: 0.5rem;
 }
 
@@ -293,17 +306,18 @@ details[open] summary:after {
 
 .members-list li {
     padding: 1rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    border-bottom: 1px solid #333;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    transition: var(--transition);
-    color: var(--neutral);
+    transition: all 0.3s ease;
+    color: #ccc;
 }
 
 .members-list li:hover {
-    background: rgba(179, 0, 0, 0.1);
-    color: var(--accent);
+    background: #1a1a1a;
+    color: #fff;
+    padding-left: 1.2rem; /* Slight shift on hover */
 }
 
 .members-list li:last-child {
@@ -311,7 +325,7 @@ details[open] summary:after {
 }
 
 .session-time {
-    color: var(--neutral);
+    color: #888;
     font-style: italic;
     margin: 0 1rem;
 }
@@ -327,25 +341,25 @@ details[open] summary:after {
 }
 
 .badge.scheduled {
-    background: rgba(23, 162, 184, 0.2);
+    background: rgba(23, 162, 184, 0.1);
     color: #17a2b8;
     border: 1px solid #17a2b8;
 }
 
 .badge.attended {
-    background: rgba(40, 167, 69, 0.2);
+    background: rgba(40, 167, 69, 0.1);
     color: #28a745;
     border: 1px solid #28a745;
 }
 
 .badge.missed {
-    background: rgba(255, 193, 7, 0.2);
+    background: rgba(255, 193, 7, 0.1);
     color: #ffc107;
     border: 1px solid #ffc107;
 }
 
 .badge.cancelled {
-    background: rgba(220, 53, 69, 0.2);
+    background: rgba(220, 53, 69, 0.1);
     color: #dc3545;
     border: 1px solid #dc3545;
 }
@@ -354,23 +368,24 @@ details[open] summary:after {
 .feedback-section {
     margin-top: 2rem;
     padding-top: 2rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    border-top: 1px solid #333;
 }
 
 .feedback-section h3 {
-    color: var(--primary);
+    color: #fff;
     font-size: 1.2rem;
     margin-bottom: 1rem;
     font-weight: 600;
 }
 
 .feedback-summary {
-    background: rgba(0, 0, 0, 0.3);
+    background: #121212;
     padding: 1rem;
-    border-radius: var(--radius);
+    border-radius: 8px;
     margin-bottom: 1rem;
-    color: var(--accent);
+    color: #fff;
     font-weight: 600;
+    border: 1px solid #333;
 }
 
 .feedback-list {
@@ -380,17 +395,18 @@ details[open] summary:after {
 }
 
 .feedback-item {
-    background: rgba(0, 0, 0, 0.3);
+    background: #121212;
     padding: 1.5rem;
-    border-radius: var(--radius);
+    border-radius: 8px;
     margin-bottom: 1rem;
-    border-left: 4px solid var(--primary);
-    transition: var(--transition);
+    border-left: 4px solid #444;
+    transition: all 0.3s ease;
 }
 
 .feedback-item:hover {
     transform: translateX(5px);
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    border-left-color: #b30000;
 }
 
 .feedback-header {
@@ -401,44 +417,42 @@ details[open] summary:after {
 }
 
 .feedback-header strong {
-    color: var(--accent);
+    color: #fff;
 }
 
 .feedback-date {
-    color: var(--neutral);
+    color: #888;
     font-size: 0.9rem;
 }
 
 .feedback-comment {
-    color: var(--neutral);
+    color: #ccc;
     margin-bottom: 0.8rem;
     line-height: 1.5;
 }
 
 .feedback-member {
-    color: var(--neutral);
+    color: #888;
     font-size: 0.9rem;
     margin-bottom: 1rem;
 }
 
 .delete-feedback-btn {
-    background: rgba(220, 53, 69, 0.2);
+    background: transparent;
     color: #dc3545;
     border: 1px solid #dc3545;
     padding: 0.5rem 1rem;
-    border-radius: var(--radius);
+    border-radius: 6px;
     font-size: 0.8rem;
     font-weight: 600;
     cursor: pointer;
-    transition: var(--transition);
+    transition: all 0.3s ease;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
 }
 
 .delete-feedback-btn:hover {
     background: #dc3545;
-    color: var(--accent);
-    transform: translateY(-2px);
+    color: #fff;
 }
 
 /* Responsive Design */

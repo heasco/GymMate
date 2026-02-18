@@ -344,7 +344,7 @@ function setupViews() {
 }
 
 // ------------------------------
-// Modal Handling (Standard Modals)
+// Modal Handling (Updated for Template Form)
 // ------------------------------
 function setupModals() {
     const modals = {
@@ -353,10 +353,15 @@ function setupModals() {
             openBtn: document.getElementById('openRecipientModalBtn'),
             closeBtn: document.getElementById('closeRecipientModalBtn'),
         },
-        template: {
+        template: { // The List Modal
             modal: document.getElementById('templateModal'),
             openBtn: document.getElementById('manageTemplatesBtn'),
             closeBtn: document.getElementById('closeTemplateModalBtn'),
+        },
+        templateForm: { // The New Form Modal (Big Pop-up)
+            modal: document.getElementById('templateFormModal'),
+            openBtn: document.getElementById('openAddTemplateModalBtn'),
+            closeBtn: document.getElementById('closeTemplateFormModalBtn'),
         },
         recipientPopup: {
             modal: document.getElementById('recipientPopup'),
@@ -367,10 +372,26 @@ function setupModals() {
 
     for (const key in modals) {
         const { modal, openBtn, closeBtn, backdrop } = modals[key];
-        if (openBtn) openBtn.onclick = () => modal.style.display = 'block';
-        if (closeBtn) closeBtn.onclick = () => {
-            modal.style.display = 'none';
-            if (backdrop) backdrop.style.display = 'none';
+        
+        // Open Button Logic
+        if (openBtn) {
+            openBtn.onclick = () => {
+                modal.style.display = 'block';
+                // If opening the ADD form, reset it first
+                if (key === 'templateForm') {
+                    document.getElementById('templateForm').reset();
+                    document.getElementById('templateId').value = '';
+                    document.getElementById('templateFormTitle').textContent = 'Add New Template';
+                }
+            };
+        }
+        
+        // Close Button Logic
+        if (closeBtn) {
+            closeBtn.onclick = () => {
+                modal.style.display = 'none';
+                if (backdrop) backdrop.style.display = 'none';
+            }
         }
     }
     
@@ -388,6 +409,7 @@ function setupModals() {
     window.onclick = (event) => {
         if (event.target == modals.recipient.modal) modals.recipient.modal.style.display = 'none';
         if (event.target == modals.template.modal) modals.template.modal.style.display = 'none';
+        if (event.target == modals.templateForm.modal) modals.templateForm.modal.style.display = 'none';
         
         // Also handle the View Msg modal if clicked outside
         const viewModal = document.getElementById('viewAnnouncementModal');
@@ -434,7 +456,6 @@ function displayRecipients(recipients) {
     recipients.forEach(r => {
         const item = document.createElement('div');
         item.className = 'recipient-item';
-        // EDITED: added data-role attribute to checkboxes
         item.innerHTML = `
             <input type="checkbox" id="recipient_${r.email}" name="recipients" value="${r.email}" data-role="${r.role}">
             <label for="recipient_${r.email}">${r.name} (${r.email}) - ${r.role}</label>
@@ -505,10 +526,17 @@ document.getElementById('templateModal').addEventListener('click', (e) => {
         const templateId = e.target.dataset.id;
         const template = allTemplates.find(t => t._id === templateId);
         if (template) {
+            // Populate form
             document.getElementById('templateId').value = template._id;
             document.getElementById('templateName').value = template.name;
             document.getElementById('templateSubject').value = template.subject;
             document.getElementById('templateBody').value = template.body;
+            
+            // Set Title
+            document.getElementById('templateFormTitle').textContent = 'Edit Template';
+            
+            // Open the Form Modal
+            document.getElementById('templateFormModal').style.display = 'block';
         }
     }
     if (e.target.classList.contains('delete-template-btn')) {
@@ -535,8 +563,13 @@ document.getElementById('templateForm').addEventListener('submit', async (e) => 
             body: JSON.stringify({ name, subject, body }),
         });
         showSuccess('Template saved successfully!');
+        
+        // Close the form modal
+        document.getElementById('templateFormModal').style.display = 'none';
         document.getElementById('templateForm').reset();
         document.getElementById('templateId').value = '';
+        
+        // Refresh the list
         loadTemplates();
     } catch (error) {
         console.error('Error saving template:', error);
@@ -544,10 +577,6 @@ document.getElementById('templateForm').addEventListener('submit', async (e) => 
     }
 });
 
-document.getElementById('clearTemplateFormBtn').addEventListener('click', () => {
-    document.getElementById('templateForm').reset();
-    document.getElementById('templateId').value = '';
-});
 
 async function deleteTemplate(id) {
     try {

@@ -420,8 +420,6 @@ body {
     white-space: normal; /* Allow text wrapping */
 }
 
-/* Update or Add this section for the Search Input */
-
 #recipient_search {
     flex-grow: 1; /* Makes it stretch to fill the space */
     background-color: #2a2a2a; /* Dark background */
@@ -452,4 +450,40 @@ body {
 #recipient_search::placeholder {
     color: #888;
     font-style: italic;
+}
+
+
+/* Large Modal for Template Form */
+.modal-content.large-modal {
+    width: 90%;          /* Occupy 90% of screen width */
+    max-width: 1000px;   /* Cap at 1000px */
+    height: 85vh;        /* Occupy 85% of screen height */
+    max-height: 900px;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Ensure the form takes up all available space in the large modal */
+#templateForm {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1; /* Grow to fill modal */
+    overflow: hidden; /* Prevent double scrollbars */
+}
+
+/* Make the textarea fill the remaining vertical space */
+#templateForm .form-group textarea {
+    height: 100%;
+    min-height: 300px;
+    font-size: 1.1rem;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #2a2a2a;
+    color: #fff;
+    border: 1px solid #444;
+    border-radius: 5px;
+}
+
+#templateForm .form-group textarea:focus {
+    border-color: #ff3333;
+    outline: none;
 }

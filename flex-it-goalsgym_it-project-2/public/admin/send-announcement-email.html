@@ -103,37 +103,42 @@
             </div>
         </div>
 
-
         <div id="templateModal" class="modal">
             <div class="modal-content">
                 <span class="close-btn" id="closeTemplateModalBtn">&times;</span>
                 <h2>Manage Email Templates</h2>
+                
+                <div style="margin-bottom: 1.5rem; text-align: right;">
+                    <button type="button" id="openAddTemplateModalBtn" class="btn-primary">Add New Template</button>
+                </div>
+
                 <div id="templateListContainer">
-                    <h3>Existing Templates</h3>
                     <ul id="templateList"></ul>
                 </div>
-                <div id="templateFormContainer">
-                    <h3>Add/Edit Template</h3>
-                    <form id="templateForm">
-                        <input type="hidden" id="templateId">
-                        <div class="form-group">
-                            <label for="templateName">Template Name:</label>
-                            <input type="text" id="templateName" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="templateSubject">Subject:</label>
-                            <input type="text" id="templateSubject" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="templateBody">Body:</label>
-                            <textarea id="templateBody" rows="10" required></textarea>
-                        </div>
-                        <div class="nav-buttons">
-                            <button type="submit" class="btn-primary">Save Template</button>
-                            <button type="button" id="clearTemplateFormBtn" class="btn-primary">New Template</button>
-                        </div>
-                    </form>
-                </div>
+            </div>
+        </div>
+
+        <div id="templateFormModal" class="modal">
+            <div class="modal-content large-modal"> <span class="close-btn" id="closeTemplateFormModalBtn">&times;</span>
+                <h2 id="templateFormTitle">Add New Template</h2>
+                <form id="templateForm">
+                    <input type="hidden" id="templateId">
+                    <div class="form-group">
+                        <label for="templateName">Template Name:</label>
+                        <input type="text" id="templateName" required placeholder="e.g., Monthly Newsletter">
+                    </div>
+                    <div class="form-group">
+                        <label for="templateSubject">Subject:</label>
+                        <input type="text" id="templateSubject" required placeholder="Email Subject Line">
+                    </div>
+                    <div class="form-group" style="flex-grow: 1; display: flex; flex-direction: column;">
+                        <label for="templateBody">Body:</label>
+                        <textarea id="templateBody" style="flex-grow: 1; resize: none; padding: 15px;" required placeholder="Enter your email content here..."></textarea>
+                    </div>
+                    <div class="nav-buttons">
+                        <button type="submit" class="btn-primary">Save Template</button>
+                    </div>
+                </form>
             </div>
         </div>
 
