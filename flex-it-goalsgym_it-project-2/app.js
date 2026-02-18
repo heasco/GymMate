@@ -14,6 +14,7 @@ const announcementRoutes = require('./routes/announcements');
 const templateRoutes = require('./routes/templates');
 const healthRoutes = require('./routes/health');
 const attendanceRoutes = require('./routes/attendance');
+const logRoutes = require('./routes/logs');
 
 const errorHandler = require('./middleware/errorHandler');
 const { protect, admin } = require('./middleware/auth'); // NEW: Import protect middleware
@@ -31,6 +32,7 @@ const DB_URL = process.env.MONGODB_URI;
 app.use(cors({ origin: '*', credentials: true }));
 app.use(express.json({ limit: '10kb' }));
 app.use(express.static('public'));
+app.set('trust proxy', 1);
 
 // Database connect
 mongoose.connect(DB_URL, {
@@ -90,6 +92,7 @@ app.use('/api/transactions', protect, transactionRoutes);
 app.use('/api/announcements', protect, admin, announcementRoutes);
 app.use('/api/templates', protect, admin, templateRoutes);
 app.use('/api/attendance', protect, attendanceRoutes); // mounts /api/attendance/* etc.
+app.use('/api/logs', protect, admin, logRoutes);
 app.use('/health', healthRoutes); // Secure health checks if needed
 
 // 404 + error handler

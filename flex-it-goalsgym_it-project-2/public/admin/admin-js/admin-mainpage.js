@@ -305,8 +305,12 @@ document.addEventListener('DOMContentLoaded', () => {
   if (!ok) return;
 
   // Load page data
-  loadDashboardStats();
-  loadTodayClassSchedules();
+  if (document.getElementById('statTotalMembers')) {
+    loadDashboardStats();
+  }
+  if (document.getElementById('scheduleTableBody')) {
+    loadTodayClassSchedules();
+  }
   setupSidebarAndSession();
 });
 

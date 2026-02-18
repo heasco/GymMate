@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>View Logs - Admin</title>
+    <link rel="icon" type="image/png" href="image/logo2.png" />
+    <link rel="stylesheet" href="admin-css/admin-mainpage.css" />
+    <link rel="stylesheet" href="admin-css/view-logs.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css"
+    />
+  </head>
+  <body>
+    <div class="admin-container">
+      <aside class="sidebar">
+        <div class="sidebar-header">
+          <h2>GOALS Gym Admin</h2>
+          <p id="adminFullName" class="admin-fullname">Loading...</p>
+        </div>
+        <nav class="sidebar-nav">
+          <a href="./admin-mainpage.html"><span>Dashboard</span></a>
+          <a href="./add-classes.html"><span>Add Classes</span></a>
+          <a href="./add-member.html"><span>Add Member</span></a>
+          <a href="./manage-members.html"><span>Manage Member</span></a>
+          <a href="./add-trainer.html"><span>Add Trainer</span></a>
+          <a href="./manage-trainer.html"><span>Manage Trainer</span></a>
+          <a href="./manage-class-enrollment.html"
+            ><span>Manage Enrollment</span></a
+          >
+          <a href="./add-and-view-transaction.html"
+            ><span>Add & View Transaction</span></a
+          >
+          <a href="./view-classes-and-feedback.html"
+            ><span>View Classes</span></a
+          >
+          <a href="./trainer-schedule-management.html"
+            ><span>Trainer Schedule Management</span></a
+          >
+          <a href="./attendance-checker.html"><span>Attendance System</span></a>
+          <a href="./send-announcement-email.html"
+            ><span>Send Announcement</span></a
+          >
+          <a href="./view-logs.html" class="active"><span>View Logs</span></a>
+        </nav>
+      </aside>
+      <header class="header">
+        <button class="menu-toggle" id="menuToggle">☰</button>
+        <h1>Admin Login Logs</h1>
+        <button class="logout-btn" id="logoutBtn">Logout</button>
+      </header>
+      <main class="main-content">
+        <div class="filter-container">
+          <div class="filter-group">
+            <label for="role-filter">Filter by Role:</label>
+            <select id="role-filter">
+              <option value="">All</option>
+              <option value="admin">Admin</option>
+              <option value="trainer">Trainer</option>
+              <option value="member">Member</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <label for="date-filter">Filter by Date:</label>
+            <input type="date" id="date-filter" />
+          </div>
+        </div>
+        <table id="logs-table">
+          <thead>
+            <tr>
+              <th>User</th>
+              <th>IP Address</th>
+              <th>Device</th>
+              <th>Location</th>
+              <th>Timestamp</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Log rows will be inserted here by JavaScript -->
+          </tbody>
+        </table>
+      </main>
+    </div>
+    <script src="admin-js/view-logs.js"></script>
+    <script src="admin-js/admin-mainpage.js"></script>
+  </body>
+</html>

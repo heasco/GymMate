@@ -3,11 +3,13 @@ const express = require('express');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const { randomUUID } = require('crypto');
+const axios = require('axios');
 
 const Admin = require('../models/Admin');
 const Member = require('../models/Member');
 const Trainer = require('../models/Trainer');
 const ActiveSession = require('../models/ActiveSession');
+const Log = require('../models/Log');
 const asyncHandler = require('../middleware/asyncHandler');
 
 const router = express.Router();
@@ -96,6 +98,30 @@ router.post(
     // Strip password and add role
     const { password: pw, ...safeUser } = user;
     const userWithRole = { ...safeUser, role: userRole };
+
+    try {
+      const ip = req.ip;
+      let location = 'Unknown';
+
+      if (ip === '127.0.0.1' || ip === '::1') {
+        location = 'Local';
+      } else {
+        const response = await axios.get(`http://ip-api.com/json/${ip}`);
+        if (response.data.country) {
+          location = `${response.data.city}, ${response.data.regionName}, ${response.data.country}`;
+        }
+      }
+
+      await Log.create({
+        userId: user._id,
+        userModel: userRole.charAt(0).toUpperCase() + userRole.slice(1),
+        ipAddress: ip,
+        device: req.headers['user-agent'] || '',
+        location,
+      });
+    } catch (error) {
+      console.error('Error logging user login:', error);
+    }
 
     return res.json({
       success: true,
