@@ -231,7 +231,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   loadTemplates();
 
   setupFormListener();
+  setupViewModalListeners(); 
 });
+
 // ------------------------------
 // Sidebar + session handling
 // ------------------------------
@@ -342,7 +344,7 @@ function setupViews() {
 }
 
 // ------------------------------
-// Modal Handling
+// Modal Handling (Standard Modals)
 // ------------------------------
 function setupModals() {
     const modals = {
@@ -382,9 +384,16 @@ function setupModals() {
         modals.recipientPopup.backdrop.style.display = 'none';
     }
 
+    // Global window click to close all types of modals
     window.onclick = (event) => {
         if (event.target == modals.recipient.modal) modals.recipient.modal.style.display = 'none';
         if (event.target == modals.template.modal) modals.template.modal.style.display = 'none';
+        
+        // Also handle the View Msg modal if clicked outside
+        const viewModal = document.getElementById('viewAnnouncementModal');
+        if (viewModal && event.target == viewModal) {
+            viewModal.style.display = 'none';
+        }
     };
 }
 
@@ -425,8 +434,9 @@ function displayRecipients(recipients) {
     recipients.forEach(r => {
         const item = document.createElement('div');
         item.className = 'recipient-item';
+        // EDITED: added data-role attribute to checkboxes
         item.innerHTML = `
-            <input type="checkbox" id="recipient_${r.email}" name="recipients" value="${r.email}">
+            <input type="checkbox" id="recipient_${r.email}" name="recipients" value="${r.email}" data-role="${r.role}">
             <label for="recipient_${r.email}">${r.name} (${r.email}) - ${r.role}</label>
         `;
         recipientList.appendChild(item);
@@ -595,6 +605,22 @@ function setupFormListener() {
         }
     });
 
+    // Select Members Only logic
+    document.getElementById('selectMembersBtn').addEventListener('click', () => {
+        const checkboxes = document.querySelectorAll('#recipientList input[name="recipients"]');
+        checkboxes.forEach(cb => {
+            cb.checked = (cb.dataset.role === 'member');
+        });
+    });
+
+    // Select Trainers Only logic
+    document.getElementById('selectTrainersBtn').addEventListener('click', () => {
+        const checkboxes = document.querySelectorAll('#recipientList input[name="recipients"]');
+        checkboxes.forEach(cb => {
+            cb.checked = (cb.dataset.role === 'trainer');
+        });
+    });
+
     document.getElementById('selectAllBtn').addEventListener('click', () => {
         document.querySelectorAll('#recipientList input[name="recipients"]').forEach(c => c.checked = true);
     });
@@ -686,10 +712,11 @@ function displayHistory(history) {
         // Create the button as a DOM element instead of a string
         const viewBtn = document.createElement('button');
         viewBtn.className = 'btn-primary view-announcement-btn';
-        viewBtn.textContent = 'View';
+        viewBtn.textContent = 'View'; // Updated Text
+        viewBtn.style.padding = '8px 16px'; 
+        viewBtn.style.fontSize = '0.9rem';
 
         // safely attach the JSON object to the button
-        // This prevents single quotes (e.g. "It's") from breaking the HTML
         viewBtn.dataset.item = JSON.stringify(item);
 
         actionsCell.appendChild(viewBtn);
@@ -699,17 +726,55 @@ function displayHistory(history) {
     });
 }
 
-document.getElementById('historyListBody').addEventListener('click', (e) => {
-    if (e.target.classList.contains('see-more-link')) {
-        e.preventDefault();
-        const recipients = JSON.parse(e.target.dataset.recipients);
-        showRecipientPopup(recipients);
+// ------------------------------
+// View Modal Logic (New)
+// ------------------------------
+
+function setupViewModalListeners() {
+    // Close View Modal Logic
+    const viewModal = document.getElementById('viewAnnouncementModal');
+    const closeViewBtn = document.getElementById('closeViewAnnouncementModalBtn');
+
+    if (closeViewBtn && viewModal) {
+        closeViewBtn.onclick = function() {
+            viewModal.style.display = 'none';
+        }
     }
-    if (e.target.classList.contains('view-announcement-btn')) {
-        const item = JSON.parse(e.target.dataset.item);
-        alert(`Subject: ${item.subject}\n\nBody:\n${item.body}`);
+
+    // Global listener for History Table Clicks (View Msg & See More)
+    const historyListBody = document.getElementById('historyListBody');
+    if (historyListBody) {
+        historyListBody.addEventListener('click', (e) => {
+            // Handle "See More" recipients click
+            if (e.target.classList.contains('see-more-link')) {
+                e.preventDefault();
+                const recipients = JSON.parse(e.target.dataset.recipients);
+                showRecipientPopup(recipients);
+            }
+
+            // Handle "View Msg" button click - OPEN MODAL INSTEAD OF ALERT
+            if (e.target.classList.contains('view-announcement-btn')) {
+                const item = JSON.parse(e.target.dataset.item);
+                
+                // Populate Modal Fields
+                const dateEl = document.getElementById('viewDate');
+                const subjectEl = document.getElementById('viewSubject');
+                const recipientsEl = document.getElementById('viewRecipients');
+                const bodyEl = document.getElementById('viewBody');
+
+                if (dateEl) dateEl.textContent = new Date(item.createdAt).toLocaleString();
+                if (subjectEl) subjectEl.textContent = item.subject;
+                if (recipientsEl) recipientsEl.textContent = item.recipients ? item.recipients.join(', ') : 'No recipients';
+                
+                // Use innerHTML because the body contains HTML tags (like <br> or <div>)
+                if (bodyEl) bodyEl.innerHTML = item.body;
+                
+                // Show Modal
+                if (viewModal) viewModal.style.display = 'block';
+            }
+        });
     }
-});
+}
 
 
 function showRecipientPopup(recipients) {

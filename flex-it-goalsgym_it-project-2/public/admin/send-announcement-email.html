@@ -10,7 +10,6 @@
 </head>
 <body>
   <div class="admin-container">
-    <!-- Sidebar -->
     <aside class="sidebar">
       <div class="sidebar-header">
         <h2>GOALS Gym Admin</h2>
@@ -32,14 +31,12 @@
       </nav>
     </aside>
 
-    <!-- Header -->
     <header class="header">
       <button class="menu-toggle" id="menuToggle">☰</button>
       <h1>Send Announcement</h1>
       <button class="logout-btn" id="logoutBtn">Logout</button>
     </header>
 
-    <!-- Main Content -->
     <main class="main-content">
       <div class="container">
         <div id="serverStatus" class="server-status">Checking server connection...</div>
@@ -107,7 +104,6 @@
         </div>
 
 
-        <!-- Template Management Modal -->
         <div id="templateModal" class="modal">
             <div class="modal-content">
                 <span class="close-btn" id="closeTemplateModalBtn">&times;</span>
@@ -141,39 +137,49 @@
             </div>
         </div>
 
-        <!-- Recipient Modal -->
         <div id="recipientModal" class="modal">
           <div class="modal-content">
             <span class="close-btn" id="closeRecipientModalBtn">&times;</span>
             <h2>Select Recipients</h2>
-            <div class="recipient-controls">
-              <input type="text" id="recipient_search" placeholder="Search recipients...">
-              <button type="button" id="selectAllBtn" class="btn-primary">Select All</button>
-              <button type="button" id="clearAllBtn" class="btn-primary">Clear All</button>
+            
+            <div class="recipient-controls" style="display: flex; flex-wrap: wrap; gap: 15px; align-items: center;">
+              <input type="text" id="recipient_search" placeholder="Search recipients..." style="flex-grow: 1; min-width: 250px;">
+              
+              <div style="display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end;">
+                  <button type="button" id="selectMembersBtn" class="btn-primary">Members Only</button>
+                  <button type="button" id="selectTrainersBtn" class="btn-primary">Trainers Only</button>
+                  <button type="button" id="selectAllBtn" class="btn-primary">Select All</button>
+                  <button type="button" id="clearAllBtn" class="btn-primary">Clear All</button>
+              </div>
             </div>
+            
             <div id="recipientList" class="recipient-list">
-              <!-- Recipient checkboxes will be populated here -->
-            </div>
+              </div>
             <div class="nav-buttons">
               <button type="button" id="confirmRecipientsBtn" class="btn-primary">Confirm</button>
             </div>
           </div>
         </div>
 
-        <!-- View Announcement Modal -->
         <div id="viewAnnouncementModal" class="modal">
             <div class="modal-content">
                 <span class="close-btn" id="closeViewAnnouncementModalBtn">&times;</span>
-                <h2>Announcement Details</h2>
+                <h2 style="border-bottom: 1px solid #444; padding-bottom: 10px; margin-bottom: 20px;">Announcement Details</h2>
                 <div id="viewAnnouncementContent">
-                    <p><strong>Date:</strong> <span id="viewDate"></span></p>
-                    <p><strong>Subject:</strong> <span id="viewSubject"></span></p>
-                    <div>
-                        <strong>Recipients:</strong>
-                        <ul id="viewRecipients"></ul>
+                    <div class="view-row">
+                        <strong>Date:</strong> <span id="viewDate"></span>
                     </div>
-                    <p><strong>Body:</strong></p>
-                    <pre id="viewBody"></pre>
+                    <div class="view-row">
+                        <strong>Subject:</strong> <span id="viewSubject" style="color: #fff;"></span>
+                    </div>
+                    <div class="view-row">
+                        <strong>Recipients:</strong>
+                        <div id="viewRecipients" class="view-recipients-box"></div>
+                    </div>
+                    <div class="view-row">
+                        <strong>Message Body:</strong>
+                        <div id="viewBody" class="view-body-box"></div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -181,7 +187,6 @@
     </main>
   </div>
 
-  <!-- Recipient Popup -->
   <div id="backdrop"></div>
   <div id="recipientPopup" class="recipient-popup">
     <div class="recipient-popup-content">

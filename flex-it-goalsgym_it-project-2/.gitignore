@@ -37,3 +37,5 @@ build/
 # Optional (for specific setups)
 # package-lock.json  # Only ignore if you use yarn
 # yarn.lock         # Only ignore if you use npm
+
+.env
