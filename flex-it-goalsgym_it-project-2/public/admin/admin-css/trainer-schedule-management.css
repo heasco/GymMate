@@ -404,3 +404,60 @@ details[open] summary:after {
         margin: 1rem;
     }
 }
+/* Conflict & Delete Modal Specifics */
+#conflictDetails {
+    background: #121212;
+    border: 1px solid #444;
+    padding: 1rem;
+    margin: 1.5rem 0;
+    border-radius: 8px;
+    text-align: left;
+}
+
+#conflictDetails p {
+    margin: 0.5rem 0;
+    color: #ccc;
+}
+
+#conflictDetails strong {
+    color: #fff;
+}
+
+#deleteClassBtn,
+#confirmDeleteBtn {
+    background-color: #b30000;
+    color: white;
+    border: 1px solid #ff3333;
+}
+
+#deleteClassBtn:hover,
+#confirmDeleteBtn:hover {
+    background-color: #8b0000;
+    border-color: #ff6666;
+}
+
+#cancelConflictBtn,
+#cancelDeleteBtn {
+    background: #333;
+    border-color: #555;
+    color: #eee;
+}
+
+#cancelConflictBtn:hover,
+#cancelDeleteBtn:hover {
+    background: #444;
+    border-color: #777;
+}
+
+.modal-content button {
+    margin: 0.5rem;
+    padding: 0.8rem 1.5rem;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}

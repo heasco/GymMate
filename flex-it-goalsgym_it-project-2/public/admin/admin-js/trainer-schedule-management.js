@@ -5,6 +5,13 @@ let classesData = [];
 let trainersOptionsHTML = '';
 let searchTimeout = null;
 
+// Keep track of the currently edited class form
+let currentEditContext = {
+    form: null,
+    classId: null,
+    originalSchedule: null
+};
+
 // --------------------------------------
 // Admin session configuration
 // --------------------------------------
@@ -266,7 +273,15 @@ async function apiFetch(endpoint, options = {}) {
     window.location.href = '../login.html';
     return;
   }
-  if (!response.ok) throw new Error(`API error: ${response.status}`);
+  if (!response.ok) {
+    // Try to parse error message from body
+    try {
+        const errBody = await response.json();
+        throw new Error(errBody.error || `API error: ${response.status}`);
+    } catch(e) {
+        throw new Error(`API error: ${response.status}`);
+    }
+  }
   return response.json();
 }
 
@@ -372,26 +387,48 @@ function setupSidebarAndSession() {
 // Event listeners
 // ------------------------------
 function setupEventListeners() {
-  const classSearch = document.getElementById('classSearch');
-  const scheduleType = document.getElementById('scheduleType');
-  const filterClassDate = document.getElementById('filterClassDate');
-  const modalOkBtn = document.getElementById('modalOkBtn');
+    const classSearch = document.getElementById('classSearch');
+    const scheduleType = document.getElementById('scheduleType');
+    const filterClassDate = document.getElementById('filterClassDate');
+    const modalOkBtn = document.getElementById('modalOkBtn');
+    const cancelConflictBtn = document.getElementById('cancelConflictBtn');
+    const deleteClassBtn = document.getElementById('deleteClassBtn');
+    const cancelDeleteBtn = document.getElementById('cancelDeleteBtn');
+    const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
 
-  if (classSearch) classSearch.addEventListener('input', filterAll);
-  if (scheduleType) scheduleType.addEventListener('change', function () {
-    updateScheduleFilterUI();
-    filterAll();
-  });
-  if (filterClassDate) filterClassDate.addEventListener('input', filterAll);
-  document.querySelectorAll('.filterDow').forEach(cb => {
-    cb.addEventListener('change', filterAll);
-  });
-  if (modalOkBtn) {
-    modalOkBtn.addEventListener('click', function () {
-      const updateSuccessPane = document.getElementById('updateSuccessPane');
-      if (updateSuccessPane) updateSuccessPane.style.display = 'none';
+    if (classSearch) classSearch.addEventListener('input', filterAll);
+    if (scheduleType) scheduleType.addEventListener('change', function () {
+        updateScheduleFilterUI();
+        filterAll();
     });
-  }
+    if (filterClassDate) filterClassDate.addEventListener('input', filterAll);
+    document.querySelectorAll('.filterDow').forEach(cb => {
+        cb.addEventListener('change', filterAll);
+    });
+    if (modalOkBtn) {
+        modalOkBtn.addEventListener('click', () => {
+            document.getElementById('updateSuccessPane').style.display = 'none';
+        });
+    }
+    if (cancelConflictBtn) {
+        cancelConflictBtn.addEventListener('click', () => {
+            document.getElementById('conflictModal').style.display = 'none';
+        });
+    }
+    if (deleteClassBtn) {
+        deleteClassBtn.addEventListener('click', () => {
+            document.getElementById('conflictModal').style.display = 'none';
+            document.getElementById('deleteConfirmModal').style.display = 'flex';
+        });
+    }
+    if (cancelDeleteBtn) {
+        cancelDeleteBtn.addEventListener('click', () => {
+            document.getElementById('deleteConfirmModal').style.display = 'none';
+        });
+    }
+    if (confirmDeleteBtn) {
+        confirmDeleteBtn.addEventListener('click', handleDeleteClass);
+    }
 }
 
 function updateScheduleFilterUI() {
@@ -668,6 +705,12 @@ function renderClasses(classes) {
 
       const form = editFormDiv.querySelector('.actual-edit-form');
       if (!form) return;
+      
+      currentEditContext = {
+          form: form,
+          classId: cid,
+          originalSchedule: classObj.schedule
+      };
 
       // Show/hide schedule type sections
       const showCorrect = () => {
@@ -685,58 +728,161 @@ function renderClasses(classes) {
       });
 
       // Form submission
-      form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const editStatus = form.querySelector('.edit-status');
-        if (editStatus) editStatus.textContent = 'Updating...';
-
-        const trainer_id = form.trainer_id.value;
-        const scheduleType = form.scheduleType.value;
-        let schedule = classObj.schedule;
-
-        if (scheduleType === 'one-time') {
-          schedule = 'One-time ' + form.one_date.value + ', ' +
-            timeFormat(form.one_start.value) + ' - ' + timeFormat(form.one_end.value);
-        } else if (scheduleType === 'weekly') {
-          const dayVals = Array.from(form.querySelectorAll('input[name="weekly_days"]:checked'))
-            .map(d => d.value).join(', ');
-          schedule = 'Weekly ' + dayVals + ', ' +
-            timeFormat(form.weekly_start.value) + ' - ' + timeFormat(form.weekly_end.value);
-        }
-
-        try {
-          const result = await apiFetch(`/api/classes/${cid}`, {
-            method: 'PUT',
-            body: JSON.stringify({ trainer_id, schedule })
-          });
-
-          if (result.success) {
-            const updateEmailMsg = document.getElementById('updateEmailMsg');
-            if (updateEmailMsg) {
-              updateEmailMsg.textContent =
-                (result.emailNotice && result.emailNotice.length)
-                  ? result.emailNotice.join(' ') + ' Changes have been saved.'
-                  : 'Trainer notified through email and class updates have been saved.';
-            }
-            const updateSuccessPane = document.getElementById('updateSuccessPane');
-            if (updateSuccessPane) updateSuccessPane.style.display = 'flex';
-
-            await loadClasses(); // Refresh class list
-            editFormDiv.style.display = 'none';
-            showMessage('Schedule updated successfully', 'success');
-          } else {
-            if (editStatus) editStatus.textContent = result.error || 'Update failed';
-            showMessage(result.error || 'Update failed', 'error');
-          }
-        } catch (error) {
-          console.error('Error updating class:', error);
-          if (editStatus) editStatus.textContent = 'Network error';
-          showMessage('Network error: ' + error.message, 'error');
-        }
-      });
+      form.addEventListener('submit', handleUpdateSubmit);
     });
   });
 }
+
+async function handleUpdateSubmit(e) {
+    e.preventDefault();
+    const form = e.target;
+    const editStatus = form.querySelector('.edit-status');
+    if (editStatus) editStatus.textContent = 'Checking for conflicts...';
+
+    const classId = currentEditContext.classId;
+    const trainer_id = form.trainer_id.value;
+    const scheduleType = form.scheduleType.value;
+    
+    let schedule = '';
+    let days = [];
+    let startTime = '';
+    let endTime = '';
+    let date = '';
+
+    if (scheduleType === 'one-time') {
+        date = form.one_date.value;
+        startTime = form.one_start.value;
+        endTime = form.one_end.value;
+        schedule = `One-time ${date}, ${timeFormat(startTime)} - ${timeFormat(endTime)}`;
+    } else if (scheduleType === 'weekly') {
+        days = Array.from(form.querySelectorAll('input[name="weekly_days"]:checked')).map(d => d.value);
+        startTime = form.weekly_start.value;
+        endTime = form.weekly_end.value;
+        schedule = `Weekly ${days.join(', ')}, ${timeFormat(startTime)} - ${timeFormat(endTime)}`;
+    }
+
+    // If schedule hasn't changed, just update
+    if (schedule === currentEditContext.originalSchedule) {
+        await proceedWithUpdate(classId, trainer_id, schedule);
+        return;
+    }
+    
+    try {
+        const conflict = await apiFetch('/api/trainers/check-availability', {
+            method: 'POST',
+            body: JSON.stringify({
+                trainer_id,
+                scheduleType,
+                days,
+                date,
+                startTime,
+                endTime,
+                classIdToExclude: classId
+            })
+        });
+
+        if (conflict.isConflict) {
+            showConflictModal(conflict.conflictingClass);
+        } else {
+            await proceedWithUpdate(classId, trainer_id, schedule);
+        }
+    } catch (error) {
+        console.error('Error checking for conflicts:', error);
+        if (editStatus) editStatus.textContent = `Conflict check failed: ${error.message}`;
+        showMessage(`Conflict check failed: ${error.message}`, 'error');
+    }
+}
+
+async function proceedWithUpdate(classId, trainer_id, schedule) {
+    const form = currentEditContext.form;
+    const editStatus = form.querySelector('.edit-status');
+    if (editStatus) editStatus.textContent = 'Updating...';
+
+    try {
+        const result = await apiFetch(`/api/classes/${classId}`, {
+            method: 'PUT',
+            body: JSON.stringify({ trainer_id, schedule })
+        });
+
+        if (result.success) {
+            const updateEmailMsg = document.getElementById('updateEmailMsg');
+            if (updateEmailMsg) {
+                updateEmailMsg.textContent =
+                    (result.emailNotice && result.emailNotice.length)
+                        ? result.emailNotice.join(' ') + ' Changes have been saved.'
+                        : 'Trainer notified through email and class updates have been saved.';
+            }
+            document.getElementById('updateSuccessPane').style.display = 'flex';
+            
+            await loadClasses(); // Refresh class list
+            const editFormDiv = form.closest('.edit-form');
+            if(editFormDiv) editFormDiv.style.display = 'none';
+            showMessage('Schedule updated successfully', 'success');
+        } else {
+            if (editStatus) editStatus.textContent = result.error || 'Update failed';
+            showMessage(result.error || 'Update failed', 'error');
+        }
+    } catch (error) {
+        console.error('Error updating class:', error);
+        if (editStatus) editStatus.textContent = `Update failed: ${error.message}`;
+        showMessage(`Update failed: ${error.message}`, 'error');
+    }
+}
+
+function showConflictModal(conflictingClass) {
+    const conflictModal = document.getElementById('conflictModal');
+    const conflictDetails = document.getElementById('conflictDetails');
+    const deleteClassBtn = document.getElementById('deleteClassBtn');
+
+    if (conflictDetails) {
+        conflictDetails.innerHTML = `
+            <p><strong>Class:</strong> ${conflictingClass.class_name}</p>
+            <p><strong>Schedule:</strong> ${conflictingClass.schedule}</p>
+            <p><strong>Enrolled:</strong> ${conflictingClass.current_enrollment || 0}</p>
+        `;
+    }
+    
+    if(deleteClassBtn) {
+        deleteClassBtn.setAttribute('data-cid', conflictingClass.class_id || conflictingClass._id);
+    }
+    
+    if (conflictModal) {
+        conflictModal.style.display = 'flex';
+    }
+}
+
+async function handleDeleteClass() {
+    const deleteClassBtn = document.getElementById('deleteClassBtn');
+    if (!deleteClassBtn) return;
+    
+    const classId = deleteClassBtn.getAttribute('data-cid');
+    if (!classId) return;
+
+    try {
+        const result = await apiFetch(`/api/classes/${classId}`, {
+            method: 'DELETE'
+        });
+        
+        if (result.success) {
+            showMessage('Conflicting class deleted successfully. You can now update the schedule.', 'success');
+            document.getElementById('deleteConfirmModal').style.display = 'none';
+            await loadClasses(); // Refresh list
+            
+            // Automatically re-attempt the original update
+            if(currentEditContext.form) {
+                const submitEvent = new Event('submit', { bubbles: true, cancelable: true });
+                currentEditContext.form.dispatchEvent(submitEvent);
+            }
+
+        } else {
+            showMessage(result.error || 'Failed to delete class', 'error');
+        }
+    } catch (error) {
+        console.error('Error deleting class:', error);
+        showMessage(`Deletion failed: ${error.message}`, 'error');
+    }
+}
+
 
 // ------------------------------
 // Utilities

@@ -90,6 +90,27 @@
         </main>
     </div>
 
+    <!-- Conflict Modal -->
+    <div id="conflictModal" class="modal-pane">
+        <div class="modal-content">
+            <h2>Schedule Conflict</h2>
+            <p>The trainer is already assigned to another class at the selected time and day.</p>
+            <div id="conflictDetails"></div>
+            <button id="deleteClassBtn">Delete Class</button>
+            <button id="cancelConflictBtn">Cancel</button>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="deleteConfirmModal" class="modal-pane">
+        <div class="modal-content">
+            <h2>Confirm Deletion</h2>
+            <p>This class will be permanently deleted. Are you sure?</p>
+            <p>Enrolled members will have their sessions returned.</p>
+            <button id="confirmDeleteBtn">Yes, Delete</button>
+            <button id="cancelDeleteBtn">Cancel</button>
+        </div>
+    </div>
     <!-- Success Modal -->
     <div id="updateSuccessPane" class="modal-pane">
         <div class="modal-content">

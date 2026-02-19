@@ -6,6 +6,7 @@ const Class = require('../models/Classes');
 const Enrollment = require('../models/Enrollment');
 const Feedback = require('../models/Feedback');
 const Trainer = require('../models/Trainer');
+const Member = require('../models/Member');
 const transporter = require('../utils/nodemailer');
 
 const router = express.Router();
@@ -203,14 +204,41 @@ router.put('/:id', asyncHandler(async (req, res) => {
 
 // DELETE /api/classes/:id
 router.delete('/:id', asyncHandler(async (req, res) => {
-  const id = req.params.id;
-  let query = { class_id: id };
-  if (mongoose.Types.ObjectId.isValid(id)) {
-    query = { $or: [ { class_id: id }, { _id: new mongoose.Types.ObjectId(id) } ] };
-  }
-  const deletedClass = await Class.findOneAndDelete(query);
-  if (!deletedClass) return res.status(404).json({ success:false, error:'Class not found' });
-  res.json({ success:true, message: 'Class deleted successfully' });
+    const id = req.params.id;
+    let query = { class_id: id };
+    if (mongoose.Types.ObjectId.isValid(id)) {
+        query = { $or: [{ class_id: id }, { _id: new mongoose.Types.ObjectId(id) }] };
+    }
+
+    const deletedClass = await Class.findOne(query);
+    if (!deletedClass) {
+        return res.status(404).json({ success: false, error: 'Class not found' });
+    }
+
+    const classId = deletedClass.class_id;
+
+    // Find all enrollments for this class
+    const enrollments = await Enrollment.find({ class_id: classId });
+
+    // Refund sessions to members
+    for (const enrollment of enrollments) {
+        const member = await Member.findOne({ member_id: enrollment.member_id });
+        if (member) {
+            // Logic to determine how many sessions to refund
+            // This is a placeholder. You might need a more sophisticated way to track used sessions.
+            const sessionsToRefund = 1; // Assuming 1 session per enrollment
+            member.classSessions += sessionsToRefund;
+            await member.save();
+        }
+    }
+
+    // Delete all enrollments for the class
+    await Enrollment.deleteMany({ class_id: classId });
+
+    // Delete the class itself
+    await Class.findByIdAndDelete(deletedClass._id);
+
+    res.json({ success: true, message: 'Class deleted successfully and member sessions refunded.' });
 }));
 
 // GET /returns only classes for a given trainer

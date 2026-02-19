@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const asyncHandler = require('../middleware/asyncHandler');
 const Trainer = require('../models/Trainer');
+const Classes = require('../models/Classes');
 const Feedback = require('../models/Feedback');
 const nodemailer = require('../utils/nodemailer');
 
@@ -60,6 +61,72 @@ router.get('/available', asyncHandler(async (req, res) => {
   const availableTrainers = await Trainer.findAvailable();
   res.json({ success: true, count: availableTrainers.length, data: availableTrainers });
 }));
+
+// POST /api/trainers/check-availability
+router.post('/check-availability', asyncHandler(async (req, res) => {
+    const { trainer_id, scheduleType, days, date, startTime, endTime, classIdToExclude } = req.body;
+
+    if (!trainer_id || !scheduleType || !startTime || !endTime) {
+        return res.status(400).json({ success: false, error: 'Missing required fields for availability check.' });
+    }
+
+    const trainerClasses = await Classes.find({
+        trainer_id,
+        _id: { $ne: classIdToExclude } // Exclude the class being edited
+    });
+
+    const newStartTime = new Date(`1970-01-01T${startTime}`);
+    const newEndTime = new Date(`1970-01-01T${endTime}`);
+
+    let isConflict = false;
+    let conflictingClass = null;
+
+    for (const existingClass of trainerClasses) {
+        const scheduleParts = existingClass.schedule.match(/(One-time|Weekly|Monthly)\s+([^,]+),\s*(\d{1,2}:\d{2}\s*[AP]M)\s*-\s*(\d{1,2}:\d{2}\s*[AP]M)/i);
+        if (!scheduleParts) continue;
+
+        const [, existingType, existingDetails, existingStartStr, existingEndStr] = scheduleParts;
+
+        const existingStartTime = new Date(`1970-01-01T${to24h(existingStartStr)}`);
+        const existingEndTime = new Date(`1970-01-01T${to24h(existingEndStr)}`);
+
+        // Check for time overlap
+        const timeOverlap = newStartTime < existingEndTime && newEndTime > existingStartTime;
+
+        if (!timeOverlap) continue;
+
+        if (scheduleType === 'one-time' && existingType.toLowerCase() === 'one-time') {
+            const existingDate = existingDetails.trim();
+            if (date === existingDate) {
+                isConflict = true;
+            }
+        } else if (scheduleType === 'weekly' && (existingType.toLowerCase() === 'weekly' || existingType.toLowerCase() === 'monthly')) {
+            const existingDays = existingDetails.split(',').map(d => d.trim());
+            if (days.some(day => existingDays.includes(day))) {
+                isConflict = true;
+            }
+        } else if (scheduleType === 'one-time' && (existingType.toLowerCase() === 'weekly' || existingType.toLowerCase() === 'monthly')) {
+            const oneTimeDateDay = new Date(date).toLocaleDateString('en-US', { weekday: 'long' });
+            const existingDays = existingDetails.split(',').map(d => d.trim());
+            if (existingDays.includes(oneTimeDateDay)) {
+                isConflict = true;
+            }
+        } else if ((scheduleType === 'weekly' || scheduleType === 'monthly') && existingType.toLowerCase() === 'one-time') {
+            const existingDateDay = new Date(existingDetails.trim()).toLocaleDateString('en-US', { weekday: 'long' });
+            if (days.includes(existingDateDay)) {
+                isConflict = true;
+            }
+        }
+        
+        if (isConflict) {
+            conflictingClass = existingClass;
+            break;
+        }
+    }
+
+    res.json({ isConflict, conflictingClass });
+}));
+
 
 // GET /api/trainers (get all trainers)
 router.get('/', asyncHandler(async (req, res) => {
@@ -478,5 +545,16 @@ router.get('/:id', asyncHandler(async (req, res) => {
     }
   });
 }));
+
+function to24h(s) {
+    if (!s) return '';
+    let [hm, ampm] = s.split(/ /);
+    if (!ampm) return hm; // Already 24h
+    let [h, m] = hm.split(':');
+    h = +h;
+    if (ampm.toUpperCase().startsWith('P') && h < 12) h += 12;
+    if (ampm.toUpperCase().startsWith('A') && h == 12) h = 0;
+    return `${(h + '').padStart(2, '0')}:${m}`;
+}
 
 module.exports = router;
