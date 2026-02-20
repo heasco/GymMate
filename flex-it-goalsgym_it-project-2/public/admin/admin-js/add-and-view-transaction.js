@@ -642,6 +642,24 @@ async function submitTransaction() {
       `;
     }
 
+    // Clear form for next entry
+    const form = document.getElementById('transactionForm');
+    if (form) {
+        const formElements = form.querySelectorAll('input, select, textarea');
+        formElements.forEach(element => {
+            const key = `${window.location.pathname}-${element.id || element.name}`;
+            sessionStorage.removeItem(key);
+        });
+        form.reset();
+    }
+    selectedMember = null;
+    const selectedMemberInfo = document.getElementById('selectedMemberInfo');
+    if (selectedMemberInfo) {
+        selectedMemberInfo.classList.add('hidden');
+    }
+    checkFormCompletion();
+    updateConfirmationSummary();
+
     loadLatestTransactions();
   } catch (error) {
     if (resultMsg) {

@@ -10,7 +10,6 @@
 </head>
 <body>
     <div class="admin-container">
-        <!-- Sidebar -->
         <aside class="sidebar">
             <div class="sidebar-header">
                 <h2>GOALS Gym Admin</h2>
@@ -27,19 +26,18 @@
                 <a href="./add-and-view-transaction.html"><span>Add & View Transaction</span></a>
                 <a href="./view-classes-and-feedback.html"><span>View Classes</span></a>
                 <a href="./trainer-schedule-management.html" class="active"><span>Trainer Schedule Management</span></a>
-                        <a href="./attendance-checker.html"><span>Attendance System</span></a>
-                        <a href="./send-announcement-email.html"><span>Send Announcement</span></a>
-                        <a href="./view-logs.html"><span>View Logs</span></a>
-                      </nav>        </aside>
+                <a href="./attendance-checker.html"><span>Attendance System</span></a>
+                <a href="./send-announcement-email.html"><span>Send Announcement</span></a>
+                <a href="./view-logs.html"><span>View Logs</span></a>
+            </nav>        
+        </aside>
 
-        <!-- Header -->
         <header class="header">
             <button class="menu-toggle" id="menuToggle">☰</button>
             <h1>Trainer Schedule Management</h1>
             <button class="logout-btn" id="logoutBtn">Logout</button>
         </header>
 
-        <!-- Main Content -->
         <main class="main-content">
             <div class="container">
                 <h2>View & Edit Classes</h2>
@@ -90,33 +88,42 @@
         </main>
     </div>
 
-    <!-- Conflict Modal -->
-    <div id="conflictModal" class="modal-pane">
-        <div class="modal-content">
-            <h2>Schedule Conflict</h2>
-            <p>The trainer is already assigned to another class at the selected time and day.</p>
-            <div id="conflictDetails"></div>
-            <button id="deleteClassBtn">Delete Class</button>
-            <button id="cancelConflictBtn">Cancel</button>
+    <div id="conflictModal" class="modal">
+        <div class="modal-content text-center">
+            <span class="close-btn" id="closeConflictModalBtn">&times;</span>
+            <h2 class="modal-title warning-text">Schedule Conflict</h2>
+            <p class="modal-subtitle">This change is not possible as the trainer is already assigned to an overlapping class.</p>
+            <div id="conflictDetails" class="conflict-details-box"></div>
+            <div class="modal-actions">
+                <button id="deleteClassBtn" class="btn-primary">Delete Conflicting Class</button>
+                <button id="cancelConflictBtn" class="btn-secondary">Cancel</button>
+            </div>
         </div>
     </div>
 
-    <!-- Delete Confirmation Modal -->
-    <div id="deleteConfirmModal" class="modal-pane">
-        <div class="modal-content">
-            <h2>Confirm Deletion</h2>
-            <p>This class will be permanently deleted. Are you sure?</p>
-            <p>Enrolled members will have their sessions returned.</p>
-            <button id="confirmDeleteBtn">Yes, Delete</button>
-            <button id="cancelDeleteBtn">Cancel</button>
+    <div id="deleteConfirmModal" class="modal">
+        <div class="modal-content text-center">
+            <span class="close-btn" id="closeDeleteModalBtn">&times;</span>
+            <h2 class="modal-title warning-text">Confirm Deletion</h2>
+            <div class="warning-box">
+                <p><strong>This action cannot be undone!</strong></p>
+                <p>This class will be permanently deleted. Enrolled members will have their sessions automatically returned.</p>
+            </div>
+            <div class="modal-actions">
+                <button id="confirmDeleteBtn" class="btn-primary">Yes, Delete Class</button>
+                <button id="cancelDeleteBtn" class="btn-secondary">Cancel</button>
+            </div>
         </div>
     </div>
-    <!-- Success Modal -->
-    <div id="updateSuccessPane" class="modal-pane">
-        <div class="modal-content">
-            <h2>Update Successful!</h2>
-            <p id="updateEmailMsg">Trainer notified through email and class updates have been saved.</p>
-            <button id="modalOkBtn" class="modal-ok-btn">OK, Great</button>
+    
+    <div id="updateSuccessPane" class="modal">
+        <div class="modal-content text-center">
+            <span class="close-btn" id="closeSuccessModalBtn">&times;</span>
+            <h2 class="modal-title success-text">Update Successful!</h2>
+            <p id="updateEmailMsg" class="modal-subtitle">Trainer notified through email and class updates have been saved.</p>
+            <div class="modal-actions">
+                <button id="modalOkBtn" class="btn-success">OK, Great</button>
+            </div>
         </div>
     </div>
 

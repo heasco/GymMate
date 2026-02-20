@@ -458,6 +458,16 @@ function setupTrainerForm() {
             `Name: ${responseData.data.name}`
         );
 
+        // Clear form persistence from session storage
+        const form = document.getElementById('trainerForm');
+        if (form) {
+          const formElements = form.querySelectorAll('input, select, textarea');
+          formElements.forEach(element => {
+            const key = `${window.location.pathname}-${element.id || element.name}`;
+            sessionStorage.removeItem(key);
+          });
+        }
+
         this.reset();
         const customField = document.getElementById('custom_specialization');
         const customLabel = document.getElementById('custom_label');

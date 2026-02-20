@@ -949,6 +949,16 @@ async function handleFormSubmit(e) {
     if (result.success) {
       showMessage('Member added successfully!', 'success');
       setTimeout(() => {
+        // Clear form persistence from session storage
+        const form = document.getElementById('memberForm');
+        if (form) {
+          const formElements = form.querySelectorAll('input, select, textarea');
+          formElements.forEach(element => {
+            const key = `${window.location.pathname}-${element.id || element.name}`;
+            sessionStorage.removeItem(key);
+          });
+        }
+        
         document.getElementById('memberForm').reset();
 
         // Reset join date to today

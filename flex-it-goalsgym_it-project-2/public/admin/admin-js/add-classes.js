@@ -916,6 +916,16 @@ async function handleFormSubmit(e) {
 
     showSuccess('Class successfully added!');
 
+    // Clear form persistence from session storage
+    const form = document.getElementById('classForm');
+    if (form) {
+      const formElements = form.querySelectorAll('input, select, textarea');
+      formElements.forEach(element => {
+        const key = `${window.location.pathname}-${element.id || element.name}`;
+        sessionStorage.removeItem(key);
+      });
+    }
+
     // refresh caches so the next availability check is accurate
     await preloadClasses();
     await preloadTrainers();

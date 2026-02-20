@@ -12,7 +12,7 @@
 .server-status {
     padding: 1rem;
     margin-bottom: 2rem;
-    border-radius: var(--radius);
+    border-radius: 8px;
     font-weight: 600;
     text-align: center;
     font-size: 0.9rem;
@@ -37,7 +37,7 @@
     display: none;
     padding: 1rem 1.5rem;
     margin-bottom: 2rem;
-    border-radius: var(--radius);
+    border-radius: 8px;
     font-weight: 600;
     text-align: center;
 }
@@ -66,13 +66,13 @@
 }
 
 .section h2 {
-    color: #fff; /* Changed from red to white for cleaner look */
+    color: #fff; 
     font-size: 1.8rem;
     font-weight: 700;
     margin-bottom: 1.5rem;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    border-bottom: 1px solid #444; /* Subtle grey underline */
+    border-bottom: 1px solid #444; 
     padding-bottom: 0.5rem;
 }
 
@@ -105,16 +105,16 @@ input[type="time"],
 select {
     width: 100%;
     padding: 1rem 1.2rem;
-    border: 1px solid #444; /* Subtle Grey Border */
+    border: 1px solid #444; 
     border-radius: 8px;
     font-size: 1rem;
-    background: #121212; /* Darker input background */
+    background: #121212; 
     color: #fff;
     font-family: 'Poppins', sans-serif;
     transition: all 0.3s ease;
 }
 
-/* Focus: Branding Red appears only when typing */
+/* Focus */
 input[type="text"]:focus,
 input[type="date"]:focus,
 input[type="time"]:focus,
@@ -150,7 +150,7 @@ select:focus {
 .checkbox-group input[type="checkbox"] {
     width: 18px;
     height: 18px;
-    accent-color: #b30000; /* Red Checkbox */
+    accent-color: #b30000; 
     cursor: pointer;
 }
 
@@ -177,30 +177,29 @@ select:focus {
     border: 1px solid #333;
 }
 
-/* --- UPDATED DETAILS & SUMMARY (Class List) --- */
+/* Class List Details/Summary */
 details {
     margin-bottom: 1rem;
-    border: 1px solid #333; /* Grey border by default */
+    border: 1px solid #333; 
     border-radius: 8px;
     overflow: hidden;
     background: #181818;
     transition: all 0.3s ease;
 }
 
-/* Hover: Slight lift and brighter border */
 details:hover {
     border-color: #666;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
 }
 
 details[open] {
-    border-color: #b30000; /* Red border only when open */
+    border-color: #b30000; 
 }
 
 summary {
     padding: 1.5rem;
-    background-color: #121212; /* Black background */
-    border-bottom: 1px solid transparent; /* Invisible border */
+    background-color: #121212; 
+    border-bottom: 1px solid transparent; 
     color: #fff;
     cursor: pointer;
     font-weight: 600;
@@ -210,14 +209,13 @@ summary {
     position: relative;
 }
 
-/* Hover on Header: Dark Red tint */
 summary:hover {
     background-color: #1f1f1f;
-    color: #ff3333; /* Text turns red */
+    color: #ff3333; 
 }
 
 details[open] summary {
-    background-color: #b30000; /* Red header when open */
+    background-color: #b30000; 
     color: white;
 }
 
@@ -254,7 +252,7 @@ details[open] summary:after {
     padding: 1.5rem;
     background: #121212;
     border-radius: 8px;
-    border-left: 4px solid #444; /* Grey accent default */
+    border-left: 4px solid #444; 
 }
 
 /* Edit Button Row */
@@ -264,13 +262,11 @@ details[open] summary:after {
     margin: 1.5rem 0;
 }
 
-/* --- UPDATED BUTTONS --- */
 .action-button,
-.edit-btn,
-.modal-ok-btn {
-    background-color: #000; /* Black */
+.edit-btn {
+    background-color: #000; 
     color: #fff;
-    border: 1px solid #444; /* Grey Border */
+    border: 1px solid #444; 
     padding: 0.8rem 1.5rem;
     border-radius: 6px;
     font-size: 0.95rem;
@@ -283,10 +279,9 @@ details[open] summary:after {
 }
 
 .action-button:hover,
-.edit-btn:hover,
-.modal-ok-btn:hover {
-    background-color: #8b0000; /* Dark Red Background */
-    border-color: #ff3333; /* Red Border */
+.edit-btn:hover {
+    background-color: #8b0000; 
+    border-color: #ff3333; 
     color: white;
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(139, 0, 0, 0.4);
@@ -337,127 +332,173 @@ details[open] summary:after {
     text-align: center;
 }
 
-/* Modal Styles */
-.modal-pane {
-    position: fixed;
-    top: 0;
+/* ========================================
+   MODAL STYLES (Matched to Announcements)
+   ======================================== */
+.modal {
+    display: none; 
+    position: fixed; 
+    z-index: 3000; 
     left: 0;
-    width: 100vw;
-    height: 100vh;
-    background: rgba(0, 0, 0, 0.85);
-    z-index: 3000;
-    justify-content: center;
-    align-items: center;
+    top: 0;
+    width: 100%; 
+    height: 100%; 
+    background-color: rgba(0,0,0,0.85);
     backdrop-filter: blur(5px);
-    display: none;
 }
 
 .modal-content {
-    background: #1e1e1e;
+    background-color: #1e1e1e;
+    margin: 10% auto;
     padding: 2.5rem;
-    border-radius: 10px;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
-    border: 1px solid #444;
-    max-width: 500px;
+    border: 1px solid #555;
     width: 90%;
+    max-width: 550px; 
+    border-radius: 10px;
+    position: relative;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
     color: #fff;
+}
+
+.text-center {
     text-align: center;
 }
 
-.modal-content h2 {
-    color: #fff;
+.modal-title {
     font-size: 1.8rem;
-    margin-bottom: 1rem;
     font-weight: 700;
-    border-bottom: 1px solid #333;
-    padding-bottom: 1rem;
+    margin-bottom: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 2px solid #ff3333;
+    padding-bottom: 0.5rem;
 }
 
-/* Responsive Design */
-@media (max-width: 768px) {
-    .section {
-        padding: 1.5rem;
-    }
-    
-    .checkbox-group {
-        flex-direction: column;
-        gap: 0.8rem;
-    }
-    
-    .edit-actions {
-        flex-direction: column;
-    }
-    
-    .action-button,
-    .edit-btn,
-    .cancel-edit {
-        width: 100%;
-        text-align: center;
-    }
-    
-    .edit-btn-row {
-        justify-content: center;
-    }
-    
-    .modal-content {
-        padding: 2rem;
-        margin: 1rem;
-    }
-}
-/* Conflict & Delete Modal Specifics */
-#conflictDetails {
-    background: #121212;
-    border: 1px solid #444;
-    padding: 1rem;
-    margin: 1.5rem 0;
-    border-radius: 8px;
-    text-align: left;
-}
+.warning-text { color: #b30000; }
+.success-text { color: #28a745; border-color: #28a745; }
 
-#conflictDetails p {
-    margin: 0.5rem 0;
+.modal-subtitle {
+    font-size: 1.05rem;
     color: #ccc;
+    margin-top: 1.5rem;
+    margin-bottom: 1.5rem;
 }
 
-#conflictDetails strong {
-    color: #fff;
+.close-btn {
+    color: #aaa;
+    position: absolute;
+    top: 1rem;
+    right: 1.5rem;
+    font-size: 28px;
+    font-weight: bold;
+    transition: color 0.3s;
 }
 
-#deleteClassBtn,
-#confirmDeleteBtn {
-    background-color: #b30000;
+.close-btn:hover,
+.close-btn:focus {
     color: white;
-    border: 1px solid #ff3333;
+    text-decoration: none;
+    cursor: pointer;
 }
 
-#deleteClassBtn:hover,
-#confirmDeleteBtn:hover {
-    background-color: #8b0000;
-    border-color: #ff6666;
+/* Modal Specific Content Boxes */
+.conflict-details-box {
+    background: #121212;
+    padding: 1.5rem;
+    border-radius: 8px;
+    border: 1px solid #444;
+    text-align: left;
+    margin-bottom: 1.5rem;
 }
 
-#cancelConflictBtn,
-#cancelDeleteBtn {
-    background: #333;
-    border-color: #555;
-    color: #eee;
+.view-row {
+    margin-bottom: 0.8rem;
 }
-
-#cancelConflictBtn:hover,
-#cancelDeleteBtn:hover {
-    background: #444;
-    border-color: #777;
+.view-row:last-child {
+    margin-bottom: 0;
 }
-
-.modal-content button {
-    margin: 0.5rem;
-    padding: 0.8rem 1.5rem;
-    border-radius: 6px;
+.view-row strong {
+    color: #ff3333;
+    display: inline-block;
+    min-width: 140px;
     font-size: 0.95rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.warning-box {
+    background: rgba(255, 51, 51, 0.1);
+    border-left: 4px solid #ff3333;
+    padding: 1.5rem;
+    margin: 1.5rem 0;
+    text-align: left;
+    border-radius: 4px;
+}
+.warning-box p {
+    margin: 0.5rem 0;
+    color: #e0e0e0;
+}
+
+/* Buttons inside Modals */
+.modal-actions {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-top: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.btn-primary, .btn-secondary, .btn-success {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s ease;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #ff3333 0%, #b30000 100%);
+    color: #fff;
+    box-shadow: 0 4px 15px rgba(255, 51, 51, 0.3);
+}
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(255, 51, 51, 0.5);
+}
+
+.btn-secondary {
+    background: #333;
+    color: #fff;
+    border: 1px solid #555;
+}
+.btn-secondary:hover {
+    background: #444;
+    border-color: #777;
+    transform: translateY(-2px);
+}
+
+.btn-success {
+    background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
+    color: #fff;
+    box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+}
+.btn-success:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(40, 167, 69, 0.5);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .section { padding: 1.5rem; }
+    .checkbox-group { flex-direction: column; gap: 0.8rem; }
+    .edit-actions { flex-direction: column; }
+    .action-button, .edit-btn, .cancel-edit { width: 100%; text-align: center; }
+    .edit-btn-row { justify-content: center; }
+    .modal-content { padding: 1.5rem; }
+    .modal-actions { flex-direction: column; }
+    .modal-actions button { width: 100%; }
 }
