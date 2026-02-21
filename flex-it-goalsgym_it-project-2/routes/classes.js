@@ -77,7 +77,6 @@ router.post('/', asyncHandler(async (req, res) => {
   });
 }));
 
-
 // GET /api/classes
 router.get('/', asyncHandler(async (req, res) => {
   const classes = await Class.find().sort({ createdAt: -1 });
@@ -96,7 +95,7 @@ router.get('/:id', asyncHandler(async (req, res) => {
   res.json({ success:true, data: classData });
 }));
 
-// PUT /api/classes/:id
+// PUT /api/classes/:id - SAFELY UPDATED TO HANDLE STATUS CHANGES
 router.put('/:id', asyncHandler(async (req, res) => {
   const id = req.params.id;
   let query = { class_id: id };
@@ -110,97 +109,105 @@ router.put('/:id', asyncHandler(async (req, res) => {
   const prevTrainerId = previousClass.trainer_id;
   const prevSchedule = previousClass.schedule;
 
-  // Grab updated fields from body
-  const { class_name, description, schedule, trainer_id, capacity } = req.body;
+  // Safely assign updates so we don't accidentally overwrite data with undefined
+  const updates = {};
+  if (req.body.class_name !== undefined) updates.class_name = req.body.class_name.trim();
+  if (req.body.description !== undefined) updates.description = req.body.description.trim();
+  if (req.body.schedule !== undefined) updates.schedule = req.body.schedule.trim();
+  if (req.body.trainer_id !== undefined) updates.trainer_id = req.body.trainer_id.trim();
+  if (req.body.capacity !== undefined) updates.capacity = parseInt(req.body.capacity, 10);
+  if (req.body.status !== undefined) updates.status = req.body.status.trim();
 
-  // Update the class document
-  const updatedClass = await Class.findOneAndUpdate(query, { class_name, description, schedule, trainer_id, capacity }, { new: true, runValidators: true });
+  // Update the class document using $set
+  const updatedClass = await Class.findOneAndUpdate(query, { $set: updates }, { new: true, runValidators: true });
   if (!updatedClass) return res.status(404).json({ success: false, error: 'Class not found' });
 
   let emailNotice = [];
-  let newTrainer = null; // FIX: declare outside block
+  
+  // Only trigger emails if it's NOT just an archive/activation status update
+  if (!req.body.status) {
+      let newTrainer = null;
 
-  // Notify new trainer if changed/assigned
-  if (trainer_id && trainer_id !== prevTrainerId) {
-    newTrainer = await Trainer.findOne({ trainer_id });
-    if (newTrainer && newTrainer.email) {
-      try {
-        await transporter.sendMail({
-          from: `"GOALS Gym" <${process.env.EMAIL_USER}>`,
-          to: newTrainer.email,
-          subject: 'New Class Assignment',
-          html: `<h2>Hello ${newTrainer.name},</h2>
-            <p>You have been <b>assigned</b> to a class:</p>
-            <ul>
-              <li><b>Class Name:</b> ${updatedClass.class_name}</li>
-              <li><b>Schedule:</b> ${updatedClass.schedule}</li>
-            </ul>
-            <p>Please log in to your trainer account for more details.</p>`
-        });
-        emailNotice.push("Email notification sent to new trainer.");
-      } catch (err) {
-        emailNotice.push("Error sending email to new trainer.");
-        console.error("Error sending new trainer notification:", err);
+      // Notify new trainer if changed/assigned
+      if (updates.trainer_id && updates.trainer_id !== prevTrainerId) {
+        newTrainer = await Trainer.findOne({ trainer_id: updates.trainer_id });
+        if (newTrainer && newTrainer.email) {
+          try {
+            await transporter.sendMail({
+              from: `"GOALS Gym" <${process.env.EMAIL_USER}>`,
+              to: newTrainer.email,
+              subject: 'New Class Assignment',
+              html: `<h2>Hello ${newTrainer.name},</h2>
+                <p>You have been <b>assigned</b> to a class:</p>
+                <ul>
+                  <li><b>Class Name:</b> ${updatedClass.class_name}</li>
+                  <li><b>Schedule:</b> ${updatedClass.schedule}</li>
+                </ul>
+                <p>Please log in to your trainer account for more details.</p>`
+            });
+            emailNotice.push("Email notification sent to new trainer.");
+          } catch (err) {
+            emailNotice.push("Error sending email to new trainer.");
+            console.error("Error sending new trainer notification:", err);
+          }
+        }
       }
-    }
-  }
 
-  // Notify previous trainer if replaced
-  if (trainer_id && trainer_id !== prevTrainerId && prevTrainerId) {
-    const prevTrainer = await Trainer.findOne({ trainer_id: prevTrainerId });
-    if (prevTrainer && prevTrainer.email) {
-      try {
-        await transporter.sendMail({
-          from: `"GOALS Gym" <${process.env.EMAIL_USER}>`,
-          to: prevTrainer.email,
-          subject: 'Class Assignment Update',
-          html: `<h2>Hello ${prevTrainer.name},</h2>
-            <p>Your class assignment has been <b>changed</b>:</p>
-            <ul>
-              <li><b>Class Name:</b> ${updatedClass.class_name}</li>
-              <li><b>Previous Schedule:</b> ${prevSchedule}</li>
-              <li><b>New Trainer:</b> ${newTrainer ? newTrainer.name : "N/A"}</li>
-            </ul>
-            <p>Please check your account for details.</p>`
-        });
-        emailNotice.push("Email notification sent to previous trainer.");
-      } catch (err) {
-        emailNotice.push("Error sending email to previous trainer.");
-        console.error("Error sending previous trainer notification:", err);
+      // Notify previous trainer if replaced
+      if (updates.trainer_id && updates.trainer_id !== prevTrainerId && prevTrainerId) {
+        const prevTrainer = await Trainer.findOne({ trainer_id: prevTrainerId });
+        if (prevTrainer && prevTrainer.email) {
+          try {
+            await transporter.sendMail({
+              from: `"GOALS Gym" <${process.env.EMAIL_USER}>`,
+              to: prevTrainer.email,
+              subject: 'Class Assignment Update',
+              html: `<h2>Hello ${prevTrainer.name},</h2>
+                <p>Your class assignment has been <b>changed</b>:</p>
+                <ul>
+                  <li><b>Class Name:</b> ${updatedClass.class_name}</li>
+                  <li><b>Previous Schedule:</b> ${prevSchedule}</li>
+                  <li><b>New Trainer:</b> ${newTrainer ? newTrainer.name : "N/A"}</li>
+                </ul>
+                <p>Please check your account for details.</p>`
+            });
+            emailNotice.push("Email notification sent to previous trainer.");
+          } catch (err) {
+            emailNotice.push("Error sending email to previous trainer.");
+            console.error("Error sending previous trainer notification:", err);
+          }
+        }
       }
-    }
-  }
 
-  // Notify trainer if schedule is changed (but trainer remains the same)
-  if (schedule && schedule !== prevSchedule && trainer_id === prevTrainerId) {
-    const trainer = await Trainer.findOne({ trainer_id });
-    if (trainer && trainer.email) {
-      try {
-        await transporter.sendMail({
-          from: `"GOALS Gym" <${process.env.EMAIL_USER}>`,
-          to: trainer.email,
-          subject: 'Class Schedule Updated',
-          html: `<h2>Hello ${trainer.name},</h2>
-            <p>The schedule for your assigned class has been <b>updated</b>:</p>
-            <ul>
-              <li><b>Class Name:</b> ${updatedClass.class_name}</li>
-              <li><b>Old Schedule:</b> ${prevSchedule}</li>
-              <li><b>New Schedule:</b> ${updatedClass.schedule}</li>
-            </ul>
-            <p>Please check your trainer account for details.</p>`
-        });
-        emailNotice.push("Email notification sent for schedule update.");
-      } catch (err) {
-        emailNotice.push("Error sending email for schedule update.");
-        console.error("Error sending schedule update notification:", err);
+      // Notify trainer if schedule is changed (but trainer remains the same)
+      if (updates.schedule && updates.schedule !== prevSchedule && updates.trainer_id === prevTrainerId) {
+        const trainer = await Trainer.findOne({ trainer_id: updates.trainer_id });
+        if (trainer && trainer.email) {
+          try {
+            await transporter.sendMail({
+              from: `"GOALS Gym" <${process.env.EMAIL_USER}>`,
+              to: trainer.email,
+              subject: 'Class Schedule Updated',
+              html: `<h2>Hello ${trainer.name},</h2>
+                <p>The schedule for your assigned class has been <b>updated</b>:</p>
+                <ul>
+                  <li><b>Class Name:</b> ${updatedClass.class_name}</li>
+                  <li><b>Old Schedule:</b> ${prevSchedule}</li>
+                  <li><b>New Schedule:</b> ${updatedClass.schedule}</li>
+                </ul>
+                <p>Please check your trainer account for details.</p>`
+            });
+            emailNotice.push("Email notification sent for schedule update.");
+          } catch (err) {
+            emailNotice.push("Error sending email for schedule update.");
+            console.error("Error sending schedule update notification:", err);
+          }
+        }
       }
-    }
   }
 
   res.json({ success: true, message: 'Class updated successfully.', emailNotice, data: updatedClass });
 }));
-
-
 
 // DELETE /api/classes/:id
 router.delete('/:id', asyncHandler(async (req, res) => {
@@ -222,13 +229,13 @@ router.delete('/:id', asyncHandler(async (req, res) => {
 
     // Refund sessions to members
     for (const enrollment of enrollments) {
-        const member = await Member.findOne({ member_id: enrollment.member_id });
+        const member = await Member.findOne({ memberId: enrollment.member_id });
         if (member) {
-            // Logic to determine how many sessions to refund
-            // This is a placeholder. You might need a more sophisticated way to track used sessions.
-            const sessionsToRefund = 1; // Assuming 1 session per enrollment
-            member.classSessions += sessionsToRefund;
-            await member.save();
+            const activeCombativeMembership = member.memberships?.find(m => m.type === 'combative' && m.status === 'active');
+            if (activeCombativeMembership) {
+                activeCombativeMembership.remainingSessions = (activeCombativeMembership.remainingSessions || 0) + 1;
+                await member.save();
+            }
         }
     }
 
@@ -288,7 +295,7 @@ router.get('/member/:memberId/enrolled', asyncHandler(async (req, res) => {
     res.json({ success: true, count: classes.length, data: classes });
 }));
 
-// GET /api/classes/:id/schedule - Get class schedule details for enrollment
+// GET /api/classes/:id/schedule
 router.get('/:id/schedule', asyncHandler(async (req, res) => {
   const classId = req.params.id;
   const classData = await Class.findOne({ class_id: classId });
@@ -311,7 +318,6 @@ router.get('/:id/schedule', asyncHandler(async (req, res) => {
   });
 }));
 
-// Helper: parse schedule to times
 function parseScheduleToTimeSlots(schedule) {
   const timeMatch = schedule.match(/(\d{1,2}:\d{2}\s*[AP]M)\s*-\s*(\d{1,2}:\d{2}\s*[AP]M)/);
   if (timeMatch) {

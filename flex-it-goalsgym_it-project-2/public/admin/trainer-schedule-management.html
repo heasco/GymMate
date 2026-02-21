@@ -45,8 +45,13 @@
                 <div id="successMessage" class="success-message"></div>
                 <div id="errorMessage" class="error-message"></div>
 
+                <div class="view-toggle">
+                    <button id="viewActiveBtn" class="btn-primary active">Active Classes</button>
+                    <button id="viewArchivedBtn" class="btn-primary" style="background: transparent; color: #fff; border: 1px solid #444;">Archived Classes</button>
+                </div>
+
                 <div class="section">
-                    <h3>Classes List</h3>
+                    <h3 id="listTitleHeader">Active Classes List</h3>
                     
                     <div class="form-group">
                         <label for="classSearch">Search Classes:</label>
@@ -92,26 +97,41 @@
         <div class="modal-content text-center">
             <span class="close-btn" id="closeConflictModalBtn">&times;</span>
             <h2 class="modal-title warning-text">Schedule Conflict</h2>
-            <p class="modal-subtitle">This change is not possible as the trainer is already assigned to an overlapping class.</p>
+            <p class="modal-subtitle">This change is not possible as the trainer is already assigned to an active overlapping class.</p>
             <div id="conflictDetails" class="conflict-details-box"></div>
             <div class="modal-actions">
-                <button id="deleteClassBtn" class="btn-primary">Delete Conflicting Class</button>
+                <button id="archiveConflictBtn" class="btn-primary">Archive Conflicting Class</button>
                 <button id="cancelConflictBtn" class="btn-secondary">Cancel</button>
             </div>
         </div>
     </div>
 
-    <div id="deleteConfirmModal" class="modal">
+    <div id="archiveConfirmModal" class="modal">
         <div class="modal-content text-center">
-            <span class="close-btn" id="closeDeleteModalBtn">&times;</span>
-            <h2 class="modal-title warning-text">Confirm Deletion</h2>
+            <span class="close-btn" id="closeArchiveModalBtn">&times;</span>
+            <h2 class="modal-title warning-text">Confirm Archiving</h2>
             <div class="warning-box">
-                <p><strong>This action cannot be undone!</strong></p>
-                <p>This class will be permanently deleted. Enrolled members will have their sessions automatically returned.</p>
+                <p><strong>This class will be archived.</strong></p>
+                <p>It will no longer appear in active schedules and will clear any current conflicts.</p>
             </div>
             <div class="modal-actions">
-                <button id="confirmDeleteBtn" class="btn-primary">Yes, Delete Class</button>
-                <button id="cancelDeleteBtn" class="btn-secondary">Cancel</button>
+                <button id="confirmArchiveBtn" class="btn-primary">Yes, Archive Class</button>
+                <button id="cancelArchiveBtn" class="btn-secondary">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="activateConfirmModal" class="modal">
+        <div class="modal-content text-center">
+            <span class="close-btn" id="closeActivateModalBtn">&times;</span>
+            <h2 class="modal-title success-text">Confirm Activation</h2>
+            <div class="warning-box" style="border-left-color: #28a745; background: rgba(40, 167, 69, 0.1);">
+                <p><strong>Restore this class?</strong></p>
+                <p>This class will become active again and block trainers from overlapping schedules.</p>
+            </div>
+            <div class="modal-actions">
+                <button id="confirmActivateBtn" class="btn-success">Yes, Activate</button>
+                <button id="cancelActivateBtn" class="btn-secondary">Cancel</button>
             </div>
         </div>
     </div>

@@ -1,9 +1,12 @@
 const SERVER_URL = 'http://localhost:8080';
 
 let trainersLookup = {};
-let classesData = []; // Full list of classes fetched on load
+let classesData = []; 
 let trainersOptionsHTML = '';
 let searchTimeout = null;
+
+// Track the current view state (active vs archived)
+let currentViewMode = 'active';
 
 // Keep track of the currently edited class form
 let currentEditContext = {
@@ -348,6 +351,41 @@ function setupSidebarAndSession() {
 // Event listeners & Modals
 // ------------------------------
 function setupEventListeners() {
+    // View Toggles
+    const viewActiveBtn = document.getElementById('viewActiveBtn');
+    const viewArchivedBtn = document.getElementById('viewArchivedBtn');
+    const listTitleHeader = document.getElementById('listTitleHeader');
+
+    viewActiveBtn.addEventListener('click', () => {
+        currentViewMode = 'active';
+        viewActiveBtn.classList.add('active');
+        viewArchivedBtn.classList.remove('active');
+        
+        viewActiveBtn.style.background = 'linear-gradient(135deg, #ff3333 0%, #b30000 100%)';
+        viewActiveBtn.style.border = '2px solid #fff';
+        
+        viewArchivedBtn.style.background = 'transparent';
+        viewArchivedBtn.style.border = '1px solid #444';
+
+        if(listTitleHeader) listTitleHeader.textContent = "Active Classes List";
+        filterAll();
+    });
+
+    viewArchivedBtn.addEventListener('click', () => {
+        currentViewMode = 'archived';
+        viewArchivedBtn.classList.add('active');
+        viewActiveBtn.classList.remove('active');
+
+        viewArchivedBtn.style.background = 'linear-gradient(135deg, #ff3333 0%, #b30000 100%)';
+        viewArchivedBtn.style.border = '2px solid #fff';
+
+        viewActiveBtn.style.background = 'transparent';
+        viewActiveBtn.style.border = '1px solid #444';
+
+        if(listTitleHeader) listTitleHeader.textContent = "Archived Classes List";
+        filterAll();
+    });
+
     const classSearch = document.getElementById('classSearch');
     const scheduleType = document.getElementById('scheduleType');
     const filterClassDate = document.getElementById('filterClassDate');
@@ -355,13 +393,18 @@ function setupEventListeners() {
     // Action buttons inside modals
     const modalOkBtn = document.getElementById('modalOkBtn');
     const cancelConflictBtn = document.getElementById('cancelConflictBtn');
-    const deleteClassBtn = document.getElementById('deleteClassBtn');
-    const cancelDeleteBtn = document.getElementById('cancelDeleteBtn');
-    const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+    
+    const archiveConflictBtn = document.getElementById('archiveConflictBtn'); // Trigger archive from Conflict
+    const confirmArchiveBtn = document.getElementById('confirmArchiveBtn'); // General archive confirm
+    const cancelArchiveBtn = document.getElementById('cancelArchiveBtn');
+
+    const confirmActivateBtn = document.getElementById('confirmActivateBtn'); // General activate confirm
+    const cancelActivateBtn = document.getElementById('cancelActivateBtn');
 
     // X close buttons on modals
     const closeConflictBtn = document.getElementById('closeConflictModalBtn');
-    const closeDeleteBtn = document.getElementById('closeDeleteModalBtn');
+    const closeArchiveBtn = document.getElementById('closeArchiveModalBtn');
+    const closeActivateBtn = document.getElementById('closeActivateModalBtn');
     const closeSuccessBtn = document.getElementById('closeSuccessModalBtn');
 
     if (classSearch) classSearch.addEventListener('input', filterAll);
@@ -377,29 +420,44 @@ function setupEventListeners() {
     // Close logic for Modals
     if (modalOkBtn) modalOkBtn.addEventListener('click', () => document.getElementById('updateSuccessPane').style.display = 'none');
     if (cancelConflictBtn) cancelConflictBtn.addEventListener('click', () => document.getElementById('conflictModal').style.display = 'none');
-    if (cancelDeleteBtn) cancelDeleteBtn.addEventListener('click', () => document.getElementById('deleteConfirmModal').style.display = 'none');
+    if (cancelArchiveBtn) cancelArchiveBtn.addEventListener('click', () => document.getElementById('archiveConfirmModal').style.display = 'none');
+    if (cancelActivateBtn) cancelActivateBtn.addEventListener('click', () => document.getElementById('activateConfirmModal').style.display = 'none');
     
     // Close on X
     if (closeConflictBtn) closeConflictBtn.addEventListener('click', () => document.getElementById('conflictModal').style.display = 'none');
-    if (closeDeleteBtn) closeDeleteBtn.addEventListener('click', () => document.getElementById('deleteConfirmModal').style.display = 'none');
+    if (closeArchiveBtn) closeArchiveBtn.addEventListener('click', () => document.getElementById('archiveConfirmModal').style.display = 'none');
+    if (closeActivateBtn) closeActivateBtn.addEventListener('click', () => document.getElementById('activateConfirmModal').style.display = 'none');
     if (closeSuccessBtn) closeSuccessBtn.addEventListener('click', () => document.getElementById('updateSuccessPane').style.display = 'none');
 
     // Close Modals when clicking outside of them
     window.addEventListener('click', (e) => {
         if (e.target === document.getElementById('conflictModal')) document.getElementById('conflictModal').style.display = 'none';
-        if (e.target === document.getElementById('deleteConfirmModal')) document.getElementById('deleteConfirmModal').style.display = 'none';
+        if (e.target === document.getElementById('archiveConfirmModal')) document.getElementById('archiveConfirmModal').style.display = 'none';
+        if (e.target === document.getElementById('activateConfirmModal')) document.getElementById('activateConfirmModal').style.display = 'none';
         if (e.target === document.getElementById('updateSuccessPane')) document.getElementById('updateSuccessPane').style.display = 'none';
     });
 
-    if (deleteClassBtn) {
-        deleteClassBtn.addEventListener('click', () => {
+    if (archiveConflictBtn) {
+        archiveConflictBtn.addEventListener('click', () => {
             document.getElementById('conflictModal').style.display = 'none';
-            document.getElementById('deleteConfirmModal').style.display = 'flex';
+            // Transfer ID over to archive modal
+            const id = archiveConflictBtn.getAttribute('data-cid');
+            document.getElementById('confirmArchiveBtn').setAttribute('data-cid', id);
+            
+            // NOTE: If they hit archive from the conflict menu, we also want to auto-retry the original form submission
+            // So we flag the confirm button
+            document.getElementById('confirmArchiveBtn').setAttribute('data-retry-submit', 'true');
+
+            document.getElementById('archiveConfirmModal').style.display = 'flex';
         });
     }
     
-    if (confirmDeleteBtn) {
-        confirmDeleteBtn.addEventListener('click', handleDeleteClass);
+    if (confirmArchiveBtn) {
+        confirmArchiveBtn.addEventListener('click', handleArchiveClass);
+    }
+
+    if (confirmActivateBtn) {
+        confirmActivateBtn.addEventListener('click', handleActivateClass);
     }
 }
 
@@ -473,8 +531,8 @@ async function loadClasses() {
       throw new Error(result.error || 'Load failed');
     }
 
-    classesData = result.data; // Store full payload for frontend conflict checking
-    renderClasses(classesData);
+    classesData = result.data; 
+    filterAll(); // Refilters and renders instead of just rendering everything
   } catch (error) {
     console.error('Error loading classes:', error);
     classesList.innerHTML = '<p class="error">Error loading classes</p>';
@@ -503,6 +561,11 @@ function filterAll() {
 
   let filtered = classesData.filter(cls => {
     let match = true;
+    
+    // Default undefined status to 'active' for legacy records
+    const clsStatus = cls.status || 'active'; 
+    if (clsStatus !== currentViewMode) return false;
+
     const trainer = trainersLookup[cls.trainer_id] || { name: '' };
 
     if (search) {
@@ -546,7 +609,7 @@ function renderClasses(classes) {
   classesList.innerHTML = '';
 
   if (!classes.length) {
-    classesList.innerHTML = '<p class="no-data">No classes found</p>';
+    classesList.innerHTML = '<p class="no-data">No classes found for this view.</p>';
     return;
   }
 
@@ -557,6 +620,19 @@ function renderClasses(classes) {
     
     const cid = cls.class_id || cls._id;
     const mongoId = cls._id;
+
+    // Render Buttons Dynamically Based on Status
+    let actionButtonsHTML = '';
+    if (currentViewMode === 'active') {
+        actionButtonsHTML = `
+            <button class="edit-btn" data-cid="${cid}" data-mongoid="${mongoId}">Edit Schedule</button>
+            <button class="archive-btn cancel-edit" style="margin-left: 10px;" data-cid="${mongoId}">Archive Class</button>
+        `;
+    } else {
+        actionButtonsHTML = `
+            <button class="activate-btn btn-success" style="padding: 0.8rem 1.5rem;" data-cid="${mongoId}">Restore / Activate</button>
+        `;
+    }
 
     const details = document.createElement('details');
     details.innerHTML = `
@@ -570,12 +646,31 @@ function renderClasses(classes) {
           <p><strong>Specialization:</strong> ${trainer.specialization}</p>
         </div>
         <div class="edit-btn-row">
-          <button class="edit-btn" data-cid="${cid}" data-mongoid="${mongoId}">Edit Schedule</button>
+          ${actionButtonsHTML}
         </div>
         <div class="edit-form"></div>
       </div>
     `;
     classesList.appendChild(details);
+  });
+
+  // Attach Archive Listener (Inside the rows)
+  classesList.querySelectorAll('.archive-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+          const classId = btn.getAttribute('data-cid');
+          document.getElementById('confirmArchiveBtn').setAttribute('data-cid', classId);
+          document.getElementById('confirmArchiveBtn').removeAttribute('data-retry-submit'); // Clear flag
+          document.getElementById('archiveConfirmModal').style.display = 'flex';
+      });
+  });
+
+  // Attach Activate Listener (Inside the rows)
+  classesList.querySelectorAll('.activate-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+          const classId = btn.getAttribute('data-cid');
+          document.getElementById('confirmActivateBtn').setAttribute('data-cid', classId);
+          document.getElementById('activateConfirmModal').style.display = 'flex';
+      });
   });
 
   classesList.querySelectorAll('.edit-btn').forEach(btn => {
@@ -733,6 +828,9 @@ function checkScheduleConflict(trainer_id, newType, newDate, newDays, newStartSt
     }
 
     for (const cls of classesData) {
+        // ALWAYS ignore archived classes for conflict
+        if (cls.status === 'archived') continue;
+
         const cid = cls.class_id || cls._id;
         if (cid === excludeClassId) continue;
         if (cls.trainer_id !== trainer_id) continue;
@@ -894,7 +992,7 @@ async function proceedWithUpdate(classId, trainer_id, schedule) {
 function showConflictModal(conflictingClass) {
     const conflictModal = document.getElementById('conflictModal');
     const conflictDetails = document.getElementById('conflictDetails');
-    const deleteClassBtn = document.getElementById('deleteClassBtn');
+    const archiveConflictBtn = document.getElementById('archiveConflictBtn');
 
     if (conflictDetails) {
         conflictDetails.innerHTML = `
@@ -904,9 +1002,9 @@ function showConflictModal(conflictingClass) {
         `;
     }
     
-    if(deleteClassBtn) {
-        // Needs the Mongo _id to correctly delete
-        deleteClassBtn.setAttribute('data-cid', conflictingClass._id);
+    if(archiveConflictBtn) {
+        // Needs the Mongo _id to correctly target
+        archiveConflictBtn.setAttribute('data-cid', conflictingClass._id);
     }
     
     if (conflictModal) {
@@ -914,35 +1012,68 @@ function showConflictModal(conflictingClass) {
     }
 }
 
-async function handleDeleteClass() {
-    const deleteClassBtn = document.getElementById('deleteClassBtn');
-    if (!deleteClassBtn) return;
+async function handleArchiveClass() {
+    const confirmArchiveBtn = document.getElementById('confirmArchiveBtn');
+    if (!confirmArchiveBtn) return;
     
-    const classId = deleteClassBtn.getAttribute('data-cid');
+    const classId = confirmArchiveBtn.getAttribute('data-cid');
+    if (!classId) return;
+
+    const retrySubmit = confirmArchiveBtn.getAttribute('data-retry-submit') === 'true';
+
+    try {
+        const result = await apiFetch(`/api/classes/${classId}`, {
+            method: 'PUT',
+            body: JSON.stringify({ status: 'archived' })
+        });
+        
+        if (result.success) {
+            document.getElementById('archiveConfirmModal').style.display = 'none';
+            await loadClasses(); 
+            
+            if (retrySubmit) {
+                showMessage('Conflicting class archived successfully. Now updating new schedule...', 'success');
+                // Automatically re-attempt the original update if it originated from a conflict
+                if(currentEditContext.form) {
+                    const submitEvent = new Event('submit', { bubbles: true, cancelable: true });
+                    currentEditContext.form.dispatchEvent(submitEvent);
+                }
+            } else {
+                showMessage('Class successfully archived.', 'success');
+            }
+
+        } else {
+            showMessage(result.error || 'Failed to archive class', 'error');
+        }
+    } catch (error) {
+        console.error('Error archiving class:', error);
+        showMessage(`Archive failed. Please try again.`, 'error');
+    }
+}
+
+async function handleActivateClass() {
+    const confirmActivateBtn = document.getElementById('confirmActivateBtn');
+    if (!confirmActivateBtn) return;
+    
+    const classId = confirmActivateBtn.getAttribute('data-cid');
     if (!classId) return;
 
     try {
         const result = await apiFetch(`/api/classes/${classId}`, {
-            method: 'DELETE'
+            method: 'PUT',
+            body: JSON.stringify({ status: 'active' })
         });
         
         if (result.success) {
-            showMessage('Conflicting class deleted successfully. Now updating new schedule...', 'success');
-            document.getElementById('deleteConfirmModal').style.display = 'none';
+            showMessage('Class activated successfully.', 'success');
+            document.getElementById('activateConfirmModal').style.display = 'none';
             await loadClasses(); 
-            
-            // Automatically re-attempt the original update
-            if(currentEditContext.form) {
-                const submitEvent = new Event('submit', { bubbles: true, cancelable: true });
-                currentEditContext.form.dispatchEvent(submitEvent);
-            }
-
         } else {
-            showMessage(result.error || 'Failed to delete class', 'error');
+            showMessage(result.error || 'Failed to activate class', 'error');
         }
     } catch (error) {
-        console.error('Error deleting class:', error);
-        showMessage(`Deletion failed. Please try again.`, 'error');
+        console.error('Error activating class:', error);
+        showMessage(`Activation failed. Please try again.`, 'error');
     }
 }
 

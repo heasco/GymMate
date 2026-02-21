@@ -68,7 +68,7 @@ const ClassSchema = new mongoose.Schema({
   }],
   status: {
     type: String,
-    enum: ['active', 'cancelled', 'completed'],
+    enum: ['active', 'cancelled', 'completed', 'archived'], // ADDED ARCHIVED HERE
     default: 'active'
   }
 }, {

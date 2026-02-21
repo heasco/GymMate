@@ -9,7 +9,6 @@ const nodemailer = require('../utils/nodemailer');
 
 const router = express.Router();
 
-// Helper: send trainer welcome email
 async function sendTrainerWelcomeEmail({ name, email, username, tempPassword }) {
   if (!email) return;
   const subject = 'Welcome to GOALS Gym - Trainer Account Details';
@@ -35,10 +34,6 @@ GOALS Gym Team
   });
 }
 
-// ============================================
-// SPECIFIC ROUTES FIRST (before /:id routes)
-// ============================================
-
 // GET /api/trainers/search?query=...
 router.get('/search', asyncHandler(async (req, res) => {
   const query = req.query.query?.toLowerCase() || "";
@@ -62,7 +57,7 @@ router.get('/available', asyncHandler(async (req, res) => {
   res.json({ success: true, count: availableTrainers.length, data: availableTrainers });
 }));
 
-// POST /api/trainers/check-availability
+// POST /api/trainers/check-availability - UPDATED TO IGNORE ARCHIVED
 router.post('/check-availability', asyncHandler(async (req, res) => {
     const { trainer_id, scheduleType, days, date, startTime, endTime, classIdToExclude } = req.body;
 
@@ -72,6 +67,7 @@ router.post('/check-availability', asyncHandler(async (req, res) => {
 
     const trainerClasses = await Classes.find({
         trainer_id,
+        status: { $ne: 'archived' }, // ALWAYS IGNORE ARCHIVED CLASSES
         _id: { $ne: classIdToExclude } // Exclude the class being edited
     });
 
@@ -217,8 +213,6 @@ router.post('/', asyncHandler(async (req, res) => {
   });
 }));
 
-// ============ AVAILABILITY & LEAVE ROUTES ============
-
 function extractTrainerId(req) {
   return req.user?.trainer_id || req.user?.trainerid ||
     req.body?.trainer_id || req.body?.trainerid ||
@@ -288,7 +282,7 @@ router.get('/get-leave', async (req, res) => {
   }
 });
 
-// Update profile - NO CURRENT PASSWORD REQUIRED
+// Update profile
 router.post('/update-profile', asyncHandler(async (req, res) => {
   const { trainer_id, username, phone, email, newPassword } = req.body;
 
@@ -309,7 +303,6 @@ router.post('/update-profile', asyncHandler(async (req, res) => {
     return res.status(404).json({ success: false, error: 'Trainer not found' });
   }
 
-  // UPDATE USERNAME (if provided and changed)
   if (username && username.trim() !== '' && username !== trainer.username) {
     const existing = await Trainer.findOne({
       username: username.trim().toLowerCase(),
@@ -319,11 +312,9 @@ router.post('/update-profile', asyncHandler(async (req, res) => {
     if (existing) {
       return res.status(409).json({ success: false, error: 'Username is already taken.' });
     }
-
     trainer.username = username.trim().toLowerCase();
   }
 
-  // UPDATE EMAIL (if provided and changed)
   if (typeof email !== 'undefined' && email !== trainer.email) {
     if (email && email.trim() !== '') {
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -345,7 +336,6 @@ router.post('/update-profile', asyncHandler(async (req, res) => {
     }
   }
 
-  // UPDATE PHONE (if provided and changed)
   if (typeof phone !== 'undefined' && phone !== trainer.phone) {
     if (phone && phone.trim() !== '') {
       if (!/^\+63\d{10}$/.test(phone)) {
@@ -360,7 +350,6 @@ router.post('/update-profile', asyncHandler(async (req, res) => {
     }
   }
 
-  // UPDATE PASSWORD (if provided)
   if (newPassword && newPassword.trim() !== '') {
     if (newPassword.length < 6) {
       return res.status(400).json({
@@ -385,18 +374,15 @@ router.post('/update-profile', asyncHandler(async (req, res) => {
   });
 }));
 
-// ✅ PUT /api/trainers/:id - Update trainer by ID (SINGLE ROUTE - NO DUPLICATE)
 router.put('/:id', asyncHandler(async (req, res) => {
   const { id } = req.params;
   const updates = req.body;
 
-  // Remove fields that shouldn't be updated directly
   delete updates.trainer_id;
   delete updates._id;
   delete updates.createdAt;
   delete updates.updatedAt;
 
-  // Lowercase email and username if provided
   if (updates.email) {
     updates.email = updates.email.toLowerCase().trim();
   }
@@ -404,7 +390,6 @@ router.put('/:id', asyncHandler(async (req, res) => {
     updates.username = updates.username.toLowerCase().trim();
   }
 
-  // Find trainer
   let trainer;
   if (mongoose.Types.ObjectId.isValid(id)) {
     trainer = await Trainer.findOne({ $or: [{ trainer_id: id }, { _id: id }] });
@@ -416,7 +401,6 @@ router.put('/:id', asyncHandler(async (req, res) => {
     return res.status(404).json({ success: false, error: 'Trainer not found' });
   }
 
-  // CHECK EMAIL UNIQUENESS (if email is being changed)
   if (updates.email && updates.email !== trainer.email) {
     const existingEmail = await Trainer.findOne({
       email: updates.email,
@@ -428,7 +412,6 @@ router.put('/:id', asyncHandler(async (req, res) => {
     }
   }
 
-  // CHECK USERNAME UNIQUENESS (if username is being changed)
   if (updates.username && updates.username !== trainer.username) {
     const existingUsername = await Trainer.findOne({
       username: updates.username,
@@ -440,23 +423,19 @@ router.put('/:id', asyncHandler(async (req, res) => {
     }
   }
 
-  // Accept both is_available and isavailable
   if (typeof updates.is_available !== "undefined") {
     trainer.is_available = updates.is_available;
   } else if (typeof updates.isavailable !== "undefined") {
     trainer.is_available = updates.isavailable;
   }
 
-  // Apply other updates
   if (typeof updates.name === "string") trainer.name = updates.name.trim();
   if (typeof updates.email === "string") trainer.email = updates.email;
   if (typeof updates.phone === "string") trainer.phone = updates.phone;
   if (typeof updates.specialization === "string") trainer.specialization = updates.specialization.trim();
 
-  // BYPASS EMAIL VALIDATION for updates
   await trainer.save({ validateModifiedOnly: true });
 
-  // Send email notification if email was updated
   const email = trainer.email;
   if (email) {
     try {
@@ -491,14 +470,12 @@ router.put('/:id', asyncHandler(async (req, res) => {
   });
 }));
 
-// GET /api/trainers/:id/feedback
 router.get('/:id/feedback', asyncHandler(async (req, res) => {
   const trainer_id = req.params.id;
   const feedback = await Feedback.find({ trainer_id }).populate('class_id', 'class_name').sort({ date_submitted: -1 });
   res.json({ success: true, count: feedback.length, data: feedback });
 }));
 
-// GET /api/trainers/:id/rating
 router.get('/:id/rating', asyncHandler(async (req, res) => {
   const trainer_id = req.params.id;
   const result = await Feedback.aggregate([
@@ -510,7 +487,6 @@ router.get('/:id/rating', asyncHandler(async (req, res) => {
   res.json({ success: true, data: { averageRating, totalFeedback } });
 }));
 
-// GET /api/trainers/:id - MUST BE LAST
 router.get('/:id', asyncHandler(async (req, res) => {
   const { id } = req.params;
   let trainer;
