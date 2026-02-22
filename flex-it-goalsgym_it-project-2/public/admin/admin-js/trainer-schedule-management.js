@@ -361,12 +361,6 @@ function setupEventListeners() {
         viewActiveBtn.classList.add('active');
         viewArchivedBtn.classList.remove('active');
         
-        viewActiveBtn.style.background = 'linear-gradient(135deg, #ff3333 0%, #b30000 100%)';
-        viewActiveBtn.style.border = '2px solid #fff';
-        
-        viewArchivedBtn.style.background = 'transparent';
-        viewArchivedBtn.style.border = '1px solid #444';
-
         if(listTitleHeader) listTitleHeader.textContent = "Active Classes List";
         filterAll();
     });
@@ -375,12 +369,6 @@ function setupEventListeners() {
         currentViewMode = 'archived';
         viewArchivedBtn.classList.add('active');
         viewActiveBtn.classList.remove('active');
-
-        viewArchivedBtn.style.background = 'linear-gradient(135deg, #ff3333 0%, #b30000 100%)';
-        viewArchivedBtn.style.border = '2px solid #fff';
-
-        viewActiveBtn.style.background = 'transparent';
-        viewActiveBtn.style.border = '1px solid #444';
 
         if(listTitleHeader) listTitleHeader.textContent = "Archived Classes List";
         filterAll();

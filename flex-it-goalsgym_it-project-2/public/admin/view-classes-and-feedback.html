@@ -10,7 +10,6 @@
 </head>
 <body>
     <div class="admin-container">
-        <!-- Sidebar -->
         <aside class="sidebar">
             <div class="sidebar-header">
                 <h2>GOALS Gym Admin</h2>
@@ -27,19 +26,18 @@
                 <a href="./add-and-view-transaction.html"><span>Add & View Transaction</span></a>
                 <a href="./view-classes-and-feedback.html" class="active"><span>View Classes</span></a>
                 <a href="./trainer-schedule-management.html"><span>Trainer Schedule Management</span></a>
-                        <a href="./attendance-checker.html"><span>Attendance System</span></a>
-                        <a href="./send-announcement-email.html"><span>Send Announcement</span></a>
-                        <a href="./view-logs.html"><span>View Logs</span></a>
-                      </nav>        </aside>
+                <a href="./attendance-checker.html"><span>Attendance System</span></a>
+                <a href="./send-announcement-email.html"><span>Send Announcement</span></a>
+                <a href="./view-logs.html"><span>View Logs</span></a>
+            </nav>        
+        </aside>
 
-        <!-- Header -->
         <header class="header">
             <button class="menu-toggle" id="menuToggle">☰</button>
             <h1>View Classes</h1>
             <button class="logout-btn" id="logoutBtn">Logout</button>
         </header>
 
-        <!-- Main Content -->
         <main class="main-content">
             <div class="container">
                 <h2>View Classes & Feedback</h2>
@@ -47,7 +45,13 @@
                 <div id="successMessage" class="success-message"></div>
                 <div id="errorMessage" class="error-message"></div>
 
+                <div class="status-toggle">
+                    <button id="viewActiveBtn" class="active">Active Classes</button>
+                    <button id="viewArchivedBtn">Archived Classes</button>
+                </div>
+
                 <div class="section">
+                    <h3 id="listTitleHeader">Active Classes List</h3>
                     <div class="form-group">
                         <label for="classSearch">Search Classes:</label>
                         <input type="text" id="classSearch" placeholder="Search by name, schedule, or trainer...">
