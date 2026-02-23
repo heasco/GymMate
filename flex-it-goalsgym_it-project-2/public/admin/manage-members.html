@@ -95,9 +95,10 @@
         </div>
 
         <div id="editMemberSection" class="section">
-          <h2>Edit Member</h2>
+          <h2>Edit Member Details</h2>
           <form id="editMemberForm">
             <input type="hidden" id="edit_member_id" name="member_id">
+            
             <div class="form-group">
               <label for="edit_name">Name:</label>
               <input type="text" id="edit_name" name="name" required>
@@ -110,11 +111,12 @@
               <label for="edit_email">Email:</label>
               <input type="text" id="edit_email" name="email">
             </div>
+
             <div id="membershipList">
-              <h3>Memberships</h3>
+              <h3>Active Membership(s)</h3>
               <div id="membershipsContainer"></div>
-              <button type="button" class="add-membership" onclick="addMembershipField()">Add New Membership</button>
             </div>
+
             <div class="nav-buttons">
               <button type="submit" class="action-button">Update Member</button>
               <button type="button" class="action-button" onclick="showMemberList()">Back to Member List</button>
@@ -222,6 +224,5 @@
 
 <script src="../assets/js/form-persistence.js" defer></script>
 <script src="./admin-js/manage-members.js"></script>
-
 </body>
 </html>

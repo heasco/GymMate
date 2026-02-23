@@ -513,12 +513,16 @@ function displayMembersActive(members) {
   const filtered = members.filter((m) => (m.status || 'active') === 'active');
 
   filtered.forEach((member) => {
-    const memberships = (member.memberships || [])
-      .map((m) => {
+    // Only display memberships that are currently active
+    const activeMemberships = (member.memberships || []).filter(m => m.status === 'active');
+    
+    let membershipsText = 'None';
+    if (activeMemberships.length > 0) {
+      membershipsText = activeMemberships.map((m) => {
         const durationLabel = m.type === 'combative' ? `${m.remainingSessions || m.duration} sessions` : `${m.duration} months`;
         return `${m.type} (${m.status}, ${durationLabel}, ends ${new Date(m.endDate).toLocaleDateString()})`;
-      })
-      .join(', ');
+      }).join(', ');
+    }
       
     const row = document.createElement('tr');
     row.innerHTML = `
@@ -526,7 +530,7 @@ function displayMembersActive(members) {
       <td>${member.name}</td>
       <td>${member.phone || '-'}</td>
       <td>${member.email || '-'}</td>
-      <td>${memberships || 'None'}</td>
+      <td>${membershipsText}</td>
       <td>${member.status}</td>
       <td>
         <button class="action-button" onclick="editMemberById('${member.memberId}')">Edit</button>
@@ -580,12 +584,17 @@ function displayMembersInactive(members) {
   const filtered = members.filter((m) => (m.status || 'active') === 'inactive');
 
   filtered.forEach((member) => {
-    const memberships = (member.memberships || [])
-      .map((m) => {
-        const durationLabel = m.type === 'combative' ? `${m.remainingSessions || m.duration} sessions` : `${m.duration} months`;
-        return `${m.type} (${m.status}, ${durationLabel}, ends ${new Date(m.endDate).toLocaleDateString()})`;
-      })
-      .join(', ');
+    let membershipsText = 'None';
+    
+    // Sort memberships to find the most recent one (the last one they had)
+    if (member.memberships && member.memberships.length > 0) {
+      const latestMembership = [...member.memberships].sort((a, b) => new Date(b.endDate) - new Date(a.endDate))[0];
+      const durationLabel = latestMembership.type === 'combative' ? `${latestMembership.remainingSessions || latestMembership.duration} sessions` : `${latestMembership.duration} months`;
+      const isExpired = new Date(latestMembership.endDate) < new Date();
+      const verb = isExpired ? 'ended' : 'ends';
+      
+      membershipsText = `${latestMembership.type} (${latestMembership.status}, ${durationLabel}, ${verb} ${new Date(latestMembership.endDate).toLocaleDateString()})`;
+    }
 
     const row = document.createElement('tr');
     row.innerHTML = `
@@ -593,7 +602,7 @@ function displayMembersInactive(members) {
       <td>${member.name}</td>
       <td>${member.phone || '-'}</td>
       <td>${member.email || '-'}</td>
-      <td>${memberships || 'None'}</td>
+      <td>${membershipsText}</td>
       <td>${member.status}</td>
       <td>
         <button class="action-button" onclick="openRenewalModal('${member.memberId}')">Activate</button>
@@ -941,7 +950,7 @@ async function handleRenewal(e) {
 }
 
 // ------------------------------
-// Edit member flow
+// Edit member flow (UPDATED)
 // ------------------------------
 function editMemberById(memberId) {
     const member = allMembersMap.get(memberId);
@@ -961,133 +970,110 @@ function editMemberById(memberId) {
     if (!membershipsContainer) return;
     membershipsContainer.innerHTML = '';
 
-    if (member.memberships && member.memberships.length > 0) {
-      member.memberships.forEach((membership, index) => {
-        addMembershipField(membership, index);
+    // Find ONLY active memberships to edit
+    const activeMemberships = (member.memberships || []).filter(m => m.status === 'active');
+
+    if (activeMemberships.length > 0) {
+      activeMemberships.forEach((membership) => {
+        // We need the original index to update the correct item in the main array later
+        const originalIndex = member.memberships.indexOf(membership);
+        createActiveMembershipEditField(membership, originalIndex);
       });
     } else {
-      addMembershipField();
+      membershipsContainer.innerHTML = '<p style="color: #ccc; font-style: italic;">No active memberships to edit.</p>';
     }
 }
 
-function addMembershipField(
-  membership = null,
-  index = document.getElementById('membershipsContainer').children.length
-) {
+// New function to create fixed edit fields for active memberships only
+function createActiveMembershipEditField(membership, index) {
   const membershipsContainer = document.getElementById('membershipsContainer');
   if (!membershipsContainer) return;
+
   const membershipDiv = document.createElement('div');
-  membershipDiv.className = 'membership-container';
-  const durationLabel =
-    membership && membership.type === 'combative' ? 'Sessions' : 'Months';
+  membershipDiv.className = 'membership-container active-edit-container';
+  // Store original index in a data attribute for submission logic
+  membershipDiv.dataset.originalIndex = index;
+
+  const startDateValue = membership.startDate ? new Date(membership.startDate).toISOString().split('T')[0] : '';
+
   membershipDiv.innerHTML = `
-    <h4>Membership ${index + 1}</h4>
+    <h4>Editing Active Membership (${membership.type.toUpperCase()})</h4>
+    
     <div class="form-group">
-      <label for="membership_type_${index}">Type:</label>
-      <select id="membership_type_${index}" name="memberships[${index}][type]" required onchange="updateDurationLabel(${index})">
-        <option value="monthly" ${
-          membership && membership.type === 'monthly' ? 'selected' : ''
-        }>Monthly</option>
-        <option value="combative" ${
-          membership && membership.type === 'combative' ? 'selected' : ''
-        }>Combative</option>
+      <label for="membership_type_${index}">Membership Type:</label>
+      <select id="membership_type_${index}" class="edit-type-select" required>
+        <option value="monthly" ${membership.type === 'monthly' ? 'selected' : ''}>Monthly</option>
+        <option value="combative" ${membership.type === 'combative' ? 'selected' : ''}>Combative</option>
       </select>
     </div>
-    <div class="form-group">
-      <label for="membership_duration_${index}">${durationLabel}:</label>
-      <input type="number" id="membership_duration_${index}" name="memberships[${index}][duration]" value="${
-        membership ? membership.remainingSessions || membership.duration : ''
-      }" min="1" required>
-    </div>
+
     <div class="form-group">
       <label for="membership_start_date_${index}">Start Date:</label>
-      <input type="date" id="membership_start_date_${index}" name="memberships[${index}][startDate]" value="${
-        membership
-          ? new Date(membership.startDate).toISOString().split('T')[0]
-          : ''
-      }">
+      <input type="date" id="membership_start_date_${index}" class="edit-start-date" value="${startDateValue}" required>
     </div>
-    <div class="form-group">
-      <label for="membership_status_${index}">Status:</label>
-      <select id="membership_status_${index}" name="memberships[${index}][status]">
-        <option value="active" ${
-          membership && membership.status === 'active' ? 'selected' : ''
-        }>Active</option>
-        <option value="inactive" ${
-          membership && membership.status === 'inactive' ? 'selected' : ''
-        }>Inactive</option>
-        <option value="suspended" ${
-          membership && membership.status === 'suspended' ? 'selected' : ''
-        }>Suspended</option>
-        <option value="expired" ${
-          membership && membership.status === 'expired' ? 'selected' : ''
-        }>Expired</option>
-      </select>
-    </div>
-    <button type="button" class="archive-button" onclick="this.parentElement.remove()">Remove Membership</button>
+     <input type="hidden" id="original_type_${index}" value="${membership.type}">
   `;
   membershipsContainer.appendChild(membershipDiv);
 }
 
-function updateDurationLabel(index) {
-  const typeSelect = document.getElementById(`membership_type_${index}`);
-  const durationLabel =
-    document.getElementById(`membership_duration_${index}`)
-      .previousElementSibling;
-  if (typeSelect && durationLabel) {
-    durationLabel.textContent =
-      typeSelect.value === 'combative' ? 'Sessions:' : 'Months:';
-  }
-}
-
 // ------------------------------
-// Edit form submit
+// Edit form submit (UPDATED)
 // ------------------------------
 const editForm = document.getElementById('editMemberForm');
 if (editForm) {
   editForm.addEventListener('submit', async function (e) {
     e.preventDefault();
-    const formData = new FormData(e.target);
-    const memberId = formData.get('member_id');
-    const name = formData.get('name').trim();
-    const phone = formData.get('phone').trim();
-    const email = formData.get('email').trim().toLowerCase();
-    const memberships = [];
+    
+    const memberIdStr = document.getElementById('edit_member_id').value;
+    // Get original member object to ensure we don't lose inactive/expired memberships
+    const originalMember = allMembersMap.get(memberIdStr);
+    if(!originalMember) {
+        alert("Error finding member data.");
+        return;
+    }
 
-    document
-      .querySelectorAll('.membership-container')
-      .forEach((container, index) => {
-        const type = document.getElementById(
-          `membership_type_${index}`
-        )?.value;
-        const duration = parseInt(
-          document.getElementById(`membership_duration_${index}`).value,
-          10
-        );
-        const startDate = document.getElementById(
-          `membership_start_date_${index}`
-        )?.value;
-        const status = document.getElementById(
-          `membership_status_${index}`
-        )?.value;
+    const name = document.getElementById('edit_name').value.trim();
+    const phone = document.getElementById('edit_phone').value.trim();
+    const email = document.getElementById('edit_email').value.trim().toLowerCase();
 
-        if (type && duration) {
-          const membership = { type, duration, status };
-          if (startDate) membership.startDate = startDate;
-          memberships.push(membership);
-        }
-      });
+    // Clone the original memberships array so we can modify it
+    let updatedMemberships = [...(originalMember.memberships || [])];
 
-    const updateData = { name };
-    if (phone) updateData.phone = phone;
-    if (email) updateData.email = email;
-    if (memberships.length > 0) updateData.memberships = memberships;
+    // Iterate over the active edit fields within the container
+    document.querySelectorAll('.active-edit-container').forEach((container) => {
+      const index = parseInt(container.dataset.originalIndex);
+      const newType = container.querySelector('.edit-type-select').value;
+      const newStartDate = container.querySelector('.edit-start-date').value;
+      const originalType = container.querySelector(`#original_type_${index}`).value;
+
+      if (updatedMemberships[index]) {
+          // Update basic fields
+          updatedMemberships[index].type = newType;
+          updatedMemberships[index].startDate = new Date(newStartDate).toISOString();
+
+          // Business Rule: If changing FROM monthly TO combative, force 12 sessions.
+          if (originalType === 'monthly' && newType === 'combative') {
+              updatedMemberships[index].duration = 12; // Standard sessions
+              updatedMemberships[index].remainingSessions = 12; // Reset remaining
+          }
+          // Note: We don't need a rule for Combative -> Monthly based on current requirements. 
+          // It will just keep its existing 'duration' value (e.g. 1 month) if it had one, which is acceptable.
+      }
+    });
+
+    const updateData = { 
+        name,
+        phone,
+        email,
+        memberships: updatedMemberships 
+    };
 
     const successMessage = document.getElementById('successMessage');
     const errorMessage = document.getElementById('errorMessage');
 
     try {
-      const result = await apiFetch(`/api/members/${memberId}`, {
+      // Use Mongo ID for the API call
+      const result = await apiFetch(`/api/members/${originalMember._id}`, {
         method: 'PUT',
         body: JSON.stringify(updateData),
       });

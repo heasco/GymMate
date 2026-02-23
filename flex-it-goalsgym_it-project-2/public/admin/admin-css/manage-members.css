@@ -165,7 +165,7 @@ select:focus {
     box-shadow: 0 6px 20px rgba(255, 51, 51, 0.4);
 }
 
-/* Action Buttons Container - NEW */
+/* Action Buttons Container */
 .action-buttons {
     display: flex;
     gap: 0.5rem;
@@ -196,23 +196,7 @@ select:focus {
     box-shadow: 0 4px 12px rgba(220, 53, 69, 0.4);
 }
 
-.add-membership {
-    background: transparent;
-    border: 2px solid #2196F3;
-    color: #2196F3;
-    padding: 1rem 2rem;
-    border-radius: var(--radius);
-    font-weight: 600;
-    cursor: pointer;
-    transition: var(--transition);
-    width: 100%;
-    margin-top: 1rem;
-}
-
-.add-membership:hover {
-    background: #2196F3;
-    color: var(--accent);
-}
+/* REMOVED .add-membership styles here */
 
 /* Member List */
 .member-list {
@@ -306,6 +290,7 @@ select:focus {
     font-weight: 600;
 }
 
+/* Tabs */
 .tabs {
     display: flex;
     justify-content: center;
@@ -449,7 +434,7 @@ select:focus {
 }
 .btn-success:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(40, 167, 69, 0.5); }
 
-/* Member Card Styles from Add Member */
+/* Member Card Styles */
 .member-info-card {
     background: rgba(0, 0, 0, 0.3);
     padding: 1.5rem;
@@ -510,7 +495,7 @@ select:focus {
     .member-list th, .member-list td { padding: 0.8rem 1rem; font-size: 0.9rem; }
     .member-list table { display: block; overflow-x: auto; }
     .action-buttons { flex-direction: column; gap: 0.3rem; }
-    .action-button, .archive-button { min-width: 100%; text-align: center; }
+    .archive-button { min-width: 100%; text-align: center; }
     .modal-actions { flex-direction: column; }
     .modal-actions button { width: 100%; }
 }
@@ -520,5 +505,4 @@ select:focus {
     .section h2 { font-size: 1.5rem; }
     input[type="text"], input[type="number"], input[type="date"], select { padding: 0.8rem 1rem; }
     .member-list td:nth-child(4), .member-list th:nth-child(4), .member-list td:nth-child(5), .member-list th:nth-child(5) { display: none; }
-    .action-buttons { gap: 0.2rem; }
 }
