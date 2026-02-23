@@ -1,12 +1,15 @@
 const SERVER_URL = 'http://localhost:8080';
 let debounceTimeout;
 
+// Use a Map to cleanly store and retrieve loaded members for modals without stringifying JSON into HTML
+const allMembersMap = new Map();
+let selectedMemberForRenewal = null;
+
 // --------------------------------------
 // Admin session configuration
 // --------------------------------------
 const ADMIN_SESSION_MAX_AGE_MS = 2 * 60 * 60 * 1000; // 2 hours
 
-// Admin-scoped storage keys to avoid cross-role interference
 const ADMIN_KEYS = {
   token: 'admin_token',
   authUser: 'admin_authUser',
@@ -14,9 +17,6 @@ const ADMIN_KEYS = {
   logoutEvent: 'adminLogoutEvent',
 };
 
-// --------------------------------------
-// Admin storage helpers (namespaced)
-// --------------------------------------
 const AdminStore = {
   set(token, userPayload) {
     try {
@@ -82,10 +82,6 @@ const AdminStore = {
   },
 };
 
-// --------------------------------------
-// Backward‑compatible bootstrap
-// Copy valid admin session from generic keys into admin_* once
-// --------------------------------------
 function bootstrapAdminFromGenericIfNeeded() {
   try {
     if (AdminStore.hasSession()) return;
@@ -103,15 +99,9 @@ function bootstrapAdminFromGenericIfNeeded() {
   }
 }
 
-// ------------------------------
-// Shared auth helpers (admin only)
-// ------------------------------
 function clearLocalAuth() {
-  // Clear admin_* keys
   AdminStore.clear();
 
-  // Also clear legacy generic keys if they currently represent an admin session.
-  // This prevents login.js from auto-redirecting back into admin after logout.
   try {
     const genericRole =
       localStorage.getItem('role') || sessionStorage.getItem('role');
@@ -144,15 +134,12 @@ function getToken() {
 function adminLogout(reason, loginPath = '../login.html') {
   console.log('[Admin Logout]:', reason || 'no reason');
   clearLocalAuth();
-  // Notify admin tabs only
   localStorage.setItem(ADMIN_KEYS.logoutEvent, Date.now().toString());
   window.location.href = loginPath;
 }
 
-// Centralized admin auth check
 function ensureAdminAuthOrLogout(loginPath) {
   try {
-    // Populate admin_* from generic keys if needed
     if (!AdminStore.hasSession()) {
       bootstrapAdminFromGenericIfNeeded();
     }
@@ -174,11 +161,9 @@ function ensureAdminAuthOrLogout(loginPath) {
       return false;
     }
 
-    // Refresh timestamp on successful check
     authUser.timestamp = Date.now();
     AdminStore.set(AdminStore.getToken(), authUser);
 
-    // Cross-tab logout: listen for adminLogoutEvent
     window.addEventListener('storage', (event) => {
       if (event.key === ADMIN_KEYS.logoutEvent) {
         adminLogout('adminLogoutEvent from another tab', loginPath);
@@ -193,28 +178,16 @@ function ensureAdminAuthOrLogout(loginPath) {
   }
 }
 
-/**
- * Require a valid auth session for this page.
- * - expectedRole: 'admin' | 'member' | 'trainer'
- * - loginPath: relative path to the corresponding login page
- *
- * For this admin module we just delegate to ensureAdminAuthOrLogout,
- * but keep the signature unchanged at the call site.
- */
 function requireAuth(expectedRole, loginPath) {
   return ensureAdminAuthOrLogout(loginPath);
 }
 
-// Global cross‑tab admin logout sync (admin_* only)
 window.addEventListener('storage', (event) => {
   if (event.key === ADMIN_KEYS.logoutEvent) {
     adminLogout('adminLogoutEvent from another tab (global)', '../login.html');
   }
 });
 
-// ------------------------------
-// Utility for authenticated API calls
-// ------------------------------
 async function apiFetch(endpoint, options = {}) {
   const ok = ensureAdminAuthOrLogout('../login.html');
   if (!ok) return;
@@ -227,14 +200,12 @@ async function apiFetch(endpoint, options = {}) {
     return;
   }
 
-  // Basic timestamp check (same as requireAuth)
   try {
     const ts = authUser.timestamp || 0;
     if (!ts || Date.now() - ts > ADMIN_SESSION_MAX_AGE_MS) {
       adminLogout('admin session max age exceeded in apiFetch', '../login.html');
       return;
     }
-    // Refresh timestamp on successful API use
     authUser.timestamp = Date.now();
     AdminStore.set(token, authUser);
   } catch (e) {
@@ -252,14 +223,12 @@ async function apiFetch(endpoint, options = {}) {
   const headers = {
     ...options.headers,
     Authorization: `Bearer ${token}`,
-    'Content-Type': 'application/json', // Default for this file's JSON calls
+    'Content-Type': 'application/json',
   };
 
   const response = await fetch(url, { ...options, headers });
 
   if (response.status === 401) {
-    // Session invalid/expired OR logged in from another browser:
-    // clear admin, broadcast admin logout to other tabs, and redirect.
     clearLocalAuth();
     localStorage.setItem(ADMIN_KEYS.logoutEvent, Date.now().toString());
     window.location.href = '../login.html';
@@ -270,6 +239,18 @@ async function apiFetch(endpoint, options = {}) {
 }
 
 // ------------------------------
+// Utility functions
+// ------------------------------
+function formatDate(date) {
+  const options = { year: 'numeric', month: 'long', day: 'numeric' };
+  return new Date(date).toLocaleDateString('en-US', options);
+}
+
+function storeMembers(members) {
+    members.forEach(m => allMembersMap.set(m.memberId, m));
+}
+
+// ------------------------------
 // Tab elements
 // ------------------------------
 const tabActive = document.getElementById('tabActive');
@@ -277,14 +258,13 @@ const tabInactive = document.getElementById('tabInactive');
 const memberListSection = document.getElementById('memberListSection');
 const inactiveListSection = document.getElementById('inactiveListSection');
 
-// Toggle tabs
 if (tabActive) {
   tabActive.addEventListener('click', () => {
     tabActive.classList.add('active');
     if (tabInactive) tabInactive.classList.remove('active');
     if (memberListSection) memberListSection.classList.add('active');
     if (inactiveListSection) inactiveListSection.classList.remove('active');
-    loadMembersStrict('active'); // strict active only
+    loadMembersStrict('active'); 
   });
 }
 if (tabInactive) {
@@ -293,7 +273,7 @@ if (tabInactive) {
     if (tabActive) tabActive.classList.remove('active');
     if (inactiveListSection) inactiveListSection.classList.add('active');
     if (memberListSection) memberListSection.classList.remove('active');
-    await loadMembersStrict('inactive'); // strict inactive only
+    await loadMembersStrict('inactive'); 
   });
 }
 
@@ -305,43 +285,31 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (!ok) return;
 
   setupSidebarAndSession();
+  setupModals();
+  setupRenewalForm();
   await checkServerConnection();
-  await loadMembersStrict('active'); // default to active-only on first load
+  await loadMembersStrict('active'); 
   setupSearchListener();
 
   const statusFilter = document.getElementById('status_filter');
   if (statusFilter) {
     statusFilter.addEventListener('change', () => {
-      // When on Active tab, enforce active-only unless user explicitly changes filter to something else
-      const currentTab = tabActive?.classList.contains('active')
-        ? 'active'
-        : 'inactive';
-      if (currentTab === 'active') {
-        loadMembersStrict('active');
-      } else {
-        loadMembersStrict('inactive');
-      }
+      const currentTab = tabActive?.classList.contains('active') ? 'active' : 'inactive';
+      loadMembersStrict(currentTab);
     });
   }
 });
 
-// ------------------------------
-// Sidebar + session handling
-// ------------------------------
 function setupSidebarAndSession() {
   const menuToggle = document.getElementById('menuToggle');
   const sidebar = document.querySelector('.sidebar');
   const logoutBtn = document.getElementById('logoutBtn');
 
-  // Security: Check timestamp + clear on invalid
   try {
     const authUser = AdminStore.getAuthUser();
     const ts = authUser?.timestamp || 0;
     if (!authUser || !ts || Date.now() - ts > ADMIN_SESSION_MAX_AGE_MS) {
-      adminLogout(
-        'admin session max age exceeded in setupSidebarAndSession',
-        '../login.html'
-      );
+      adminLogout('admin session max age exceeded in setupSidebarAndSession', '../login.html');
       return;
     }
   } catch (e) {
@@ -349,7 +317,6 @@ function setupSidebarAndSession() {
     return;
   }
 
-  // Display admin full name in sidebar
   const adminNameEl = document.getElementById('adminFullName');
   if (adminNameEl) {
     const authUser = AdminStore.getAuthUser();
@@ -357,9 +324,7 @@ function setupSidebarAndSession() {
   }
 
   if (menuToggle && sidebar) {
-    menuToggle.addEventListener('click', () =>
-      sidebar.classList.toggle('collapsed')
-    );
+    menuToggle.addEventListener('click', () => sidebar.classList.toggle('collapsed'));
   }
 
   if (logoutBtn) {
@@ -368,38 +333,24 @@ function setupSidebarAndSession() {
       try {
         if (token) {
           const logoutUrl = `${getApiBase()}/api/logout`;
-          await fetch(logoutUrl, {
-            method: 'POST',
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          });
+          await fetch(logoutUrl, { method: 'POST', headers: { Authorization: `Bearer ${token}` } });
         }
       } catch (e) {
         console.error('Logout error:', e);
       } finally {
         clearLocalAuth();
-        // Notify admin tabs in this browser
         localStorage.setItem(ADMIN_KEYS.logoutEvent, Date.now().toString());
         window.location.href = '../login.html';
       }
     });
   }
 
-  // Mobile sidebar click outside
   document.addEventListener('click', (e) => {
-    if (
-      window.innerWidth <= 768 &&
-      sidebar &&
-      menuToggle &&
-      !sidebar.contains(e.target) &&
-      !menuToggle.contains(e.target)
-    ) {
+    if (window.innerWidth <= 768 && sidebar && menuToggle && !sidebar.contains(e.target) && !menuToggle.contains(e.target)) {
       sidebar.classList.remove('collapsed');
     }
   });
 
-  // Overflow handling on collapse (mobile)
   if (sidebar) {
     sidebar.addEventListener('transitionend', () => {
       if (window.innerWidth <= 768 && sidebar.classList.contains('collapsed')) {
@@ -411,15 +362,10 @@ function setupSidebarAndSession() {
   }
 }
 
-
-// ------------------------------
-// Server health check
-// ------------------------------
 async function checkServerConnection() {
   const statusElement = document.getElementById('serverStatus');
   if (!statusElement) return;
   try {
-    // Secure health check (apiFetch handles auth, but /health can bypass in backend)
     const result = await apiFetch('/health');
     if (result) {
       statusElement.textContent = 'Connected to server successfully';
@@ -428,8 +374,7 @@ async function checkServerConnection() {
       throw new Error('Health check failed');
     }
   } catch (error) {
-    statusElement.textContent =
-      'Cannot connect to server. Please try again later.';
+    statusElement.textContent = 'Cannot connect to server. Please try again later.';
     statusElement.className = 'server-status server-disconnected';
     console.error('Server connection error:', error);
   }
@@ -452,7 +397,6 @@ function debounce(func, wait) {
   };
 }
 
-// Strict search that filters results by current tab's status
 async function searchMembersStrict() {
   const query = document.getElementById('member_search')?.value.trim();
   const suggestions = document.getElementById('autocompleteSuggestions');
@@ -464,9 +408,7 @@ async function searchMembersStrict() {
     suggestions.style.display = 'none';
   }
 
-  const currentTab = tabActive?.classList.contains('active')
-    ? 'active'
-    : 'inactive';
+  const currentTab = tabActive?.classList.contains('active') ? 'active' : 'inactive';
 
   if (!query || query.length < 2) {
     await loadMembersStrict(currentTab);
@@ -474,19 +416,14 @@ async function searchMembersStrict() {
   }
 
   try {
-    // Secure search with apiFetch (GET, returns {success: true, data: [...]})
-    const result = await apiFetch(
-      `/api/members/search?query=${encodeURIComponent(query)}`
-    );
+    const result = await apiFetch(`/api/members/search?query=${encodeURIComponent(query)}`);
 
     if (!result.success) {
       throw new Error(result.error || 'Search failed');
     }
 
-    // Apply strict status filter client-side to search results
-    const data = Array.isArray(result.data)
-      ? result.data.filter((m) => (m.status || 'active') === currentTab)
-      : [];
+    const data = Array.isArray(result.data) ? result.data.filter((m) => (m.status || 'active') === currentTab) : [];
+    storeMembers(data);
 
     if (data.length > 0) {
       if (suggestions) {
@@ -495,8 +432,7 @@ async function searchMembersStrict() {
           const suggestion = document.createElement('div');
           suggestion.className = 'autocomplete-suggestion';
           suggestion.textContent = `${member.name} (${member.memberId})`;
-          suggestion.onclick = () =>
-            selectMember(member.memberId, member.name);
+          suggestion.onclick = () => selectMember(member.memberId, member.name);
           suggestions.appendChild(suggestion);
         });
       }
@@ -508,28 +444,14 @@ async function searchMembersStrict() {
       }
     } else {
       if (currentTab === 'active' && memberListBody) {
-        memberListBody.innerHTML =
-          '<tr><td colspan="7">No members found</td></tr>';
+        memberListBody.innerHTML = '<tr><td colspan="7">No members found</td></tr>';
       } else {
         const tbody = document.getElementById('inactiveListBody');
-        if (tbody) {
-          tbody.innerHTML =
-            '<tr><td colspan="7">No members found</td></tr>';
-        }
+        if (tbody) tbody.innerHTML = '<tr><td colspan="7">No members found</td></tr>';
       }
     }
   } catch (error) {
     console.error('Error searching members:', error);
-    if (currentTab === 'active' && memberListBody) {
-      memberListBody.innerHTML =
-        '<tr><td colspan="7">Error loading members</td></tr>';
-    } else {
-      const tbody = document.getElementById('inactiveListBody');
-      if (tbody) {
-        tbody.innerHTML =
-          '<tr><td colspan="7">Error loading members</td></tr>';
-      }
-    }
     if (errorMessage) {
       errorMessage.textContent = 'Network error: ' + error.message;
       errorMessage.style.display = 'block';
@@ -543,7 +465,6 @@ function selectMember(memberId, memberName) {
   const suggestions = document.getElementById('autocompleteSuggestions');
   if (searchInput) searchInput.value = memberName;
   if (suggestions) suggestions.style.display = 'none';
-  // Narrow search by ID while respecting strict status
   searchMembersStrict();
 }
 
@@ -555,38 +476,27 @@ async function loadMembersStrict(strictStatus) {
     await loadInactiveMembers();
     return;
   }
-  // active tab
+  
   const memberListBody = document.getElementById('memberListBody');
   const errorMessage = document.getElementById('errorMessage');
 
-  if (memberListBody) {
-    memberListBody.innerHTML =
-      '<tr><td colspan="7">Loading...</td></tr>';
-  }
+  if (memberListBody) memberListBody.innerHTML = '<tr><td colspan="7">Loading...</td></tr>';
 
   try {
-    // Secure GET with apiFetch (?status=active, but filter strictly)
     const result = await apiFetch('/api/members?status=active');
+    if (!result.success) throw new Error(result.error || 'Load failed');
 
-    if (!result.success) {
-      throw new Error(result.error || 'Load failed');
-    }
+    const data = Array.isArray(result.data) ? result.data.filter((m) => (m.status || 'active') === 'active') : [];
+    storeMembers(data);
 
-    const data = Array.isArray(result.data)
-      ? result.data.filter((m) => (m.status || 'active') === 'active')
-      : [];
     if (data.length > 0) {
       displayMembersActive(data);
     } else if (memberListBody) {
-      memberListBody.innerHTML =
-        '<tr><td colspan="7">No members found</td></tr>';
+      memberListBody.innerHTML = '<tr><td colspan="7">No members found</td></tr>';
     }
   } catch (error) {
     console.error('Error loading members:', error);
-    if (memberListBody) {
-      memberListBody.innerHTML =
-        '<tr><td colspan="7">Error loading members</td></tr>';
-    }
+    if (memberListBody) memberListBody.innerHTML = '<tr><td colspan="7">Error loading members</td></tr>';
     if (errorMessage) {
       errorMessage.textContent = 'Network error: ' + error.message;
       errorMessage.style.display = 'block';
@@ -600,23 +510,16 @@ function displayMembersActive(members) {
   if (!memberListBody) return;
   memberListBody.innerHTML = '';
 
-  // Enforce strict active-only rendering
-  const filtered = members.filter(
-    (m) => (m.status || 'active') === 'active'
-  );
+  const filtered = members.filter((m) => (m.status || 'active') === 'active');
 
   filtered.forEach((member) => {
     const memberships = (member.memberships || [])
       .map((m) => {
-        const durationLabel =
-          m.type === 'combative'
-            ? `${m.remainingSessions || m.duration} sessions`
-            : `${m.duration} months`;
-        return `${m.type} (${m.status}, ${durationLabel}, ends ${new Date(
-          m.endDate
-        ).toLocaleDateString()})`;
+        const durationLabel = m.type === 'combative' ? `${m.remainingSessions || m.duration} sessions` : `${m.duration} months`;
+        return `${m.type} (${m.status}, ${durationLabel}, ends ${new Date(m.endDate).toLocaleDateString()})`;
       })
       .join(', ');
+      
     const row = document.createElement('tr');
     row.innerHTML = `
       <td>${member.memberId}</td>
@@ -626,26 +529,18 @@ function displayMembersActive(members) {
       <td>${memberships || 'None'}</td>
       <td>${member.status}</td>
       <td>
-        <button class="action-button" onclick='editMember(${JSON.stringify(
-          member
-        )})'>Edit</button>
-        <button class="archive-button" onclick="archiveMember('${
-          member.memberId
-        }', 'inactive')">Archive</button>
+        <button class="action-button" onclick="editMemberById('${member.memberId}')">Edit</button>
+        <button class="archive-button" onclick="confirmArchive('${member.memberId}')">Archive</button>
       </td>
     `;
     memberListBody.appendChild(row);
   });
 
   if (filtered.length === 0) {
-    memberListBody.innerHTML =
-      '<tr><td colspan="7">No members found</td></tr>';
+    memberListBody.innerHTML = '<tr><td colspan="7">No members found</td></tr>';
   }
 }
 
-// ------------------------------
-// Inactive list handling (strict)
-// ------------------------------
 async function loadInactiveMembers() {
   const tbody = document.getElementById('inactiveListBody');
   const errorMessage = document.getElementById('errorMessage');
@@ -654,28 +549,21 @@ async function loadInactiveMembers() {
   tbody.innerHTML = '<tr><td colspan="7">Loading...</td></tr>';
 
   try {
-    // Secure GET with apiFetch (?status=inactive)
     const result = await apiFetch('/api/members?status=inactive');
+    if (!result.success) throw new Error(result.error || 'Load failed');
 
-    if (!result.success) {
-      throw new Error(result.error || 'Load failed');
-    }
-
-    const data = Array.isArray(result.data)
-      ? result.data.filter((m) => (m.status || 'active') === 'inactive')
-      : [];
+    const data = Array.isArray(result.data) ? result.data.filter((m) => (m.status || 'active') === 'inactive') : [];
+    storeMembers(data);
 
     tbody.innerHTML = '';
     if (data.length > 0) {
       displayMembersInactive(data);
     } else {
-      tbody.innerHTML =
-        '<tr><td colspan="7">No inactive members</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="7">No inactive members</td></tr>';
     }
   } catch (error) {
     console.error('Error loading inactive members:', error);
-    tbody.innerHTML =
-      '<tr><td colspan="7">Error loading inactive members</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7">Error loading inactive members</td></tr>';
     if (errorMessage) {
       errorMessage.textContent = 'Network error: ' + error.message;
       errorMessage.style.display = 'block';
@@ -689,21 +577,13 @@ function displayMembersInactive(members) {
   if (!tbody) return;
   tbody.innerHTML = '';
 
-  // Enforce strict inactive-only rendering
-  const filtered = members.filter(
-    (m) => (m.status || 'active') === 'inactive'
-  );
+  const filtered = members.filter((m) => (m.status || 'active') === 'inactive');
 
   filtered.forEach((member) => {
     const memberships = (member.memberships || [])
       .map((m) => {
-        const durationLabel =
-          m.type === 'combative'
-            ? `${m.remainingSessions || m.duration} sessions`
-            : `${m.duration} months`;
-        return `${m.type} (${m.status}, ${durationLabel}, ends ${new Date(
-          m.endDate
-        ).toLocaleDateString()})`;
+        const durationLabel = m.type === 'combative' ? `${m.remainingSessions || m.duration} sessions` : `${m.duration} months`;
+        return `${m.type} (${m.status}, ${durationLabel}, ends ${new Date(m.endDate).toLocaleDateString()})`;
       })
       .join(', ');
 
@@ -716,55 +596,53 @@ function displayMembersInactive(members) {
       <td>${memberships || 'None'}</td>
       <td>${member.status}</td>
       <td>
-        <button class="action-button" onclick="setStatus('${
-          member.memberId
-        }', 'active')">Activate</button>
+        <button class="action-button" onclick="openRenewalModal('${member.memberId}')">Activate</button>
       </td>
     `;
     tbody.appendChild(row);
   });
 
   if (filtered.length === 0) {
-    tbody.innerHTML =
-      '<tr><td colspan="7">No inactive members</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7">No inactive members</td></tr>';
   }
 }
 
 // ------------------------------
-// Status / archive actions
+// Modals & Action Flows
 // ------------------------------
-async function setStatus(memberId, status) {
-  const successMessage = document.getElementById('successMessage');
-  const errorMessage = document.getElementById('errorMessage');
-  try {
-    // Secure PATCH with apiFetch
-    const result = await apiFetch(`/api/members/${memberId}/status`, {
-      method: 'PATCH',
-      body: JSON.stringify({ status }),
-    });
+function setupModals() {
+    const archiveModal = document.getElementById('archiveConfirmModal');
+    const closeArchiveBtn = document.getElementById('closeArchiveModalBtn');
+    const cancelArchiveBtn = document.getElementById('cancelArchiveBtn');
+    const confirmArchiveBtn = document.getElementById('confirmArchiveBtn');
 
-    if (result.success) {
-      if (successMessage) {
-        successMessage.textContent = result.message || 'Status updated';
-        successMessage.style.display = 'block';
-        setTimeout(() => (successMessage.style.display = 'none'), 4000);
-      }
-      // Refresh the current tab strictly
-      const currentTab = tabActive?.classList.contains('active')
-        ? 'active'
-        : 'inactive';
-      await loadMembersStrict(currentTab);
-    } else {
-      throw new Error(result.error || 'Failed to update status');
+    if(closeArchiveBtn) closeArchiveBtn.addEventListener('click', () => archiveModal.style.display = 'none');
+    if(cancelArchiveBtn) cancelArchiveBtn.addEventListener('click', () => archiveModal.style.display = 'none');
+    
+    if(confirmArchiveBtn) {
+        confirmArchiveBtn.addEventListener('click', async () => {
+            const memberId = confirmArchiveBtn.getAttribute('data-id');
+            await archiveMember(memberId, 'inactive');
+            archiveModal.style.display = 'none';
+        });
     }
-  } catch (error) {
-    console.error('Error updating status:', error);
-    if (errorMessage) {
-      errorMessage.textContent = 'Network error: ' + error.message;
-      errorMessage.style.display = 'block';
-      setTimeout(() => (errorMessage.style.display = 'none'), 5000);
-    }
-  }
+
+    const renewalModal = document.getElementById('renewalModal');
+    const closeRenewalBtn = document.getElementById('closeRenewalBtn');
+    
+    if(closeRenewalBtn) closeRenewalBtn.addEventListener('click', () => renewalModal.style.display = 'none');
+
+    window.addEventListener('click', (e) => {
+        if (e.target === archiveModal) archiveModal.style.display = 'none';
+        if (e.target === renewalModal) renewalModal.style.display = 'none';
+    });
+}
+
+function confirmArchive(memberId) {
+    const archiveModal = document.getElementById('archiveConfirmModal');
+    const confirmBtn = document.getElementById('confirmArchiveBtn');
+    if (confirmBtn) confirmBtn.setAttribute('data-id', memberId);
+    if (archiveModal) archiveModal.style.display = 'flex';
 }
 
 async function archiveMember(memberId, status) {
@@ -772,7 +650,6 @@ async function archiveMember(memberId, status) {
   const errorMessage = document.getElementById('errorMessage');
 
   try {
-    // Secure PATCH with apiFetch
     const result = await apiFetch(`/api/members/${memberId}/archive`, {
       method: 'PATCH',
       body: JSON.stringify({ status }),
@@ -784,7 +661,7 @@ async function archiveMember(memberId, status) {
         successMessage.style.display = 'block';
         setTimeout(() => (successMessage.style.display = 'none'), 5000);
       }
-      await loadMembersStrict('active'); // stay strict on active tab after archive
+      await loadMembersStrict('active'); 
     } else {
       throw new Error(result.error || 'Failed to archive member');
     }
@@ -799,30 +676,298 @@ async function archiveMember(memberId, status) {
 }
 
 // ------------------------------
+// Renewal & Activation Flow
+// ------------------------------
+function openRenewalModal(memberId) {
+    const member = allMembersMap.get(memberId);
+    if (!member) return;
+    
+    selectedMemberForRenewal = member;
+    const modal = document.getElementById('renewalModal');
+    const memberInfoCard = document.getElementById('memberInfoCard');
+    const renewalForm = document.getElementById('renewalForm');
+    
+    // Reset Form
+    if (renewalForm) renewalForm.reset();
+    document.getElementById('renewMonthlyDetails').style.display = 'none';
+    document.getElementById('renewCombativeDetails').style.display = 'none';
+    document.getElementById('renewalInfoBox').style.display = 'none';
+    
+    const today = new Date();
+    const renewalDateInput = document.getElementById('renewalDate');
+    if (renewalDateInput) renewalDateInput.valueAsDate = today;
+
+    // Populate member card
+    let membershipHTML = '';
+    if (member.memberships && member.memberships.length > 0) {
+        membershipHTML = member.memberships.map((m) => {
+            const endDate = new Date(m.endDate);
+            const isExpired = endDate < new Date();
+            return `
+            <div class="membership-item ${isExpired ? 'expired' : m.status}">
+                <span class="membership-type">${m.type.toUpperCase()}</span>
+                <span class="membership-status">${m.status}</span>
+                <span class="membership-date">Expires: ${formatDate(endDate)}</span>
+            </div>`;
+        }).join('');
+    } else {
+        membershipHTML = '<p style="color: #ccc; margin-top: 10px;">No existing memberships found.</p>';
+    }
+
+    if (memberInfoCard) {
+        memberInfoCard.innerHTML = `
+            <h4><i class="fas fa-user-circle"></i> ${member.name}</h4>
+            <p><strong>Member ID:</strong> ${member.memberId}</p>
+            <p><strong>Status:</strong> <span class="status-badge status-${member.status}">${member.status}</span></p>
+            <div style="margin-top: 10px;">
+                <strong>Current Memberships:</strong>
+                ${membershipHTML}
+            </div>
+        `;
+    }
+
+    if (modal) modal.style.display = 'flex';
+}
+
+function setupRenewalForm() {
+  const renewMonthly = document.getElementById('renewMonthly');
+  const renewCombative = document.getElementById('renewCombative');
+  
+  if (renewMonthly) {
+    renewMonthly.addEventListener('change', function () {
+      document.getElementById('renewMonthlyDetails').style.display = this.checked ? 'block' : 'none';
+      updateRenewalInfo();
+    });
+  }
+  if (renewCombative) {
+    renewCombative.addEventListener('change', function () {
+      document.getElementById('renewCombativeDetails').style.display = this.checked ? 'block' : 'none';
+      updateRenewalInfo();
+    });
+  }
+
+  const renewalDate = document.getElementById('renewalDate');
+  const renewMonthlyDuration = document.getElementById('renewMonthlyDuration');
+  const renewCombativeSessions = document.getElementById('renewCombativeSessions');
+  if (renewalDate) renewalDate.addEventListener('change', updateRenewalInfo);
+  if (renewMonthlyDuration) renewMonthlyDuration.addEventListener('input', updateRenewalInfo);
+  if (renewCombativeSessions) renewCombativeSessions.addEventListener('input', updateRenewalInfo);
+
+  const renewalForm = document.getElementById('renewalForm');
+  if (renewalForm) {
+    renewalForm.addEventListener('submit', handleRenewal);
+  }
+}
+
+function updateRenewalInfo() {
+  if (!selectedMemberForRenewal) return;
+
+  const renewalDateInput = document.getElementById('renewalDate');
+  if (!renewalDateInput?.value) return;
+
+  const renewalDate = new Date(renewalDateInput.value);
+  const monthlyChecked = document.getElementById('renewMonthly').checked;
+  const combativeChecked = document.getElementById('renewCombative').checked;
+  const infoBox = document.getElementById('renewalInfoBox');
+
+  if (!monthlyChecked && !combativeChecked) {
+    if (infoBox) infoBox.style.display = 'none';
+    return;
+  }
+
+  let infoHTML = '<strong><i class="fas fa-info-circle"></i> Renewal Summary:</strong><br><br>';
+
+  if (monthlyChecked) {
+    const duration = parseInt(document.getElementById('renewMonthlyDuration').value) || 1;
+    const currentMembership = selectedMemberForRenewal.memberships?.find(m => m.type === 'monthly');
+    const endDate = calculateNewEndDate(renewalDate, currentMembership?.endDate, duration, 'monthly');
+
+    infoHTML += `
+      <div style="margin-bottom: 10px;">
+        <strong>Monthly Membership:</strong><br>
+        <span style="color: #ccc; font-size: 0.9rem;">Start Date: ${formatDate(renewalDate)}</span><br>
+        <span style="color: #ccc; font-size: 0.9rem;">End Date: ${formatDate(endDate)}</span><br>
+        <span style="color: #ccc; font-size: 0.9rem;">Duration: ${duration} month(s)</span>
+      </div>
+    `;
+  }
+
+  if (combativeChecked) {
+    const sessions = parseInt(document.getElementById('renewCombativeSessions').value) || 12;
+    const currentMembership = selectedMemberForRenewal.memberships?.find(m => m.type === 'combative');
+    const endDate = calculateNewEndDate(renewalDate, currentMembership?.endDate, 1, 'combative');
+
+    infoHTML += `
+      <div>
+        <strong>Combative Membership:</strong><br>
+        <span style="color: #ccc; font-size: 0.9rem;">Start Date: ${formatDate(renewalDate)}</span><br>
+        <span style="color: #ccc; font-size: 0.9rem;">End Date: ${formatDate(endDate)}</span><br>
+        <span style="color: #ccc; font-size: 0.9rem;">Sessions: ${sessions}</span>
+      </div>
+    `;
+  }
+
+  if (infoBox) {
+    infoBox.innerHTML = infoHTML;
+    infoBox.style.display = 'block';
+  }
+}
+
+function calculateNewEndDate(renewalDate, currentEndDateStr, durationMonths, membershipType) {
+  const renewal = new Date(renewalDate);
+  const currentEnd = currentEndDateStr ? new Date(currentEndDateStr) : null;
+
+  if (membershipType === 'combative' && currentEnd) {
+    const twoMonthsAgo = new Date(renewal);
+    twoMonthsAgo.setMonth(twoMonthsAgo.getMonth() - 2);
+
+    if (currentEnd < twoMonthsAgo) {
+      const newEnd = new Date(renewal);
+      newEnd.setMonth(newEnd.getMonth() + durationMonths);
+      return newEnd;
+    }
+  }
+
+  if (currentEnd && renewal < currentEnd) {
+    const newEnd = new Date(currentEnd);
+    newEnd.setMonth(newEnd.getMonth() + durationMonths);
+    return newEnd;
+  } else {
+    const newEnd = new Date(renewal);
+    newEnd.setMonth(newEnd.getMonth() + durationMonths);
+    return newEnd;
+  }
+}
+
+async function handleRenewal(e) {
+  e.preventDefault();
+
+  if (!selectedMemberForRenewal) return;
+
+  const monthlyChecked = document.getElementById('renewMonthly').checked;
+  const combativeChecked = document.getElementById('renewCombative').checked;
+
+  if (!monthlyChecked && !combativeChecked) {
+    alert('Please select at least one membership type to renew');
+    return;
+  }
+
+  const submitBtn = e.target.querySelector('button[type="submit"]');
+  const originalText = submitBtn?.innerHTML;
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+  }
+
+  try {
+    const renewalDate = new Date(document.getElementById('renewalDate').value);
+    const updatedMemberships = [];
+
+    // Keep non-selected existing memberships
+    if (selectedMemberForRenewal.memberships) {
+      selectedMemberForRenewal.memberships.forEach((m) => {
+        if (m.type === 'monthly' && !monthlyChecked) {
+          updatedMemberships.push(m);
+        } else if (m.type === 'combative' && !combativeChecked) {
+          updatedMemberships.push(m);
+        }
+      });
+    }
+
+    if (monthlyChecked) {
+      const duration = parseInt(document.getElementById('renewMonthlyDuration').value) || 1;
+      const currentMembership = selectedMemberForRenewal.memberships?.find(m => m.type === 'monthly');
+      const endDate = calculateNewEndDate(renewalDate, currentMembership?.endDate, duration, 'monthly');
+
+      updatedMemberships.push({
+        type: 'monthly',
+        duration: duration,
+        startDate: renewalDate.toISOString(),
+        endDate: endDate.toISOString(),
+        status: 'active',
+      });
+    }
+
+    if (combativeChecked) {
+      const sessions = parseInt(document.getElementById('renewCombativeSessions').value) || 12;
+      const currentMembership = selectedMemberForRenewal.memberships?.find(m => m.type === 'combative');
+      const endDate = calculateNewEndDate(renewalDate, currentMembership?.endDate, 1, 'combative');
+
+      updatedMemberships.push({
+        type: 'combative',
+        duration: sessions,
+        remainingSessions: sessions,
+        startDate: renewalDate.toISOString(),
+        endDate: endDate.toISOString(),
+        status: 'active',
+      });
+    }
+
+    // Call the same update endpoint used in add-member
+    const result = await apiFetch(`/api/members/${selectedMemberForRenewal._id}`, {
+      method: 'PUT',
+      body: JSON.stringify({
+        memberships: updatedMemberships,
+        status: 'active', // Important: This switches them out of the inactive list
+      }),
+    });
+
+    if (result.success) {
+      const successMessage = document.getElementById('successMessage');
+      if (successMessage) {
+          successMessage.textContent = 'Member successfully activated and renewed!';
+          successMessage.style.display = 'block';
+          setTimeout(() => successMessage.style.display = 'none', 5000);
+      }
+      
+      document.getElementById('renewalModal').style.display = 'none';
+      await loadMembersStrict('inactive'); // Refresh list
+    } else {
+      throw new Error(result.error || 'Failed to renew membership');
+    }
+  } catch (error) {
+    const errorMessage = document.getElementById('errorMessage');
+    if (errorMessage) {
+        errorMessage.textContent = 'Error: ' + error.message;
+        errorMessage.style.display = 'block';
+        setTimeout(() => errorMessage.style.display = 'none', 5000);
+    }
+  } finally {
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = originalText;
+    }
+  }
+}
+
+// ------------------------------
 // Edit member flow
 // ------------------------------
-function editMember(member) {
-  const memberListSection = document.getElementById('memberListSection');
-  const editMemberSection = document.getElementById('editMemberSection');
-  if (memberListSection) memberListSection.classList.remove('active');
-  if (editMemberSection) editMemberSection.classList.add('active');
+function editMemberById(memberId) {
+    const member = allMembersMap.get(memberId);
+    if (!member) return;
+    
+    const memberListSection = document.getElementById('memberListSection');
+    const editMemberSection = document.getElementById('editMemberSection');
+    if (memberListSection) memberListSection.classList.remove('active');
+    if (editMemberSection) editMemberSection.classList.add('active');
 
-  document.getElementById('edit_member_id').value = member.memberId;
-  document.getElementById('edit_name').value = member.name;
-  document.getElementById('edit_phone').value = member.phone || '';
-  document.getElementById('edit_email').value = member.email || '';
+    document.getElementById('edit_member_id').value = member.memberId;
+    document.getElementById('edit_name').value = member.name;
+    document.getElementById('edit_phone').value = member.phone || '';
+    document.getElementById('edit_email').value = member.email || '';
 
-  const membershipsContainer = document.getElementById('membershipsContainer');
-  if (!membershipsContainer) return;
-  membershipsContainer.innerHTML = '';
+    const membershipsContainer = document.getElementById('membershipsContainer');
+    if (!membershipsContainer) return;
+    membershipsContainer.innerHTML = '';
 
-  if (member.memberships && member.memberships.length > 0) {
-    member.memberships.forEach((membership, index) => {
-      addMembershipField(membership, index);
-    });
-  } else {
-    addMembershipField();
-  }
+    if (member.memberships && member.memberships.length > 0) {
+      member.memberships.forEach((membership, index) => {
+        addMembershipField(membership, index);
+      });
+    } else {
+      addMembershipField();
+    }
 }
 
 function addMembershipField(
@@ -942,7 +1087,6 @@ if (editForm) {
     const errorMessage = document.getElementById('errorMessage');
 
     try {
-      // Secure PUT with apiFetch
       const result = await apiFetch(`/api/members/${memberId}`, {
         method: 'PUT',
         body: JSON.stringify(updateData),

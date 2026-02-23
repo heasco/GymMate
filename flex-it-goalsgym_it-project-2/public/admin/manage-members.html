@@ -7,10 +7,10 @@
   <link rel="icon" type="image/png" href="image/logo2.png">
   <link rel="stylesheet" href="./admin-css/admin-mainpage.css">
   <link rel="stylesheet" href="./admin-css/manage-members.css">
+  <script src="https://kit.fontawesome.com/1d0b8c9b1d.js" crossorigin="anonymous"></script>
 </head>
 <body>
   <div class="admin-container">
-    <!-- Sidebar -->
     <aside class="sidebar">
       <div class="sidebar-header">
         <h2>GOALS Gym Admin</h2>
@@ -33,27 +33,23 @@
       </nav>
     </aside>
 
-    <!-- Header -->
     <header class="header">
       <button class="menu-toggle" id="menuToggle">☰</button>
       <h1>Manage Members</h1>
       <button class="logout-btn" id="logoutBtn">Logout</button>
     </header>
 
-    <!-- Main Content -->
     <main class="main-content">
       <div class="container">
         <div id="serverStatus" class="server-status">Checking server connection...</div>
         <div id="successMessage" class="success-message"></div>
         <div id="errorMessage" class="error-message"></div>
 
-        <!-- Tabs -->
         <div class="tabs">
           <button id="tabActive" class="tab-btn active">Active Members</button>
           <button id="tabInactive" class="tab-btn">Inactive Members</button>
         </div>
 
-        <!-- Active list -->
         <div id="memberListSection" class="section active">
           <h2>Manage Members</h2>
 
@@ -98,7 +94,6 @@
           </div>
         </div>
 
-        <!-- Edit form -->
         <div id="editMemberSection" class="section">
           <h2>Edit Member</h2>
           <form id="editMemberForm">
@@ -127,7 +122,6 @@
           </form>
         </div>
 
-        <!-- Inactive list -->
         <div id="inactiveListSection" class="section">
           <h2>Inactive Members</h2>
           <div class="member-list">
@@ -152,6 +146,78 @@
 
       </div>
     </main>
+  </div>
+
+  <div id="archiveConfirmModal" class="modal">
+      <div class="modal-content text-center">
+          <span class="close-btn" id="closeArchiveModalBtn">&times;</span>
+          <h2 class="modal-title warning-text">Confirm Archiving</h2>
+          <div class="warning-box">
+              <p><strong>This member will be archived.</strong></p>
+              <p>To make them active again in the future, you will need to renew their membership.</p>
+          </div>
+          <div class="modal-actions">
+              <button id="confirmArchiveBtn" class="btn-primary">Proceed with Archiving</button>
+              <button id="cancelArchiveBtn" class="btn-secondary">Cancel</button>
+          </div>
+      </div>
+  </div>
+
+  <div id="renewalModal" class="modal">
+      <div class="modal-content">
+          <div class="renewal-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 2px solid #ff3333; padding-bottom: 0.5rem;">
+              <h3 style="margin: 0; color: #fff; text-transform: uppercase; font-size: 1.4rem;"><i class="fas fa-sync-alt" style="color: #ff3333;"></i> Renew & Activate Member</h3>
+              <span class="close-btn" id="closeRenewalBtn" style="position: static;">&times;</span>
+          </div>
+
+          <div class="renewal-body">
+              <div id="selectedMemberSection" class="selected-member-section">
+                  <div class="member-info-card" id="memberInfoCard"></div>
+
+                  <form id="renewalForm">
+                      <div class="form-group date-picker-group">
+                          <label for="renewalDate">
+                              <i class="fas fa-calendar-alt"></i> Select Renewal Date *
+                          </label>
+                          <input type="date" id="renewalDate" required>
+                          <p class="help" style="color: #888; font-size: 0.85rem; margin-top: 0.2rem;">Choose the date when the renewal should start</p>
+                      </div>
+
+                      <div class="form-group">
+                          <label>Select Membership to Renew *</label>
+                          <div class="checkbox-group">
+                              <label class="checkbox renewal-checkbox">
+                                  <input type="checkbox" id="renewMonthly" value="monthly">
+                                  Monthly Gym Membership
+                              </label>
+                              <label class="checkbox renewal-checkbox">
+                                  <input type="checkbox" id="renewCombative" value="combative">
+                                  Combative Sports Membership
+                              </label>
+                          </div>
+                      </div>
+
+                      <div class="form-group membership-details" id="renewMonthlyDetails" style="display: none;">
+                          <label for="renewMonthlyDuration">Duration (months):</label>
+                          <input type="number" id="renewMonthlyDuration" min="1" value="1">
+                      </div>
+
+                      <div class="form-group membership-details" id="renewCombativeDetails" style="display: none;">
+                          <label for="renewCombativeSessions">Number of Sessions:</label>
+                          <input type="number" id="renewCombativeSessions" min="1" value="12">
+                      </div>
+
+                      <div id="renewalInfoBox" class="warning-box" style="display: none;"></div>
+
+                      <div class="modal-actions" style="margin-top: 2rem;">
+                          <button type="submit" class="btn-success">
+                              <i class="fas fa-check"></i> Confirm Renewal & Activate
+                          </button>
+                      </div>
+                  </form>
+              </div>
+          </div>
+      </div>
   </div>
 
 <script src="../assets/js/form-persistence.js" defer></script>
