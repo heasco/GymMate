@@ -34,7 +34,6 @@ const MemberStore = {
         token,
       };
 
-      // Prefer localStorage for cross-tab; mirror to sessionStorage
       localStorage.setItem(MEMBER_KEYS.token, token);
       localStorage.setItem(MEMBER_KEYS.authUser, JSON.stringify(authUser));
       localStorage.setItem(MEMBER_KEYS.role, 'member');
@@ -102,7 +101,6 @@ const MemberStore = {
 
 // --------------------------------------
 // Backward‑compatible bootstrap
-// Copy valid member session from generic keys into member_* once
 // --------------------------------------
 function bootstrapMemberFromGenericIfNeeded() {
   try {
@@ -132,7 +130,6 @@ function markMemberActivity() {
   memberIdleWarningShown = false;
 }
 
-// Idle banner at top (like the other member modules)
 function showMemberIdleBanner() {
   let banner = document.getElementById('memberIdleBanner');
   if (!banner) {
@@ -214,7 +211,6 @@ function hideMemberIdleBanner() {
   if (banner) banner.style.display = 'none';
 }
 
-// 15-minute idle watcher + 2-hour hard cap (MemberStore-based)
 function setupMemberIdleWatcher() {
   ['mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart'].forEach((evt) => {
     window.addEventListener(evt, markMemberActivity, { passive: true });
@@ -229,13 +225,10 @@ function setupMemberIdleWatcher() {
 
     if (!token || !authUser || role !== 'member') return;
 
-    // 2-hour absolute session max
     try {
       const ts = authUser.timestamp || 0;
       if (!ts || Date.now() - ts > MEMBER_SESSION_MAX_AGE_MS) {
-        console.log(
-          'Member session exceeded 2 hours (manage-member-enrollment idle watcher).'
-        );
+        console.log('Member session exceeded 2 hours (manage-member-enrollment).');
         memberLogout('session max age exceeded in enrollment idle watcher');
         return;
       }
@@ -245,12 +238,8 @@ function setupMemberIdleWatcher() {
       return;
     }
 
-    // 15-minute idle warning with banner
     const idleFor = Date.now() - memberLastActivity;
     if (!memberIdleWarningShown && idleFor >= MEMBER_IDLE_WARNING_MS) {
-      console.log(
-        "You've been idle for 15 minutes on manage-member-enrollment page."
-      );
       memberIdleWarningShown = true;
       showMemberIdleBanner();
     }
@@ -258,24 +247,18 @@ function setupMemberIdleWatcher() {
 }
 
 // --------------------------------------
-// Centralized logout (member-scoped)
+// Centralized logout
 // --------------------------------------
 function memberLogout(reason) {
   console.log('[Logout] Member logout (enrollment):', reason || 'no reason');
-
-  // Clear member_* keys
   MemberStore.clear();
 
-  // Also clear legacy generic keys if they currently represent a member session
   try {
-    const genericRole =
-      localStorage.getItem('role') || sessionStorage.getItem('role');
-
+    const genericRole = localStorage.getItem('role') || sessionStorage.getItem('role');
     if (genericRole === 'member') {
       localStorage.removeItem('token');
       localStorage.removeItem('authUser');
       localStorage.removeItem('role');
-
       sessionStorage.removeItem('token');
       sessionStorage.removeItem('authUser');
       sessionStorage.removeItem('role');
@@ -284,22 +267,16 @@ function memberLogout(reason) {
     console.error('[memberLogout] failed to clear generic member keys:', e);
   }
 
-  // Notify other member tabs in this browser
   localStorage.setItem(MEMBER_KEYS.logoutEvent, Date.now().toString());
-
   window.location.href = '../login.html';
 }
 
-// Backwards-compatible quickLogout wrapper used in the rest of this file
 function quickLogout() {
-  console.log('🚪 Quick logout from manage-member-enrollment');
   memberLogout('quickLogout');
 }
 
-// Cross‑tab member logout sync
 window.addEventListener('storage', (event) => {
   if (event.key === MEMBER_KEYS.logoutEvent) {
-    console.log('[Member Logout] enrollment page sees logout from another tab');
     MemberStore.clear();
     window.location.href = '../login.html';
   }
@@ -307,11 +284,8 @@ window.addEventListener('storage', (event) => {
 
 // ========================================
 // Utility for authenticated API calls
-// Token + role + 2-hour max + timestamp refresh
 // ========================================
 async function apiFetch(endpoint, options = {}, timeoutMs = 10000) {
-  console.log('apiFetch called for:', endpoint); // DEBUG
-
   bootstrapMemberFromGenericIfNeeded();
 
   const token = MemberStore.getToken();
@@ -319,33 +293,26 @@ async function apiFetch(endpoint, options = {}, timeoutMs = 10000) {
   const authUser = MemberStore.getAuthUser();
 
   if (!token || !authUser || role !== 'member') {
-    console.log('No valid member token/authUser/role - redirecting to login'); // DEBUG
     memberLogout('missing member session in enrollment apiFetch');
     return;
   }
 
-  // 2-hour session max check + refresh timestamp
   try {
     const ts = authUser.timestamp || 0;
     if (!ts || Date.now() - ts > MEMBER_SESSION_MAX_AGE_MS) {
-      console.log('Session max age exceeded in apiFetch (member-enrollment).'); // DEBUG
       memberLogout('session max age exceeded in enrollment apiFetch');
       return;
     }
     authUser.timestamp = Date.now();
     MemberStore.set(token, authUser);
   } catch (e) {
-    console.error('Failed to parse authUser in member-enrollment apiFetch:', e);
     memberLogout('invalid authUser JSON in enrollment apiFetch');
     return;
   }
 
-  // Use endpoint directly if it's already a full URL; otherwise prepend base
   let url = endpoint;
   if (!endpoint.startsWith('http://') && !endpoint.startsWith('https://')) {
-    url =
-      window.location.hostname === 'localhost' ||
-      window.location.hostname === '127.0.0.1'
+    url = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
         ? `${SERVER_URL}${endpoint}`
         : endpoint;
   }
@@ -368,7 +335,6 @@ async function apiFetch(endpoint, options = {}, timeoutMs = 10000) {
     clearTimeout(timeoutId);
 
     if (response.status === 401 || response.status === 403) {
-      console.log('401/403 Unauthorized - clearing auth and redirecting'); // DEBUG
       memberLogout('401/403 from enrollment apiFetch');
       return;
     }
@@ -377,51 +343,25 @@ async function apiFetch(endpoint, options = {}, timeoutMs = 10000) {
     return await response.json();
   } catch (error) {
     clearTimeout(timeoutId);
-    if (error.name === 'AbortError') {
-      throw new Error(`API timeout after ${timeoutMs}ms`);
-    }
+    if (error.name === 'AbortError') throw new Error(`API timeout after ${timeoutMs}ms`);
     throw error;
   }
 }
 
-// ✅ INITIAL AUTH CHECK - Token + Role ('member') + Timestamp (2 hours)
+// ✅ INITIAL AUTH CHECK
 (function checkAuth() {
-  console.log('Auth check starting for member-enrollment'); // DEBUG
-
   bootstrapMemberFromGenericIfNeeded();
-
   const authUser = MemberStore.getAuthUser();
   const token = MemberStore.getToken();
   const role = MemberStore.getRole();
 
-  console.log('Auth details:', {
-    authUser: authUser ? authUser.username || authUser.email : null,
-    token: !!token,
-    role,
-  }); // DEBUG
-
-  if (
-    !authUser ||
-    !token ||
-    role !== 'member' ||
-    Date.now() - (authUser.timestamp || 0) > MEMBER_SESSION_MAX_AGE_MS
-  ) {
-    console.log('Auth failed - clearing and redirecting'); // DEBUG
+  if (!authUser || !token || role !== 'member' || Date.now() - (authUser.timestamp || 0) > MEMBER_SESSION_MAX_AGE_MS) {
     memberLogout('failed auth in member-enrollment checkAuth');
     return;
   }
-
-  console.log(
-    'Member authenticated:',
-    authUser.username || authUser.email,
-    'Role:',
-    role
-  );
 })();
 
-console.log('=== manage-member-enrollment.js loaded successfully ===');
-
-// ========== AUTH & MEMBER ID UTILS ==========
+// ========== UTILS ==========
 function getAuth() {
   try {
     return JSON.parse(sessionStorage.getItem('authUser') || 'null');
@@ -437,25 +377,16 @@ function memberIdFromAuth() {
   return u.memberId || u.member_id || u._id || u.id || null;
 }
 
-// Legacy logout helper, now just call quickLogout
-function logout() {
-  quickLogout();
-}
-
 function escapeHtml(s) {
-  return String(s || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
+  return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-// Helper function to get today's date in YYYY-MM-DD format
+function toLocalDateString(d) {
+    return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+
 function getTodayDateString() {
-  const today = new Date();
-  const year = today.getFullYear();
-  const month = String(today.getMonth() + 1).padStart(2, '0');
-  const day = String(today.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
+  return toLocalDateString(new Date());
 }
 
 // ========== MAIN GLOBALS ==========
@@ -467,20 +398,15 @@ let enrollCart = [];
 let currentCalendarDate = new Date();
 let tempRemainingSessions = 0;
 
-// ========== API FETCH (ENHANCED: timedFetch now wraps tokenized apiFetch) ==========
+// ========== API FETCH ==========
 async function timedFetch(url, name) {
-  console.time(name);
-  // TOKENIZED: Use apiFetch for security
   const res = await apiFetch(url);
-  console.timeEnd(name);
   return res;
 }
 
 // ========== TOAST HELPER ==========
 function showToast(message, type = 'info') {
-  const className = type === 'error' ? 'ERROR' : type === 'success' ? 'SUCCESS' : 'INFO';
-  alert(`${className}: ${message}`);
-  console.log(`${type.toUpperCase()}: ${message}`);
+  alert(`${type.toUpperCase()}: ${message}`);
 }
 
 function showLoadingState(show = true) {
@@ -490,26 +416,14 @@ function showLoadingState(show = true) {
 
 // ========== DOM READY ==========
 document.addEventListener('DOMContentLoaded', async () => {
-  // Start idle watcher for this page
   setupMemberIdleWatcher();
   markMemberActivity();
   setSidebarMemberName();
 
-  console.log('=== DOM Content Loaded ===');
-
   const auth = getAuth();
-  console.log('Auth check:', auth ? 'Authenticated' : 'Not authenticated');
-
-  // ENHANCED: Token + role + timestamp (2h)
   const token = sessionStorage.getItem('token');
   const role = sessionStorage.getItem('role');
-  if (
-    !auth ||
-    Date.now() - (auth.timestamp || 0) > MEMBER_SESSION_MAX_AGE_MS ||
-    !token ||
-    role !== 'member'
-  ) {
-    console.warn('Authentication failed, redirecting to login');
+  if (!auth || Date.now() - (auth.timestamp || 0) > MEMBER_SESSION_MAX_AGE_MS || !token || role !== 'member') {
     quickLogout();
     return;
   }
@@ -522,31 +436,19 @@ document.addEventListener('DOMContentLoaded', async () => {
   switchView('calendar');
   ensureCartVisible();
   showLoadingState(false);
-
-  console.log('=== Initialization complete ===');
 });
-
 
 function setSidebarMemberName() {
   try {
-    if (typeof bootstrapMemberFromGenericIfNeeded === "function") {
-      bootstrapMemberFromGenericIfNeeded();
-    }
+    if (typeof bootstrapMemberFromGenericIfNeeded === "function") bootstrapMemberFromGenericIfNeeded();
 
-    // Prefer the member-scoped authUser (memberauthUser), fallback to generic authUser
-    const auth =
-      (typeof MemberStore !== "undefined" && MemberStore.getAuthUser && MemberStore.getAuthUser()) ||
+    const auth = (typeof MemberStore !== "undefined" && MemberStore.getAuthUser && MemberStore.getAuthUser()) ||
       (() => {
         try {
-          const raw =
-            sessionStorage.getItem("memberauthUser") ||
-            localStorage.getItem("memberauthUser") ||
-            sessionStorage.getItem("authUser") ||
-            localStorage.getItem("authUser");
+          const raw = sessionStorage.getItem("memberauthUser") || localStorage.getItem("memberauthUser") ||
+                      sessionStorage.getItem("authUser") || localStorage.getItem("authUser");
           return raw ? JSON.parse(raw) : null;
-        } catch {
-          return null;
-        }
+        } catch { return null; }
       })();
 
     const user = auth?.user || auth;
@@ -559,78 +461,26 @@ function setSidebarMemberName() {
   }
 }
 
-
 // ========== DATA LOAD & SESSION CALC ==========
 async function loadInitialData() {
   try {
-    console.log('Loading initial data...');
-
     const memberId = memberIdFromAuth();
     if (!memberId) throw new Error('No member ID in auth');
 
-    console.log('Member ID:', memberId);
-
-    // ENHANCED: Token + role + timestamp
-    const token = sessionStorage.getItem('token');
-    const role = sessionStorage.getItem('role');
-    const authUser = getAuth();
-    if (
-      !token ||
-      role !== 'member' ||
-      !authUser ||
-      Date.now() - (authUser.timestamp || 0) > MEMBER_SESSION_MAX_AGE_MS
-    ) {
-      console.log('loadInitialData: Invalid session - logging out'); // DEBUG
-      quickLogout();
-      return;
-    }
-
-    const memberPromise = timedFetch(
-      `${API_URL}/api/members/${encodeURIComponent(memberId)}`,
-      'Member API'
-    );
+    const memberPromise = timedFetch(`${API_URL}/api/members/${encodeURIComponent(memberId)}`, 'Member API');
     const classesPromise = timedFetch(`${API_URL}/api/classes`, 'Classes API');
-    const enrollmentsPromise = timedFetch(
-      `${API_URL}/api/enrollments/member/${encodeURIComponent(memberId)}`,
-      'Enrollments API'
-    );
+    const enrollmentsPromise = timedFetch(`${API_URL}/api/enrollments/member/${encodeURIComponent(memberId)}`, 'Enrollments API');
 
     const [memberData, classesData, enrollmentsData] = await Promise.all([
-      memberPromise.catch((err) => {
-        console.error('Member load failed:', err);
-        return { success: false, data: null };
-      }),
-      classesPromise.catch((err) => {
-        console.error('Classes load failed:', err);
-        return { success: false, data: [] };
-      }),
-      enrollmentsPromise.catch((err) => {
-        console.error('Enrollments load failed:', err);
-        return { success: false, data: [] };
-      }),
+      memberPromise.catch(() => ({ success: false, data: null })),
+      classesPromise.catch(() => ({ success: false, data: [] })),
+      enrollmentsPromise.catch(() => ({ success: false, data: [] })),
     ]);
 
-    console.log('Raw Member Response:', memberData);
-    memberInfo =
-      memberData && memberData.success && memberData.data ? memberData.data : memberData || null;
-    console.log('Parsed memberInfo:', {
-      hasMemberships: !!memberInfo?.memberships,
-      membershipsLength: memberInfo?.memberships?.length,
-    });
+    memberInfo = memberData && memberData.success && memberData.data ? memberData.data : memberData || null;
 
-    availableClasses = Array.isArray(classesData?.data)
-      ? classesData.data
-      : Array.isArray(classesData)
-      ? classesData
-      : [];
-    memberEnrollments = Array.isArray(enrollmentsData?.data)
-      ? enrollmentsData.data
-      : Array.isArray(enrollmentsData)
-      ? enrollmentsData
-      : [];
-
-    console.log('Classes loaded:', availableClasses.length);
-    console.log('Enrollments loaded:', memberEnrollments.length);
+    availableClasses = Array.isArray(classesData?.data) ? classesData.data : Array.isArray(classesData) ? classesData : [];
+    memberEnrollments = Array.isArray(enrollmentsData?.data) ? enrollmentsData.data : Array.isArray(enrollmentsData) ? enrollmentsData : [];
 
     updateSessionCounter(false, 0);
     renderCalendarGrid();
@@ -644,19 +494,12 @@ async function loadInitialData() {
 
 function ensureCartVisible() {
   const cartContainer = $('enrollmentCart');
-  if (cartContainer) {
-    cartContainer.style.display = 'block';
-    console.log('Cart container made visible');
-  } else {
-    console.error('enrollmentCart element not found in HTML!');
-  }
+  if (cartContainer) cartContainer.style.display = 'block';
 }
 
-// ========== VIEW STATES & UTILS ==========
 function showErrorState(msg = 'Failed to load classes.') {
   const c = $('calendarContainer');
-  if (c)
-    c.innerHTML = `<div class="error-state" style="padding: 2rem; text-align: center; color: #dc3545;">${msg}</div>`;
+  if (c) c.innerHTML = `<div class="error-state" style="padding: 2rem; text-align: center; color: #dc3545;">${msg}</div>`;
 }
 
 // ========== SESSION LOGIC ==========
@@ -676,12 +519,7 @@ function updateSessionCounter(forceCart = false, tempOffset = 0) {
   if (!Array.isArray(memberships)) memberships = [];
 
   const combative = memberships
-    .filter(
-      (m) =>
-        m.type &&
-        m.type.toLowerCase() === 'combative' &&
-        (m.status || '').toLowerCase() === 'active'
-    )
+    .filter(m => m.type && m.type.toLowerCase() === 'combative' && (m.status || '').toLowerCase() === 'active')
     .sort((a, b) => new Date(b.startDate) - new Date(a.startDate))[0];
 
   if (!combative) {
@@ -696,25 +534,16 @@ function updateSessionCounter(forceCart = false, tempOffset = 0) {
   const totalSessionsPerMonth = combative.sessionsPerMonth || null;
 
   if (forceCart && enrollCart.length > 0) {
-    tempRemainingSessions = Math.max(
-      0,
-      realRemainingSessions - enrollCart.length + tempOffset
-    );
-    if (remainingSessionSpan) {
-      remainingSessionSpan.innerHTML = `${tempRemainingSessions} <small style="color:#999;">(projected)</small>`;
-    }
+    tempRemainingSessions = Math.max(0, realRemainingSessions - enrollCart.length + tempOffset);
+    if (remainingSessionSpan) remainingSessionSpan.innerHTML = `${tempRemainingSessions} <small style="color:#999;">(projected)</small>`;
     let infoText = `Combative (${combative.status}) | Real: ${realRemainingSessions}`;
-    if (totalSessionsPerMonth) {
-      infoText += ` (total: ${totalSessionsPerMonth}/month)`;
-    }
+    if (totalSessionsPerMonth) infoText += ` (total: ${totalSessionsPerMonth}/month)`;
     if (memInfoSpan) memInfoSpan.innerHTML = infoText;
   } else {
     tempRemainingSessions = realRemainingSessions;
     if (remainingSessionSpan) remainingSessionSpan.textContent = realRemainingSessions;
     let infoText = `Combative (${combative.status}) | Remaining: ${realRemainingSessions}`;
-    if (totalSessionsPerMonth) {
-      infoText += ` (allocated: ${totalSessionsPerMonth}/month)`;
-    }
+    if (totalSessionsPerMonth) infoText += ` (allocated: ${totalSessionsPerMonth}/month)`;
     if (memInfoSpan) memInfoSpan.textContent = infoText;
   }
 
@@ -722,11 +551,8 @@ function updateSessionCounter(forceCart = false, tempOffset = 0) {
   if (confirmBtn) {
     const canConfirm = enrollCart.length > 0 && realRemainingSessions >= enrollCart.length;
     confirmBtn.disabled = !canConfirm;
-    confirmBtn.textContent =
-      enrollCart.length > 0 ? `Confirm All (${enrollCart.length})` : 'Confirm All Enrollments';
+    confirmBtn.textContent = enrollCart.length > 0 ? `Confirm All (${enrollCart.length})` : 'Confirm All Enrollments';
   }
-
-  console.log('Session counter updated - Real:', realRemainingSessions, 'Temp:', tempRemainingSessions);
 }
 
 // ========== CALENDAR VIEW ==========
@@ -738,15 +564,11 @@ function initializeCalendarView() {
 
 function renderCalendarGrid() {
   const container = $('calendarContainer');
-  if (!container) {
-    console.error('calendarContainer not found');
-    return;
-  }
+  if (!container) return;
 
   const year = currentCalendarDate.getFullYear();
   const month = currentCalendarDate.getMonth();
 
-  // Add aria-labels and titles to nav buttons so they are explicit and accessible
   let html = `<div class="calendar-header">
     <button class="calendar-nav-btn" id="prevMonth" aria-label="Previous month" title="Previous month">‹</button>
     <span id="currentMonthDisplay"></span>
@@ -770,10 +592,7 @@ function renderCalendarGrid() {
   }
 
   for (let day = 1; day <= daysInMonth; day++) {
-    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(
-      2,
-      '0'
-    )}`;
+    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     const todayStr = getTodayDateString();
     const isToday = dateStr === todayStr;
     const isPast = dateStr < todayStr;
@@ -781,25 +600,11 @@ function renderCalendarGrid() {
 
     let classChips = '';
     if (dayClasses.length > 0) {
-      classChips = dayClasses
-        .slice(0, 2)
-        .map(
-          (cls) =>
-            `<div class="class-chip">${escapeHtml(cls.class_name || 'Class')}</div>`
-        )
-        .join('');
-      if (dayClasses.length > 2) {
-        classChips += `<div class="class-chip">+${dayClasses.length - 2} more</div>`;
-      }
+      classChips = dayClasses.slice(0, 2).map((cls) => `<div class="class-chip">${escapeHtml(cls.class_name || 'Class')}</div>`).join('');
+      if (dayClasses.length > 2) classChips += `<div class="class-chip">+${dayClasses.length - 2} more</div>`;
     }
 
-    html += `<div class="calendar-cell${
-      isToday ? ' calendar-cell-today' : ''
-    }${isPast ? ' past-date' : ''}${dayClasses.length > 0 ? ' has-classes' : ''}" data-date="${dateStr}"${
-      isPast
-        ? ' style="pointer-events: none; opacity: 0.5; cursor: not-allowed;"'
-        : ''
-    }>
+    html += `<div class="calendar-cell${isToday ? ' calendar-cell-today' : ''}${isPast ? ' past-date' : ''}${dayClasses.length > 0 ? ' has-classes' : ''}" data-date="${dateStr}"${isPast ? ' style="pointer-events: none; opacity: 0.5; cursor: not-allowed;"' : ''}>
       <div class="calendar-day-number">${day}</div>
       <div class="calendar-day-content"><div class="calendar-day-classes">${classChips}</div></div></div>`;
 
@@ -814,16 +619,11 @@ function renderCalendarGrid() {
   html += '</div>';
   container.innerHTML = html;
 
-  // ensure title is set immediately so month is always visible
   updateCalendarTitle();
-  // ensure navigation buttons exist and have handlers
   renderCalendarNavigation();
 
-  // rebind click handler for cells
   document.removeEventListener('click', handleCalendarClick, true);
   document.addEventListener('click', handleCalendarClick, true);
-
-  console.log('Calendar rendered with', availableClasses.length, 'total classes');
 }
 
 function renderCalendarNavigation() {
@@ -848,14 +648,12 @@ function handleCalendarClick(event) {
 
   markMemberActivity();
 
-  // ✅ Prevent clicking past dates
   const todayStr = getTodayDateString();
   if (dateStr < todayStr) {
     showToast('Cannot select past dates', 'error');
     return;
   }
 
-  // Original logic: Open modal if has classes
   if (cell.classList.contains('has-classes')) {
     const classes = getClassesForDate(dateStr);
     showDayModal(dateStr, classes);
@@ -864,69 +662,55 @@ function handleCalendarClick(event) {
 
 function getClassesForDate(dateStr) {
   const date = new Date(dateStr);
-  const dayName = date
-    .toLocaleDateString('en-US', { weekday: 'long' })
-    .toLowerCase();
+  const dayName = date.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
 
   const matchingClasses = availableClasses.filter((cls) => {
     const schedule = (cls.schedule || '').toLowerCase();
-    if (schedule.includes(dayName)) {
-      return true;
-    }
+    if (schedule.includes(dayName)) return true;
     const dayAbbr = dayName.substring(0, 3);
-    if (schedule.includes(dayAbbr)) {
-      return true;
-    }
+    if (schedule.includes(dayAbbr)) return true;
     return false;
   });
 
   return matchingClasses;
 }
 
+// **UPDATED: Redesigned Day Modal**
 function showDayModal(dateStr, classes) {
   markMemberActivity();
 
   const date = new Date(dateStr);
-  const formattedDate = date.toLocaleDateString('en-US', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
+  const formattedDate = date.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
   let modalContent = `
     <div class="day-modal">
       <div class="day-modal-header">
-        <h3>Classes for ${formattedDate}</h3>
-        <div class="day-modal-date">${dateStr}</div>
-        <div class="day-modal-sessions">
-           <span class="day-modal-sessions-remaining">
-             Sessions remaining: <span id="modalSessionsRemaining">${tempRemainingSessions}</span>
-           </span>
+        <h3 style="margin:0; font-size:1.4rem;">Classes for ${formattedDate}</h3>
+        <div style="font-size:0.9rem; margin-top:0.5rem; opacity:0.9;">
+           Sessions remaining: <strong style="color: #fff; font-size:1.1rem;">${tempRemainingSessions}</strong>
         </div>
       </div>
       <div class="day-modal-content">
   `;
 
   if (classes.length === 0) {
-    modalContent += '<div class="no-classes">No classes scheduled for this date</div>';
+    modalContent += '<div class="no-classes" style="text-align:center; color:#ccc;">No classes scheduled for this date</div>';
   } else {
     classes.forEach((cls) => {
       const classId = cls.class_id || cls._id;
       const className = cls.class_name || 'Unnamed Class';
       const trainer = cls.trainer_name || cls.trainer_id || 'TBD';
       const schedule = cls.schedule || 'Schedule TBD';
+      
       modalContent += `
         <div class="class-selection">
          <div class="class-info">
-           <div class="class-name">${escapeHtml(className)}</div>
-           <div class="class-trainer">Trainer: ${escapeHtml(trainer)}</div>
-           <div class="class-schedule">${escapeHtml(schedule)}</div>
+           <div style="font-size:1.2rem; font-weight:600; color:#fff; margin-bottom:0.4rem;">${escapeHtml(className)}</div>
+           <div style="color:#aaa; font-size:0.9rem; margin-bottom:0.2rem;"><strong>Trainer:</strong> ${escapeHtml(trainer)}</div>
+           <div style="color:#aaa; font-size:0.9rem;"><strong>Schedule:</strong> ${escapeHtml(schedule)}</div>
          </div>
          <div class="class-times">
-           <button class="select-time-btn" data-class="${classId}" data-class-name="${escapeHtml(
-        className
-      )}">
+           <button class="btn btn-primary select-time-btn" data-class="${classId}" data-class-name="${escapeHtml(className)}">
              Select Time
            </button>
          </div>
@@ -938,7 +722,7 @@ function showDayModal(dateStr, classes) {
   modalContent += `
         </div>
         <div class="day-modal-footer">
-         <button class="btn btn-ghost" onclick="closeModal('dayModal')">Close</button>
+         <button class="btn btn-secondary" onclick="closeModal('dayModal')">Close</button>
         </div>
       </div>
   `;
@@ -963,65 +747,174 @@ function showDayModal(dateStr, classes) {
   timeBtns.forEach((btn) => {
     btn.addEventListener('click', function () {
       const classId = this.dataset.class;
-      const className = this.dataset.className;
-      showTimeSelectionModal(classId, className, dateStr);
+      // Close the day modal before opening the unified enrollment modal
+      closeModal('dayModal');
+      // Open the unified date/time selection modal, pre-selected to the calendar date
+      showClassForEnrollment(classId, dateStr);
     });
   });
 }
 
-function showTimeSelectionModal(classId, className, dateStr) {
+// ========== CLASS SCHEDULING PARSER ==========
+function parseTimeStrToMinutes(timeStr) {
+    const [time, period] = timeStr.trim().split(/\s+/);
+    if (!time || !period) return 24 * 60; 
+    let [hours, minutes] = time.split(':').map(Number);
+    if (period.toUpperCase() === 'PM' && hours !== 12) hours += 12;
+    if (period.toUpperCase() === 'AM' && hours === 12) hours = 0;
+    return hours * 60 + minutes;
+}
+
+function getValidDatesForClass(cls) {
+    const validDates = [];
+    const today = new Date();
+    const todayDateOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+
+    let memberships = memberInfo?.memberships || [];
+    const combative = memberships.filter(m => m.type === 'combative' && m.status === 'active')
+                                 .sort((a,b) => new Date(b.startDate) - new Date(a.startDate))[0];
+
+    // Establish boundaries based on membership
+    let maxDate = new Date(todayDateOnly);
+    maxDate.setMonth(maxDate.getMonth() + 1); 
+
+    let minDate = new Date(todayDateOnly);
+
+    if (combative) {
+        if (combative.endDate) {
+            maxDate = new Date(combative.endDate);
+        }
+        if (combative.startDate) {
+            const start = new Date(combative.startDate);
+            start.setHours(0,0,0,0);
+            if (start > minDate) minDate = new Date(start);
+        }
+    }
+
+    const scheduleStr = (cls.schedule || '').toLowerCase();
+    const isOneTime = scheduleStr.includes('one-time');
+
+    let classStartTimeMinutes = 24 * 60; 
+    const timeMatch = cls.schedule.match(/(\d{1,2}:\d{2}\s?[AP]M)/i);
+    if (timeMatch) {
+        classStartTimeMinutes = parseTimeStrToMinutes(timeMatch[1]);
+    }
+
+    if (isOneTime) {
+        const dateMatch = cls.schedule.match(/\d{4}-\d{2}-\d{2}/);
+        if (dateMatch) {
+            const classDate = new Date(dateMatch[0]);
+            classDate.setHours(0,0,0,0);
+            if (classDate >= minDate && classDate <= maxDate) {
+                if (classDate.getTime() === todayDateOnly.getTime()) {
+                    const nowMinutes = today.getHours() * 60 + today.getMinutes();
+                    if (nowMinutes < classStartTimeMinutes) validDates.push(dateMatch[0]);
+                } else {
+                    validDates.push(dateMatch[0]);
+                }
+            }
+        }
+    } else {
+        const daysOfWeek = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+        const classDays = daysOfWeek.filter(day => scheduleStr.includes(day) || scheduleStr.includes(day.substring(0,3)));
+
+        if (classDays.length > 0) {
+            let currDate = new Date(minDate);
+            while (currDate <= maxDate) {
+                const dayName = daysOfWeek[currDate.getDay()];
+                if (classDays.includes(dayName)) {
+                    const dateStr = toLocalDateString(currDate);
+
+                    if (currDate.getTime() === todayDateOnly.getTime()) {
+                        const nowMinutes = today.getHours() * 60 + today.getMinutes();
+                        if (nowMinutes < classStartTimeMinutes) validDates.push(dateStr);
+                    } else {
+                        validDates.push(dateStr);
+                    }
+                }
+                currDate.setDate(currDate.getDate() + 1);
+            }
+        }
+    }
+    return validDates;
+}
+
+// **UPDATED: Unified Modal for both List and Calendar View**
+function showClassForEnrollment(classId, preselectedDateStr = null) {
   markMemberActivity();
 
   const cls = availableClasses.find((c) => c.class_id === classId || c._id === classId);
-  if (!cls) {
-    showToast('Class not found', 'error');
-    return;
-  }
+  if (!cls) return;
 
   const timeSlots = generateTimeSlots(cls.schedule);
+  const className = cls.class_name || 'Unnamed Class';
+  const validDates = getValidDatesForClass(cls);
+
+  let initialDate = validDates.length > 0 ? validDates[0] : null;
+  if (preselectedDateStr && validDates.includes(preselectedDateStr)) {
+      initialDate = preselectedDateStr;
+  }
 
   let modalContent = `
-    <div class="time-modal">
-      <div class="time-modal-header">
-        <h3>Select Time for ${escapeHtml(className)}</h3>
-        <div class="time-modal-date">${new Date(dateStr).toLocaleDateString()}</div>
+    <div class="single-class-modal">
+      <div class="day-modal-header">
+        <h2 style="margin:0;">${escapeHtml(className)}</h2>
+        <div style="font-size:0.95rem; margin-top:0.5rem; opacity:0.9;">
+          <p style="margin:0.2rem 0;"><strong>Trainer:</strong> ${escapeHtml(cls.trainer_name || cls.trainer_id || 'TBD')}</p>
+          <p style="margin:0.2rem 0;"><strong>Schedule:</strong> ${escapeHtml(cls.schedule || 'Schedule TBD')}</p>
+        </div>
       </div>
-      <div class="time-modal-content">
+      <div class="day-modal-content">
+        <div class="time-selection">
+          <h4 style="margin-top:0; color:#fff; font-size:1.2rem; border-bottom:1px solid #333; padding-bottom:0.5rem; margin-bottom:1.5rem;">Select Date and Time</h4>
   `;
 
-  timeSlots.forEach((timeSlot) => {
-    const isEnrolled = memberEnrollments.some((enrollment) => {
-      const enDate = new Date(enrollment.sessiondate);
-      return (
-        enrollment.classid === classId &&
-        enDate.toISOString().split('T')[0] === dateStr &&
-        enrollment.sessiontime === timeSlot
-      );
-    });
+  if (validDates.length === 0) {
+      modalContent += `<div class="error-state" style="padding:1.5rem; background:rgba(220,53,69,0.1); border:1px solid #dc3545; border-radius:8px; color:#ff6b6b; text-align:center;">No upcoming dates align with this schedule within your active membership period.</div>`;
+  } else {
+      modalContent += `
+          <div style="margin-bottom: 1.5rem;">
+            <label for="enrollDateSelect" style="display:block; margin-bottom:0.5rem; font-weight:bold; color:#ccc;">Available Date:</label>
+            <select id="enrollDateSelect" style="width:100%; padding:0.8rem 1rem; border-radius:6px; border:1px solid #444; background:#121212; color:#fff; font-size:1rem; cursor:pointer;">
+              ${validDates.map(d => {
+                  const dObj = new Date(d);
+                  const display = dObj.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'});
+                  const isSelected = d === initialDate ? 'selected' : '';
+                  return `<option value="${d}" ${isSelected}>${display}</option>`;
+              }).join('')}
+            </select>
+          </div>
+          
+          <div>
+            <label style="display:block; margin-bottom:0.5rem; font-weight:bold; color:#ccc;">Select Time Slot:</label>
+            <div class="time-slots" style="display:flex; flex-wrap:wrap; gap:0.8rem;">
+      `;
 
-    modalContent += `
-      <div class="time-slot-item ${isEnrolled ? 'disabled' : ''}" 
-           data-class="${classId}" data-date="${dateStr}" data-time="${timeSlot}">
-        <div class="time-slot-label">${timeSlot}</div>
-        <button class="select-enrollment-btn" ${isEnrolled ? 'disabled' : ''}>
-          ${isEnrolled ? 'Already Enrolled' : 'Add to Cart'}
-        </button>
-      </div>
-    `;
-  });
+      timeSlots.forEach((timeSlot) => {
+        modalContent += `
+          <button class="time-slot-btn" data-class="${classId}" data-class-name="${escapeHtml(className)}" 
+                  data-date="${initialDate}" data-time="${timeSlot}"
+                  style="padding: 0.8rem 1.5rem; border: 1px solid #444; background: #222; color: #fff; cursor: pointer; border-radius: 6px; font-weight: 600; flex:1; min-width:140px; transition:all 0.2s;">
+            ${timeSlot}
+          </button>
+        `;
+      });
+      modalContent += `</div></div>`;
+  }
 
   modalContent += `
+        </div>
       </div>
-      <div class="time-modal-footer">
-       <button class="btn btn-ghost" onclick="closeModal('timeModal')">Cancel</button>
+      <div class="day-modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal('singleClassModal')">Cancel</button>
       </div>
     </div>
   `;
 
-  let modal = document.getElementById('timeModal');
+  let modal = document.getElementById('singleClassModal');
   if (!modal) {
     modal = document.createElement('div');
-    modal.id = 'timeModal';
+    modal.id = 'singleClassModal';
     document.body.appendChild(modal);
   }
 
@@ -1034,14 +927,83 @@ function showTimeSelectionModal(classId, className, dateStr) {
   `;
   modal.style.display = 'flex';
 
-  const enrollBtns = modal.querySelectorAll('.select-enrollment-btn');
-  enrollBtns.forEach((btn) => {
-    btn.addEventListener('click', function () {
+  const dateSelect = document.getElementById('enrollDateSelect');
+  const timeSlotBtns = modal.querySelectorAll('.time-slot-btn');
+
+  // Helper to dynamically disable buttons based on actual enrollment state
+  const updateButtonStates = (selectedDate) => {
+      timeSlotBtns.forEach((btn) => {
+          btn.dataset.date = selectedDate;
+          const timeSlot = btn.dataset.time;
+
+          const inCart = enrollCart.some(item => item.classId === classId && item.date === selectedDate && item.time === timeSlot);
+          const isEnrolled = memberEnrollments.some((enrollment) => {
+            const enDate = new Date(enrollment.sessiondate || enrollment.session_date);
+            return (
+              (enrollment.classid === classId || enrollment.class_id === classId) &&
+              toLocalDateString(enDate) === selectedDate &&
+              (enrollment.sessiontime === timeSlot || enrollment.session_time === timeSlot)
+            );
+          });
+
+          if (isEnrolled || inCart) {
+              btn.disabled = true;
+              btn.style.opacity = '0.5';
+              btn.style.cursor = 'not-allowed';
+              btn.style.background = '#111';
+              btn.style.borderColor = '#333';
+              btn.style.color = '#888';
+              btn.textContent = isEnrolled ? 'Enrolled' : 'In Cart';
+          } else {
+              btn.disabled = false;
+              btn.style.opacity = '1';
+              btn.style.cursor = 'pointer';
+              btn.style.background = '#222';
+              btn.style.borderColor = '#444';
+              btn.style.color = '#fff';
+              btn.textContent = timeSlot; // Reset text
+          }
+      });
+  };
+
+  // Bind change event to dropdown
+  if (dateSelect) {
+    dateSelect.addEventListener('change', function () {
+      updateButtonStates(this.value);
+    });
+  }
+
+  // Set initial state
+  if (initialDate) {
+      updateButtonStates(initialDate);
+  }
+
+  // Bind click event to valid buttons
+  timeSlotBtns.forEach((btn) => {
+    btn.addEventListener('click', function (e) {
+      e.preventDefault();
       if (this.disabled) return;
-      const classIdVal = this.closest('.time-slot-item').dataset.class;
-      const dateStrVal = this.closest('.time-slot-item').dataset.date;
-      const timeSlotVal = this.closest('.time-slot-item').dataset.time;
-      addToEnrollmentCart(classIdVal, dateStrVal, timeSlotVal, className);
+      markMemberActivity();
+
+      // Visual feedback on click
+      timeSlotBtns.forEach((b) => {
+          if (!b.disabled) {
+            b.style.background = '#222';
+            b.style.borderColor = '#444';
+            b.style.color = '#fff';
+          }
+      });
+      this.style.background = 'linear-gradient(135deg, var(--primary) 0%, var(--highlight) 100%)';
+      this.style.borderColor = 'transparent';
+      this.style.color = '#fff';
+
+      const classIdVal = this.dataset.class;
+      const classNameVal = this.dataset.className;
+      const dateVal = this.dataset.date;
+      const timeVal = this.dataset.time;
+
+      addToEnrollmentCart(classIdVal, dateVal, timeVal, classNameVal);
+      setTimeout(() => { modal.style.display = 'none'; }, 300);
     });
   });
 }
@@ -1061,10 +1023,7 @@ function addToEnrollmentCart(classId, dateStr, timeSlot, className) {
 
   updateSessionCounter(false, 0);
   if (realRemainingSessions < 1) {
-    showToast(
-      `No sessions left. Real remaining: ${realRemainingSessions}. Contact admin.`,
-      'error'
-    );
+    showToast(`No sessions left. Real remaining: ${realRemainingSessions}. Contact admin.`, 'error');
     return;
   }
 
@@ -1075,8 +1034,6 @@ function addToEnrollmentCart(classId, dateStr, timeSlot, className) {
     time: timeSlot,
   });
 
-  closeModal('timeModal');
-  closeModal('singleClassModal');
   updateCartDisplay();
   updateSessionCounter(true, 0);
 
@@ -1094,12 +1051,8 @@ function updateCartDisplay() {
 
   if (cartContainer) cartContainer.style.display = 'block';
 
-  console.log('Cart Update:', enrollCart.length, 'items');
-
   if (enrollCart.length === 0) {
-    if (cartContent)
-      cartContent.innerHTML =
-        '<p>No temporary selections. Add from calendar or list.</p>';
+    if (cartContent) cartContent.innerHTML = '<p style="color:#aaa;">No temporary selections. Add from calendar or list.</p>';
     if (confirmBtn) {
       confirmBtn.disabled = true;
       confirmBtn.textContent = 'Confirm All Enrollments';
@@ -1112,18 +1065,12 @@ function updateCartDisplay() {
   enrollCart.forEach((item, index) => {
     const dateObj = new Date(item.date);
     const dayOfWeek = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
-    const formattedDate = dateObj.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    });
+    const formattedDate = dateObj.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
     html += `
       <div class="cart-item">
         <div class="cart-item-info">
           <strong>${escapeHtml(item.className)}</strong><br>
-          <small>${dayOfWeek}, ${formattedDate} at ${escapeHtml(
-      item.time
-    )} (Temporary)</small>
+          <small>${dayOfWeek}, ${formattedDate} at ${escapeHtml(item.time)}</small>
         </div>
         <button type="button" class="cart-item-remove" onclick="removeFromCart(${index})" title="Remove">✕</button>
       </div>
@@ -1133,29 +1080,19 @@ function updateCartDisplay() {
 
   updateSessionCounter(true, 0);
   if (confirmBtn) {
-    confirmBtn.disabled =
-      tempRemainingSessions < enrollCart.length ||
-      realRemainingSessions < enrollCart.length;
+    confirmBtn.disabled = tempRemainingSessions < enrollCart.length || realRemainingSessions < enrollCart.length;
     confirmBtn.textContent = `Confirm All (${enrollCart.length})`;
   }
 }
 
-// ENHANCED: enrollSingleItem with token check and apiFetch
 async function enrollSingleItem(item) {
   const memberId = memberIdFromAuth();
   if (!memberId) throw new Error('Not authenticated');
 
-  // ENHANCED: Token + role + timestamp
   const token = sessionStorage.getItem('token');
   const role = sessionStorage.getItem('role');
   const authUser = getAuth();
-  if (
-    !token ||
-    role !== 'member' ||
-    !authUser ||
-    Date.now() - (authUser.timestamp || 0) > MEMBER_SESSION_MAX_AGE_MS
-  ) {
-    console.log('enrollSingleItem: Invalid session - logging out'); // DEBUG
+  if (!token || role !== 'member' || !authUser || Date.now() - (authUser.timestamp || 0) > MEMBER_SESSION_MAX_AGE_MS) {
     quickLogout();
     return;
   }
@@ -1168,43 +1105,19 @@ async function enrollSingleItem(item) {
     member_name: memberInfo?.name || 'Unknown',
   };
 
-  console.log('Posting enrollment:', body);
-
-  // TOKENIZED: POST via apiFetch
   const data = await apiFetch(`${API_URL}/api/enrollments`, {
     method: 'POST',
     body: JSON.stringify(body),
   });
 
-  console.log('Enrollment response:', data);
-
   if (!data.success) throw new Error(data.error || 'Enrollment failed');
-
   return data;
 }
 
 async function confirmAllEnrollments() {
   markMemberActivity();
 
-  if (!enrollCart || enrollCart.length === 0) {
-    showToast('No items in cart', 'warning');
-    return;
-  }
-
-  // ENHANCED: Token + role + timestamp
-  const token = sessionStorage.getItem('token');
-  const role = sessionStorage.getItem('role');
-  const authUser = getAuth();
-  if (
-    !token ||
-    role !== 'member' ||
-    !authUser ||
-    Date.now() - (authUser.timestamp || 0) > MEMBER_SESSION_MAX_AGE_MS
-  ) {
-    console.log('confirmAllEnrollments: Invalid session - logging out'); // DEBUG
-    quickLogout();
-    return;
-  }
+  if (!enrollCart || enrollCart.length === 0) return;
 
   showLoadingState(true);
 
@@ -1212,10 +1125,7 @@ async function confirmAllEnrollments() {
     const totalItems = enrollCart.length;
     const projectedRemaining = realRemainingSessions - totalItems;
     if (projectedRemaining < 0) {
-      showToast(
-        `Not enough sessions: Need ${totalItems}, have ${realRemainingSessions}`,
-        'error'
-      );
+      showToast(`Not enough sessions: Need ${totalItems}, have ${realRemainingSessions}`, 'error');
       showLoadingState(false);
       return;
     }
@@ -1228,12 +1138,9 @@ async function confirmAllEnrollments() {
       const item = enrollCart[index];
       try {
         const result = await enrollSingleItem(item);
-        console.log(`Enrollment ${index + 1} success`);
         successful++;
-        // ✅ BACKEND RETURNS remaining_sessions (WITH UNDERSCORE)
         lastRemaining = result.remaining_sessions || lastRemaining - 1;
       } catch (error) {
-        console.error(`Enrollment ${index + 1} failed:`, error.message);
         failures.push({ index, item, error: error.message });
       }
     }
@@ -1243,10 +1150,7 @@ async function confirmAllEnrollments() {
     if (successful === totalItems) {
       enrollCart = [];
       updateCartDisplay();
-      showToast(
-        `All ${totalItems} enrollments successful! Sessions left: ${tempRemainingSessions}`,
-        'success'
-      );
+      showToast(`All ${totalItems} enrollments successful! Sessions left: ${tempRemainingSessions}`, 'success');
       await loadMemberEnrollments();
       updateSessionCounter(false, 0);
     } else if (successful > 0) {
@@ -1254,23 +1158,16 @@ async function confirmAllEnrollments() {
       for (let i = 0; i < totalItems; i++) {
         if (!failures.find((f) => f.index === i)) successIndices.push(i);
       }
-      successIndices
-        .reverse()
-        .forEach((idx) => enrollCart.splice(idx, 1));
+      successIndices.reverse().forEach((idx) => enrollCart.splice(idx, 1));
       updateCartDisplay();
-      const errorMsg = failures
-        .map((f) => `${f.item.className}: ${f.error}`)
-        .join('; ');
+      const errorMsg = failures.map((f) => `${f.item.className}: ${f.error}`).join('; ');
       showToast(`${successful}/${totalItems} successful. Errors: ${errorMsg}`, 'warning');
     } else {
-      const errorMsg = failures
-        .map((f) => `${f.item.className}: ${f.error}`)
-        .join('; ');
+      const errorMsg = failures.map((f) => `${f.item.className}: ${f.error}`).join('; ');
       showToast(`No enrollments successful. Errors: ${errorMsg}`, 'error');
       updateCartDisplay();
     }
   } catch (error) {
-    console.error('Bulk enrollment error:', error);
     showToast(`Bulk enrollment failed: ${error.message}`, 'error');
   } finally {
     showLoadingState(false);
@@ -1281,72 +1178,32 @@ async function loadMemberEnrollments() {
   const memberId = memberIdFromAuth();
   if (!memberId) return;
 
-  // ENHANCED: Token + role + timestamp
-  const token = sessionStorage.getItem('token');
-  const role = sessionStorage.getItem('role');
-  const authUser = getAuth();
-  if (
-    !token ||
-    role !== 'member' ||
-    !authUser ||
-    Date.now() - (authUser.timestamp || 0) > MEMBER_SESSION_MAX_AGE_MS
-  ) {
-    console.log('loadMemberEnrollments: Invalid session - logging out'); // DEBUG
-    quickLogout();
-    return;
-  }
-
   try {
     const [enrollmentsData, memberData] = await Promise.all([
-      timedFetch(
-        `${API_URL}/api/enrollments/member/${encodeURIComponent(memberId)}`,
-        'Reload Enrollments'
-      ),
-      timedFetch(
-        `${API_URL}/api/members/${encodeURIComponent(memberId)}`,
-        'Reload Member'
-      ),
+      timedFetch(`${API_URL}/api/enrollments/member/${encodeURIComponent(memberId)}`, 'Reload Enrollments'),
+      timedFetch(`${API_URL}/api/members/${encodeURIComponent(memberId)}`, 'Reload Member'),
     ]);
-    memberEnrollments = Array.isArray(enrollmentsData?.data)
-      ? enrollmentsData.data
-      : Array.isArray(enrollmentsData)
-      ? enrollmentsData
-      : [];
-    memberInfo =
-      memberData && memberData.success && memberData.data
-        ? memberData.data
-        : memberData || null;
+    memberEnrollments = Array.isArray(enrollmentsData?.data) ? enrollmentsData.data : Array.isArray(enrollmentsData) ? enrollmentsData : [];
+    memberInfo = memberData && memberData.success && memberData.data ? memberData.data : memberData || null;
     updateSessionCounter(false, 0);
   } catch (err) {
     console.error('Reload failed:', err);
-    showToast('Failed to reload data', 'error');
   }
 }
 
 function removeFromCart(index) {
   if (index < 0 || index >= enrollCart.length) return;
-
   enrollCart.splice(index, 1);
   updateCartDisplay();
   updateSessionCounter(true, 1);
-
-  console.log('Removed from cart');
-  if (enrollCart.length === 0) {
-    updateSessionCounter(false, 0);
-  }
+  if (enrollCart.length === 0) updateSessionCounter(false, 0);
 }
 
 // ========== LIST VIEW ==========
 function renderListView() {
   const container = $('classesGrid');
   if (!container || availableClasses.length === 0) {
-    if (container) {
-      container.innerHTML = `
-        <div class="no-classes-message" style="padding: 2rem; text-align: center;">
-          <p>No classes available</p>
-        </div>
-      `;
-    }
+    if (container) container.innerHTML = `<div class="no-classes" style="padding:2rem;text-align:center;color:#888;">No classes available</div>`;
     return;
   }
 
@@ -1366,17 +1223,12 @@ function renderListView() {
           <div class="class-schedule">${escapeHtml(cls.schedule || 'Schedule TBD')}</div>
           <div class="class-trainer">Trainer: ${escapeHtml(trainerName)}</div>
           <div class="class-capacity">
-            ${
-              isFull
-                ? '<span class="status-full">FULL</span>'
-                : `<span class="status-open">${currentEnrollment}/${capacity} spots</span>`
-            }
+            ${isFull ? '<span class="status-full">FULL</span>' : `<span class="status-open">${currentEnrollment}/${capacity} spots</span>`}
           </div>
           <div class="class-description">
             <p>${escapeHtml(cls.description || 'No description available')}</p>
           </div>
-          <button class="btn btn-primary class-enroll-btn" onclick="showClassForEnrollment('${classId}')"
-                     ${isFull ? 'disabled' : ''}>
+          <button class="btn btn-primary class-enroll-btn" onclick="showClassForEnrollment('${classId}')" ${isFull ? 'disabled' : ''}>
             ${isFull ? 'Class Full' : 'Enroll Now'}
           </button>
         </div>
@@ -1387,145 +1239,11 @@ function renderListView() {
   container.innerHTML = html;
 }
 
-function showClassForEnrollment(classId) {
-  markMemberActivity();
-
-  const cls = availableClasses.find((c) => c.class_id === classId || c._id === classId);
-  if (!cls) {
-    showToast('Class not found', 'error');
-    return;
-  }
-
-  const timeSlots = generateTimeSlots(cls.schedule);
-  const className = cls.class_name || 'Unnamed Class';
-
-  let modalContent = `
-    <div class="single-class-modal">
-      <div class="modal-header">
-        <h2>${escapeHtml(className)}</h2>
-        <div class="modal-subheader">
-          <p><strong>Trainer:</strong> ${escapeHtml(
-            cls.trainer_name || cls.trainer_id || 'TBD'
-          )}</p>
-          <p><strong>Schedule:</strong> ${escapeHtml(cls.schedule || 'Schedule TBD')}</p>
-          <p><strong>Description:</strong> ${escapeHtml(
-            cls.description || 'No description'
-          )}</p>
-        </div>
-      </div>
-      <div class="modal-body">
-        <div class="time-selection">
-          <h4>Select Date and Time</h4>
-          <label for="enrollDatePicker">Date:</label>
-          <input type="date" id="enrollDatePicker" value="${getTodayDateString()}" min="${getTodayDateString()}" class="date-picker" style="width:100%;padding:0.5rem;margin-bottom:1rem;border:1px solid #ccc;border-radius:4px;">
-          <label>Time Slot:</label>
-          <div class="time-slots" style="margin-top: 0.5rem;">
-  `;
-
-  timeSlots.forEach((timeSlot) => {
-    modalContent += `
-      <button class="time-slot-btn" data-class="${classId}" data-class-name="${escapeHtml(
-      className
-    )}" 
-              data-date="${new Date().toISOString().split('T')[0]}" data-time="${timeSlot}"
-              style="margin: 0.5rem; padding: 0.8rem 1.5rem; border: 2px solid #ccc; background: white; cursor: pointer; border-radius: 4px;">
-        ${timeSlot}
-      </button>
-    `;
-  });
-
-  modalContent += `
-          </div>
-        </div>
-      </div>
-      <div class="modal-footer" style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #ccc;">
-        <button class="btn btn-ghost" onclick="closeModal('singleClassModal')" style="margin-right: 1rem;">Cancel</button>
-      </div>
-    </div>
-  `;
-
-  let modal = document.getElementById('singleClassModal');
-  if (!modal) {
-    modal = document.createElement('div');
-    modal.id = 'singleClassModal';
-    document.body.appendChild(modal);
-  }
-
-  modal.innerHTML = `
-    <div class="modal-overlay" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 9999;">
-      <div class="modal-container" style="background: white; padding: 2rem; border-radius: 8px; max-width: 600px; width: 90%; max-height: 90vh; overflow-y: auto;">
-        ${modalContent}
-      </div>
-    </div>
-  `;
-  modal.style.display = 'flex';
-
-  const datePicker = document.getElementById('enrollDatePicker');
-  if (datePicker) {
-    datePicker.addEventListener('change', function () {
-      const inputValue = this.value;
-      const minDate = getTodayDateString();
-
-      // ✅ Validate past dates
-      if (inputValue < minDate) {
-        showToast(
-          'Cannot select past dates. Please choose today or a future date.',
-          'error'
-        );
-        this.value = minDate;
-        return;
-      }
-
-      const timeBtns = modal.querySelectorAll('.time-slot-btn');
-      timeBtns.forEach((btn) => {
-        btn.dataset.date = this.value;
-      });
-      console.log('Date changed to:', this.value);
-    });
-  }
-
-  const timeSlotBtns = modal.querySelectorAll('.time-slot-btn');
-  timeSlotBtns.forEach((btn) => {
-    btn.addEventListener('click', function (e) {
-      e.preventDefault();
-      markMemberActivity();
-
-      timeSlotBtns.forEach((b) => {
-        b.style.background = 'white';
-        b.style.borderColor = '#ccc';
-        b.style.color = '#000';
-      });
-      this.style.background = '#28a745';
-      this.style.color = 'white';
-      this.style.borderColor = '#28a745';
-
-      const classIdVal = this.dataset.class;
-      const classNameVal = this.dataset.className;
-      const dateVal = this.dataset.date;
-      const timeVal = this.dataset.time;
-
-      console.log('Adding to cart:', { classIdVal, classNameVal, dateVal, timeVal });
-
-      addToEnrollmentCart(classIdVal, dateVal, timeVal, classNameVal);
-
-      setTimeout(() => {
-        modal.style.display = 'none';
-      }, 500);
-    });
-  });
-
-  console.log('Modal opened for class:', className);
-}
-
-// ========== MODAL CLOSE ==========
 function closeModal(modalId) {
   const modal = document.getElementById(modalId);
-  if (modal) {
-    modal.style.display = 'none';
-  }
+  if (modal) modal.style.display = 'none';
 }
 
-// ========== EVENTS ==========
 function setupEventListeners() {
   const calendarTab = $('tabCalendar');
   const listTab = $('tabList');
@@ -1550,7 +1268,6 @@ function setupEventListeners() {
   document.addEventListener('click', function (e) {
     if (e.target.classList.contains('modal-overlay')) {
       closeModal('dayModal');
-      closeModal('timeModal');
       closeModal('singleClassModal');
     }
   });
@@ -1592,13 +1309,10 @@ function nextMonth() {
   markMemberActivity();
 }
 
-// ========== TIME SLOT FOR CLASS ==========
 function generateTimeSlots(schedule) {
   const timeSlotRanges = [];
   if (typeof schedule === 'string') {
-    const match = schedule.match(
-      /(\d{1,2}:\d{2}\s?[AP]M)\s*-\s*(\d{1,2}:\d{2}\s?[AP]M)/i
-    );
+    const match = schedule.match(/(\d{1,2}:\d{2}\s?[AP]M)\s*-\s*(\d{1,2}:\d{2}\s?[AP]M)/i);
     if (match) {
       timeSlotRanges.push(`${match[1]} - ${match[2]}`);
       return timeSlotRanges;
@@ -1610,24 +1324,9 @@ function generateTimeSlots(schedule) {
 }
 
 function updateCalendarTitle() {
-  const monthNames = [
-    'January',
-    'February',
-    'March',
-    'April',
-    'May',
-    'June',
-    'July',
-    'August',
-    'September',
-    'October',
-    'November',
-    'December',
-  ];
+  const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
   const monthName = monthNames[currentCalendarDate.getMonth()];
   const year = currentCalendarDate.getFullYear();
   const titleElement = $('currentMonthDisplay');
-  if (titleElement) {
-    titleElement.textContent = `${monthName} ${year}`;
-  }
+  if (titleElement) titleElement.textContent = `${monthName} ${year}`;
 }
