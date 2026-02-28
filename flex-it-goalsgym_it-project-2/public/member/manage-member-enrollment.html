@@ -12,7 +12,6 @@
 
 <body>
     <div class="member-container">
-        <!-- Sidebar -->
         <aside class="sidebar">
             <div class="sidebar-header">
                 <h2>GOALS Gym Member</h2>
@@ -29,59 +28,60 @@
             </nav>
         </aside>
 
-        <!-- Header -->
         <header class="header">
             <button class="menu-toggle" id="menuToggle">☰</button>
             <h1>Class Enrollment</h1>
-            <button class="logout-btn" id="logoutBtn">Logout</button>
+            <button class="logout-btn" id="logoutBtn" onclick="quickLogout()">Logout</button>
         </header>
 
-        <!-- Main Content -->
         <main class="main-content">
             <div class="container">
-                <!-- Session Counter -->
+                
+                <div class="member-greeting">
+                    <h2>Enroll in Classes</h2>
+                    <p class="subtitle">Select a date from the calendar or browse available classes below to add them to your enrollment cart.</p>
+                </div>
+
                 <div class="session-counter-card">
-                    <h3>Remaining Sessions</h3>
+                    <div style="font-size: 1.1rem; color: #ccc;">Remaining Sessions for Combative Membership</div>
                     <div class="session-count" id="remainingSessions">0</div>
-                    <div class="membership-info" id="membershipInfo">Loading membership information...</div>
+                    <div class="membership-info" id="membershipInfo">Loading membership data...</div>
                 </div>
 
-                <!-- View Tabs -->
                 <div class="view-tabs">
-                    <button class="view-tab active" id="tabCalendar" data-view="calendar">
-                        📅 Calendar View
-                    </button>
-                    <button class="view-tab" id="tabList" data-view="list">
-                        📋 List View
-                    </button>
+                    <button id="tabCalendar" class="view-tab active">Calendar View</button>
+                    <button id="tabList" class="view-tab">List View</button>
                 </div>
 
-                <!-- Calendar View -->
                 <div id="calendarView" class="view-container" style="display: block;">
-                    <h2>Class Calendar</h2>
                     <div id="calendarContainer">
                         <p>Loading calendar...</p>
                     </div>
                 </div>
 
-                <!-- List View -->
                 <div id="listView" class="view-container" style="display: none;">
-                    <h2>Available Classes</h2>
+                    
+                    <div class="form-group" style="margin-bottom: 2rem;">
+                        <label for="class_search" style="color: #ccc; font-weight: bold; margin-bottom: 0.5rem; display: block; text-transform: uppercase; letter-spacing: 0.5px;">Search Classes:</label>
+                        <div class="search-group">
+                            <input type="text" id="class_search" placeholder="Search by class name, trainer, or schedule...">
+                        </div>
+                    </div>
+
                     <div id="classesGrid">
                         <p>Loading classes...</p>
                     </div>
                 </div>
 
-                <!-- Enrollment Cart -->
                 <div id="enrollmentCart" class="enrollment-cart" style="display: block;">
                     <div class="cart-header">
                         <h3>🛒 Your Enrollment Cart</h3>
                     </div>
                     <div id="cartContent" class="cart-content">
-                        <p>No classes selected yet. Click on a date to add classes.</p>
+                        <p style="color: #aaa;">No classes selected yet. Click on a date or class to add.</p>
                     </div>
                     <div class="cart-footer">
-                        <button id="confirmCartBtn" class="btn btn-primary" disabled>
+                        <button id="confirmCartBtn" class="btn btn-primary" disabled style="width: 100%;">
                             Confirm All Enrollments
                         </button>
                     </div>
@@ -89,6 +89,10 @@
             </div>
         </main>
     </div>
+
+    <div id="dayModal" class="modal"></div>
+    <div id="timeModal" class="modal"></div>
+    <div id="listViewEnrollmentModal" class="modal"></div>
 
     <script src="../assets/js/form-persistence.js" defer></script>
     <script src="./member-js/manage-member-enrollment.js"></script>
