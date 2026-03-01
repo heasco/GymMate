@@ -15,6 +15,7 @@ const templateRoutes = require('./routes/templates');
 const healthRoutes = require('./routes/health');
 const attendanceRoutes = require('./routes/attendance');
 const logRoutes = require('./routes/logs');
+const attendanceLogRoutes = require('./routes/attendance-logs');
 
 const errorHandler = require('./middleware/errorHandler');
 const { protect, admin } = require('./middleware/auth'); // NEW: Import protect middleware
@@ -93,6 +94,7 @@ app.use('/api/announcements', protect, admin, announcementRoutes);
 app.use('/api/templates', protect, admin, templateRoutes);
 app.use('/api/attendance', protect, attendanceRoutes); // mounts /api/attendance/* etc.
 app.use('/api/logs', protect, admin, logRoutes);
+app.use('/api/attendance-logs', protect, admin, attendanceLogRoutes);
 app.use('/health', healthRoutes); // Secure health checks if needed
 
 // 404 + error handler

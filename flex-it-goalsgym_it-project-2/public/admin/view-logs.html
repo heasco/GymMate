@@ -51,7 +51,16 @@
         <button class="logout-btn" id="logoutBtn">Logout</button>
       </header>
       <main class="main-content">
-        <div class="filter-container">
+        <div class="log-toggle-bar">
+          <button id="web-logs-btn" class="log-toggle-btn active" type="button">
+            Web Logs
+          </button>
+          <button id="gym-attendance-btn" class="log-toggle-btn" type="button">
+            Gym Attendance
+          </button>
+        </div>
+
+        <div id="web-logs-filters" class="filter-container">
           <div class="filter-group">
             <label for="role-filter">Filter by Role:</label>
             <select id="role-filter">
@@ -62,17 +71,50 @@
             </select>
           </div>
           <div class="filter-group">
-            <label for="date-filter">Filter by Date:</label>
-            <input type="date" id="date-filter" />
+            <label for="web-date-filter">Filter by Date:</label>
+            <input type="date" id="web-date-filter" />
           </div>
         </div>
+
+        <div id="gym-attendance-filters" class="filter-container" style="display: none;">
+          <div class="filter-group">
+            <label for="name-search">Search by Name:</label>
+            <input type="text" id="name-search" placeholder="Enter name..." />
+          </div>
+          <div class="filter-group">
+            <label for="gym-date-filter">Filter by Date:</label>
+            <input type="date" id="gym-date-filter" />
+          </div>
+          <div class="filter-group">
+            <label for="log-type-filter">Filter by Log Type:</label>
+            <select id="log-type-filter">
+              <option value="">All</option>
+              <option value="login">Login</option>
+              <option value="logout">Logout</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <button id="search-btn">Search</button>
+            <button id="reset-btn">Reset</button>
+          </div>
+        </div>
+
         <table id="logs-table">
-          <thead>
+          <thead id="web-logs-header">
             <tr>
               <th>User</th>
+              <th>Role</th>
               <th>IP Address</th>
               <th>Device</th>
               <th>Location</th>
+              <th>Timestamp</th>
+            </tr>
+          </thead>
+          <thead id="gym-attendance-header" style="display: none;">
+            <tr>
+              <th>User</th>
+              <th>Action</th>
+              <th>Attended</th>
               <th>Timestamp</th>
             </tr>
           </thead>
@@ -87,3 +129,4 @@
     <script src="admin-js/admin-mainpage.js"></script>
   </body>
 </html>
+
