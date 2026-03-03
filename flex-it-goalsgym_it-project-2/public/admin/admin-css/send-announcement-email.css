@@ -1,489 +1,504 @@
 /* ========================================
    SEND ANNOUNCEMENT PAGE - GOALS GYM THEME
    ======================================== */
+:root {
+  --primary: #B30000;
+  --highlight: #FF3333;
+  --secondary: #000000;
+  --accent: #FFFFFF;
+  --neutral: #BFBFBF;
+  --dark: #121212;
+  --radius: 8px;
+  --transition: all 0.3s ease;
+}
 
 body {
-    background-color: #121212;
-    color: #e0e0e0;
+  background-color: var(--dark);
+  color: var(--neutral);
 }
 
 .container {
-    max-width: 1400px;
-    margin: 0 auto;
-    padding: 0;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0;
 }
 
-/* Sections */
-.section {
-    display: none;
-    background: #1e1e1e;
-    padding: 2.5rem;
-    border-radius: 10px;
-    margin-bottom: 2rem;
-    border: 1px solid #333;
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
+/* Base Card Styling (Matches View Logs / Transactions) */
+.card {
+  background: rgba(30, 30, 30, 0.9);
+  padding: 2.5rem;
+  border-radius: var(--radius);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(10px);
+  margin-bottom: 2rem;
 }
 
-.section.active {
-    display: block;
-    animation: fadeIn 0.3s ease-in-out;
+.card h2, .modal-content h2 {
+  color: var(--accent);
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 2px solid var(--primary);
+  padding-bottom: 0.5rem;
 }
 
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(10px);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+/* Top Toggles (Compose / History) */
+.tx-toggle-wrapper {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 2rem;
 }
 
-.section h2 {
-    color: #b30000;
-    font-size: 1.8rem;
-    font-weight: 700;
-    margin-bottom: 1.5rem;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    border-bottom: 2px solid #ff3333;
-    padding-bottom: 0.5rem;
+.tx-toggle-bar {
+  display: inline-flex;
+  gap: 0.75rem;
+  padding: 0.25rem;
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: 999px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
 }
 
-
-.view-toggle {
-    display: flex;
-    justify-content: center;
-    gap: 1rem;
-    margin-bottom: 2rem;
+.tx-toggle-btn {
+  padding: 0.7rem 1.8rem;
+  border-radius: 999px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  background: rgba(0, 0, 0, 0.8);
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6);
+  min-width: 150px;
+  font-size: 0.9rem;
+  transition: var(--transition);
 }
 
+.tx-toggle-btn:hover {
+  background: rgba(179, 0, 0, 0.25);
+  border-color: rgba(179, 0, 0, 0.6);
+  color: #ffffff;
+  transform: translateY(-2px);
+}
+
+.tx-toggle-btn.active {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--highlight) 100%);
+  color: var(--accent);
+  border-color: var(--primary);
+  box-shadow: 0 4px 18px rgba(179, 0, 0, 0.7);
+}
+
+/* Layout */
 .compose-layout {
-    display: flex;
-    gap: 2rem;
+  display: flex;
+  gap: 2rem;
 }
-
 .compose-main {
-    flex: 3;
+  flex: 3;
 }
-
 .compose-sidebar {
-    flex: 1;
+  flex: 1;
+}
+.sidebar-card {
+  padding: 1.5rem;
 }
 
-.btn-primary.active {
-    background: linear-gradient(135deg, #ff3333 0%, #b30000 100%);
-    box-shadow: 0 4px 15px rgba(255, 51, 51, 0.3);
-    transform: translateY(-2px);
+/* Forms & Inputs */
+.form-group {
+  margin-bottom: 1.5rem;
+}
+.form-group label {
+  color: var(--accent);
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  display: block;
+  font-size: 0.95rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
+input[type="text"],
+select,
+textarea {
+  width: 100%;
+  padding: 1rem 1.2rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: var(--radius);
+  font-size: 1rem;
+  background: rgba(0, 0, 0, 0.5);
+  color: var(--accent);
+  transition: var(--transition);
+  font-family: inherit;
+}
+
+input[type="text"]:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(179, 0, 0, 0.2);
+  background: rgba(0, 0, 0, 0.7);
+}
+
+textarea#body {
+  min-height: 400px;
+  resize: vertical;
+}
+
+/* Buttons */
 .btn-primary {
-    background: linear-gradient(135deg, #ff3333 0%, #b30000 100%);
-    color: #fff;
-    padding: 12px 24px;
-    border: none;
-    border-radius: 8px;
-    font-size: 1rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    box-shadow: 0 4px 15px rgba(255, 51, 51, 0.3);
+  background: linear-gradient(135deg, var(--primary) 0%, var(--highlight) 100%);
+  color: var(--accent);
+  border: none;
+  padding: 1rem 2rem;
+  border-radius: var(--radius);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 4px 15px rgba(179, 0, 0, 0.3);
 }
 
 .btn-primary:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 6px 20px rgba(255, 51, 51, 0.5);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(255, 51, 51, 0.4);
 }
 
-#subject {
-    font-size: 1.2rem;
-    padding: 0.8rem;
-    
+.secondary-btn {
+  background: rgba(0, 0, 0, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: var(--neutral);
+  padding: 1rem 1.5rem;
+  border-radius: var(--radius);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: var(--transition);
 }
 
-#body {
-    min-height: 400px; /* Taller textarea */
-    font-size: 1rem;
-    line-height: 1.6;
-    padding: 0.8rem;
+.secondary-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--accent);
 }
 
-#selectedRecipients h4 {
-    color: #ff3333;
-    font-size: 1.2rem;
-    margin-top: 1.5rem;
-    margin-bottom: 1rem;
+.secondary-btn.delete-btn:hover {
+  border-color: #dc3545;
+  color: #dc3545;
 }
 
-#selectedRecipientsList {
-    list-style: none;
-    padding: 0;
-    color: #ccc;
-    max-height: 300px;
-    overflow-y: auto;
+.full-width {
+  width: 100%;
 }
-
-
-
-#selectedRecipientsList li {
-    padding: 5px 0;
-    border-bottom: 1px solid #444;
-}
-
-#selectedRecipientsList li:last-child {
-    border-bottom: none;
-}
-
-/* Recipient List */
-.recipient-list {
-    max-height: 300px;
-    overflow-y: auto;
-    border: 1px solid #444;
-    border-radius: 5px;
-    padding: 1rem;
-    background: #2a2a2a;
-}
-.recipient-item {
-    display: flex;
-    align-items: center;
-    margin-bottom: 0.5rem;
-}
-.recipient-item input[type="checkbox"] {
-    margin-right: 10px;
-}
-.recipient-controls {
-    display: flex;
-    gap: 1rem;
-    margin-bottom: 1rem;
-    align-items: center;
-}
-
-/* History List */
-.history-list table {
-    width: 100%;
-    border-collapse: collapse;
-    background: #2a2a2a;
-    border-radius: 5px;
-    overflow: hidden;
-}
-.history-list th,
-.history-list td {
-    padding: 1rem 1.2rem;
-    border-bottom: 1px solid #333;
-    text-align: left;
-}
-.history-list th {
-    background: linear-gradient(135deg, #b30000 0%, #ff3333 100%);
-    color: #ffffff;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    font-size: 0.9rem;
-}
-.history-list tr:hover {
-    background-color: #333;
-}
-
-/* Modal Styles */
-.modal {
-    display: none; /* Hidden by default */
-    position: fixed; /* Stay in place */
-    z-index: 1000; /* Sit on top */
-    left: 0;
-    top: 0;
-    width: 100%; /* Full width */
-    height: 100%; /* Full height */
-    overflow: auto; /* Enable scroll if needed */
-    background-color: rgba(0,0,0,0.8); /* Black w/ opacity */
-}
-.modal-content {
-    background-color: #1e1e1e;
-    margin: 10% auto;
-    padding: 2rem;
-    border: 1px solid #555;
-    width: 80%;
-    max-width: 800px; /* Wider modal */
-    border-radius: 10px;
-    position: relative;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.5);
-}
-
-.close-btn {
-    color: #aaa;
-    position: absolute;
-    top: 1rem;
-    right: 1.5rem;
-    font-size: 28px;
-    font-weight: bold;
-}
-
-.close-btn:hover,
-.close-btn:focus {
-    color: white;
-    text-decoration: none;
-    cursor: pointer;
+.send-btn {
+  font-size: 1.1rem;
+  padding: 1rem 2.5rem;
 }
 
 /* Template Controls */
 .template-controls {
-    display: flex;
-    gap: 1rem;
-    margin-bottom: 1.5rem;
-    align-items: center;
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  align-items: center;
 }
 
-#templateSelect {
-    flex-grow: 1;
-    background-color: #2a2a2a; /* Darker background */
-    color: #fff;
-    border: 2px solid #444; /* Thicker border */
-    padding: 14px 18px; /* Much bigger padding */
-    font-size: 1.1rem; /* Larger text */
-    border-radius: 8px; /* Rounded corners */
-    outline: none;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-    
-    /* Custom Styling to remove default ugly arrow */
-    appearance: none;
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    
-    /* Add a custom Red Arrow */
-    background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23ff3333%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
-    background-repeat: no-repeat;
-    background-position: right 1.5rem center;
-    background-size: 0.8rem auto;
-}
-#templateSelect:hover {
-    border-color: #ff3333; /* Red border on hover */
-    background-color: #333;
+/* Sidebar Selected Recipients */
+#selectedRecipients h4 {
+  color: var(--primary);
+  font-size: 1.1rem;
+  margin-top: 1.5rem;
+  margin-bottom: 1rem;
+  text-transform: uppercase;
 }
 
-
-/* Focus Effect (when clicked) */
-#templateSelect:focus {
-    border-color: #ff3333;
-    box-shadow: 0 0 15px rgba(255, 51, 51, 0.3); /* Red glow */
+#selectedRecipientsList {
+  list-style: none;
+  padding: 0;
+  color: var(--neutral);
+  max-height: 400px;
+  overflow-y: auto;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius);
+  background: rgba(0,0,0,0.3);
 }
 
-/* Style the dropdown options (limited support in some browsers, but helps) */
-#templateSelect option {
-    background-color: #1e1e1e;
-    color: #fff;
-    padding: 10px;
+#selectedRecipientsList li {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  font-size: 0.9rem;
+}
+#selectedRecipientsList li:last-child {
+  border-bottom: none;
+}
+#selectedRecipientsList li.empty-state {
+  text-align: center;
+  font-style: italic;
+  opacity: 0.6;
 }
 
-/* Template Modal */
-#templateModal .modal-content {
-    max-width: 1200px;
-    min-height: 700px;
-    display: flex;
-    flex-direction: column;
+/* Table styling (Matches Transactions) */
+.tx-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  border-radius: var(--radius);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.35);
+  margin-top: 1rem;
 }
 
-#templateListContainer {
-    margin-bottom: 2rem;
-    flex-shrink: 0;
+.tx-table {
+  width: 100%;
+  border-collapse: collapse;
 }
 
-#templateList {
-    list-style: none;
-    padding: 0;
-    max-height: 350px;
-    overflow-y: auto;
+.tx-table thead {
+  background: rgba(0, 0, 0, 0.7);
 }
 
-#templateFormContainer {
-    flex-grow: 1;
-    display: flex;
-    flex-direction: column;
+.tx-table th, .tx-table td {
+  padding: 1rem 1.2rem;
+  font-size: 0.95rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
-#templateForm {
-    flex-grow: 1;
-    display: flex;
-    flex-direction: column;
+.tx-table th {
+  color: var(--accent);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  text-align: left;
 }
 
-#templateBody {
-    flex-grow: 1;
-    font-size: 1rem;
-    line-height: 1.6;
+.tx-table tbody tr:hover {
+  background: rgba(179, 0, 0, 0.14);
+}
+.center-align {
+  text-align: center;
 }
 
-
-#templateList li {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0.75rem;
-    border-bottom: 1px solid #444;
+/* Modals */
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0,0,0,0.8);
+  backdrop-filter: blur(4px);
 }
 
-#templateList li:hover {
-    background-color: #333;
+.modal-content {
+  background-color: #1e1e1e;
+  margin: 5% auto;
+  padding: 2.5rem;
+  border: 1px solid rgba(255,255,255,0.1);
+  width: 90%;
+  max-width: 700px;
+  border-radius: var(--radius);
+  position: relative;
+  box-shadow: 0 15px 40px rgba(0,0,0,0.7);
 }
 
-#templateList .template-name {
-    font-weight: bold;
-    cursor: pointer;
+.modal-content.large-modal {
+  max-width: 1000px;
+  height: 85vh;
+  display: flex;
+  flex-direction: column;
 }
 
-
-
-.recipient-popup {
-    display: none;
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background-color: #1e1e1e;
-    padding: 2rem;
-    border-radius: 10px;
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
-    z-index: 1100;
-    width: 90%;
-    max-width: 500px;
+.close-btn {
+  color: var(--neutral);
+  position: absolute;
+  top: 1.5rem;
+  right: 1.5rem;
+  font-size: 24px;
+  font-weight: bold;
+  transition: var(--transition);
 }
-.recipient-popup-content h3 {
-    color: #b30000;
-    margin-bottom: 1rem;
+
+.close-btn:hover {
+  color: var(--highlight);
+  cursor: pointer;
 }
+
+/* Recipient List in Modal */
+.recipient-controls {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  align-items: center;
+}
+
+.recipient-list {
+  flex-grow: 1;
+  overflow-y: auto;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius);
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.recipient-item {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  transition: var(--transition);
+}
+.recipient-item:hover {
+  background: rgba(255,255,255,0.05);
+}
+.recipient-item input[type="checkbox"] {
+  margin-right: 15px;
+  transform: scale(1.2);
+  accent-color: var(--primary);
+}
+.recipient-item label {
+  cursor: pointer;
+  flex-grow: 1;
+}
+
+/* View Announcement Modal Formatting */
+.view-row {
+  margin-bottom: 1.5rem;
+}
+.view-row strong {
+  color: var(--highlight);
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: 0.95rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.view-recipients-box {
+  background: rgba(0,0,0,0.5);
+  padding: 1rem;
+  border-radius: var(--radius);
+  border: 1px solid rgba(255,255,255,0.1);
+  max-height: 120px;
+  overflow-y: auto;
+  color: var(--neutral);
+  line-height: 1.6;
+}
+.view-body-box {
+  background: var(--accent);
+  color: var(--secondary);
+  padding: 1.5rem;
+  border-radius: var(--radius);
+  min-height: 200px;
+  max-height: 400px;
+  overflow-y: auto;
+  border: 1px solid rgba(255,255,255,0.2);
+  white-space: normal;
+  line-height: 1.6;
+}
+
+/* Template List */
+.styled-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.styled-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.2rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+.styled-list li:hover {
+  background: rgba(179, 0, 0, 0.14);
+}
+.styled-list li .template-name {
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+/* All Recipients List (See More) */
 .recipient-popup-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    max-height: 300px;
-    overflow-y: auto;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-height: 400px;
+  overflow-y: auto;
 }
 .recipient-popup-list li {
-    padding: 5px 0;
-    border-bottom: 1px solid #444;
+  padding: 0.8rem 1.2rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  color: var(--neutral);
 }
-#backdrop {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0,0,0,0.5);
-    z-index: 1050;
+.recipient-popup-list li:hover {
+  background: rgba(179, 0, 0, 0.14);
+  color: var(--accent);
 }
+
+/* See More Link */
 .see-more-link {
-    color: #ff3333;
-    cursor: pointer;
-    text-decoration: underline;
+  color: var(--highlight);
+  cursor: pointer;
+  text-decoration: none;
+  font-size: 0.85rem;
+  margin-left: 8px;
+}
+.see-more-link:hover {
+  text-decoration: underline;
 }
 
-/* Add this to send-announcement-email.css */
-
-.view-row {
-    margin-bottom: 1.5rem;
-}
-
-.view-row strong {
-    color: #ff3333; /* Red accents */
-    display: block;
-    margin-bottom: 0.5rem;
-    font-size: 0.95rem;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.view-recipients-box {
-    background: #121212;
-    padding: 10px;
-    border-radius: 5px;
-    border: 1px solid #333;
-    max-height: 80px;
-    overflow-y: auto;
-    color: #ccc;
-    font-size: 0.9rem;
-}
-
-.view-body-box {
-    background: #f0f0f0; /* Light background for the email preview so it looks like the actual email */
-    color: #000; /* Dark text for readability */
-    padding: 20px;
-    border-radius: 5px;
-    min-height: 200px;
-    max-height: 500px;
-    overflow-y: auto;
-    border: 1px solid #ccc;
-    white-space: normal; /* Allow text wrapping */
-}
-
-#recipient_search {
-    flex-grow: 1; /* Makes it stretch to fill the space */
-    background-color: #2a2a2a; /* Dark background */
-    border: 2px solid #444; /* Subtle dark border */
-    color: #fff; /* White text */
-    padding: 12px 20px; /* Bigger padding for a comfortable click area */
-    font-size: 1rem; /* Larger, readable text */
-    border-radius: 30px; /* Fully rounded "pill" shape */
-    outline: none;
-    transition: all 0.3s ease; /* Smooth animation */
-    box-shadow: inset 0 2px 4px rgba(0,0,0,0.3); /* Inner shadow for depth */
-}
-
-/* Hover Effect */
-#recipient_search:hover {
-    border-color: #666;
-    background-color: #333;
-}
-
-/* Focus Effect (When typing) */
-#recipient_search:focus {
-    border-color: #ff3333; /* Bright red border */
-    background-color: #1e1e1e;
-    box-shadow: 0 0 12px rgba(255, 51, 51, 0.4); /* Red glow */
-}
-
-/* Placeholder Text Styling */
-#recipient_search::placeholder {
-    color: #888;
-    font-style: italic;
-}
-
-
-/* Large Modal for Template Form */
-.modal-content.large-modal {
-    width: 90%;          /* Occupy 90% of screen width */
-    max-width: 1000px;   /* Cap at 1000px */
-    height: 85vh;        /* Occupy 85% of screen height */
-    max-height: 900px;
-    display: flex;
-    flex-direction: column;
-}
-
-/* Ensure the form takes up all available space in the large modal */
+/* Form filling in modal */
 #templateForm {
-    display: flex;
-    flex-direction: column;
-    flex-grow: 1; /* Grow to fill modal */
-    overflow: hidden; /* Prevent double scrollbars */
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
 }
 
-/* Make the textarea fill the remaining vertical space */
-#templateForm .form-group textarea {
-    height: 100%;
-    min-height: 300px;
-    font-size: 1.1rem;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-color: #2a2a2a;
-    color: #fff;
-    border: 1px solid #444;
-    border-radius: 5px;
+/* Utilities */
+.tx-filter-buttons {
+  display: flex;
+  gap: 0.75rem;
 }
 
-#templateForm .form-group textarea:focus {
-    border-color: #ff3333;
-    outline: none;
+/* --- THE FIX: Action Buttons (Edit/Delete) missing from previous code --- */
+.tx-action-btn {
+  padding: 0.4rem 0.8rem;
+  font-size: 0.8rem;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border: 1px solid transparent;
+  background: rgba(0, 0, 0, 0.7);
+  color: var(--neutral);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.4);
+  cursor: pointer;
+  transition: var(--transition);
+  font-family: inherit;
+  font-weight: 600;
+  margin-left: 0.25rem;
+}
+
+.tx-action-btn.edit {
+  border-color: #17a2b8;
+  color: #17a2b8;
+}
+
+.tx-action-btn.edit:hover {
+  background: #17a2b8;
+  color: #ffffff;
+}
+
+.tx-action-btn.delete {
+  border-color: #dc3545;
+  color: #dc3545;
+}
+
+.tx-action-btn.delete:hover {
+  background: #dc3545;
+  color: #ffffff;
 }

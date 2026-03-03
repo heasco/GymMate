@@ -344,7 +344,7 @@ function setupViews() {
 }
 
 // ------------------------------
-// Modal Handling (Updated for Template Form)
+// Modal Handling
 // ------------------------------
 function setupModals() {
     const modals = {
@@ -353,31 +353,29 @@ function setupModals() {
             openBtn: document.getElementById('openRecipientModalBtn'),
             closeBtn: document.getElementById('closeRecipientModalBtn'),
         },
-        template: { // The List Modal
+        template: {
             modal: document.getElementById('templateModal'),
             openBtn: document.getElementById('manageTemplatesBtn'),
             closeBtn: document.getElementById('closeTemplateModalBtn'),
         },
-        templateForm: { // The New Form Modal (Big Pop-up)
+        templateForm: { 
             modal: document.getElementById('templateFormModal'),
             openBtn: document.getElementById('openAddTemplateModalBtn'),
             closeBtn: document.getElementById('closeTemplateFormModalBtn'),
         },
         recipientPopup: {
             modal: document.getElementById('recipientPopup'),
-            closeBtn: document.getElementById('closeRecipientPopupBtn'),
-            backdrop: document.getElementById('backdrop'),
+            closeBtn: document.getElementById('closeRecipientPopupBtn')
         }
     };
 
     for (const key in modals) {
-        const { modal, openBtn, closeBtn, backdrop } = modals[key];
+        const { modal, openBtn, closeBtn } = modals[key];
         
         // Open Button Logic
         if (openBtn) {
             openBtn.onclick = () => {
                 modal.style.display = 'block';
-                // If opening the ADD form, reset it first
                 if (key === 'templateForm') {
                     document.getElementById('templateForm').reset();
                     document.getElementById('templateId').value = '';
@@ -390,7 +388,6 @@ function setupModals() {
         if (closeBtn) {
             closeBtn.onclick = () => {
                 modal.style.display = 'none';
-                if (backdrop) backdrop.style.display = 'none';
             }
         }
     }
@@ -400,18 +397,13 @@ function setupModals() {
         modals.recipient.modal.style.display = 'none';
     };
 
-    modals.recipientPopup.backdrop.onclick = () => {
-        modals.recipientPopup.modal.style.display = 'none';
-        modals.recipientPopup.backdrop.style.display = 'none';
-    }
-
     // Global window click to close all types of modals
     window.onclick = (event) => {
         if (event.target == modals.recipient.modal) modals.recipient.modal.style.display = 'none';
         if (event.target == modals.template.modal) modals.template.modal.style.display = 'none';
         if (event.target == modals.templateForm.modal) modals.templateForm.modal.style.display = 'none';
+        if (event.target == modals.recipientPopup.modal) modals.recipientPopup.modal.style.display = 'none';
         
-        // Also handle the View Msg modal if clicked outside
         const viewModal = document.getElementById('viewAnnouncementModal');
         if (viewModal && event.target == viewModal) {
             viewModal.style.display = 'none';
@@ -424,6 +416,12 @@ function updateSelectedRecipientsList() {
     const selectedList = document.getElementById('selectedRecipientsList');
     const checkboxes = document.querySelectorAll('#recipientList input[type="checkbox"]:checked');
     selectedList.innerHTML = '';
+    
+    if (checkboxes.length === 0) {
+        selectedList.innerHTML = '<li class="empty-state">No recipients selected.</li>';
+        return;
+    }
+
     checkboxes.forEach(cb => {
         const li = document.createElement('li');
         li.textContent = cb.parentElement.querySelector('label').textContent;
@@ -482,7 +480,7 @@ async function loadTemplates() {
 
 function populateTemplateDropdown() {
     const select = document.getElementById('templateSelect');
-    select.innerHTML = '<option value="">Select a Template</option>';
+    select.innerHTML = '<option value="">-- Select a Template --</option>';
     allTemplates.forEach(t => {
         const option = document.createElement('option');
         option.value = t._id;
@@ -499,8 +497,8 @@ function displayTemplatesInModal() {
         li.innerHTML = `
             <span class="template-name" data-id="${t._id}">${t.name}</span>
             <div>
-                <button class="btn-primary edit-template-btn" data-id="${t._id}">Edit</button>
-                <button class="btn-primary delete-template-btn" data-id="${t._id}">Delete</button>
+                <button class="tx-action-btn edit edit-template-btn" data-id="${t._id}">Edit</button>
+                <button class="tx-action-btn delete delete-template-btn" data-id="${t._id}">Delete</button>
             </div>
         `;
         list.appendChild(li);
@@ -622,7 +620,7 @@ function setupFormListener() {
             if (result.success) {
                 showSuccess('Announcement sent successfully!');
                 sendEmailForm.reset();
-                document.getElementById('selectedRecipientsList').innerHTML = '';
+                document.getElementById('selectedRecipientsList').innerHTML = '<li class="empty-state">No recipients selected.</li>';
                 document.querySelectorAll('#recipientList input[type="checkbox"]').forEach(cb => cb.checked = false);
                 loadHistory(); // Refresh history
             } else {
@@ -697,8 +695,8 @@ function displayHistory(history) {
         const row = document.createElement('tr');
         const cell = document.createElement('td');
         cell.colSpan = 4;
+        cell.className = "empty-state";
         cell.textContent = 'No announcements have been sent yet.';
-        cell.style.textAlign = 'center';
         row.appendChild(cell);
         historyListBody.appendChild(row);
         return;
@@ -735,15 +733,16 @@ function displayHistory(history) {
         }
         row.appendChild(recipientsCell);
 
-        // 4. Actions Column (FIXED)
+        // 4. Actions Column
         const actionsCell = document.createElement('td');
+        actionsCell.className = "center-align";
         
-        // Create the button as a DOM element instead of a string
+        // THE FIX: Changed View button back to a small primary block button
         const viewBtn = document.createElement('button');
         viewBtn.className = 'btn-primary view-announcement-btn';
-        viewBtn.textContent = 'View'; // Updated Text
-        viewBtn.style.padding = '8px 16px'; 
-        viewBtn.style.fontSize = '0.9rem';
+        viewBtn.textContent = 'VIEW'; 
+        viewBtn.style.padding = '0.5rem 1rem';
+        viewBtn.style.fontSize = '0.85rem';
 
         // safely attach the JSON object to the button
         viewBtn.dataset.item = JSON.stringify(item);
@@ -814,7 +813,6 @@ function showRecipientPopup(recipients) {
         li.textContent = r;
         list.appendChild(li);
     });
-    document.getElementById('backdrop').style.display = 'block';
     document.getElementById('recipientPopup').style.display = 'block';
 }
 
@@ -824,6 +822,7 @@ function showRecipientPopup(recipients) {
 function showSuccess(message) {
     const successMessage = document.getElementById('successMessage');
     successMessage.textContent = message;
+    successMessage.className = 'success-message success'; 
     successMessage.style.display = 'block';
     setTimeout(() => successMessage.style.display = 'none', 3000);
 }
@@ -831,6 +830,7 @@ function showSuccess(message) {
 function showError(message) {
     const errorMessage = document.getElementById('errorMessage');
     errorMessage.textContent = message;
+    errorMessage.className = 'error-message error'; 
     errorMessage.style.display = 'block';
     setTimeout(() => errorMessage.style.display = 'none', 3000);
 }

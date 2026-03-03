@@ -7,6 +7,7 @@
   <link rel="icon" type="image/png" href="image/logo2.png">
   <link rel="stylesheet" href="./admin-css/admin-mainpage.css">
   <link rel="stylesheet" href="./admin-css/send-announcement-email.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" />
 </head>
 <body>
   <div class="admin-container">
@@ -34,7 +35,7 @@
 
     <header class="header">
       <button class="menu-toggle" id="menuToggle">☰</button>
-      <h1>Send Announcement</h1>
+      <h1>Announcements</h1>
       <button class="logout-btn" id="logoutBtn">Logout</button>
     </header>
 
@@ -44,58 +45,64 @@
         <div id="successMessage" class="success-message"></div>
         <div id="errorMessage" class="error-message"></div>
 
-        <div class="view-toggle">
-          <button id="showComposeBtn" class="btn-primary active">Compose</button>
-          <button id="showHistoryBtn" class="btn-primary">History</button>
+        <div class="tx-toggle-wrapper">
+          <div class="tx-toggle-bar">
+            <button id="showComposeBtn" class="tx-toggle-btn active" type="button">Compose</button>
+            <button id="showHistoryBtn" class="tx-toggle-btn" type="button">History</button>
+          </div>
         </div>
 
         <div id="composeView">
             <div class="compose-layout">
                 <div class="compose-main">
-                    <div id="sendSection" class="section active">
+                    <div id="sendSection" class="card active">
                       <h2>Compose Announcement</h2>
                       <div class="template-controls">
                         <select id="templateSelect" class="form-control">
-                          <option value="">Select a Template</option>
+                          <option value="">-- Select a Template --</option>
                         </select>
                         <button type="button" id="manageTemplatesBtn" class="btn-primary">Manage Templates</button>
                       </div>
                       <form id="sendEmailForm">
                         <div class="form-group">
-                          <label for="subject">Subject:</label> <br>
-                          <textarea id ="subject" type="text" id="subject" name="subject" rows="1" cols="80" required></textarea>
+                          <label for="subject">Subject</label>
+                          <input type="text" id="subject" name="subject" required placeholder="Enter email subject...">
                         </div>
                         <div class="form-group">
-                          <label for="body">Body:</label>
-                          <textarea id="body" name="body" rows="18" cols="100" required></textarea>
+                          <label for="body">Message Body</label>
+                          <textarea id="body" name="body" required placeholder="Type your announcement here..."></textarea>
                         </div>
-                        <div class="nav-buttons">
-                          <button type="submit" class="btn-primary">Send Email</button>
+                        <div class="nav-buttons" style="text-align: right; margin-top: 1.5rem;">
+                          <button type="submit" class="btn-primary send-btn"><i class="fas fa-paper-plane"></i> Send Email</button>
                         </div>
                       </form>
                     </div>
                 </div>
                 <div class="compose-sidebar">
-                    <button type="button" id="openRecipientModalBtn" class="btn-primary">Select Recipients</button>
-                    <div id="selectedRecipients">
-                      <h4>Selected Recipients:</h4>
-                      <ul id="selectedRecipientsList"></ul>
+                    <div class="card sidebar-card">
+                      <button type="button" id="openRecipientModalBtn" class="btn-primary full-width">Select Recipients</button>
+                      <div id="selectedRecipients">
+                        <h4>Selected Recipients</h4>
+                        <ul id="selectedRecipientsList">
+                          <li class="empty-state">No recipients selected.</li>
+                        </ul>
+                      </div>
                     </div>
                 </div>
             </div>
         </div>
 
         <div id="historyView" style="display: none;">
-            <div id="historySection" class="section">
+            <div id="historySection" class="card section">
               <h2>Sent Announcements</h2>
-              <div id="historyList" class="history-list">
-                <table>
+              <div class="tx-table-wrapper">
+                <table class="tx-table" id="historyList">
                   <thead>
                     <tr>
                       <th>Date</th>
                       <th>Subject</th>
                       <th>Recipients</th>
-                      <th>Actions</th>
+                      <th class="center-align">Actions</th>
                     </tr>
                   </thead>
                   <tbody id="historyListBody"></tbody>
@@ -108,35 +115,34 @@
             <div class="modal-content">
                 <span class="close-btn" id="closeTemplateModalBtn">&times;</span>
                 <h2>Manage Email Templates</h2>
-                
                 <div style="margin-bottom: 1.5rem; text-align: right;">
                     <button type="button" id="openAddTemplateModalBtn" class="btn-primary">Add New Template</button>
                 </div>
-
-                <div id="templateListContainer">
-                    <ul id="templateList"></ul>
+                <div class="tx-table-wrapper">
+                  <ul id="templateList" class="styled-list"></ul>
                 </div>
             </div>
         </div>
 
         <div id="templateFormModal" class="modal">
-            <div class="modal-content large-modal"> <span class="close-btn" id="closeTemplateFormModalBtn">&times;</span>
+            <div class="modal-content large-modal"> 
+                <span class="close-btn" id="closeTemplateFormModalBtn">&times;</span>
                 <h2 id="templateFormTitle">Add New Template</h2>
                 <form id="templateForm">
                     <input type="hidden" id="templateId">
                     <div class="form-group">
-                        <label for="templateName">Template Name:</label>
+                        <label for="templateName">Template Name</label>
                         <input type="text" id="templateName" required placeholder="e.g., Monthly Newsletter">
                     </div>
                     <div class="form-group">
-                        <label for="templateSubject">Subject:</label>
+                        <label for="templateSubject">Subject</label>
                         <input type="text" id="templateSubject" required placeholder="Email Subject Line">
                     </div>
                     <div class="form-group" style="flex-grow: 1; display: flex; flex-direction: column;">
-                        <label for="templateBody">Body:</label>
-                        <textarea id="templateBody" style="flex-grow: 1; resize: none; padding: 15px;" required placeholder="Enter your email content here..."></textarea>
+                        <label for="templateBody">Body</label>
+                        <textarea id="templateBody" style="flex-grow: 1; resize: none;" required placeholder="Enter your email content here..."></textarea>
                     </div>
-                    <div class="nav-buttons">
+                    <div class="nav-buttons" style="text-align: right; margin-top: 1rem;">
                         <button type="submit" class="btn-primary">Save Template</button>
                     </div>
                 </form>
@@ -144,25 +150,26 @@
         </div>
 
         <div id="recipientModal" class="modal">
-          <div class="modal-content">
+          <div class="modal-content large-modal">
             <span class="close-btn" id="closeRecipientModalBtn">&times;</span>
             <h2>Select Recipients</h2>
             
-            <div class="recipient-controls" style="display: flex; flex-wrap: wrap; gap: 15px; align-items: center;">
-              <input type="text" id="recipient_search" placeholder="Search recipients..." style="flex-grow: 1; min-width: 250px;">
+            <div class="recipient-controls tx-filters" style="align-items: center; margin-bottom: 1rem;">
+              <div class="form-group tx-filter-item" style="flex-grow: 1; margin-bottom: 0;">
+                <input type="text" id="recipient_search" placeholder="Search by name, email, or role..." class="form-control" style="margin-bottom: 0;">
+              </div>
               
-              <div style="display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end;">
-                  <button type="button" id="selectMembersBtn" class="btn-primary">Members Only</button>
-                  <button type="button" id="selectTrainersBtn" class="btn-primary">Trainers Only</button>
+              <div class="tx-filter-buttons" style="flex-wrap: wrap;">
+                  <button type="button" id="selectMembersBtn" class="secondary-btn">Members</button>
+                  <button type="button" id="selectTrainersBtn" class="secondary-btn">Trainers</button>
                   <button type="button" id="selectAllBtn" class="btn-primary">Select All</button>
-                  <button type="button" id="clearAllBtn" class="btn-primary">Clear All</button>
+                  <button type="button" id="clearAllBtn" class="secondary-btn delete-btn">Clear All</button>
               </div>
             </div>
             
-            <div id="recipientList" class="recipient-list">
-              </div>
-            <div class="nav-buttons">
-              <button type="button" id="confirmRecipientsBtn" class="btn-primary">Confirm</button>
+            <div id="recipientList" class="recipient-list"></div>
+            <div class="nav-buttons" style="text-align: right; margin-top: 1.5rem;">
+              <button type="button" id="confirmRecipientsBtn" class="btn-primary">Confirm Selection</button>
             </div>
           </div>
         </div>
@@ -170,36 +177,38 @@
         <div id="viewAnnouncementModal" class="modal">
             <div class="modal-content">
                 <span class="close-btn" id="closeViewAnnouncementModalBtn">&times;</span>
-                <h2 style="border-bottom: 1px solid #444; padding-bottom: 10px; margin-bottom: 20px;">Announcement Details</h2>
+                <h2>Announcement Details</h2>
                 <div id="viewAnnouncementContent">
                     <div class="view-row">
-                        <strong>Date:</strong> <span id="viewDate"></span>
+                        <strong>Date Sent</strong> <span id="viewDate"></span>
                     </div>
                     <div class="view-row">
-                        <strong>Subject:</strong> <span id="viewSubject" style="color: #fff;"></span>
+                        <strong>Subject</strong> <span id="viewSubject" style="color: #fff; font-size: 1.1rem;"></span>
                     </div>
                     <div class="view-row">
-                        <strong>Recipients:</strong>
+                        <strong>Recipients</strong>
                         <div id="viewRecipients" class="view-recipients-box"></div>
                     </div>
                     <div class="view-row">
-                        <strong>Message Body:</strong>
+                        <strong>Message Content</strong>
                         <div id="viewBody" class="view-body-box"></div>
                     </div>
                 </div>
             </div>
         </div>
+
+        <div id="recipientPopup" class="modal">
+            <div class="modal-content">
+                <span class="close-btn" id="closeRecipientPopupBtn">&times;</span>
+                <h2>All Recipients</h2>
+                <div class="tx-table-wrapper">
+                    <ul id="recipientPopupList" class="recipient-popup-list styled-list"></ul>
+                </div>
+            </div>
+        </div>
+
       </div>
     </main>
-  </div>
-
-  <div id="backdrop"></div>
-  <div id="recipientPopup" class="recipient-popup">
-    <div class="recipient-popup-content">
-      <span class="close-btn" id="closeRecipientPopupBtn">&times;</span>
-      <h3>All Recipients</h3>
-      <ul id="recipientPopupList" class="recipient-popup-list"></ul>
-    </div>
   </div>
 
 <script src="../assets/js/form-persistence.js" defer></script>
