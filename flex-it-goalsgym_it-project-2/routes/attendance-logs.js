@@ -1,3 +1,4 @@
+// routes/attendance-logs.js
 const express = require('express');
 const router = express.Router();
 const asyncHandler = require('../middleware/asyncHandler');
@@ -10,14 +11,20 @@ const Member = require('../models/Member');
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    const { name, date, logType } = req.query;
+    const { name, startDate, endDate, logType } = req.query;
     const filter = {};
 
-    if (date) {
-      const startDate = new Date(date);
-      const endDate = new Date(date);
-      endDate.setDate(endDate.getDate() + 1);
-      filter.timestamp = { $gte: startDate, $lt: endDate };
+    if (startDate) {
+      const start = new Date(startDate);
+      start.setHours(0, 0, 0, 0); // Start of day
+      
+      let end = new Date(startDate);
+      if (endDate) {
+        end = new Date(endDate);
+      }
+      end.setHours(23, 59, 59, 999); // End of day
+
+      filter.timestamp = { $gte: start, $lte: end };
     }
 
     if (name) {

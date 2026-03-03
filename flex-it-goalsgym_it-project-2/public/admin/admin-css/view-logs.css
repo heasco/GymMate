@@ -1,32 +1,381 @@
-.filter-container {
+/* ========================================
+   VIEW LOGS PAGE - GOALS GYM THEME
+   ======================================== */
+   
+:root {
+  --primary: #B30000;
+  --highlight: #FF3333;
+  --secondary: #000000;
+  --accent: #FFFFFF;
+  --neutral: #BFBFBF;
+  --dark: #121212;
+  --radius: 8px;
+  --transition: all 0.3s ease;
+}
+
+.card {
+  background: rgba(30, 30, 30, 0.9);
+  padding: 2.5rem;
+  border-radius: var(--radius);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(10px);
+  margin-bottom: 2rem;
+}
+
+/* Toggles */
+.tx-toggle-wrapper {
   display: flex;
-  justify-content: space-between;
-  margin-bottom: 20px;
+  justify-content: center;
+  margin-bottom: 2rem;
 }
 
-.filter-group {
+.tx-toggle-bar {
+  display: inline-flex;
+  gap: 0.75rem;
+  padding: 0.25rem;
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: 999px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
+}
+
+.tx-toggle-btn {
+  padding: 0.7rem 1.8rem;
+  border-radius: 999px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  background: rgba(0, 0, 0, 0.8);
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6);
+  min-width: 200px;
+  font-size: 0.9rem;
+  transition: var(--transition);
+}
+
+.tx-toggle-btn:hover {
+  background: rgba(179, 0, 0, 0.25);
+  border-color: rgba(179, 0, 0, 0.6);
+  color: #ffffff;
+  transform: translateY(-2px);
+}
+
+.tx-toggle-btn.active {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--highlight) 100%);
+  color: var(--accent);
+  border-color: var(--primary);
+  box-shadow: 0 4px 18px rgba(179, 0, 0, 0.7);
+}
+
+/* Filters */
+.tx-filters {
   display: flex;
-  align-items: center;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 1.25rem;
+  margin-bottom: 1.5rem;
 }
 
-.filter-group label {
-  margin-right: 10px;
+.tx-filter-item {
+  flex: 1 1 220px;
 }
 
-#logs-table {
+.tx-filter-actions {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  flex: 0 0 auto;
+}
+
+.tx-filter-buttons {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-group label {
+  color: var(--accent);
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  display: block;
+  font-size: 0.95rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+input[type="text"],
+input[type="date"],
+select {
   width: 100%;
-  border-collapse: collapse;
-  margin-top: 20px;
+  padding: 1rem 1.2rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: var(--radius);
+  font-size: 1rem;
+  background: rgba(0, 0, 0, 0.5);
+  color: var(--accent);
+  transition: var(--transition);
 }
 
-#logs-table th,
-#logs-table td {
-  border: 1px solid #ddd;
-  padding: 12px;
+input:focus, select:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(179, 0, 0, 0.2);
+  background: rgba(0, 0, 0, 0.7);
+}
+
+/* Disabled state */
+input:disabled, button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Buttons */
+button {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--highlight) 100%);
+  color: var(--accent);
+  border: none;
+  padding: 1rem 2rem;
+  border-radius: var(--radius);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(255, 51, 51, 0.4);
+}
+
+.secondary-btn {
+  background: rgba(0, 0, 0, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: var(--neutral);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.4);
+}
+
+.secondary-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--accent);
+}
+
+/* Table */
+.tx-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  border-radius: var(--radius);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.35);
+  margin-top: 1rem;
+}
+
+.tx-table {
+  width: 100%;
+  min-width: 780px;
+  border-collapse: collapse;
+}
+
+.tx-table thead {
+  background: rgba(0, 0, 0, 0.7);
+}
+
+.tx-table th,
+.tx-table td {
+  padding: 0.75rem 1rem;
+  font-size: 0.9rem;
+}
+
+.tx-table th {
+  color: var(--accent);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
   text-align: left;
 }
 
-#logs-table th {
-  background-color: #f2f2f2;
-  font-weight: bold;
+.tx-table td {
+  color: var(--neutral);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.tx-table tbody tr:nth-child(even) {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.tx-table tbody tr:hover {
+  background: rgba(179, 0, 0, 0.14);
+}
+
+/* Date Range / Mini Calendar */
+.date-range-group {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.date-separator {
+  color: var(--neutral);
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+}
+
+.date-with-popup {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+}
+
+.date-with-popup input[type="date"] {
+  flex: 1;
+}
+
+.mini-calendar-btn {
+  background: rgba(0, 0, 0, 0.8);
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.7);
+  min-width: 40px;
+}
+
+.mini-calendar-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--highlight) 100%);
+}
+
+.mini-calendar-popup {
+  position: absolute;
+  top: 110%;
+  right: 0;
+  width: 260px;
+  background: rgba(10, 10, 10, 0.98);
+  border-radius: var(--radius);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.7);
+  z-index: 1200;
+  padding: 0.75rem;
+}
+
+.mini-calendar-popup.hidden {
+  display: none;
+}
+
+.mini-calendar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.mini-calendar-title {
+  color: var(--accent);
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.mini-cal-nav {
+  background: rgba(0, 0, 0, 0.7);
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  min-width: 28px;
+}
+
+.mini-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.25rem;
+  margin-top: 0.25rem;
+}
+
+.mini-calendar-grid button {
+  padding: 0.4rem 0;
+  font-size: 0.8rem;
+  border-radius: 4px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--neutral);
+  box-shadow: none;
+  min-width: unset;
+}
+
+.mini-calendar-grid button.mini-cal-day-header {
+  font-weight: 600;
+  color: var(--accent);
+  cursor: default;
+}
+
+.mini-calendar-grid button.mini-cal-day-disabled {
+  opacity: 0.2;
+  cursor: not-allowed;
+  background: transparent !important;
+  color: var(--neutral) !important;
+  border: none !important;
+}
+
+.mini-calendar-grid button.mini-cal-day {
+  cursor: pointer;
+}
+
+.mini-calendar-grid button.mini-cal-day:hover {
+  background: rgba(179, 0, 0, 0.25);
+  border-color: rgba(179, 0, 0, 0.7);
+  color: #ffffff;
+}
+
+.mini-calendar-grid button.mini-cal-day-selected {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--highlight) 100%);
+  color: #ffffff;
+}
+
+@media (max-width: 768px) {
+  .tx-filters {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .tx-filter-actions {
+    flex: 1 1 auto;
+  }
+  .tx-toggle-bar {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .tx-toggle-btn {
+    flex: 1 1 0;
+    text-align: center;
+    padding: 0.6rem 0.4rem;
+    font-size: 0.85rem;
+    min-width: auto;
+  }
+  .date-range-group {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .date-separator {
+    text-align: center;
+    margin: 0.25rem 0;
+  }
 }

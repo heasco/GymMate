@@ -13,18 +13,24 @@ const asyncHandler = require('../middleware/asyncHandler');
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    const { role, date } = req.query;
+    const { role, startDate, endDate, name } = req.query;
     const filter = {};
 
     if (role) {
       filter.userModel = role.charAt(0).toUpperCase() + role.slice(1);
     }
 
-    if (date) {
-      const startDate = new Date(date);
-      const endDate = new Date(date);
-      endDate.setDate(endDate.getDate() + 1);
-      filter.timestamp = { $gte: startDate, $lt: endDate };
+    if (startDate) {
+      const start = new Date(startDate);
+      start.setHours(0, 0, 0, 0); // Start of day
+      
+      let end = new Date(startDate);
+      if (endDate) {
+        end = new Date(endDate);
+      }
+      end.setHours(23, 59, 59, 999); // End of day
+
+      filter.timestamp = { $gte: start, $lte: end };
     }
 
     const logs = await Log.find(filter).sort({ timestamp: -1 }).lean();
@@ -49,13 +55,22 @@ router.get(
       }, {});
     }
 
-    const populatedLogs = logs.map((log) => {
+    let populatedLogs = logs.map((log) => {
       const user = userMaps[log.userModel]?.[log.userId.toString()];
       return {
         ...log,
         userId: user || null,
       };
     });
+
+    // Filter by name in-memory after populating the users
+    if (name) {
+      const nameRegex = new RegExp(name, 'i');
+      populatedLogs = populatedLogs.filter((log) => {
+        const userName = log.userId ? (log.userId.name || log.userId.username || '') : '';
+        return nameRegex.test(userName);
+      });
+    }
 
     res.json({
       success: true,
