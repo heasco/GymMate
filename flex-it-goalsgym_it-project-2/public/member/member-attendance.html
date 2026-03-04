@@ -5,19 +5,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Attendance - GOALS Gym</title>
   <link rel="icon" type="image/png" href="image/logo2.png">
-  <!-- Base admin styles (same include as other member pages) -->
   <link rel="stylesheet" href="../admin/admin-css/admin-mainpage.css" />
-  <!-- Page-specific member styles -->
   <link rel="stylesheet" href="./member-css/member-attendance.css" />
 </head>
 <body>
   <div class="admin-container">
-    <!-- Sidebar -->
     <aside class="sidebar">
-            <div class="sidebar-header">
-                <h2>GOALS Gym Member</h2>
-                <p id="sidebarMemberName" class="admin-fullname">Loading...</p>
-            </div>
+        <div class="sidebar-header">
+            <h2>GOALS Gym Member</h2>
+            <p id="sidebarMemberName" class="admin-fullname">Loading...</p>
+        </div>
       <nav class="sidebar-nav">
         <a href="member-dashboard.html"><span>Dashboard</span></a>
         <a href="member-attendance.html" class="active"><span>Attendance</span></a>
@@ -29,164 +26,89 @@
       </nav>
     </aside>
 
-    <!-- Header -->
     <header class="header">
-      <button class="menu-toggle" id="menuToggle"></button>
-      <h1>Member Attendance</h1>
+      <button class="menu-toggle" id="menuToggle">☰</button>
+      <h1>My Attendance</h1>
       <button class="logout-btn" id="logoutBtn">Logout</button>
     </header>
 
-    <!-- Main -->
     <main class="main-content">
       <div class="container">
-        <!-- Greeting -->
         <div class="member-greeting">
-          <h2>Welcome, <span id="memberName">Member</span>!</h2>
-          <p class="subtitle">View your past check-ins and class attendance by day.</p>
-          <div class="member-badge" id="memberIdBadge">Loading...</div>
+            <h2>Attendance & Streaks</h2>
+            <p class="subtitle">Track your gym sessions, combative classes, and daily login streaks.</p>
         </div>
 
-        <!-- Summary + Streak + Lifetime -->
-        <div class="dashboard-grid">
-          <!-- Attendance Summary (with its own month switcher) -->
-          <div class="dashboard-card">
-            <div class="card-header">
-              <h3>Attendance Summary</h3>
+        <div class="stats-container">
+            <div class="stat-card">
+                <h3>Total Attendances</h3>
+                <p id="lifetimeAttendance">0</p>
             </div>
-            <div class="card-body">
-              <div class="profile-info">
-                <div class="info-item">
-                  <span class="info-label">Month</span>
-                  <div class="summary-month-nav">
-                    <button
-                      id="prevSummaryMonthBtn"
-                      class="nav-btn"
-                      aria-label="Previous summary month"
-                    >
-                      ‹
-                    </button>
-                    <span class="info-value" id="summaryMonth">—</span>
-                    <button
-                      id="nextSummaryMonthBtn"
-                      class="nav-btn"
-                      aria-label="Next summary month"
-                    >
-                      ›
-                    </button>
-                  </div>
-                </div>
-                <div class="info-item">
-                  <span class="info-label">Total Days Attended</span>
-                  <span class="info-value" id="totalAttendance">0</span>
-                </div>
-              </div>
+            <div class="stat-card">
+                <h3>Current Streak</h3>
+                <p id="currentStreak">0 <span style="font-size: 0.9rem; color: var(--neutral);">Days</span></p>
             </div>
-          </div>
-
-          <!-- Streak card -->
-          <div class="dashboard-card">
-            <div class="card-header">
-              <h3>Streak</h3>
+            <div class="stat-card">
+                <h3>Longest Streak</h3>
+                <p id="longestStreak">0 <span style="font-size: 0.9rem; color: var(--neutral);">Days</span></p>
             </div>
-            <div class="card-body">
-              <div class="profile-info">
-                <div class="info-item">
-                  <span class="info-label">Current Streak</span>
-                  <span class="info-value" id="currentStreak">0</span>
-                </div>
-                <div class="info-item">
-                  <span class="info-label">Longest Streak</span>
-                  <span class="info-value" id="longestStreak">0</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Lifetime total card -->
-          <div class="dashboard-card">
-            <div class="card-header">
-              <h3>Total Days Attended</h3>
-            </div>
-            <div class="card-body">
-              <div class="profile-info">
-                <div class="info-item">
-                  <span class="info-label">All-Time Days</span>
-                  <span class="info-value" id="lifetimeAttendance">0</span>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
 
-        <!-- Calendar (kept as before, now below the three cards) -->
-        <div class="dashboard-card full-width">
-          <div class="card-header">
-            <h3>Monthly View</h3>
+        <div class="main-card">
+          <div class="month-header">
+            <button class="month-nav-btn" id="prevMonthBtn">‹</button>
+            <h4 id="currentMonthYear">Loading...</h4>
+            <button class="month-nav-btn" id="nextMonthBtn">›</button>
           </div>
-          <div class="card-body">
-            <div class="calendar-controls">
-              <div class="month-nav">
-                <button id="prevMonthBtn" class="nav-btn" aria-label="Previous Month">‹</button>
-                <div class="month-title" id="monthTitle">Month YYYY</div>
-                <button id="nextMonthBtn" class="nav-btn" aria-label="Next Month">›</button>
+          
+          <div class="calendar-wrapper">
+            <div class="calendar-header">
+              <div class="calendar-header-day">Sun</div>
+              <div class="calendar-header-day">Mon</div>
+              <div class="calendar-header-day">Tue</div>
+              <div class="calendar-header-day">Wed</div>
+              <div class="calendar-header-day">Thu</div>
+              <div class="calendar-header-day">Fri</div>
+              <div class="calendar-header-day">Sat</div>
+            </div>
+            <div class="calendar-grid" id="calendarGrid">
               </div>
+            
+            <div class="legend-container">
+                <span class="legend-item">
+                    <span class="legend-box login-box"></span> Check-In
+                </span>
+                <span class="legend-item">
+                    <span class="legend-box logout-box"></span> Check-Out
+                </span>
+                <span class="legend-item">
+                    <span class="legend-box today-box"></span> Today
+                </span>
             </div>
-
-            <div id="calendarContainer" class="calendar-container">
-              <div class="calendar-grid" id="calendarGrid">
-                <!-- Header -->
-                <div class="calendar-header">
-                  <div class="calendar-header-day">SUN</div>
-                  <div class="calendar-header-day">MON</div>
-                  <div class="calendar-header-day">TUE</div>
-                  <div class="calendar-header-day">WED</div>
-                  <div class="calendar-header-day">THU</div>
-                  <div class="calendar-header-day">FRI</div>
-                  <div class="calendar-header-day">SAT</div>
-                </div>
-                <!-- Days injected by JS -->
-              </div>
-              <div id="calendarLoading" class="loading-state">Loading calendar...</div>
-              <div id="calendarError" class="error-state" style="display:none;"></div>
-            </div>
-
-            <div class="legend">
-              <span class="legend-item">
-                <span class="legend-dot attended"></span> Attended
-              </span>
-              <span class="legend-item">
-                <span class="legend-dot today"></span> Today
-              </span>
-            </div>
+            
           </div>
         </div>
-
-        <!-- Error display -->
-        <div id="error" class="error-state" style="display:none;"></div>
       </div>
     </main>
   </div>
 
-  <!-- Attendance Modal -->
   <div id="attendanceModal" class="modal-overlay" style="display:none;">
     <div class="modal-container">
       <div class="modal-header">
-        <h3 id="attendanceModalTitle">Attendance</h3>
+        <h3 id="attendanceModalTitle">Attendance Details</h3>
         <button class="close-btn" id="closeAttendanceModal">×</button>
       </div>
       <div class="modal-body">
-        <div id="attendanceModalBody" class="attendance-list">
-          <!-- Filled by JS -->
-        </div>
+        <div id="attendanceModalBody" class=\"attendance-list\">
+          </div>
       </div>
-      <div class="modal-actions">
+      <div class="modal-actions" style="justify-content: flex-end;">
         <button class="action-btn secondary" id="modalCloseBtn">Close</button>
       </div>
     </div>
   </div>
 
   <script src="../assets/js/form-persistence.js" defer></script>
-  <!-- Page script -->
   <script src="./member-js/member-attendance.js"></script>
 </body>
 </html>

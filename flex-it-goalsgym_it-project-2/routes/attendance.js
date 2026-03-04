@@ -227,19 +227,28 @@ router.get('/logs/today', async (req, res) => {
 // NEW: GET /member/:id?start&end - Fetch member-specific logs by date range (for calendar)
 router.get('/member/:id', asyncHandler(async (req, res) => {
   const { start, end } = req.query;
-  const memberId = req.params.id;
+  const identifier = req.params.id; // Changed to accept either _id or memberId string
+
+  // 1. Support both standard Mongo _id and custom 'MEM-0001' strings
+  let memberQuery = { memberId: identifier };
+  if (mongoose.Types.ObjectId.isValid(identifier)) {
+    memberQuery = { $or: [{ memberId: identifier }, { _id: identifier }] };
+  }
+
+  const member = await Member.findOne(memberQuery);
+  
+  if (!member) {
+    return res.status(404).json({ success: false, error: 'Member not found' });
+  }
 
   // Optional: Self-access check (members view only own; admins/trainers can view all)
   const userRole = req.user.role;
-  if (userRole === 'member' && req.user.id !== memberId) {
+  if (userRole === 'member' && req.user.id !== String(member._id) && req.user.id !== member.memberId) {
     return res.status(403).json({ success: false, error: 'Access denied: Cannot view other member\'s attendance' });
   }
 
-  if (!mongoose.Types.ObjectId.isValid(memberId)) {
-    return res.status(400).json({ success: false, error: 'Invalid member ID' });
-  }
-
-  const filter = { memberId: new mongoose.Types.ObjectId(memberId) };
+  // Ensure we use the exact MongoDB _id for the Attendance relation
+  const filter = { memberId: member._id };
 
   if (start && end) {
     const startDate = new Date(start);

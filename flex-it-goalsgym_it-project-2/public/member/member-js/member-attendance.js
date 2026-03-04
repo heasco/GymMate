@@ -1,18 +1,14 @@
 // ========================================
-// Member Attendance - Tokenized front-end
-// With 2-hour max session + 15min idle warning (member only)
+// Member Attendance - Logic strictly tied to API / Classes / Streaks
 // ========================================
 
-// Server base for localhost; in production, apiFetch uses relative paths
 const SERVER_URL = 'http://localhost:8080';
-const MEMBER_SESSION_MAX_AGE_MS = 2 * 60 * 60 * 1000; // 2 hours
-const MEMBER_IDLE_WARNING_MS = 15 * 60 * 1000;        // 15 minutes
+const MEMBER_SESSION_MAX_AGE_MS = 2 * 60 * 60 * 1000;
+const MEMBER_IDLE_WARNING_MS = 15 * 60 * 1000;
 
-// Idle tracking (member only)
 let memberLastActivity = Date.now();
 let memberIdleWarningShown = false;
 
-// Member-scoped storage keys (avoid admin/trainer interference)
 const MEMBER_KEYS = {
   token: 'member_token',
   authUser: 'member_authUser',
@@ -20,12 +16,9 @@ const MEMBER_KEYS = {
   logoutEvent: 'memberLogoutEvent',
 };
 
-// Utility
 const $ = (id) => document.getElementById(id);
 
-// --------------------------------------
-// Member storage helpers (namespaced)
-// --------------------------------------
+// Storage Helpers
 const MemberStore = {
   set(token, userPayload) {
     try {
@@ -35,11 +28,9 @@ const MemberStore = {
         role: 'member',
         token,
       };
-
       localStorage.setItem(MEMBER_KEYS.token, token);
       localStorage.setItem(MEMBER_KEYS.authUser, JSON.stringify(authUser));
       localStorage.setItem(MEMBER_KEYS.role, 'member');
-
       sessionStorage.setItem(MEMBER_KEYS.token, token);
       sessionStorage.setItem(MEMBER_KEYS.authUser, JSON.stringify(authUser));
       sessionStorage.setItem(MEMBER_KEYS.role, 'member');
@@ -47,916 +38,318 @@ const MemberStore = {
       console.error('[MemberStore.set] failed:', e);
     }
   },
-
   getToken() {
-    return (
-      sessionStorage.getItem(MEMBER_KEYS.token) ||
-      localStorage.getItem(MEMBER_KEYS.token) ||
-      null
-    );
+    return sessionStorage.getItem(MEMBER_KEYS.token) || localStorage.getItem(MEMBER_KEYS.token);
   },
-
   getAuthUser() {
-    const raw =
-      sessionStorage.getItem(MEMBER_KEYS.authUser) ||
-      localStorage.getItem(MEMBER_KEYS.authUser);
+    const raw = sessionStorage.getItem(MEMBER_KEYS.authUser) || localStorage.getItem(MEMBER_KEYS.authUser);
     if (!raw) return null;
-    try {
-      return JSON.parse(raw);
-    } catch (e) {
-      console.error('[MemberStore.getAuthUser] parse error:', e);
-      return null;
-    }
+    try { return JSON.parse(raw); } catch (e) { return null; }
   },
-
-  getRole() {
-    return (
-      sessionStorage.getItem(MEMBER_KEYS.role) ||
-      localStorage.getItem(MEMBER_KEYS.role) ||
-      null
-    );
-  },
-
   hasSession() {
-    const token =
-      localStorage.getItem(MEMBER_KEYS.token) ||
-      sessionStorage.getItem(MEMBER_KEYS.token);
-    const authUser =
-      localStorage.getItem(MEMBER_KEYS.authUser) ||
-      sessionStorage.getItem(MEMBER_KEYS.authUser);
-    const role =
-      localStorage.getItem(MEMBER_KEYS.role) ||
-      sessionStorage.getItem(MEMBER_KEYS.role);
-    return !!token && !!authUser && role === 'member';
+    return this.getToken() && this.getAuthUser() && 
+           (localStorage.getItem(MEMBER_KEYS.role) === 'member' || sessionStorage.getItem(MEMBER_KEYS.role) === 'member');
   },
-
   clear() {
     localStorage.removeItem(MEMBER_KEYS.token);
     localStorage.removeItem(MEMBER_KEYS.authUser);
     localStorage.removeItem(MEMBER_KEYS.role);
-
     sessionStorage.removeItem(MEMBER_KEYS.token);
     sessionStorage.removeItem(MEMBER_KEYS.authUser);
     sessionStorage.removeItem(MEMBER_KEYS.role);
-  },
+  }
 };
 
-// --------------------------------------
-// Backward‑compatible bootstrap
-// Copy valid member session from generic keys into member_* once
-// --------------------------------------
-function bootstrapMemberFromGenericIfNeeded() {
-  try {
-    if (MemberStore.hasSession()) return;
-
-    const genToken =
-      localStorage.getItem('token') || sessionStorage.getItem('token');
-    const genRole =
-      localStorage.getItem('role') || sessionStorage.getItem('role');
-    const genAuthRaw =
-      localStorage.getItem('authUser') || sessionStorage.getItem('authUser');
-
-    if (!genToken || !genRole || genRole !== 'member' || !genAuthRaw) return;
-
-    const genAuth = JSON.parse(genAuthRaw);
-    MemberStore.set(genToken, genAuth);
-  } catch (e) {
-    console.error('[bootstrapMemberFromGenericIfNeeded] failed:', e);
-  }
-}
-
-// --------------------------------------
-// Auth helpers
-// --------------------------------------
-function getAuth() {
-  try {
-    bootstrapMemberFromGenericIfNeeded();
-    return MemberStore.getAuthUser();
-  } catch {
-    return null;
-  }
-}
-
-function getMemberMongoId() {
-  const a = getAuth();
-  if (!a) return null;
-  const u = a.user || a;
-  return u._id || u.id || u.memberId || u.member_id || null;
-}
-
-function fmtMonthTitle(d) {
-  return d.toLocaleString('en-US', { month: 'long', year: 'numeric' });
-}
-
-function ymd(date) {
-  const d = new Date(date);
-  const m = `${d.getMonth() + 1}`.padStart(2, '0');
-  const day = `${d.getDate()}`.padStart(2, '0');
-  return `${d.getFullYear()}-${m}-${day}`;
-}
-
-function fmtTime(ts) {
-  if (!ts) return '—';
-  const d = new Date(ts);
-  return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-}
-
-// ------------------------------
-// Idle helpers (member attendance)
-// ------------------------------
-function markMemberActivity() {
-  memberLastActivity = Date.now();
-  memberIdleWarningShown = false;
-}
-
-// Idle banner at top (like console bar)
-function showMemberIdleBanner() {
-  let banner = document.getElementById('memberIdleBanner');
-  if (!banner) {
-    banner = document.createElement('div');
-    banner.id = 'memberIdleBanner';
-    banner.style.cssText = `
-      position: fixed;
-      top: 0;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 9999;
-      background: linear-gradient(135deg, #111, #333);
-      color: #f5f5f5;
-      padding: 12px 20px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      border-radius: 0 0 8px 8px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
-      font-size: 0.95rem;
-    `;
-
-    const textSpan = document.createElement('span');
-    textSpan.textContent =
-      "You've been idle for 15 minutes. Stay logged in or logout?";
-
-    const stayBtn = document.createElement('button');
-    stayBtn.textContent = 'Stay Logged In';
-    stayBtn.style.cssText = `
-      padding: 6px 12px;
-      border-radius: 6px;
-      border: none;
-      cursor: pointer;
-      background: #28a745;
-      color: #fff;
-      font-weight: 600;
-    `;
-
-    const logoutBtn = document.createElement('button');
-    logoutBtn.textContent = 'Logout';
-    logoutBtn.style.cssText = `
-      padding: 6px 12px;
-      border-radius: 6px;
-      border: none;
-      cursor: pointer;
-      background: #dc3545;
-      color: #fff;
-      font-weight: 600;
-    `;
-
-    stayBtn.addEventListener('click', () => {
-      const token = MemberStore.getToken();
-      const authUser = MemberStore.getAuthUser();
-      if (token && authUser) {
-        authUser.timestamp = Date.now();
-        MemberStore.set(token, authUser);
-      }
-      markMemberActivity();
-      memberIdleWarningShown = true;
-      hideMemberIdleBanner();
-    });
-
-    logoutBtn.addEventListener('click', () => {
-      memberLogout('user chose logout after idle warning (attendance)');
-    });
-
-    banner.appendChild(textSpan);
-    banner.appendChild(stayBtn);
-    banner.appendChild(logoutBtn);
-    document.body.appendChild(banner);
-  } else {
-    banner.style.display = 'flex';
-  }
-}
-
-function hideMemberIdleBanner() {
-  const banner = document.getElementById('memberIdleBanner');
-  if (banner) banner.style.display = 'none';
-}
-
-// Centralized member logout
-function memberLogout(reason) {
-  console.log('[Member Logout] attendance page:', reason || 'no reason');
-
+function memberLogout(reason, loginPath = '../login.html') {
   MemberStore.clear();
-
-  // Also clear generic keys if they are for member
-  try {
-    const genericRole =
-      localStorage.getItem('role') || sessionStorage.getItem('role');
-
-    if (genericRole === 'member') {
-      localStorage.removeItem('token');
-      localStorage.removeItem('authUser');
-      localStorage.removeItem('role');
-
-      sessionStorage.removeItem('token');
-      sessionStorage.removeItem('authUser');
-      sessionStorage.removeItem('role');
-    }
-  } catch (e) {
-    console.error('[memberLogout] failed clearing generic keys:', e);
-  }
-
-  // Notify other member tabs in this browser
   localStorage.setItem(MEMBER_KEYS.logoutEvent, Date.now().toString());
-
-  window.location.href = '../login.html';
+  window.location.href = loginPath;
 }
 
-// Keep backwards-compatible quickLogout wrapper
-function quickLogout() {
-  console.log('🚪 Quick logout triggered from attendance page!');
-  memberLogout('quickLogout');
-}
-
-// Cross-tab member logout sync
-window.addEventListener('storage', (event) => {
-  if (event.key === MEMBER_KEYS.logoutEvent) {
-    console.log('[Member Logout] attendance page sees logout from another tab');
-    MemberStore.clear();
-    window.location.href = '../login.html';
+function requireAuth(expectedRole, loginPath) {
+  if (!MemberStore.hasSession()) {
+    memberLogout('missing session', loginPath);
+    return false;
   }
+  const user = MemberStore.getAuthUser();
+  if (!user || user.role !== 'member') {
+    memberLogout('invalid role', loginPath);
+    return false;
+  }
+  if (Date.now() - (user.timestamp || 0) > MEMBER_SESSION_MAX_AGE_MS) {
+    memberLogout('session expired', loginPath);
+    return false;
+  }
+  user.timestamp = Date.now();
+  MemberStore.set(MemberStore.getToken(), user);
+  return true;
+}
+
+async function apiFetch(endpoint, options = {}) {
+  if (!requireAuth('member', '../login.html')) return;
+  const token = MemberStore.getToken();
+  
+  const url = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+    ? `${SERVER_URL}${endpoint}` : endpoint;
+
+  const headers = { ...options.headers, Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
+  const res = await fetch(url, { ...options, headers });
+  
+  if (res.status === 401) {
+    memberLogout('unauthorized', '../login.html');
+    return;
+  }
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.error || `API error: ${res.status}`);
+  }
+  return res.json();
+}
+
+// Globals
+let classesCache = {};
+let logsByDate = {}; // Groups logs by 'YYYY-MM-DD'
+let currentMonthDate = new Date();
+
+document.addEventListener('DOMContentLoaded', async () => {
+    if (!requireAuth('member', '../login.html')) return;
+    setupSidebar();
+    
+    // FIX: Render empty calendar instantly so it never looks stuck
+    renderCalendar();
+
+    // Load data in the background
+    await loadClassesCache();
+    await loadAttendanceData();
+
+    // Event listeners
+    $('prevMonthBtn').addEventListener('click', () => changeMonth(-1));
+    $('nextMonthBtn').addEventListener('click', () => changeMonth(1));
+    
+    $('closeAttendanceModal').addEventListener('click', () => $('attendanceModal').style.display = 'none');
+    $('modalCloseBtn').addEventListener('click', () => $('attendanceModal').style.display = 'none');
+    
+    window.addEventListener('click', (e) => {
+        if (e.target === $('attendanceModal')) $('attendanceModal').style.display = 'none';
+    });
 });
 
-// Idle watcher using MemberStore + banner
-function setupMemberIdleWatcher() {
-  ['mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart'].forEach((evt) => {
-    window.addEventListener(evt, markMemberActivity, { passive: true });
-  });
+function setupSidebar() {
+    const user = MemberStore.getAuthUser();
+    if (user && user.name) {
+        $('sidebarMemberName').textContent = user.name;
+    }
+    const menuToggle = $('menuToggle');
+    const sidebar = document.querySelector('.sidebar');
+    if (menuToggle && sidebar) {
+        menuToggle.addEventListener('click', () => sidebar.classList.toggle('collapsed'));
+    }
+    const logoutBtn = $('logoutBtn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', () => memberLogout('user clicked logout'));
+    }
+}
 
-  setInterval(() => {
-    bootstrapMemberFromGenericIfNeeded();
+// 1. Fetch Classes so we can resolve Class Name for Combative attendances
+async function loadClassesCache() {
+    try {
+        const res = await apiFetch('/api/classes');
+        if (res && res.success && res.data) {
+            res.data.forEach(c => {
+                classesCache[c._id] = c.class_name;
+            });
+        }
+    } catch (e) {
+        console.error("Failed to map classes:", e);
+    }
+}
 
-    const token = MemberStore.getToken();
-    const role = MemberStore.getRole();
-    const authUser = MemberStore.getAuthUser();
-
-    if (!token || !authUser || role !== 'member') return;
+// 2. Fetch Attendance
+async function loadAttendanceData() {
+    const user = MemberStore.getAuthUser();
+    
+    // UPDATED: Safely grab the ID whether it's stored as mongoId, memberId, or just id
+    const memberId = user?.mongoId || user?.memberId || user?.id; 
+    
+    if (!memberId) {
+        console.error("No member ID found in session payload.");
+        return;
+    }
 
     try {
-      const ts = authUser.timestamp || 0;
-      if (!ts || Date.now() - ts > MEMBER_SESSION_MAX_AGE_MS) {
-        console.log('Member session exceeded 2 hours, logging out (attendance idle watcher).');
-        memberLogout('session max age exceeded in attendance idle watcher');
-        return;
-      }
-    } catch (e) {
-      console.error('Failed to parse authUser in attendance idle watcher:', e);
-      memberLogout('invalid authUser JSON in attendance idle watcher');
-      return;
-    }
-
-    const idleFor = Date.now() - memberLastActivity;
-    if (!memberIdleWarningShown && idleFor >= MEMBER_IDLE_WARNING_MS) {
-      console.log(
-        "You've been idle for 15 minutes on attendance page. Showing idle banner."
-      );
-      memberIdleWarningShown = true;
-      showMemberIdleBanner();
-    }
-  }, 30000);
-}
-
-// ------------------------------
-// Secure fetch helper (same pattern as other member pages)
-// Enhanced: token + role + 2-hour timestamp check + refresh
-// ------------------------------
-async function apiFetch(endpoint, options = {}, timeoutMs = 10000) {
-  bootstrapMemberFromGenericIfNeeded();
-
-  const token = MemberStore.getToken();
-  const role = MemberStore.getRole();
-  const authUser = MemberStore.getAuthUser();
-
-  if (!token || !authUser || role !== 'member') {
-    memberLogout('missing member session in attendance apiFetch');
-    return;
-  }
-
-  // 2-hour session max check + refresh timestamp
-  try {
-    const ts = authUser.timestamp || 0;
-    if (!ts || Date.now() - ts > MEMBER_SESSION_MAX_AGE_MS) {
-      console.log('Session max age exceeded in apiFetch (attendance).');
-      memberLogout('session max age exceeded in attendance apiFetch');
-      return;
-    }
-    authUser.timestamp = Date.now();
-    MemberStore.set(token, authUser);
-  } catch (e) {
-    console.error('Failed to parse authUser in attendance apiFetch:', e);
-    memberLogout('invalid authUser JSON in attendance apiFetch');
-    return;
-  }
-
-  let url = endpoint;
-  if (!endpoint.startsWith('http://') && !endpoint.startsWith('https://')) {
-    url =
-      location.hostname === 'localhost' || location.hostname === '127.0.0.1'
-        ? `${SERVER_URL}${endpoint}`
-        : endpoint;
-  }
-
-  const headers = {
-    ...options.headers,
-    Authorization: `Bearer ${token}`,
-    'Content-Type': 'application/json',
-  };
-
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-
-  try {
-    const res = await fetch(url, { ...options, headers, signal: controller.signal });
-    clearTimeout(timeoutId);
-
-    if (res.status === 401 || res.status === 403) {
-      console.log('401/403 on attendance apiFetch - logging out');
-      memberLogout('401/403 from attendance apiFetch');
-      return;
-    }
-
-    if (!res.ok) throw new Error(`API error: ${res.status}`);
-    return await res.json();
-  } catch (e) {
-    clearTimeout(timeoutId);
-    if (e.name === 'AbortError') throw new Error(`API timeout after ${timeoutMs}ms`);
-    throw e;
-  }
-}
-
-// Initial auth check: token + role + timestamp (2 hours)
-(function checkAuth() {
-  bootstrapMemberFromGenericIfNeeded();
-  const authUser = MemberStore.getAuthUser();
-  const token = MemberStore.getToken();
-  const role = MemberStore.getRole();
-
-  if (
-    !authUser ||
-    !token ||
-    role !== 'member' ||
-    Date.now() - (authUser.timestamp || 0) > MEMBER_SESSION_MAX_AGE_MS
-  ) {
-    memberLogout('failed auth in attendance checkAuth');
-  }
-})();
-
-// State
-let currentMonth = new Date(); // pointer to displayed calendar month
-let minMonth = new Date(); // two months back limit
-minMonth.setMonth(minMonth.getMonth() - 2);
-let monthAttendance = new Map(); // 'YYYY-MM-DD' => { firstLogin, lastLogout, totalLogs }
-let todayYMD = ymd(new Date());
-
-// Independent summary month pointer
-let summaryMonthDate = new Date();
-
-// DOM Ready
-document.addEventListener('DOMContentLoaded', () => {
-  setupMemberIdleWatcher();
-  markMemberActivity();
-  setSidebarMemberName();
-
-  function setSidebarMemberName() {
-  try {
-    if (typeof bootstrapMemberFromGenericIfNeeded === "function") {
-      bootstrapMemberFromGenericIfNeeded();
-    }
-
-    // Prefer the member-scoped authUser (memberauthUser), fallback to generic authUser
-    const auth =
-      (typeof MemberStore !== "undefined" && MemberStore.getAuthUser && MemberStore.getAuthUser()) ||
-      (() => {
-        try {
-          const raw =
-            sessionStorage.getItem("memberauthUser") ||
-            localStorage.getItem("memberauthUser") ||
-            sessionStorage.getItem("authUser") ||
-            localStorage.getItem("authUser");
-          return raw ? JSON.parse(raw) : null;
-        } catch {
-          return null;
+        const res = await apiFetch(`/api/attendance/member/${memberId}`);
+        if (res.success && res.data) {
+            processLogs(res.data);
+            renderCalendar(); // Re-render visually inserting the loaded logs
         }
-      })();
-
-    const user = auth?.user || auth;
-    const displayName = user?.name || user?.username || auth?.name || auth?.username || "Member";
-
-    const el = document.getElementById("sidebarMemberName");
-    if (el) el.textContent = displayName;
-  } catch (e) {
-    console.error("Failed to set sidebar member name:", e);
-  }
+    } catch (err) {
+        console.error("Attendance load error:", err);
+    } 
 }
 
-  // Sidebar toggle and logout
-  const menuToggle = $('menuToggle');
-  const sidebar = document.querySelector('.sidebar');
-  if (menuToggle && sidebar) {
-    menuToggle.addEventListener('click', () => {
-      sidebar.classList.toggle('collapsed');
-      markMemberActivity();
+// 3. Group and process logic for Streaks
+function processLogs(logs) {
+    logsByDate = {};
+    const daysSet = new Set();
+
+    logs.forEach(log => {
+        if (!log.timestamp) return;
+        const d = new Date(log.timestamp);
+        const ymd = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        
+        if (!logsByDate[ymd]) logsByDate[ymd] = [];
+        logsByDate[ymd].push(log);
+        daysSet.add(ymd);
     });
-  }
 
-  const logoutBtn = $('logoutBtn');
-  if (logoutBtn) {
-    logoutBtn.addEventListener('click', () => {
-      memberLogout('manual member logout from attendance page');
-    });
-  }
-
-  // Greeting
-  const storedName = sessionStorage.getItem('memberName');
-  if ($('memberName')) $('memberName').textContent = storedName || 'Member';
-
-  const auth = getAuth();
-  const u = auth?.user || auth;
-  if (u && $('memberIdBadge')) {
-    $('memberIdBadge').textContent = u.memberId || u._id || 'Member';
-  }
-
-  // Calendar init
-  updateMonthTitle();
-  setupMonthNavButtons();
-  renderCalendarSkeleton();
-  loadAndRenderMonth();
-
-  // Summary month (independent from calendar)
-  setupSummaryMonthNavButtons();
-  updateSummaryMonthTitle();
-  loadSummaryMonthTotals();
-
-  // Streak + lifetime stats (all-time logs)
-  loadStreakAndLifetime();
-});
-
-// Month navigation setup (calendar)
-function setupMonthNavButtons() {
-  const prevBtn = $('prevMonthBtn');
-  const nextBtn = $('nextMonthBtn');
-  if (!prevBtn || !nextBtn) return;
-
-  prevBtn.addEventListener('click', () => {
-    const prev = new Date(currentMonth);
-    prev.setMonth(prev.getMonth() - 1);
-    if (prev >= startOfMonth(minMonth)) {
-      currentMonth = prev;
-      markMemberActivity();
-      updateMonthTitle();
-      loadAndRenderMonth();
-    }
-    refreshNavDisabled();
-  });
-
-  nextBtn.addEventListener('click', () => {
-    const next = new Date(currentMonth);
-    next.setMonth(next.getMonth() + 1);
-    const thisMonth = startOfMonth(new Date());
-    if (startOfMonth(next) <= thisMonth) {
-      currentMonth = next;
-      markMemberActivity();
-      updateMonthTitle();
-      loadAndRenderMonth();
-    }
-    refreshNavDisabled();
-  });
-
-  refreshNavDisabled();
+    calculateStreaks(daysSet);
 }
 
-function startOfMonth(d) {
-  const x = new Date(d);
-  x.setDate(1);
-  x.setHours(0, 0, 0, 0);
-  return x;
-}
+function calculateStreaks(daysSet) {
+    const sortedDays = Array.from(daysSet).sort();
+    
+    if ($('lifetimeAttendance')) $('lifetimeAttendance').textContent = sortedDays.length;
 
-function endOfMonth(d) {
-  const x = new Date(d);
-  x.setMonth(x.getMonth() + 1, 0);
-  x.setHours(23, 59, 59, 999);
-  return x;
-}
-
-function refreshNavDisabled() {
-  const prevBtn = $('prevMonthBtn');
-  const nextBtn = $('nextMonthBtn');
-  if (!prevBtn || !nextBtn) return;
-
-  prevBtn.disabled = startOfMonth(currentMonth) <= startOfMonth(minMonth);
-  nextBtn.disabled = startOfMonth(currentMonth) >= startOfMonth(new Date());
-}
-
-function updateMonthTitle() {
-  if ($('monthTitle')) $('monthTitle').textContent = fmtMonthTitle(currentMonth);
-}
-
-// Render skeleton (header exists already)
-function renderCalendarSkeleton() {
-  const grid = $('calendarGrid');
-  if (!grid) return;
-  while (grid.children.length > 7) {
-    grid.removeChild(grid.lastChild);
-  }
-}
-
-// Load month data and render (calendar)
-async function loadAndRenderMonth() {
-  monthAttendance.clear();
-  if ($('calendarLoading')) $('calendarLoading').style.display = '';
-  if ($('calendarError')) {
-    $('calendarError').style.display = 'none';
-    $('calendarError').textContent = '';
-  }
-
-  const memberId = getMemberMongoId();
-  if (!memberId) {
-    if ($('calendarLoading')) $('calendarLoading').style.display = 'none';
-    if ($('calendarError')) {
-      $('calendarError').style.display = '';
-      $('calendarError').textContent = 'Session expired. Please login again.';
-    }
-    return;
-  }
-
-  const start = startOfMonth(currentMonth);
-  const end = endOfMonth(currentMonth);
-
-  try {
-    const data = await fetchAttendanceRange(memberId, start, end);
-    aggregateAttendance(data);
-  } catch (e) {
-    if ($('calendarError')) {
-      $('calendarError').style.display = '';
-      $('calendarError').textContent = e.message || 'Failed to load attendance.';
-    }
-  } finally {
-    if ($('calendarLoading')) $('calendarLoading').style.display = 'none';
-    renderMonthDays(start, end);
-  }
-}
-
-// Attempt to fetch attendance by member/date range; fallback to enrollments attended
-async function fetchAttendanceRange(memberMongoId, start, end) {
-  const startISO = start.toISOString();
-  const endISO = end.toISOString();
-
-  // Preferred: /api/attendance/member/:id?start&end
-  try {
-    const res = await apiFetch(
-      `/api/attendance/member/${encodeURIComponent(
-        memberMongoId
-      )}?start=${encodeURIComponent(startISO)}&end=${encodeURIComponent(endISO)}`
-    );
-    if (res && (res.data || res.logs)) return res.data || res.logs;
-  } catch (_) {
-    // ignore and fallback
-  }
-
-  // Fallback: use enrollments to mark attended days (no login/logout granularity)
-  const enrollmentsRes = await apiFetch(
-    `/api/enrollments/member/${encodeURIComponent(memberMongoId)}`
-  );
-  const all = enrollmentsRes?.data || [];
-  const inRange = all.filter((e) => {
-    const d = new Date(e.session_date || e.date);
-    const attended =
-      e.attendance_status === 'attended' || e.attendance === true;
-    return d >= start && d <= end && attended;
-  });
-
-  // Transform to pseudo-attendance: one login per attended day with unknown times
-  return inRange.map((e) => ({
-    memberId: memberMongoId,
-    logType: 'login',
-    timestamp: e.attended_at || e.session_date || e.date,
-  }));
-}
-
-// Aggregate logs into firstLogin/lastLogout per day (calendar map)
-function aggregateAttendanceInto(logs, targetMap) {
-  for (const log of logs || []) {
-    if (!log.timestamp) continue;
-    const dKey = ymd(log.timestamp);
-    if (!targetMap.has(dKey)) {
-      targetMap.set(dKey, { firstLogin: null, lastLogout: null, totalLogs: 0 });
-    }
-    const entry = targetMap.get(dKey);
-    entry.totalLogs += 1;
-
-    if (log.logType === 'login') {
-      if (!entry.firstLogin || new Date(log.timestamp) < new Date(entry.firstLogin)) {
-        entry.firstLogin = log.timestamp;
-      }
+    if (sortedDays.length === 0) {
+        if ($('currentStreak')) $('currentStreak').innerHTML = '0 <span style="font-size: 0.9rem; color: var(--neutral);">Days</span>';
+        if ($('longestStreak')) $('longestStreak').innerHTML = '0 <span style="font-size: 0.9rem; color: var(--neutral);">Days</span>';
+        return;
     }
 
-    if (log.logType === 'logout') {
-      if (!entry.lastLogout || new Date(log.timestamp) > new Date(entry.lastLogout)) {
-        entry.lastLogout = log.timestamp;
-      }
+    // Longest Streak Calculation
+    let longest = 0;
+    let currentRun = 1;
+    for (let i = 1; i < sortedDays.length; i++) {
+        const d1 = new Date(sortedDays[i-1]);
+        const d2 = new Date(sortedDays[i]);
+        const utc1 = Date.UTC(d1.getFullYear(), d1.getMonth(), d1.getDate());
+        const utc2 = Date.UTC(d2.getFullYear(), d2.getMonth(), d2.getDate());
+        const diff = (utc2 - utc1) / (1000 * 60 * 60 * 24);
+        
+        if (diff === 1) {
+            currentRun++;
+        } else {
+            if (currentRun > longest) longest = currentRun;
+            currentRun = 1;
+        }
     }
-  }
-}
+    if (currentRun > longest) longest = currentRun;
+    if ($('longestStreak')) $('longestStreak').innerHTML = `${longest} <span style="font-size: 0.9rem; color: var(--neutral);">Days</span>`;
 
-function aggregateAttendance(logs) {
-  aggregateAttendanceInto(logs, monthAttendance);
-}
+    // Current Streak Calculation
+    let cStreak = 0;
+    const today = new Date();
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
 
-// Render the grid for the target month
-function renderMonthDays(start, end) {
-  const grid = $('calendarGrid');
-  if (!grid) return;
+    const formatDate = (date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    const tStr = formatDate(today);
+    const yStr = formatDate(yesterday);
 
-  while (grid.children.length > 7) grid.removeChild(grid.lastChild);
-
-  const year = start.getFullYear();
-  const month = start.getMonth();
-  const firstDay = new Date(year, month, 1);
-  const startWeekday = firstDay.getDay(); // 0=Sun
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-
-  const prevMonth = new Date(year, month - 1);
-  const prevDays = new Date(year, month, 0).getDate(); // Last day of prev month
-
-  let dayCounter = 1;
-  let prevDay = prevDays - startWeekday + 1;
-
-  for (let row = 0; row < 6; row++) {
-    for (let col = 0; col < 7; col++) {
-      const cell = document.createElement('div');
-      cell.className = 'calendar-day';
-
-      let isCurrentMonth = false;
-      let dayNum = null;
-      let dayYMD = null;
-
-      if (row === 0 && col < startWeekday) {
-        dayNum = prevDay;
-        const prevYear = prevMonth.getFullYear();
-        const prevMon = prevMonth.getMonth();
-        dayYMD = ymd(new Date(prevYear, prevMon, prevDay));
-        prevDay++;
-      } else if (dayCounter <= daysInMonth) {
-        isCurrentMonth = true;
-        dayNum = dayCounter;
-        dayYMD = ymd(new Date(year, month, dayNum));
-        dayCounter++;
-      } else {
-        const nextDay = dayCounter - daysInMonth;
-        const nextMon = new Date(year, month + 1);
-        dayNum = nextDay;
-        dayYMD = ymd(new Date(nextMon.getFullYear(), nextMon.getMonth(), nextDay));
-        dayCounter++;
-      }
-
-      const daySpan = document.createElement('span');
-      daySpan.className = 'day-number';
-      daySpan.textContent = dayNum;
-      cell.appendChild(daySpan);
-
-      if (isCurrentMonth && dayYMD && monthAttendance.has(dayYMD)) {
-        cell.classList.add('attended');
-        const entry = monthAttendance.get(dayYMD);
-        const chip = document.createElement('span');
-        chip.className = 'attendance-chip';
-        chip.textContent = '  Attended ✅';
-        cell.appendChild(chip);
-
-        cell.addEventListener('click', () => showAttendanceModal(dayYMD, entry));
-      }
-
-      if (dayYMD === todayYMD) {
-        cell.classList.add('today');
-      }
-
-      if (!isCurrentMonth) {
-        cell.classList.add('other-month');
-      }
-
-      grid.appendChild(cell);
+    if (daysSet.has(tStr) || daysSet.has(yStr)) {
+        let checkDate = daysSet.has(tStr) ? new Date(today) : new Date(yesterday);
+        while(true) {
+            const checkStr = formatDate(checkDate);
+            if (daysSet.has(checkStr)) {
+                cStreak++;
+                checkDate.setDate(checkDate.getDate() - 1);
+            } else {
+                break;
+            }
+        }
     }
-  }
+    if ($('currentStreak')) $('currentStreak').innerHTML = `${cStreak} <span style="font-size: 0.9rem; color: var(--neutral);">Days</span>`;
 }
 
-// Show modal for day details
-function showAttendanceModal(dayYMD, entry) {
-  const modal = $('attendanceModal');
-  const title = $('attendanceModalTitle');
-  const body = $('attendanceModalBody');
-  const closeBtn = $('closeAttendanceModal');
-  const modalClose = $('modalCloseBtn');
-  if (!modal || !title || !body) return;
-
-  title.textContent = `Attendance on ${dayYMD}`;
-  body.innerHTML = '';
-
-  if (entry.firstLogin) {
-    const loginItem = document.createElement('div');
-    loginItem.className = 'attendance-item';
-    loginItem.innerHTML = `
-      <span class="label">Login</span>
-      <span class="value">${fmtTime(entry.firstLogin)}</span>
-    `;
-    body.appendChild(loginItem);
-  }
-
-  if (entry.lastLogout) {
-    const logoutItem = document.createElement('div');
-    logoutItem.className = 'attendance-item';
-    logoutItem.innerHTML = `
-      <span class="label">Logout</span>
-      <span class="value">${fmtTime(entry.lastLogout)}</span>
-    `;
-    body.appendChild(logoutItem);
-  }
-
-  modal.style.display = 'flex';
-
-  const hideModal = () => {
-    modal.style.display = 'none';
-  };
-
-  if (closeBtn) closeBtn.onclick = hideModal;
-  if (modalClose) modalClose.onclick = hideModal;
-  modal.addEventListener('click', (e) => {
-    if (e.target === modal) hideModal();
-  });
+// 4. Calendar Logic
+function changeMonth(delta) {
+    currentMonthDate.setMonth(currentMonthDate.getMonth() + delta);
+    renderCalendar();
 }
 
-// ===== Independent monthly summary (summary card) =====
-function setupSummaryMonthNavButtons() {
-  const prev = $('prevSummaryMonthBtn');
-  const next = $('nextSummaryMonthBtn');
-  if (!prev || !next) return;
+function renderCalendar() {
+    const grid = $('calendarGrid');
+    grid.innerHTML = '';
+    
+    const year = currentMonthDate.getFullYear();
+    const month = currentMonthDate.getMonth();
+    
+    $('currentMonthYear').textContent = currentMonthDate.toLocaleDateString('default', { month: 'long', year: 'numeric' });
+    
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const todayStr = new Date().toDateString();
 
-  prev.addEventListener('click', () => {
-    summaryMonthDate.setMonth(summaryMonthDate.getMonth() - 1);
-    markMemberActivity();
-    updateSummaryMonthTitle();
-    loadSummaryMonthTotals();
-    refreshSummaryNavDisabled();
-  });
-
-  next.addEventListener('click', () => {
-    const candidate = new Date(summaryMonthDate);
-    candidate.setMonth(candidate.getMonth() + 1);
-
-    const thisMonth = startOfMonth(new Date());
-    if (startOfMonth(candidate) <= thisMonth) {
-      summaryMonthDate = candidate;
-      markMemberActivity();
-      updateSummaryMonthTitle();
-      loadSummaryMonthTotals();
+    // Empty cells
+    for (let i = 0; i < firstDay; i++) {
+        const emptyCell = document.createElement('div');
+        emptyCell.className = 'calendar-cell empty';
+        grid.appendChild(emptyCell);
     }
-
-    refreshSummaryNavDisabled();
-  });
-
-  refreshSummaryNavDisabled();
-}
-
-function updateSummaryMonthTitle() {
-  const el = $('summaryMonth');
-  if (el) el.textContent = fmtMonthTitle(summaryMonthDate);
-}
-
-function refreshSummaryNavDisabled() {
-  const prev = $('prevSummaryMonthBtn');
-  const next = $('nextSummaryMonthBtn');
-  if (!prev || !next) return;
-
-  const thisMonth = startOfMonth(new Date());
-  next.disabled = startOfMonth(summaryMonthDate) >= thisMonth;
-}
-
-// Fetch and compute total days attended in selected summary month
-async function loadSummaryMonthTotals() {
-  const memberId = getMemberMongoId();
-  if (!memberId) return;
-
-  const start = startOfMonth(summaryMonthDate);
-  const end = endOfMonth(summaryMonthDate);
-  const tempMap = new Map();
-
-  try {
-    const logs = await fetchAttendanceRange(memberId, start, end);
-    aggregateAttendanceInto(logs, tempMap);
-  } catch (_) {
-    // ignore
-  }
-
-  const totalDays = Array.from(tempMap.values()).filter(
-    (e) => e.totalLogs > 0
-  ).length;
-
-  if ($('totalAttendance')) {
-    $('totalAttendance').textContent = String(totalDays);
-  }
-}
-
-// ===== Streak + lifetime stats (all time) =====
-async function fetchAttendanceAll(memberMongoId) {
-  try {
-    const res = await apiFetch(
-      `/api/attendance/member/${encodeURIComponent(memberMongoId)}`
-    );
-    if (res && (res.data || res.logs)) {
-      return res.data || res.logs;
+    
+    // Day cells
+    for (let day = 1; day <= daysInMonth; day++) {
+        const cell = document.createElement('div');
+        cell.className = 'calendar-cell';
+        
+        const dateObj = new Date(year, month, day);
+        if (dateObj.toDateString() === todayStr) cell.classList.add('today');
+        
+        const ymd = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        
+        const dayNumber = document.createElement('div');
+        dayNumber.className = 'calendar-day-number';
+        dayNumber.textContent = day;
+        cell.appendChild(dayNumber);
+        
+        // Inject Chips
+        const dailyLogs = logsByDate[ymd] || [];
+        if (dailyLogs.length > 0) {
+            cell.classList.add('has-logs');
+            cell.addEventListener('click', () => openAttendanceModal(dateObj, dailyLogs));
+            
+            dailyLogs.forEach(log => {
+                const timeStr = new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                const chip = document.createElement('div');
+                chip.className = `attendance-chip ${log.logType}`;
+                chip.textContent = `${log.logType === 'login' ? 'In' : 'Out'}: ${timeStr}`;
+                cell.appendChild(chip);
+            });
+        }
+        
+        grid.appendChild(cell);
     }
-  } catch (_) {
-    // ignore
-  }
-  return [];
 }
 
-async function loadStreakAndLifetime() {
-  const memberId = getMemberMongoId();
-  if (!memberId) return;
-
-  const logs = await fetchAttendanceAll(memberId);
-  const daysSet = new Set();
-
-  for (const log of logs || []) {
-    if (!log.timestamp) continue;
-    daysSet.add(ymd(log.timestamp));
-  }
-
-  // Lifetime total days
-  if ($('lifetimeAttendance')) {
-    $('lifetimeAttendance').textContent = String(daysSet.size || 0);
-  }
-
-  if (daysSet.size === 0) {
-    if ($('currentStreak')) $('currentStreak').textContent = '0';
-    if ($('longestStreak')) $('longestStreak').textContent = '0';
-    return;
-  }
-
-  // Current streak up to today
-  let currentStreak = 0;
-  let cursor = new Date();
-  cursor.setHours(0, 0, 0, 0);
-
-  while (true) {
-    const key = ymd(cursor);
-    if (daysSet.has(key)) {
-      currentStreak += 1;
-      cursor.setDate(cursor.getDate() - 1);
-    } else {
-      break;
-    }
-  }
-
-  if ($('currentStreak')) {
-    $('currentStreak').textContent = String(currentStreak);
-  }
-
-  // Longest streak
-  const sortedDays = Array.from(daysSet).sort();
-  let longest = 0;
-  let run = 0;
-  let prevDate = null;
-
-  for (const dayKey of sortedDays) {
-    const [yearStr, monthStr, dayStr] = dayKey.split('-');
-    const d = new Date(Number(yearStr), Number(monthStr) - 1, Number(dayStr));
-    d.setHours(0, 0, 0, 0);
-
-    if (!prevDate) {
-      run = 1;
-    } else {
-      const diffDays = (d.getTime() - prevDate.getTime()) / (1000 * 60 * 60 * 24);
-      if (Math.round(diffDays) === 1) {
-        run += 1;
-      } else {
-        run = 1;
-      }
-    }
-
-    if (run > longest) longest = run;
-    prevDate = d;
-  }
-
-  if ($('longestStreak')) {
-    $('longestStreak').textContent = String(longest);
-  }
+// 5. Modal Rendering
+function openAttendanceModal(dateObj, dailyLogs) {
+    const modal = $('attendanceModal');
+    $('attendanceModalTitle').textContent = `Attendance: ${dateObj.toLocaleDateString('default', { weekday: 'short', month: 'long', day: 'numeric' })}`;
+    
+    const body = $('attendanceModalBody');
+    body.innerHTML = dailyLogs.map(log => {
+        const timeStr = new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const action = log.logType === 'login' ? 'Check-In' : 'Check-Out';
+        const type = log.attendedType ? (log.attendedType.charAt(0).toUpperCase() + log.attendedType.slice(1)) : 'Unknown';
+        const cName = (log.classId && classesCache[log.classId]) ? classesCache[log.classId] : 'Not specified';
+        
+        let detailsHtml = '';
+        if (log.logType === 'login') {
+            detailsHtml = `
+                <div class="log-details">
+                    <strong>Type:</strong> ${type}<br>
+                    ${(log.attendedType === 'combative' && log.classId) ? `<strong>Class:</strong> ${cName}` : ''}
+                </div>
+            `;
+        }
+        
+        return `
+            <div class="modal-log-item ${log.logType}">
+                <div class="log-time">${timeStr} - <strong>${action}</strong></div>
+                ${detailsHtml}
+            </div>
+        `;
+    }).join('');
+    
+    modal.style.display = 'flex';
 }
