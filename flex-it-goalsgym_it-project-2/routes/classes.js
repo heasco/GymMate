@@ -79,8 +79,17 @@ router.post('/', asyncHandler(async (req, res) => {
 
 // GET /api/classes
 router.get('/', asyncHandler(async (req, res) => {
-  const classes = await Class.find().sort({ createdAt: -1 });
-  res.json({ success:true, count: classes.length, data: classes });
+  const classes = await Class.find().populate('trainer_id', 'name').sort({ createdAt: -1 });
+
+  const populatedClasses = await Promise.all(classes.map(async (classItem) => {
+    const enrolledCount = await Enrollment.countDocuments({ class_id: classItem.class_id });
+    return {
+      ...classItem.toObject(),
+      enrolledCount,
+    };
+  }));
+
+  res.json({ success: true, count: populatedClasses.length, data: populatedClasses });
 }));
 
 // GET /api/classes/:id

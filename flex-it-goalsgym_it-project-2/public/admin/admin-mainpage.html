@@ -6,10 +6,10 @@
     <title>Admin Dashboard - GOALS Gym</title>
     <link rel="icon" type="image/png" href="image/logo2.png">
     <link rel="stylesheet" href="./admin-css/admin-mainpage.css">
+    <link rel="stylesheet" href="./admin-css/theme-light.css">
 </head>
 <body>
     <div class="admin-container">
-        <!-- Sidebar and header (unchanged) -->
         <aside class="sidebar">
             <div class="sidebar-header">
                 <h2>GOALS Gym Admin</h2>
@@ -26,25 +26,27 @@
                 <a href="./add-and-view-transaction.html"><span>Add & View Transaction</span></a>
                 <a href="./view-classes-and-feedback.html"><span>View Classes</span></a>
                 <a href="./trainer-schedule-management.html"><span>Trainer Schedule Management</span></a>
-                        <a href="./attendance-checker.html"><span>Attendance System</span></a>
-                        <a href="./send-announcement-email.html"><span>Send Announcement</span></a>
-                        <a href="./view-logs.html"><span>View Logs</span></a>
-                      </nav>        </aside>
+                <a href="./attendance-checker.html"><span>Attendance System</span></a>
+                <a href="./send-announcement-email.html"><span>Send Announcement</span></a>
+                <a href="./view-logs.html"><span>View Logs</span></a>
+            </nav>
+        </aside>
+
         <header class="header">
             <button class="menu-toggle" id="menuToggle">☰</button>
-            <h1>Admin Dashboard</h1>
-            <button class="logout-btn" id="logoutBtn">Logout</button>
+            <h1>Dashboard</h1>
+            <div style="display: flex; align-items: center;">
+                <button id="themeToggleBtn" class="theme-toggle-btn" style="background: transparent; border: 1px solid var(--border-light, #ccc); color: var(--accent); padding: 0.5rem 1rem; border-radius: 8px; cursor: pointer; font-weight: 600; margin-right: 1rem; transition: all 0.3s ease;">☀️ Light Mode</button>
+                <button class="logout-btn" id="logoutBtn">Logout</button>
+            </div>
         </header>
+
         <main class="main-content">
-            <h2>Today's Classes & Attendance</h2>
+            <h2>Overview</h2>
             <div class="dashboard-cards-row">
                 <div class="dashboard-stat-card">
                     <div class="stat-title">Total Members</div>
                     <div class="stat-value" id="statTotalMembers">...</div>
-                </div>
-                <div class="dashboard-stat-card">
-                    <div class="stat-title">Active Classes Today</div>
-                    <div class="stat-value" id="statClassesToday">...</div>
                 </div>
                 <div class="dashboard-stat-card">
                     <div class="stat-title">Total Trainers</div>
@@ -54,7 +56,6 @@
                     <div class="stat-title">Today’s Attendance (Sum)</div>
                     <div class="stat-value" id="statAttendanceToday">...</div>
                 </div>
-                <!-- New Gym Stat card (only the class, not extra divs/rows) -->
                 <div class="dashboard-stat-card dashboard-stat-in-gym">
                     <div class="stat-title">In Gym Right Now</div>
                     <div class="stat-value" id="statInGymNow">...</div>
@@ -71,8 +72,7 @@
                     </tr>
                 </thead>
                 <tbody id="scheduleTableBody">
-                    <!-- Filled by JS -->
-                </tbody>
+                    </tbody>
             </table>
         </main>
     </div>

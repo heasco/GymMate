@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Settings - GOALS Gym</title>
+    <link rel="icon" type="image/png" href="image/logo2.png">
+    <link rel="stylesheet" href="./admin-css/admin-mainpage.css">
+    <link rel="stylesheet" href="./admin-css/theme-light.css">
+    <link rel="stylesheet" href="./admin-css/admin-settings.css">
+</head>
+<body>
+    <div class="admin-container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h2>GOALS Gym Admin</h2>
+                <p id="adminFullName" class="admin-fullname">Loading...</p>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="./admin-mainpage.html"><span>Dashboard</span></a>
+                <a href="./add-classes.html"><span>Add Classes</span></a>
+                <a href="./add-member.html"><span>Add Member</span></a>
+                <a href="./manage-members.html"><span>Manage Member</span></a>
+                <a href="./add-trainer.html"><span>Add Trainer</span></a>
+                <a href="./manage-trainer.html"><span>Manage Trainer</span></a>
+                <a href="./manage-class-enrollment.html"><span>Manage Enrollment</span></a>
+                <a href="./add-and-view-transaction.html"><span>Add & View Transaction</span></a>
+                <a href="./view-classes-and-feedback.html"><span>View Classes</span></a>
+                <a href="./trainer-schedule-management.html"><span>Trainer Schedule Management</span></a>
+                <a href="./attendance-checker.html"><span>Attendance System</span></a>
+                <a href="./send-announcement-email.html"><span>Send Announcement</span></a>
+                <a href="./view-logs.html"><span>View Logs</span></a>
+                <a href="./admin-settings.html" class="active"><span>Settings</span></a>
+            </nav>
+        </aside>
+
+        <header class="header">
+            <button class="menu-toggle" id="menuToggle">☰</button>
+            <h1>System Settings</h1>
+            <button class="logout-btn" id="logoutBtn">Logout</button>
+        </header>
+
+        <main class="main-content">
+            <div class="container">
+                <div id="settingsFeedback" class="feedback-msg" style="display:none;"></div>
+
+                <div class="settings-grid">
+                    <div class="settings-col">
+                        
+                        <div class="card settings-card">
+                            <h2>Appearance</h2>
+                            <div class="theme-switch-wrapper">
+                                <span class="theme-label">Enable Light Mode</span>
+                                <label class="switch">
+                                    <input type="checkbox" id="themeToggleSwitch">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="card settings-card">
+                            <h2>My Profile</h2>
+                            <form id="profileForm">
+                                <div class="form-group">
+                                    <label for="adminName">Display Name</label>
+                                    <input type="text" id="adminName" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="adminEmail">Notification Email</label>
+                                    <input type="email" id="adminEmail" placeholder="admin@goalsgym.com">
+                                </div>
+                                <button type="submit" id="saveProfileBtn" class="btn-primary">Save Profile</button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <div class="settings-col">
+                        <div class="card settings-card">
+                            <h2>Add System Admin</h2>
+                            <p style="margin-bottom: 1.5rem; color: var(--neutral); font-size: 0.9rem;">
+                                Create an account for a new staff member to manage the gym.
+                            </p>
+                            <form id="addAdminForm">
+                                <div class="form-group">
+                                    <label for="newAdminName">Full Name</label>
+                                    <input type="text" id="newAdminName" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="newAdminUsername">Login Username</label>
+                                    <input type="text" id="newAdminUsername" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="newAdminEmail">Email Address</label>
+                                    <input type="email" id="newAdminEmail" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="newAdminPassword">Temporary Password</label>
+                                    <input type="password" id="newAdminPassword" required minlength="6">
+                                </div>
+                                <div class="form-group">
+                                    <label for="newAdminRole">Access Level</label>
+                                    <select id="newAdminRole">
+                                        <option value="admin">Administrator</option>
+                                        <option value="superadmin">Super Admin</option>
+                                    </select>
+                                </div>
+                                <button type="submit" id="addAdminBtn" class="btn-primary">Create Admin Account</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    <script src="../assets/js/form-persistence.js" defer></script>
+    <script src="./admin-js/admin-settings.js"></script>
+</body>
+</html>

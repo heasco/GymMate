@@ -1,0 +1,112 @@
+/* ========================================
+   GLOBAL LIGHT THEME OVERRIDE
+   ======================================== */
+
+body.light-theme {
+    /* Color Variables Inversion */
+    --primary: #B30000;
+    --primary-dark: #8A0000;
+    --highlight: #E63946;
+    --secondary: #FFFFFF; /* Sidebar / Card Backgrounds */
+    --accent: #212529; /* Main Text Color */
+    --neutral: #6C757D; /* Subtext Color */
+    --dark: #F4F6F8; /* Main App Background */
+    --darker: #E9ECEF; /* Gradients/Borders */
+    
+    --border-light: #E2E8F0;
+}
+
+/* Base Overrides */
+body.light-theme {
+    background-color: var(--dark);
+    color: var(--accent);
+}
+
+/* Sidebar Overrides */
+body.light-theme .sidebar {
+    background: #FFFFFF;
+    border-right: 1px solid var(--border-light);
+    box-shadow: 2px 0 15px rgba(0, 0, 0, 0.05);
+}
+
+body.light-theme .sidebar-header h2 {
+    color: var(--primary);
+}
+
+body.light-theme .sidebar-nav a {
+    color: #495057;
+}
+
+body.light-theme .sidebar-nav a:hover, 
+body.light-theme .sidebar-nav a.active {
+    background: rgba(179, 0, 0, 0.1);
+    color: var(--primary);
+    border-left: 4px solid var(--primary);
+}
+
+body.light-theme .sidebar-nav a.active::before {
+    background: var(--primary);
+}
+
+/* Header Overrides */
+body.light-theme .header {
+    background: #FFFFFF;
+    border-bottom: 1px solid var(--border-light);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+}
+
+/* Card Overrides (Targets mainpage stats and standard cards) */
+body.light-theme .dashboard-stat-card,
+body.light-theme .card,
+body.light-theme .main-card,
+body.light-theme .section {
+    background: #FFFFFF;
+    border: 1px solid var(--border-light);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04);
+    backdrop-filter: none; /* Remove dark mode blur */
+}
+
+/* Table Overrides */
+body.light-theme .dashboard-table {
+    background: #FFFFFF;
+    border: 1px solid var(--border-light);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04);
+}
+
+body.light-theme .dashboard-table th {
+    background: #F8F9FA;
+    color: var(--accent);
+    border-bottom: 2px solid var(--border-light);
+}
+
+body.light-theme .dashboard-table td {
+    border-bottom: 1px solid var(--border-light);
+    color: var(--neutral);
+}
+
+body.light-theme .dashboard-table tbody tr:hover {
+    background: #F1F3F5;
+}
+
+/* Button & Status Overrides */
+body.light-theme .server-status {
+    background: #FFFFFF;
+    color: var(--accent);
+    border: 1px solid var(--border-light);
+}
+
+body.light-theme .theme-toggle-btn {
+    background: transparent;
+    border: 1px solid var(--border-light);
+    color: var(--accent);
+    padding: 0.5rem 1rem;
+    border-radius: var(--radius);
+    cursor: pointer;
+    font-weight: 600;
+    transition: var(--transition);
+    margin-right: 1rem;
+}
+
+body.light-theme .theme-toggle-btn:hover {
+    background: #F8F9FA;
+}

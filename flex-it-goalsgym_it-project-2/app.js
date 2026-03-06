@@ -3,6 +3,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 
+const adminManageRoutes = require('./routes/admins');
 const authRoutes = require('./routes/auth');
 const memberRoutes = require('./routes/members');
 const trainerRoutes = require('./routes/trainers');
@@ -84,6 +85,7 @@ mongoose.connection.on('error', err => {
 app.use('/api', authRoutes); // /api/login etc. - NO PROTECTION (public login)
 
 // Protected routes: Apply protect middleware to secure data fetching
+app.use('/api/admins', protect, admin, adminManageRoutes);
 app.use('/api/members', protect, memberRoutes);
 app.use('/api/trainers', protect, trainerRoutes);
 app.use('/api/classes', protect, classRoutes);

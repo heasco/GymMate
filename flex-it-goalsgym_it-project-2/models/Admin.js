@@ -1,3 +1,4 @@
+// models/Admin.js
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
@@ -16,6 +17,12 @@ const AdminSchema = new mongoose.Schema({
     type: String,
     required: true,
     trim: true
+  },
+  email: {
+    type: String,
+    trim: true,
+    lowercase: true,
+    default: ''
   },
   phone: {
     type: String,
