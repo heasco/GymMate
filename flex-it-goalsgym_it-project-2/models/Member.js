@@ -1,124 +1,115 @@
 const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs');
+const bcrypt = require('bcryptjs'); // Added bcrypt for password hashing
 
-const MembershipSchema = new mongoose.Schema({
-  type: { type: String, required: true, enum: ['monthly', 'combative'] },
-  duration: { type: Number, required: true, min: [1, 'Duration must be at least 1'] },
-  startDate: { type: Date, required: true, default: Date.now },
-  endDate: { type: Date, required: true },
-  remainingSessions: { type: Number, default: 0 },
-  status: { type: String, default: 'active', enum: ['active', 'inactive', 'suspended', 'expired'] }
+const membershipSchema = new mongoose.Schema({
+  type: {
+    type: String,
+    enum: ['monthly', 'combative', 'student', 'dropsin'],
+    required: true
+  },
+  startDate: {
+    type: Date,
+    required: true
+  },
+  endDate: {
+    type: Date,
+    required: true
+  },
+  status: {
+    type: String,
+    enum: ['active', 'expired', 'cancelled'],
+    default: 'active'
+  },
+  remainingSessions: {
+    type: Number,
+  },
+  paymentStatus: {
+    type: String,
+    enum: ['paid', 'unpaid'],
+    default: 'unpaid'
+  }
 });
 
-const MemberSchema = new mongoose.Schema(
-  {
-    memberId: { type: String, unique: true, index: true },
-    name: { type: String, required: [true, 'Please add a name'], trim: true },
-    username: { type: String, unique: true, required: true, lowercase: true, trim: true },
-    password: { type: String, required: true, minlength: [6, 'Password must be at least 6 characters'] },
-        birthdate: {
-      type: Date,
-      validate: {
-        validator: function(v){
-          if (!v) return true;
-          const today = new Date();
-          const minAge = new Date(today.getFullYear() - 13, today.getMonth(), today.getDate());
-          return v <= minAge;
-        },
-        message: 'Member must be at least 13 years old'
-      }
-    },
-    memberships: [MembershipSchema],
-    joinDate: { type: Date, required: true, default: Date.now },
-    phone: {
-      type: String,
-      trim: true,
-      validate: {
-        validator: v => !v || /^\+63\d{10}$/.test(v),
-        message: props => `${props.value} is not a valid Philippine phone number!`
-      }
-    },
-    email: {
-      type: String,
-      lowercase: true,
-      trim: true,
-      validate: {
-        validator: v => !v || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v),
-        message: props => `${props.value} is not a valid email!`
-      }
-    },
-    faceId: { type: String },
-    faceEnrolled: { type: Boolean, default: false },
-    transactions: { type: [String], default: [] },
-    status: { type: String, default: 'active', enum: ['active', 'inactive', 'suspended'] }
+const memberSchema = new mongoose.Schema({
+  memberId: {
+    type: String,
+    required: true,
+    unique: true
   },
-  { timestamps: true, collection: 'members' }
-);
+  name: {
+    type: String,
+    required: true,
+    trim: true
+  },
+  username: { 
+    type: String, 
+    unique: true, 
+    sparse: true, 
+    lowercase: true, 
+    trim: true 
+  },
+  password: { 
+    type: String 
+  },
+  email: {
+    type: String,
+    required: true,
+    unique: true,
+    lowercase: true,
+    trim: true
+  },
+  phone: {
+    type: String,
+    required: true
+  },
+  dob: {
+    type: Date,
+    required: true
+  },
+  gender: {
+    type: String,
+    enum: ['Male', 'Female', 'Other'],
+    required: true
+  },
+  address: {
+    type: String,
+    required: true
+  },
+  emergencyContact: {
+    name: { type: String, required: true },
+    phone: { type: String, required: true },
+    relation: { type: String, required: true }
+  },
+  memberships: [membershipSchema],
+  faceEnrolled: {
+    type: Boolean,
+    default: false
+  },
+  faceId: {
+    type: String
+  },
+  faceImagePaths: [{
+    type: String
+  }],
+  status: {
+    type: String,
+    enum: ['active', 'inactive'],
+    default: 'active'
+  }
+}, {
+  timestamps: true,
+  collection: 'members'
+});
+
+// Create compound index for active memberships
+memberSchema.index({ 'memberships.status': 1, 'memberships.endDate': 1 });
 
 // Hash password before saving
-MemberSchema.pre('save', async function (next) {
-  try {
-    if (this.isModified('password')) {
-      this.password = await bcrypt.hash(this.password, 10);
-    }
-    next();
-  } catch (e) {
-    next(e);
+memberSchema.pre('save', async function (next) {
+  if (this.isModified('password') && this.password) {
+    this.password = await bcrypt.hash(this.password, 10);
   }
+  next();
 });
 
-// Calculate membership fields before validation
-MemberSchema.pre('validate', function (next) {
-  try {
-    if (this.isModified('memberships') || this.isNew) {
-      this.memberships.forEach((membership) => {
-        const needsCalc =
-          membership.isNew ||
-          membership.isModified?.('startDate') ||
-          membership.isModified?.('type') ||
-          membership.isModified?.('duration') ||
-          !membership.endDate;
-
-        if (!needsCalc) return;
-
-        const start = membership.startDate ? new Date(membership.startDate) : new Date();
-
-        if (membership.type === 'monthly') {
-          const end = new Date(start);
-          end.setMonth(end.getMonth() + Number(membership.duration || 1));
-          membership.startDate = start;
-          membership.endDate = end;
-          membership.remainingSessions = 0;
-        } else if (membership.type === 'combative') {
-          // duration = sessions allowance, expiry = 1 month window
-          const end = new Date(start);
-          end.setMonth(end.getMonth() + 1);
-          membership.startDate = start;
-          membership.endDate = end;
-          membership.remainingSessions = Number(membership.duration || 1);
-        }
-      });
-    }
-    next();
-  } catch (e) {
-    next(e);
-  }
-});
-
-// Auto-generate memberId before saving
-MemberSchema.pre('save', async function (next) {
-  if (!this.isNew || this.memberId) return next();
-  try {
-    const last = await this.constructor.findOne({ memberId: { $exists: true } }, { memberId: 1 }, { sort: { memberId: -1 } });
-    const lastNum = last ? parseInt(last.memberId.split('-')[1], 10) : 0;
-    this.memberId = `MEM-${String(lastNum + 1).padStart(4, '0')}`;
-    next();
-  } catch (e) {
-    next(e);
-  }
-});
-
-if (mongoose.models.Member) {
-  mongoose.deleteModel('Member');
-}
-module.exports = mongoose.model('Member', MemberSchema, 'members');
+module.exports = mongoose.model('Member', memberSchema);

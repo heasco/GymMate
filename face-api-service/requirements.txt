@@ -1,6 +1,9 @@
-face_recognition
 Flask
+Flask-CORS
 numpy
 pillow
 pymongo
 cryptography
+deepface
+tf-keras
+mtcnn

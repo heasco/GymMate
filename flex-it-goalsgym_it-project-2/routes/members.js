@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const asyncHandler = require('../middleware/asyncHandler');
 const { protect } = require('../middleware/auth'); 
 const Member = require('../models/Member');
+const MembershipHistory = require('../models/MembershipHistory'); // Added History Model
 const transporter = require('../utils/nodemailer');
 const axios = require('axios');
 const FormData = require('form-data');
@@ -16,8 +17,6 @@ const faceUploads = upload.fields([
   { name: 'faceImage2', maxCount: 1 },
   { name: 'faceImage3', maxCount: 1 },
 ]);
-
-
 
 router.get('/', protect, asyncHandler(async (req, res) => {
   const { status } = req.query;
@@ -63,7 +62,7 @@ router.get('/:id', protect, asyncHandler(async (req, res) => {
   res.json({ success: true, data: member });
 }));
 
-// Create member - PROTECTED (admin-only, e.g., add authorize('admin') if needed)
+// Create member - PROTECTED 
 router.post('/', protect, faceUploads, asyncHandler(async (req, res) => {
   let memberships = req.body.memberships;
   if (typeof memberships === 'string') {
@@ -77,13 +76,14 @@ router.post('/', protect, faceUploads, asyncHandler(async (req, res) => {
   const name = rawName?.trim();
   const phone = rawPhone?.trim();
   const email = rawEmail?.trim()?.toLowerCase();
+  
   if (!name || !memberships || !Array.isArray(memberships) || memberships.length === 0) {
     const errors = {};
     if (!name) errors.name = 'Name is required';
     if (!memberships || !Array.isArray(memberships) || memberships.length === 0) errors.memberships = 'At least one membership is required';
     return res.status(400).json({ success: false, error: 'Validation failed', details: errors });
   }
-  // Username and temp password
+  
   const nameParts = name.split(/\s+/);
   const firstName = nameParts[0].toLowerCase();
   const lastName = nameParts.slice(1).join('').toLowerCase();
@@ -94,7 +94,7 @@ router.post('/', protect, faceUploads, asyncHandler(async (req, res) => {
     username = firstName + lastName + suffix;
   }
   const tempPassword = firstName + Math.floor(1000 + Math.random() * 9000);
-  // Validate and compute membership dates
+  
   const validatedMemberships = [];
   for (const m of memberships) {
     if (!m?.type || !['monthly', 'combative'].includes(m.type)) {
@@ -105,6 +105,7 @@ router.post('/', protect, faceUploads, asyncHandler(async (req, res) => {
     }
     const startDate = m.startDate ? new Date(m.startDate) : (joinDate ? new Date(joinDate) : new Date());
     const endDate = new Date(startDate);
+    
     if (m.type === 'monthly') {
       endDate.setMonth(endDate.getMonth() + Number(m.duration));
       validatedMemberships.push({
@@ -116,7 +117,6 @@ router.post('/', protect, faceUploads, asyncHandler(async (req, res) => {
         remainingSessions: 0
       });
     } else {
-      // combative: duration = sessions allowance; expiry = 1 month
       endDate.setMonth(endDate.getMonth() + 1);
       validatedMemberships.push({
         type: m.type,
@@ -128,6 +128,7 @@ router.post('/', protect, faceUploads, asyncHandler(async (req, res) => {
       });
     }
   }
+  
   const newMember = new Member({
     name,
     username,
@@ -139,6 +140,7 @@ router.post('/', protect, faceUploads, asyncHandler(async (req, res) => {
     faceEnrolled: faceEnrolled === 'yes'
   });
   const saved = await newMember.save();
+  
   if (saved.email) {
     transporter.sendMail({
       from: `"GOALS Gym" <${process.env.EMAIL_USER}>`,
@@ -213,21 +215,25 @@ router.put('/:id', protect, asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { name, phone, email, status, memberships } = req.body || {};
   const updates = {};
+  
   if (typeof name !== 'undefined') updates.name = name?.trim();
   if (typeof phone !== 'undefined') updates.phone = phone ? phone.trim() : '';
   if (typeof email !== 'undefined') updates.email = email ? email.trim().toLowerCase() : '';
+  
   if (typeof status !== 'undefined') {
     if (!['active', 'inactive', 'suspended'].includes(status)) {
       return res.status(400).json({ success: false, error: 'Invalid status' });
     }
     updates.status = status;
   }
+  
   if (updates.phone && updates.phone !== '' && !/^\+63\d{10}$/.test(updates.phone)) {
     return res.status(400).json({ success: false, error: 'Invalid Philippine phone format. Use +63XXXXXXXXXX' });
   }
   if (updates.email && updates.email !== '' && !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(updates.email)) {
     return res.status(400).json({ success: false, error: 'Invalid email address' });
   }
+
   if (Array.isArray(memberships)) {
     const validated = memberships.map(m => {
       if (!m?.type || !['monthly', 'combative'].includes(m.type)) {
@@ -246,7 +252,7 @@ router.put('/:id', protect, asyncHandler(async (req, res) => {
       if (m.type === 'combative') out.remainingSessions = Number(m.duration);
       return out;
     });
-    // Recompute endDate on save via pre('validate'), but set a hint for combative expiry window
+
     updates.memberships = validated.map(m => {
       if (m.type === 'monthly') {
         const end = new Date(m.startDate);
@@ -259,10 +265,12 @@ router.put('/:id', protect, asyncHandler(async (req, res) => {
       }
     });
   }
+
   let query = { memberId: id };
   if (mongoose.Types.ObjectId.isValid(id)) query = { $or: [{ memberId: id }, { _id: new mongoose.Types.ObjectId(id) }] };
   const updated = await Member.findOneAndUpdate(query, { $set: updates }, { new: true, runValidators: true });
   if (!updated) return res.status(404).json({ success: false, error: 'Member not found' });
+  
   res.json({
     success: true,
     message: 'Member updated',
@@ -274,6 +282,88 @@ router.put('/:id', protect, asyncHandler(async (req, res) => {
       status: updated.status,
       memberships: updated.memberships
     }
+  });
+}));
+
+// 🔴 THE NEW RENEWAL ROUTE - FIXES THE 404 ERROR 🔴
+router.put('/:id/renew', protect, asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { memberships, status } = req.body;
+  
+  let query = { memberId: id };
+  if (mongoose.Types.ObjectId.isValid(id)) {
+    query = { $or: [{ memberId: id }, { _id: new mongoose.Types.ObjectId(id) }] };
+  }
+
+  const currentMember = await Member.findOne(query);
+  if (!currentMember) return res.status(404).json({ success: false, error: 'Member not found' });
+
+  if (Array.isArray(memberships)) {
+    // 1. Find old memberships that aren't in the incoming payload and Archive them
+    const incomingIds = memberships.filter(m => m._id).map(m => m._id.toString());
+    const archivedMemberships = currentMember.memberships.filter(m => !incomingIds.includes(m._id.toString()));
+
+    if (archivedMemberships.length > 0) {
+      try {
+        const historyDocs = archivedMemberships.map(m => ({
+          member: currentMember._id,
+          memberIdString: currentMember.memberId,
+          type: m.type,
+          duration: m.duration,
+          startDate: m.startDate,
+          endDate: m.endDate,
+          remainingSessions: m.remainingSessions,
+          status: m.status,
+          archivedAt: new Date()
+        }));
+        await MembershipHistory.insertMany(historyDocs);
+      } catch (err) {
+        console.error("Error archiving membership history:", err);
+      }
+    }
+
+    // 2. Validate and format incoming memberships
+    const validated = memberships.map(m => {
+      if (!m?.type || !['monthly', 'combative'].includes(m.type)) {
+        throw new Error('Each membership must have a valid type');
+      }
+      
+      const startDate = m.startDate ? new Date(m.startDate) : new Date();
+      let endDate;
+      
+      if (m.endDate) {
+        endDate = new Date(m.endDate); // Trust frontend calculation
+      } else {
+        endDate = new Date(startDate);
+        if (m.type === 'monthly') endDate.setMonth(endDate.getMonth() + Number(m.duration));
+        else endDate.setMonth(endDate.getMonth() + 1);
+      }
+
+      const out = {
+        type: m.type,
+        duration: Number(m.duration),
+        startDate,
+        endDate,
+        status: m.status || 'active'
+      };
+      
+      if (m._id) out._id = m._id; 
+      if (m.type === 'combative') {
+         out.remainingSessions = m.remainingSessions !== undefined ? Number(m.remainingSessions) : Number(m.duration);
+      }
+      return out;
+    });
+
+    currentMember.memberships = validated;
+  }
+
+  if (status) currentMember.status = status;
+  const updated = await currentMember.save();
+
+  res.json({
+    success: true,
+    message: 'Membership renewed successfully',
+    data: updated
   });
 }));
 
