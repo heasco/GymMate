@@ -1,62 +1,52 @@
 /* ========================================
-   ADD / RENEW MEMBER PAGE - PREMIUM THEME
+   ADD MEMBER PAGE - GOALS GYM THEME
 ======================================== */
 
-.container {
-    max-width: 1050px;
-    margin: 0 auto;
-    padding: 0;
+/* Default hidden states */
+#selectedMemberSection,
+#renewMonthlyDetails,
+#renewCombativeDetails,
+#renewalInfoBox {
+    display: none;
 }
 
-/* Action Bar */
-.action-bar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background: #1a1a1a;
-    padding: 20px 30px;
-    border-radius: 8px;
-    border: 1px solid #333;
-    margin-bottom: 25px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+/* Sidebar full name styling */
+.admin-fullname {
+    color: var(--primary);
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-top: 5px;
+    opacity: 0.9;
+    letter-spacing: 0.5px;
 }
 
-.action-text h3 {
-    color: #fff;
-    margin-bottom: 5px;
+/* Main content titles */
+h2 {
+    color: var(--accent);
+    margin-bottom: 2rem;
+    font-size: 1.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+h3 {
+    color: var(--primary);
+    margin-bottom: 1.5rem;
     font-size: 1.4rem;
+    font-weight: 600;
 }
 
-.action-text p {
-    color: #888;
-    font-size: 0.95rem;
-}
-
-.highlight-btn {
-    background: linear-gradient(135deg, #B30000 0%, #FF3333 100%);
-    box-shadow: 0 4px 15px rgba(179, 0, 0, 0.4);
-    font-size: 1.05rem !important;
-    padding: 12px 25px !important;
-}
-
-.highlight-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(179, 0, 0, 0.6);
-}
-
-/* Member Form Card */
-.member-card {
-    background: #1a1a1a;
-    padding: 2.5rem 3rem;
-    border-radius: 8px;
-    border: 1px solid #333;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-}
-
-.form-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 1.8rem;
+/* Form Styles */
+.member-form {
+    background: rgba(30, 30, 30, 0.9);
+    padding: 2.5rem;
+    border-radius: var(--radius);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(10px);
+    max-width: 600px;
+    margin: 0 auto;
 }
 
 .form-group {
@@ -64,568 +54,993 @@
 }
 
 .form-group label {
+    color: var(--accent);
+    font-weight: 600;
+    margin-bottom: 0.5rem;
     display: block;
-    color: #ccc;
     font-size: 0.95rem;
-    margin-bottom: 0.6rem;
-    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
-.form-group label i {
-    color: #B30000;
-    margin-right: 8px;
-    width: 15px;
-    text-align: center;
-}
-
-.form-group input, 
-.form-group select {
+.form-group input {
     width: 100%;
-    padding: 12px 15px;
-    background: #121212;
-    border: 1px solid #444;
-    border-radius: 6px;
-    color: #fff;
-    font-family: inherit;
+    padding: 1rem 1.2rem;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: var(--radius);
     font-size: 1rem;
-    transition: all 0.3s ease;
+    background: rgba(0, 0, 0, 0.5);
+    color: var(--accent);
+    font-family: 'Poppins', sans-serif;
+    transition: var(--transition);
 }
 
-.form-group input:focus, 
-.form-group select:focus {
+.form-group input:focus {
     outline: none;
-    border-color: #B30000;
+    border-color: var(--primary);
     box-shadow: 0 0 0 2px rgba(179, 0, 0, 0.2);
+    background: rgba(0, 0, 0, 0.7);
 }
 
-/* Custom Checkboxes */
-.checkbox-group-container {
-    display: flex;
-    gap: 3rem;
+.field {
     margin-bottom: 1.5rem;
-    background: #121212;
-    padding: 20px;
-    border-radius: 8px;
-    border: 1px solid #333;
 }
 
-.custom-checkbox {
-    position: relative;
-    padding-left: 35px;
-    cursor: pointer;
-    font-size: 1.05rem;
-    color: #ddd;
-    user-select: none;
-    display: flex;
-    align-items: center;
-}
-
-.custom-checkbox input {
-    position: absolute;
-    opacity: 0;
-    cursor: pointer;
-    height: 0;
-    width: 0;
-}
-
-.checkmark {
-    position: absolute;
-    left: 0;
-    height: 22px;
-    width: 22px;
-    background-color: #222;
-    border: 2px solid #555;
-    border-radius: 4px;
-    transition: all 0.2s ease;
-}
-
-.custom-checkbox:hover input ~ .checkmark {
-    border-color: #B30000;
-}
-
-.custom-checkbox input:checked ~ .checkmark {
-    background-color: #B30000;
-    border-color: #B30000;
-}
-
-.checkmark:after {
-    content: "";
-    position: absolute;
-    display: none;
-    left: 6px;
-    top: 2px;
-    width: 5px;
-    height: 10px;
-    border: solid white;
-    border-width: 0 2px 2px 0;
-    transform: rotate(45deg);
-}
-
-.custom-checkbox input:checked ~ .checkmark:after {
+.field .label {
+    color: var(--accent);
+    font-weight: 600;
+    margin-bottom: 0.5rem;
     display: block;
+    font-size: 0.95rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
-/* Input with Suffix (Months) */
-.input-with-icon {
-    position: relative;
-    display: flex;
-    align-items: center;
-}
-
-.input-with-icon input {
-    padding-right: 80px; 
-}
-
-.input-suffix {
-    position: absolute;
-    right: 15px;
-    color: #888;
-    font-weight: 500;
-    pointer-events: none;
-}
-
-/* Sub Details & Badges */
-.sub-details {
-    background: #121212;
-    padding: 1.8rem;
-    border-radius: 8px;
-    border-left: 4px solid #B30000;
-    margin-top: 10px;
-    animation: fadeInDown 0.3s ease;
-}
-
-.info-badge {
-    display: flex;
-    align-items: flex-start;
-    gap: 10px;
-    background: rgba(179, 0, 0, 0.1);
-    border: 1px solid rgba(179, 0, 0, 0.3);
-    padding: 12px;
-    border-radius: 6px;
-    margin-top: 15px;
-    color: #ccc;
-    font-size: 0.9rem;
-    line-height: 1.4;
-}
-
-.info-badge i {
-    color: #B30000;
-    margin-top: 2px;
-}
-
-.form-section-divider {
-    margin: 2.5rem 0 1.5rem 0;
-    padding-bottom: 0.8rem;
-    border-bottom: 1px solid #333;
-    color: #fff;
-    font-size: 1.2rem;
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.form-section-divider i {
-    color: #B30000;
-}
-
-/* Face Registration Inline Row */
-.face-registration-group {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background: #121212;
-    padding: 20px;
-    border-radius: 8px;
-    border: 1px solid #333;
-}
-
-.face-registration-info label {
-    margin-bottom: 0;
-    color: #fff;
-    font-size: 1.1rem;
-}
-
-.fp-status-message {
-    margin-top: 5px;
-    font-size: 0.9rem;
-    color: #888;
-}
-.fp-status-message.success {
-    color: #28a745;
-    font-weight: 600;
-}
-
-/* Buttons */
-.action-btn {
-    padding: 10px 24px;
-    background: #B30000;
-    color: #fff;
-    border: none;
-    border-radius: 6px;
+.field .input {
+    width: 100%;
+    padding: 1rem 1.2rem;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: var(--radius);
     font-size: 1rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
+    background: rgba(0, 0, 0, 0.5);
+    color: var(--accent);
+    font-family: 'Poppins', sans-serif;
+    transition: var(--transition);
 }
 
-.action-btn:hover:not(:disabled) {
-    background: #8A0000;
+.help {
+    color: var(--neutral);
+    font-size: 0.85rem;
+    margin-top: 0.3rem;
+    font-style: italic;
 }
 
-.action-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-
-.submit-btn {
-    width: 100%;
-    padding: 15px;
-    font-size: 1.1rem;
-    margin-top: 15px;
-}
-
-.outline-btn {
-    background: transparent;
-    border: 1px solid #B30000;
-    color: #B30000;
-}
-.outline-btn:hover {
-    background: rgba(179, 0, 0, 0.1);
-}
-
-.success-btn { background: #28a745; }
-.success-btn:hover { background: #218838; }
-
-.warning-btn { background: #f39c12; }
-.warning-btn:hover { background: #d68910; }
-
-.danger-btn { background: #dc3545; }
-.danger-btn:hover { background: #c82333; }
-
-/* Modals */
-.modal {
-    display: none;
-    position: fixed;
-    top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0, 0, 0, 0.85);
-    z-index: 2000;
-    align-items: center;
-    justify-content: center;
-    backdrop-filter: blur(5px);
-}
-
-.modal-content {
-    background: #1a1a1a;
-    width: 90%;
-    max-width: 600px;
-    padding: 2.5rem;
-    border-radius: 12px;
-    border: 1px solid #444;
-    position: relative;
-    max-height: 90vh;
-    overflow-y: auto;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-}
-
-.close-btn {
-    position: absolute;
-    top: 20px; right: 25px;
-    color: #888;
-    font-size: 1.8rem;
-    cursor: pointer;
-    transition: color 0.3s;
-}
-.close-btn:hover { color: #fff; }
-
-/* Payment Modal Specific */
-.payment-modal-content {
-    max-width: 450px;
-}
-.payment-icon {
-    font-size: 4rem;
-    color: #28a745;
-    margin-bottom: 15px;
-}
-.payment-modal-content h2 {
-    color: #fff;
-    margin-bottom: 10px;
-}
-.payment-modal-content p {
-    color: #aaa;
-    margin-bottom: 25px;
-    font-size: 1.05rem;
-}
-
-/* Renewal Modal Specific */
-.renewal-modal-content {
-    max-width: 700px;
-}
-
-.search-container {
-    background: #121212;
-    padding: 15px;
-    border-radius: 8px;
-    border: 1px solid #333;
-}
-
-.search-flex {
-    display: flex;
-    gap: 15px;
-}
-
-.search-icon-wrapper {
+/* ========================================
+   UNIVERSAL DROPDOWN (SELECT) STYLES
+======================================== */
+.form-group select,
+.dob-dropdowns select {
     flex: 1;
-    position: relative;
-}
-
-.search-icon-wrapper i {
-    position: absolute;
-    left: 15px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: #888;
-}
-
-.search-icon-wrapper input {
     width: 100%;
-    padding: 12px 15px 12px 40px;
-    background: #1a1a1a;
-    border: 1px solid #444;
-    border-radius: 6px;
-    color: #fff;
-}
-
-.search-btn {
-    padding: 12px 25px;
-}
-
-.search-result-item {
-    padding: 15px;
-    background: #121212;
-    border: 1px solid #333;
-    border-radius: 6px;
-    margin-bottom: 10px;
+    padding: 1rem 1.2rem;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: var(--radius);
+    font-size: 1rem;
+    background-color: rgba(0, 0, 0, 0.5);
+    color: var(--accent);
+    font-family: 'Poppins', sans-serif;
     cursor: pointer;
-    transition: all 0.2s;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23FFFFFF%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+    background-repeat: no-repeat;
+    background-position: right 1rem top 50%;
+    background-size: 0.65rem auto;
+    padding-right: 2.5rem;
+    transition: var(--transition);
+}
+
+.dob-dropdowns {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-.search-result-item:hover { 
-    border-color: #B30000; 
-    background: rgba(179, 0, 0, 0.05);
+    gap: 0.8rem;
 }
 
-.member-profile-header {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    background: #121212;
-    padding: 20px;
-    border-radius: 8px;
-    margin: 20px 0;
-    border-left: 4px solid #B30000;
+.form-group select:hover,
+.dob-dropdowns select:hover {
+    border-color: rgba(255, 255, 255, 0.4);
 }
 
-.profile-avatar {
-    width: 50px;
-    height: 50px;
-    background: #333;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.5rem;
-    color: #B30000;
-}
-
-.profile-details h3 { color: #fff; margin: 0 0 5px 0; font-size: 1.2rem; }
-.profile-details p { color: #888; margin: 0; font-size: 0.95rem; }
-
-.section-subtitle {
-    color: #ccc;
-    font-size: 1.1rem;
-    margin-bottom: 10px;
-}
-
-.membership-item {
-    background: #121212;
-    padding: 15px;
-    border-radius: 6px;
-    margin-bottom: 8px;
-    font-size: 0.95rem;
-    border: 1px solid #333;
-    display: flex;
-    justify-content: space-between;
-}
-
-.renewal-info-box {
-    background: rgba(40, 167, 69, 0.1);
-    border-left: 4px solid #28a745;
-    padding: 15px;
-    margin-top: 20px;
-    border-radius: 6px;
-    color: #ddd;
-    font-size: 0.95rem;
-}
-
-.flex-center { display: flex; justify-content: center; gap: 15px; }
-.text-center { text-align: center; }
-
-/* Video Face capture */
-.video-container {
-    width: 100%;
-    height: 350px;
-    background: #000;
-    border-radius: 8px;
-    overflow: hidden;
-    margin-bottom: 1.5rem;
-    display: flex;
-    justify-content: center;
-    border: 1px solid #444;
-}
-#video, #canvas { max-width: 100%; height: 100%; object-fit: cover; }
-
-@keyframes fadeInDown {
-    from { opacity: 0; transform: translateY(-10px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-/* ========================================================================= */
-/* Custom Mini Calendar Styles & Dropdown Selectors                         */
-/* ========================================================================= */
-.custom-date-wrapper {
-    position: relative;
-    width: 100%;
-}
-
-.custom-date-wrapper input[type="text"] {
-    width: 100%;
-    padding-right: 40px; 
-    cursor: pointer;
-}
-
-.calendar-icon-btn {
-    position: absolute;
-    right: 12px; 
-    top: 50%;
-    transform: translateY(-50%);
-    background: none;
-    border: none;
-    color: #888;
-    font-size: 1.2rem;
-    cursor: pointer;
-    transition: color 0.3s;
-}
-
-.calendar-icon-btn:hover,
-.custom-date-wrapper input:focus + .calendar-icon-btn {
-    color: #B30000;
-}
-
-.mini-calendar {
-    position: absolute;
-    top: 100%;
-    right: 0;
-    width: 290px;
-    background: #1a1a1a;
-    border: 1px solid #444;
-    border-radius: 8px;
-    padding: 15px;
-    z-index: 1000;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
-    margin-top: 5px;
-}
-
-.mini-calendar.hidden {
-    display: none;
-}
-
-.mini-calendar-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 10px;
-}
-
-.mini-calendar-selectors {
-    display: flex;
-    gap: 8px;
-}
-
-.mini-calendar-selectors select {
-    background-color: #121212;
-    color: white;
-    border: 1px solid #444;
-    padding: 4px 6px;
-    border-radius: 4px;
-    font-family: inherit;
-    font-size: 0.9rem;
-    cursor: pointer;
+.form-group select:focus,
+.dob-dropdowns select:focus {
     outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px rgba(179, 0, 0, 0.2);
+    background-color: rgba(0, 0, 0, 0.7);
 }
 
-.mini-calendar-selectors select:focus {
-    border-color: #B30000;
+.form-group select option,
+.dob-dropdowns select option {
+    background-color: #1e1e1e;
+    color: #ffffff;
+    padding: 10px;
 }
 
-.mini-cal-nav {
-    background: transparent;
-    border: none;
-    color: #888;
-    font-size: 1.4rem;
+.form-group select option:hover,
+.form-group select option:focus,
+.form-group select option:active,
+.form-group select option:checked,
+.dob-dropdowns select option:hover,
+.dob-dropdowns select option:focus,
+.dob-dropdowns select option:active,
+.dob-dropdowns select option:checked {
+    background-color: #b30000 !important;
+    color: #000000 !important;
+}
+
+/* ======================================== */
+
+/* Date input wrapper styling */
+.date-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+#joinDateDisplay,
+#renewalDateDisplay {
+    flex: 1;
+    cursor: default;
+    background: #000305;
+    color: #ffffff;
+    padding: 10px 40px 10px 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+}
+
+.date-icon {
+    position: absolute;
+    right: 12px;
+    color: #ebebeb;
     cursor: pointer;
-    padding: 0 5px;
+    font-size: 1.1rem;
+    z-index: 5;
     transition: color 0.2s;
 }
 
-.mini-cal-nav:hover {
-    color: #fff;
+.date-icon:hover {
+    color: #2d87f0;
 }
 
-.mini-calendar-grid {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: 4px;
-    text-align: center;
-}
-
-.mini-cal-day-header {
-    color: #B30000;
-    font-weight: bold;
-    font-size: 0.8rem;
-    padding: 5px 0;
-}
-
-.mini-cal-day {
-    background: transparent;
-    border: 1px solid transparent;
-    color: #ccc;
-    padding: 8px 0;
+/* Hidden actual date inputs - positioned on top but invisible */
+input[type="date"].hidden-date {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    z-index: 10;
     cursor: pointer;
-    border-radius: 4px;
+}
+
+.date-wrapper {
+    position: relative;
+}
+
+.field .control.date-wrapper {
+    position: relative;
+}
+
+/* Date Picker Styling */
+.date-picker-group {
+    margin-bottom: 2rem;
+}
+
+.date-picker-group label {
+    color: var(--accent);
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.95rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.date-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.date-input-wrapper input[type="date"] {
+    width: 100%;
+    padding: 1rem 3rem 1rem 1.2rem;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-radius: var(--radius);
+    font-size: 1rem;
+    background: rgba(0, 0, 0, 0.5);
+    color: var(--accent);
+    font-family: 'Poppins', sans-serif;
+    transition: var(--transition);
+    cursor: pointer;
+}
+
+.date-input-wrapper input[type="date"]:hover {
+    border-color: var(--primary);
+    background: rgba(0, 0, 0, 0.6);
+}
+
+.date-input-wrapper input[type="date"]:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(179, 0, 0, 0.2);
+    background: rgba(0, 0, 0, 0.7);
+}
+
+.date-input-wrapper .icon-calendar {
+    position: absolute;
+    right: 1rem;
+    color: var(--primary);
+    font-size: 1.2rem;
+    pointer-events: none;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+    opacity: 0;
+    cursor: pointer;
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+/* Checkbox/Radio Styles */
+.checkbox-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    margin-top: 0.5rem;
+}
+
+.checkbox {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--neutral);
+    font-weight: 500;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.checkbox:hover {
+    color: var(--accent);
+}
+
+.checkbox input[type="radio"],
+.checkbox input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--primary);
+    cursor: pointer;
+}
+
+/* Membership Details */
+.membership-details {
+    background: rgba(0, 0, 0, 0.3);
+    padding: 1.2rem;
+    border-radius: var(--radius);
+    border-left: 4px solid var(--primary);
+    margin-top: 1rem;
+    display: none;
+}
+
+.membership-details label {
+    color: var(--neutral);
     font-size: 0.9rem;
-    transition: all 0.2s;
+    text-transform: none;
+    margin-bottom: 0.3rem;
 }
 
-.mini-cal-day:hover:not(.mini-cal-day-disabled) {
-    background: rgba(179, 0, 0, 0.2);
-    border-color: #B30000;
-    color: #fff;
+.membership-details input {
+    padding: 0.8rem 1rem;
+    font-size: 0.9rem;
 }
 
-.mini-cal-day-selected {
-    background: #B30000 !important;
-    color: #fff !important;
+/* Facial Recognition */
+.fp-controls {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 0.5rem;
 }
 
-.mini-cal-day-disabled {
-    color: #444 !important;
+.face-capture-btn {
+    background: rgba(255, 190, 24, 0.1);
+    color: #ffbe18;
+    border: 1px solid #ffbe18;
+    padding: 0.8rem 1.2rem;
+    border-radius: var(--radius);
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.face-capture-btn:hover {
+    background: #ffbe18;
+    color: var(--dark);
+}
+
+.fp-status-message {
+    font-size: 0.95rem;
+    font-weight: 500;
+}
+
+.fp-status-message.success {
+    color: #23d160;
+}
+
+/* Submit Button */
+.submit-btn {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--highlight) 100%);
+    color: var(--accent);
+    border: none;
+    padding: 1rem 2rem;
+    border-radius: var(--radius);
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    width: 100%;
+    box-shadow: 0 4px 15px rgba(179, 0, 0, 0.3);
+    margin-top: 1rem;
+}
+
+.submit-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(255, 51, 51, 0.4);
+}
+
+.submit-btn:disabled {
+    opacity: 0.6;
     cursor: not-allowed;
-    background: transparent !important;
+    transform: none;
+}
+
+/* OR Divider */
+.or-divider {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    margin: 2rem auto;
+    max-width: 600px;
+}
+
+.or-divider::before,
+.or-divider::after {
+    content: '';
+    flex: 1;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.or-divider span {
+    padding: 0 1rem;
+    color: var(--neutral);
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+/* Renew Button */
+.renew-btn {
+    background: transparent;
+    color: #ffbe18;
+    border: 2px solid #ffbe18;
+    padding: 1rem 2rem;
+    border-radius: var(--radius);
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    width: 100%;
+    max-width: 600px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.8rem;
+    margin: 0 auto;
+}
+
+.renew-btn:hover {
+    background: #ffbe18;
+    color: var(--dark);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(255, 190, 24, 0.4);
+}
+
+/* Renewal Modal */
+.renewal-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.85);
+    z-index: 3000;
+    justify-content: center;
+    align-items: center;
+    backdrop-filter: blur(5px);
+    padding: 1rem;
+}
+
+.renewal-content {
+    background: var(--darker);
+    border-radius: var(--radius);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    max-width: 700px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    color: var(--accent);
+}
+
+.renewal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem 2rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    position: sticky;
+    top: 0;
+    background: var(--darker);
+    z-index: 10;
+}
+
+.renewal-header h3 {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--accent);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+}
+
+.close-modal {
+    background: transparent;
+    border: none;
+    color: var(--neutral);
+    font-size: 2rem;
+    cursor: pointer;
+    transition: var(--transition);
+    line-height: 1;
+}
+
+.close-modal:hover {
+    color: var(--accent);
+}
+
+.renewal-body {
+    padding: 2rem;
+}
+
+/* Search Section */
+.search-section {
+    margin-bottom: 2rem;
+}
+
+.search-section label {
+    color: var(--accent);
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    display: block;
+    font-size: 0.95rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.search-input-group {
+    display: flex;
+    gap: 0.8rem;
+}
+
+.search-input-group input {
+    flex: 1;
+    padding: 1rem 1.2rem;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: var(--radius);
+    font-size: 1rem;
+    background: rgba(0, 0, 0, 0.5);
+    color: var(--accent);
+    font-family: 'Poppins', sans-serif;
+    transition: var(--transition);
+}
+
+.search-input-group input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px rgba(179, 0, 0, 0.2);
+}
+
+.search-btn {
+    background: var(--primary);
+    color: var(--accent);
+    border: none;
+    padding: 0.8rem 1.5rem;
+    border-radius: var(--radius);
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    white-space: nowrap;
+}
+
+.search-btn:hover {
+    background: var(--highlight);
+    transform: translateY(-2px);
+}
+
+/* Search Results */
+.search-results {
+    margin-top: 1rem;
+}
+
+.search-result-item {
+    background: rgba(0, 0, 0, 0.3);
+    padding: 1rem;
+    border-radius: var(--radius);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    margin-bottom: 0.8rem;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.search-result-item:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: var(--primary);
+    transform: translateX(5px);
+}
+
+.result-info {
+    color: var(--accent);
+}
+
+.result-info strong {
+    color: var(--primary);
+    font-size: 1.1rem;
+}
+
+.result-info small {
+    color: var(--neutral);
+}
+
+.status-active {
+    color: #23d160;
+}
+
+.status-inactive {
+    color: #ff3860;
+}
+
+.status-suspended {
+    color: #ffbe18;
+}
+
+.no-results {
+    color: var(--neutral);
+    text-align: center;
+    padding: 1rem;
+    font-style: italic;
+}
+
+/* Selected Member Section */
+.selected-member-section {
+    margin-top: 2rem;
+    display: none;
+}
+
+.member-info-card {
+    background: rgba(0, 0, 0, 0.4);
+    padding: 1.5rem;
+    border-radius: var(--radius);
+    border-left: 4px solid var(--primary);
+    margin-bottom: 2rem;
+}
+
+.member-info-card h4 {
+    color: var(--accent);
+    margin-bottom: 1rem;
+    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.member-info-card p {
+    color: var(--neutral);
+    margin-bottom: 0.5rem;
+}
+
+.status-badge {
+    display: inline-block;
+    padding: 0.3rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.status-badge.status-active {
+    background: rgba(35, 209, 96, 0.2);
+    color: #23d160;
+}
+
+.status-badge.status-inactive {
+    background: rgba(255, 56, 96, 0.2);
+    color: #ff3860;
+}
+
+.status-badge.status-suspended {
+    background: rgba(255, 190, 24, 0.2);
+    color: #ffbe18;
+}
+
+.membership-list {
+    margin-top: 1rem;
+}
+
+.membership-list strong {
+    display: block;
+    margin-bottom: 0.8rem;
+    color: var(--accent);
+}
+
+.membership-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.8rem;
+    border-radius: var(--radius);
+    margin-bottom: 0.5rem;
+    border: 1px solid;
+}
+
+.membership-item.active {
+    background: rgba(35, 209, 96, 0.1);
+    border-color: #23d160;
+}
+
+.membership-item.inactive,
+.membership-item.expired {
+    background: rgba(255, 56, 96, 0.1);
+    border-color: #ff3860;
+}
+
+.membership-type {
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.9rem;
+}
+
+.membership-status {
+    font-size: 0.85rem;
+    opacity: 0.8;
+}
+
+.membership-date {
+    font-size: 0.85rem;
+    opacity: 0.8;
+}
+
+.no-membership {
+    color: var(--neutral);
+    font-style: italic;
+    margin-top: 0.5rem;
+}
+
+/* Renewal Info Box */
+.renewal-info-box {
+    background: linear-gradient(135deg, rgba(255, 190, 24, 0.15) 0%, rgba(255, 190, 24, 0.05) 100%);
+    border: 2px solid #ffbe18;
+    border-left: 5px solid #ffbe18;
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    margin: 1.5rem 0;
+    color: var(--accent);
+    box-shadow: 0 4px 15px rgba(255, 190, 24, 0.2);
+}
+
+.renewal-info-box strong {
+    color: #ffbe18;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    font-size: 1.05rem;
+}
+
+.info-item {
+    padding: 1rem;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: var(--radius);
+    margin-bottom: 1rem;
+    border-left: 3px solid var(--primary);
+}
+
+.info-item:last-child {
+    margin-bottom: 0;
+}
+
+.info-item strong {
+    color: var(--primary);
+    display: block;
+    margin-bottom: 0.8rem;
+    font-size: 1rem;
+}
+
+.detail-line {
+    display: block;
+    color: var(--neutral);
+    padding: 0.3rem 0;
+    padding-left: 0.5rem;
+    font-size: 0.95rem;
+}
+
+.detail-line::before {
+    content: '• ';
+    color: var(--primary);
+    font-weight: bold;
+    margin-right: 0.5rem;
+}
+
+/* Messages */
+.message {
+    padding: 1.2rem 1.5rem;
+    border-radius: var(--radius);
+    font-weight: 600;
+    text-align: center;
+    border: 1px solid;
+    margin-top: 1.5rem;
+}
+
+.message.success {
+    background: rgba(35, 209, 96, 0.1);
+    color: #23d160;
+    border-color: #23d160;
+}
+
+.message.error {
+    background: rgba(255, 56, 96, 0.1);
+    color: #ff3860;
+    border-color: #ff3860;
+}
+
+.message.hidden {
+    display: none;
+}
+
+/* Face Pane Modal */
+.face-pane {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(24, 24, 24, 0.95);
+    z-index: 3000;
+    justify-content: center;
+    align-items: center;
+    backdrop-filter: blur(5px);
+}
+
+.face-modal {
+    background: var(--darker);
+    padding: 2.5rem;
+    border-radius: var(--radius);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    max-width: 650px;
+    width: 90%;
+    color: var(--accent);
+}
+
+.face-modal h3 {
+    font-size: 1.4rem;
+    font-weight: 700;
+    text-align: center;
+    margin-bottom: 1.5rem;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.face-capture-area {
+    position: relative;
+    margin: 0 auto 1.5rem;
+    width: 560px;
+    max-width: 100%;
+    height: 420px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.face-modal video,
+.face-modal canvas {
+    border-radius: var(--radius);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+    background: var(--secondary);
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.face-center-box {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 200px;
+    height: 200px;
+    transform: translate(-50%, -50%);
+    border: 3px solid #ffbe18;
+    border-radius: 18px;
+    box-shadow: 0 0 20px rgba(255, 190, 24, 0.5);
+    pointer-events: none;
+    z-index: 2;
+}
+
+/* Face Pane Buttons */
+.face-controls {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+
+.btn-primary,
+.btn-success,
+.btn-secondary {
+    padding: 0.8rem 1.5rem;
+    border-radius: var(--radius);
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+    border: none;
+}
+
+.btn-primary {
+    background: var(--primary);
+    color: var(--accent);
+}
+
+.btn-primary:hover {
+    background: var(--highlight);
+}
+
+.btn-success {
+    background: #23d160;
+    color: var(--accent);
+}
+
+.btn-success:disabled {
+    background: var(--neutral);
+    color: var(--dark);
+    cursor: not-allowed;
+}
+
+.btn-secondary {
+    background: transparent;
+    color: var(--neutral);
+    border: 1px solid var(--neutral);
+}
+
+.btn-secondary:hover {
+    background: var(--neutral);
+    color: var(--dark);
+}
+
+.face-result-msg {
+    margin-top: 1rem;
+    text-align: center;
+    font-weight: 500;
+    color: #ffbe18;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .member-form {
+        padding: 2rem;
+    }
+
+    .checkbox-group {
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .face-modal {
+        padding: 2rem;
+    }
+
+    .face-capture-area {
+        height: 300px;
+    }
+
+    .face-controls {
+        flex-direction: column;
+        gap: 0.8rem;
+    }
+
+    .btn-primary,
+    .btn-success,
+    .btn-secondary {
+        width: 100%;
+    }
+
+    .renewal-content {
+        max-height: 95vh;
+    }
+
+    .renewal-body {
+        padding: 1.5rem;
+    }
+
+    .search-input-group {
+        flex-direction: column;
+    }
+
+    .membership-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+
+    .dob-dropdowns {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .member-form {
+        padding: 1.5rem;
+    }
+
+    .form-group input {
+        padding: 0.8rem 1rem;
+    }
+
+    .face-modal {
+        padding: 1.5rem;
+    }
+
+    .face-capture-area {
+        height: 250px;
+    }
+
+    .face-center-box {
+        width: 150px;
+        height: 150px;
+    }
+
+    .renewal-body {
+        padding: 1rem;
+    }
+
+    .renewal-header {
+        padding: 1rem 1.5rem;
+    }
 }

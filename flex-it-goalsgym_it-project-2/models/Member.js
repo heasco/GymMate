@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs'); // Added bcrypt for password hashing
+const bcrypt = require('bcryptjs'); 
 
 const membershipSchema = new mongoose.Schema({
   type: {
@@ -53,14 +53,13 @@ const memberSchema = new mongoose.Schema({
   },
   email: {
     type: String,
-    required: true,
     unique: true,
+    sparse: true, // Prevents conflicts if email is left empty
     lowercase: true,
     trim: true
   },
   phone: {
-    type: String,
-    required: true
+    type: String // Optional
   },
   dob: {
     type: Date,
@@ -72,13 +71,16 @@ const memberSchema = new mongoose.Schema({
     required: true
   },
   address: {
-    type: String,
-    required: true
+    type: String // Optional
   },
   emergencyContact: {
-    name: { type: String, required: true },
-    phone: { type: String, required: true },
-    relation: { type: String, required: true }
+    name: { type: String }, // Optional
+    phone: { type: String }, // Optional
+    relation: { type: String } // Optional
+  },
+  joinDate: { 
+    type: Date, 
+    default: Date.now // Ensures the joinDate sent by frontend is saved
   },
   memberships: [membershipSchema],
   faceEnrolled: {
@@ -103,6 +105,19 @@ const memberSchema = new mongoose.Schema({
 
 // Create compound index for active memberships
 memberSchema.index({ 'memberships.status': 1, 'memberships.endDate': 1 });
+
+// Auto-generate memberId before validating so it satisfies `required: true`
+memberSchema.pre('validate', async function (next) {
+  if (!this.isNew || this.memberId) return next();
+  try {
+    const last = await this.constructor.findOne({ memberId: { $exists: true } }, { memberId: 1 }, { sort: { memberId: -1 } });
+    const lastNum = last && last.memberId ? parseInt(last.memberId.split('-')[1], 10) : 0;
+    this.memberId = `MEM-${String(lastNum + 1).padStart(4, '0')}`;
+    next();
+  } catch (e) {
+    next(e);
+  }
+});
 
 // Hash password before saving
 memberSchema.pre('save', async function (next) {

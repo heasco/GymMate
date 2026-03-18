@@ -9,6 +9,7 @@ let selectedMember = null;
 // --------------------------------------
 const ADMIN_SESSION_MAX_AGE_MS = 2 * 60 * 60 * 1000; // 2 hours
 
+// Admin-scoped storage keys to avoid cross-role interference
 const ADMIN_KEYS = {
   token: 'admin_token',
   authUser: 'admin_authUser',
@@ -16,6 +17,9 @@ const ADMIN_KEYS = {
   logoutEvent: 'adminLogoutEvent',
 };
 
+// --------------------------------------
+// Admin storage helpers (namespaced)
+// --------------------------------------
 const AdminStore = {
   set(token, userPayload) {
     try {
@@ -25,9 +29,11 @@ const AdminStore = {
         role: 'admin',
         token,
       };
+
       localStorage.setItem(ADMIN_KEYS.token, token);
       localStorage.setItem(ADMIN_KEYS.authUser, JSON.stringify(authUser));
       localStorage.setItem(ADMIN_KEYS.role, 'admin');
+
       sessionStorage.setItem(ADMIN_KEYS.token, token);
       sessionStorage.setItem(ADMIN_KEYS.authUser, JSON.stringify(authUser));
       sessionStorage.setItem(ADMIN_KEYS.role, 'admin');
@@ -35,25 +41,44 @@ const AdminStore = {
       console.error('[AdminStore.set] failed:', e);
     }
   },
+
   getToken() {
-    return sessionStorage.getItem(ADMIN_KEYS.token) || localStorage.getItem(ADMIN_KEYS.token) || null;
-  },
-  getAuthUser() {
-    const raw = sessionStorage.getItem(ADMIN_KEYS.authUser) || localStorage.getItem(ADMIN_KEYS.authUser);
-    if (!raw) return null;
-    try { return JSON.parse(raw); } catch (e) { return null; }
-  },
-  hasSession() {
     return (
-      (localStorage.getItem(ADMIN_KEYS.token) || sessionStorage.getItem(ADMIN_KEYS.token)) &&
-      (localStorage.getItem(ADMIN_KEYS.authUser) || sessionStorage.getItem(ADMIN_KEYS.authUser)) &&
-      ((localStorage.getItem(ADMIN_KEYS.role) || sessionStorage.getItem(ADMIN_KEYS.role)) === 'admin')
+      sessionStorage.getItem(ADMIN_KEYS.token) ||
+      localStorage.getItem(ADMIN_KEYS.token) ||
+      null
     );
   },
+
+  getAuthUser() {
+    const raw =
+      sessionStorage.getItem(ADMIN_KEYS.authUser) ||
+      localStorage.getItem(ADMIN_KEYS.authUser);
+    if (!raw) return null;
+    try {
+      return JSON.parse(raw);
+    } catch (e) {
+      console.error('[AdminStore.getAuthUser] parse error:', e);
+      return null;
+    }
+  },
+
+  hasSession() {
+    return (
+      (localStorage.getItem(ADMIN_KEYS.token) ||
+        sessionStorage.getItem(ADMIN_KEYS.token)) &&
+      (localStorage.getItem(ADMIN_KEYS.authUser) ||
+        sessionStorage.getItem(ADMIN_KEYS.authUser)) &&
+      ((localStorage.getItem(ADMIN_KEYS.role) ||
+        sessionStorage.getItem(ADMIN_KEYS.role)) === 'admin')
+    );
+  },
+
   clear() {
     localStorage.removeItem(ADMIN_KEYS.token);
     localStorage.removeItem(ADMIN_KEYS.authUser);
     localStorage.removeItem(ADMIN_KEYS.role);
+
     sessionStorage.removeItem(ADMIN_KEYS.token);
     sessionStorage.removeItem(ADMIN_KEYS.authUser);
     sessionStorage.removeItem(ADMIN_KEYS.role);
@@ -63,11 +88,13 @@ const AdminStore = {
 function bootstrapAdminFromGenericIfNeeded() {
   try {
     if (AdminStore.hasSession()) return;
+
     const genToken = localStorage.getItem('token');
     const genRole = localStorage.getItem('role');
     const genAuthRaw = localStorage.getItem('authUser');
 
     if (!genToken || !genRole || genRole !== 'admin' || !genAuthRaw) return;
+
     const genAuth = JSON.parse(genAuthRaw);
     AdminStore.set(genToken, genAuth);
   } catch (e) {
@@ -77,21 +104,30 @@ function bootstrapAdminFromGenericIfNeeded() {
 
 function clearLocalAuth() {
   AdminStore.clear();
+
   try {
-    const genericRole = localStorage.getItem('role') || sessionStorage.getItem('role');
+    const genericRole =
+      localStorage.getItem('role') || sessionStorage.getItem('role');
+
     if (genericRole === 'admin') {
       localStorage.removeItem('token');
       localStorage.removeItem('authUser');
       localStorage.removeItem('role');
+
       sessionStorage.removeItem('token');
       sessionStorage.removeItem('authUser');
       sessionStorage.removeItem('role');
     }
-  } catch (e) {}
+  } catch (e) {
+    console.error('[Admin clearLocalAuth] failed to clear generic keys:', e);
+  }
 }
 
 function getApiBase() {
-  return window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? SERVER_URL : '';
+  return window.location.hostname === 'localhost' ||
+    window.location.hostname === '127.0.0.1'
+    ? SERVER_URL
+    : '';
 }
 
 function getToken() {
@@ -105,26 +141,43 @@ function adminLogout(reason, loginPath = '../login.html') {
   window.location.href = loginPath;
 }
 
+// Centralized admin auth check
 function ensureAdminAuthOrLogout(loginPath) {
   try {
-    if (!AdminStore.hasSession()) bootstrapAdminFromGenericIfNeeded();
-    if (!AdminStore.hasSession()) { adminLogout('missing admin session', loginPath); return false; }
+    if (!AdminStore.hasSession()) {
+      bootstrapAdminFromGenericIfNeeded();
+    }
+
+    if (!AdminStore.hasSession()) {
+      adminLogout('missing admin session', loginPath);
+      return false;
+    }
 
     const authUser = AdminStore.getAuthUser();
-    if (!authUser || authUser.role !== 'admin') { adminLogout('invalid authUser', loginPath); return false; }
+    if (!authUser || authUser.role !== 'admin') {
+      adminLogout('invalid or non-admin authUser', loginPath);
+      return false;
+    }
 
     const ts = authUser.timestamp || 0;
-    if (!ts || Date.now() - ts > ADMIN_SESSION_MAX_AGE_MS) { adminLogout('session expired', loginPath); return false; }
+    if (!ts || Date.now() - ts > ADMIN_SESSION_MAX_AGE_MS) {
+      adminLogout('admin session max age exceeded', loginPath);
+      return false;
+    }
 
     authUser.timestamp = Date.now();
     AdminStore.set(AdminStore.getToken(), authUser);
 
     window.addEventListener('storage', (event) => {
-      if (event.key === ADMIN_KEYS.logoutEvent) adminLogout('logout from another tab', loginPath);
+      if (event.key === ADMIN_KEYS.logoutEvent) {
+        adminLogout('adminLogoutEvent from another tab', loginPath);
+      }
     });
+
     return true;
   } catch (e) {
-    adminLogout('exception in auth check', loginPath);
+    console.error('Auth check failed:', e);
+    adminLogout('exception in ensureAdminAuthOrLogout', loginPath);
     return false;
   }
 }
@@ -134,26 +187,48 @@ function requireAuth(expectedRole, loginPath) {
 }
 
 window.addEventListener('storage', (event) => {
-  if (event.key === ADMIN_KEYS.logoutEvent) adminLogout('global logout', '../login.html');
+  if (event.key === ADMIN_KEYS.logoutEvent) {
+    adminLogout('adminLogoutEvent from another tab (global)', '../login.html');
+  }
 });
 
+// ------------------------------
+// Utility for authenticated API calls
+// ------------------------------
 async function apiFetch(endpoint, options = {}) {
-  if (!ensureAdminAuthOrLogout('../login.html')) return;
+  const ok = ensureAdminAuthOrLogout('../login.html');
+  if (!ok) return;
 
   const token = AdminStore.getToken();
   const authUser = AdminStore.getAuthUser();
 
-  if (!token || !authUser) { adminLogout('missing token', '../login.html'); return; }
+  if (!token || !authUser) {
+    adminLogout('missing token/authUser in admin apiFetch', '../login.html');
+    return;
+  }
 
   try {
     const ts = authUser.timestamp || 0;
-    if (!ts || Date.now() - ts > ADMIN_SESSION_MAX_AGE_MS) { adminLogout('session expired', '../login.html'); return; }
+    if (!ts || Date.now() - ts > ADMIN_SESSION_MAX_AGE_MS) {
+      adminLogout('admin session max age exceeded in apiFetch', '../login.html');
+      return;
+    }
     authUser.timestamp = Date.now();
     AdminStore.set(token, authUser);
-  } catch (e) { adminLogout('invalid authUser', '../login.html'); return; }
+  } catch (e) {
+    console.error('Failed to refresh authUser in apiFetch:', e);
+    adminLogout('invalid authUser JSON in apiFetch', '../login.html');
+    return;
+  }
 
-  const url = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? `${SERVER_URL}${endpoint}` : endpoint;
-  const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData;
+  const url =
+    window.location.hostname === 'localhost' ||
+    window.location.hostname === '127.0.0.1'
+      ? `${SERVER_URL}${endpoint}`
+      : endpoint;
+
+  const isFormData =
+    typeof FormData !== 'undefined' && options.body instanceof FormData;
 
   const headers = {
     ...options.headers,
@@ -177,69 +252,155 @@ async function apiFetch(endpoint, options = {}) {
 // Page init
 // ------------------------------
 document.addEventListener('DOMContentLoaded', () => {
-  if (!requireAuth('admin', '../login.html')) return;
+  const ok = requireAuth('admin', '../login.html');
+  if (!ok) return;
 
   setupSidebarAndSession();
   initializeForm();
 });
 
-function formatDate(dateString) {
-  if (!dateString) return '';
-  const date = new Date(dateString);
-  if (isNaN(date.getTime())) return dateString;
+// Format date safely preventing timezone shifts
+function formatDate(dateStr) {
+  if (!dateStr) return '';
+  const parts = dateStr.split('-');
+  if (parts.length !== 3) return dateStr;
+  const d = new Date(parts[0], parts[1] - 1, parts[2]);
   const options = { year: 'numeric', month: 'long', day: 'numeric' };
-  return date.toLocaleDateString('en-US', options);
+  return d.toLocaleDateString('en-US', options);
 }
 
+// Universal Native Date Picker Sync
+function setupDatePickerSync(dateInputId, displayInputId) {
+  const dateInput = document.getElementById(dateInputId);
+  const displayInput = document.getElementById(displayInputId);
+
+  if (!dateInput || !displayInput) return;
+
+  const updateDisplay = function () {
+    if (dateInput.value) {
+      displayInput.value = formatDate(dateInput.value);
+    } else {
+      displayInput.value = '';
+    }
+  };
+
+  dateInput.addEventListener('input', updateDisplay);
+  dateInput.addEventListener('change', updateDisplay);
+}
+
+// ------------------------------
+// Sidebar + session handling
+// ------------------------------
 function setupSidebarAndSession() {
   const menuToggle = document.getElementById('menuToggle');
   const sidebar = document.querySelector('.sidebar');
   const logoutBtn = document.getElementById('logoutBtn');
 
+  try {
+    const authUser = AdminStore.getAuthUser();
+    const ts = authUser?.timestamp || 0;
+    if (!authUser || !ts || Date.now() - ts > ADMIN_SESSION_MAX_AGE_MS) {
+      adminLogout('admin session max age exceeded in setupSidebarAndSession', '../login.html');
+      return;
+    }
+  } catch (e) {
+    adminLogout('invalid authUser JSON in setupSidebarAndSession', '../login.html');
+    return;
+  }
+
   const adminNameEl = document.getElementById('adminFullName');
   if (adminNameEl) {
     const authUser = AdminStore.getAuthUser();
-    adminNameEl.textContent = authUser?.name ? authUser.name : 'Admin';
+    if (authUser?.name) {
+      adminNameEl.textContent = authUser.name;
+    } else {
+      adminNameEl.textContent = 'Admin';
+    }
   }
 
   if (menuToggle && sidebar) {
-    menuToggle.addEventListener('click', () => sidebar.classList.toggle('collapsed'));
+    menuToggle.addEventListener('click', () =>
+      sidebar.classList.toggle('collapsed')
+    );
   }
 
   if (logoutBtn) {
     logoutBtn.addEventListener('click', async () => {
       const token = getToken();
       try {
-        if (token) await fetch(`${getApiBase()}/api/logout`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } });
-      } catch (e) {} finally {
+        if (token) {
+          const logoutUrl = `${getApiBase()}/api/logout`;
+          await fetch(logoutUrl, {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+        }
+      } catch (e) {
+        console.error('Logout error:', e);
+      } finally {
         clearLocalAuth();
         localStorage.setItem(ADMIN_KEYS.logoutEvent, Date.now().toString());
         window.location.href = '../login.html';
       }
     });
   }
+
+  document.addEventListener('click', (e) => {
+    if (
+      window.innerWidth <= 768 &&
+      sidebar &&
+      menuToggle &&
+      !sidebar.contains(e.target) &&
+      !menuToggle.contains(e.target)
+    ) {
+      sidebar.classList.remove('collapsed');
+    }
+  });
+
+  if (sidebar) {
+    sidebar.addEventListener('transitionend', () => {
+      if (window.innerWidth <= 768 && sidebar.classList.contains('collapsed')) {
+        document.body.style.overflow = 'hidden';
+      } else {
+        document.body.style.overflow = 'auto';
+      }
+    });
+  }
 }
 
+// ------------------------------
+// Initialize form + UI
+// ------------------------------
 function initializeForm() {
-  // Checkboxes for main add form
-  const monthlyCheckbox = document.getElementById('monthly');
-  const combativeCheckbox = document.getElementById('combative');
+  const memberForm = document.getElementById('memberForm');
+
+  setupDOBDropdowns();
+
+  const today = new Date();
+  const joinDateInput = document.getElementById('joinDate');
+  const joinDateDisplay = document.getElementById('joinDateDisplay');
+
+  if (joinDateInput) joinDateInput.valueAsDate = today;
+  if (joinDateInput && joinDateDisplay) joinDateDisplay.value = formatDate(joinDateInput.value);
+
+  setupDatePickerSync('joinDate', 'joinDateDisplay');
+
+  // Membership type Radio toggles
+  const monthlyRadio = document.getElementById('monthlyRadio');
+  const combativeRadio = document.getElementById('combativeRadio');
   
-  if (monthlyCheckbox) {
-    monthlyCheckbox.addEventListener('change', function () {
-      document.getElementById('monthlyDetails').style.display = this.checked ? 'block' : 'none';
-    });
-  }
-  if (combativeCheckbox) {
-    combativeCheckbox.addEventListener('change', function () {
-      document.getElementById('combativeDetails').style.display = this.checked ? 'block' : 'none';
-    });
+  function toggleMembershipDetails() {
+    document.getElementById('monthlyDetails').style.display = monthlyRadio?.checked ? 'block' : 'none';
+    document.getElementById('combativeDetails').style.display = combativeRadio?.checked ? 'block' : 'none';
   }
 
-  // Bind submit button
-  const submitBtn = document.getElementById('submitBtn');
-  if (submitBtn) {
-    submitBtn.addEventListener('click', handleFormSubmit);
+  if (monthlyRadio) monthlyRadio.addEventListener('change', toggleMembershipDetails);
+  if (combativeRadio) combativeRadio.addEventListener('change', toggleMembershipDetails);
+
+  if (memberForm) {
+    memberForm.addEventListener('submit', handleFormSubmit);
   }
 
   setupFaceCapture();
@@ -247,84 +408,216 @@ function initializeForm() {
 }
 
 // ------------------------------
+// DOB Dropdowns Initialization Logic
+// ------------------------------
+function setupDOBDropdowns() {
+  const monthSelect = document.getElementById('birthMonth');
+  const daySelect = document.getElementById('birthDay');
+  const yearSelect = document.getElementById('birthYear');
+  const hiddenInput = document.getElementById('birthdate');
+
+  if (!monthSelect || !daySelect || !yearSelect || !hiddenInput) return;
+
+  const today = new Date();
+  const currentYear = today.getFullYear();
+  const currentMonth = today.getMonth(); // 0-11
+  const currentDay = today.getDate();
+
+  const months = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
+
+  // Populate Years
+  for (let y = currentYear; y >= 1900; y--) {
+    const opt = document.createElement('option');
+    opt.value = y;
+    opt.textContent = y;
+    yearSelect.appendChild(opt);
+  }
+
+  // Populate Months
+  months.forEach((m, index) => {
+    const opt = document.createElement('option');
+    opt.value = index + 1; // 1-12
+    opt.textContent = m;
+    monthSelect.appendChild(opt);
+  });
+
+  // PRE-POPULATE 31 DAYS
+  for (let d = 1; d <= 31; d++) {
+    const opt = document.createElement('option');
+    opt.value = d;
+    opt.textContent = d;
+    daySelect.appendChild(opt);
+  }
+
+  // Restrict days dynamically
+  function updateDays() {
+    const y = parseInt(yearSelect.value);
+    const m = parseInt(monthSelect.value);
+
+    if (!y || !m) return;
+
+    const daysInMonth = new Date(y, m, 0).getDate();
+    const selectedDay = parseInt(daySelect.value);
+
+    daySelect.innerHTML = '<option value="" disabled selected>Day</option>';
+
+    let maxDay = daysInMonth;
+    if (y === currentYear && m === currentMonth + 1) {
+        maxDay = Math.min(daysInMonth, currentDay);
+    }
+
+    for (let d = 1; d <= maxDay; d++) {
+      const opt = document.createElement('option');
+      opt.value = d;
+      opt.textContent = d;
+      daySelect.appendChild(opt);
+    }
+
+    if (selectedDay && selectedDay <= maxDay) {
+      daySelect.value = selectedDay;
+    } else {
+      daySelect.value = "";
+    }
+    
+    updateHiddenInput();
+  }
+
+  function updateMonths() {
+    const y = parseInt(yearSelect.value);
+    Array.from(monthSelect.options).forEach(opt => {
+      if (opt.value === "") return;
+      const monthVal = parseInt(opt.value);
+
+      if (y === currentYear && monthVal > currentMonth + 1) {
+        opt.disabled = true;
+        if (monthSelect.value == monthVal) monthSelect.value = ""; 
+      } else {
+        opt.disabled = false;
+      }
+    });
+  }
+
+  function updateHiddenInput() {
+    const y = yearSelect.value;
+    const m = monthSelect.value;
+    const d = daySelect.value;
+
+    if (y && m && d) {
+      const monthStr = m.padStart(2, '0');
+      const dayStr = d.padStart(2, '0');
+      hiddenInput.value = `${y}-${monthStr}-${dayStr}`;
+    } else {
+      hiddenInput.value = '';
+    }
+  }
+
+  yearSelect.addEventListener('change', () => {
+    updateMonths();
+    updateDays();
+  });
+  monthSelect.addEventListener('change', updateDays);
+  daySelect.addEventListener('change', updateHiddenInput);
+}
+
+// ------------------------------
 // Renewal modal
 // ------------------------------
 function setupRenewalModal() {
-  const renewBtn = document.getElementById('openRenewalModalBtn');
+  const renewBtn = document.getElementById('renewBtn');
   const modal = document.getElementById('renewalModal');
-  const closeBtn = document.getElementById('closeRenewalModal');
+  const closeBtn = document.getElementById('closeRenewalBtn');
   const searchBtn = document.getElementById('searchBtn');
-  const searchInput = document.getElementById('memberSearch');
-  const renewSubmitBtn = document.getElementById('renewSubmitBtn');
+  const renewalForm = document.getElementById('renewalForm');
+
+  const renewalCheckboxLabels = document.querySelectorAll('.renewal-checkbox');
+  renewalCheckboxLabels.forEach((label) => {
+    label.addEventListener('click', (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      const checkbox = label.querySelector('input[type="radio"], input[type="checkbox"]');
+      if (checkbox && e.target !== checkbox) {
+        checkbox.checked = true;
+        const event = new Event('change', { bubbles: true });
+        checkbox.dispatchEvent(event);
+      }
+    });
+  });
 
   if (renewBtn) {
     renewBtn.addEventListener('click', function (e) {
       e.preventDefault();
+      e.stopPropagation();
       if (modal) modal.style.display = 'flex';
       resetRenewalModal();
     });
   }
 
-  if (closeBtn) closeBtn.addEventListener('click', () => { if (modal) modal.style.display = 'none'; });
-  
+  if (closeBtn) {
+    closeBtn.addEventListener('click', () => {
+      if (modal) modal.style.display = 'none';
+    });
+  }
+
   if (modal) {
     modal.addEventListener('click', (e) => {
-      if (e.target === modal) modal.style.display = 'none';
+      if (e.target === modal) {
+        modal.style.display = 'none';
+      }
     });
   }
 
   if (searchBtn) searchBtn.addEventListener('click', searchMember);
+  const searchInput = document.getElementById('searchMember');
   if (searchInput) {
     searchInput.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') { e.preventDefault(); searchMember(); }
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        searchMember();
+      }
     });
   }
 
   const renewMonthly = document.getElementById('renewMonthly');
   const renewCombative = document.getElementById('renewCombative');
   
-  if (renewMonthly) {
-    renewMonthly.addEventListener('change', function () {
-      document.getElementById('renewMonthlyDetails').style.display = this.checked ? 'block' : 'none';
-      updateRenewalInfo();
-    });
-  }
-  if (renewCombative) {
-    renewCombative.addEventListener('change', function () {
-      document.getElementById('renewCombativeDetails').style.display = this.checked ? 'block' : 'none';
-      updateRenewalInfo();
-    });
+  function toggleRenewDetails() {
+    document.getElementById('renewMonthlyDetails').style.display = renewMonthly?.checked ? 'block' : 'none';
+    document.getElementById('renewCombativeDetails').style.display = renewCombative?.checked ? 'block' : 'none';
+    updateRenewalInfo();
   }
 
-  const renewStartDate = document.getElementById('renewStartDate');
+  if (renewMonthly) renewMonthly.addEventListener('change', toggleRenewDetails);
+  if (renewCombative) renewCombative.addEventListener('change', toggleRenewDetails);
+
+  const renewalDate = document.getElementById('renewalDate');
   const renewMonthlyDuration = document.getElementById('renewMonthlyDuration');
   const renewCombativeDuration = document.getElementById('renewCombativeDuration');
-  
-  if (renewStartDate) renewStartDate.addEventListener('change', updateRenewalInfo);
-  // Also listen to custom UI updates if your calendar script modifies the value programmatically
-  if (renewStartDate) {
-    const observer = new MutationObserver(updateRenewalInfo);
-    observer.observe(renewStartDate, { attributes: true, attributeFilter: ['value'] });
-  }
-
+  if (renewalDate) renewalDate.addEventListener('change', updateRenewalInfo);
   if (renewMonthlyDuration) renewMonthlyDuration.addEventListener('input', updateRenewalInfo);
   if (renewCombativeDuration) renewCombativeDuration.addEventListener('input', updateRenewalInfo);
 
-  if (renewSubmitBtn) {
-    renewSubmitBtn.addEventListener('click', handleRenewal);
+  if (renewalForm) {
+    renewalForm.addEventListener('submit', handleRenewal);
   }
 }
 
 function resetRenewalModal() {
-  const searchInput = document.getElementById('memberSearch');
+  const searchMemberInput = document.getElementById('searchMember');
   const searchResults = document.getElementById('searchResults');
-  const renewalFormSection = document.getElementById('renewalFormSection');
-  const renewForm = document.getElementById('renewForm');
+  const selectedMemberSection = document.getElementById('selectedMemberSection');
+  const renewalForm = document.getElementById('renewalForm');
 
-  if (searchInput) searchInput.value = '';
+  if (searchMemberInput) searchMemberInput.value = '';
   if (searchResults) searchResults.innerHTML = '';
-  if (renewalFormSection) renewalFormSection.style.display = 'none';
-  if (renewForm) renewForm.reset();
+  if (selectedMemberSection) selectedMemberSection.style.display = 'none';
+  if (renewalForm) renewalForm.reset();
+
+  const today = new Date();
+  const renewalDateInput = document.getElementById('renewalDate');
+  if (renewalDateInput) renewalDateInput.valueAsDate = today;
 
   document.getElementById('renewMonthlyDetails').style.display = 'none';
   document.getElementById('renewCombativeDetails').style.display = 'none';
@@ -333,7 +626,7 @@ function resetRenewalModal() {
 }
 
 async function searchMember() {
-  const query = document.getElementById('memberSearch')?.value.trim();
+  const query = document.getElementById('searchMember')?.value.trim();
   const resultsDiv = document.getElementById('searchResults');
 
   if (!query || query.length < 2) {
@@ -344,58 +637,81 @@ async function searchMember() {
   try {
     const result = await apiFetch(`/api/members/search?query=${encodeURIComponent(query)}`);
 
-    if (!result.success) throw new Error(result.error || 'Search failed');
+    if (!result.success) {
+      throw new Error(result.error || 'Search failed');
+    }
 
     if (result.data.length === 0) {
-      if (resultsDiv) resultsDiv.innerHTML = '<p class="no-results" style="color:#aaa; text-align:center;">No members found</p>';
+      if (resultsDiv) resultsDiv.innerHTML = '<p class="no-results">No members found</p>';
       return;
     }
 
     if (resultsDiv) {
-      resultsDiv.innerHTML = result.data.map(member => `
-        <div class="search-result-item" style="background:rgba(255,255,255,0.05); padding:15px; border-radius:8px; margin-bottom:10px; cursor:pointer; border:1px solid rgba(255,255,255,0.1);" onclick='selectMemberForRenewal(${JSON.stringify(member).replace(/'/g, '&apos;')})'>
-            <strong style="color:#B30000;">${member.memberId}</strong> - <span style="color:#fff;">${member.name}</span>
-            <br><small style="color:#aaa;">Status: ${member.status.toUpperCase()}</small>
+      resultsDiv.innerHTML = result.data
+        .map(
+          (member) => `
+        <div class="search-result-item" onclick='selectMemberForRenewal(${JSON.stringify(member).replace(/'/g, '&apos;')})'>
+          <div class="result-info">
+            <strong>${member.memberId}</strong> - ${member.name}
+            <br>
+            <small>Status: <span class="status-${member.status}">${member.status}</span></small>
+          </div>
         </div>
-      `).join('');
+      `
+        )
+        .join('');
     }
   } catch (error) {
     showMessage('Error searching members: ' + error.message, 'error');
   }
 }
 
-window.selectMemberForRenewal = function(member) {
+function selectMemberForRenewal(member) {
   selectedMember = member;
   document.getElementById('searchResults').innerHTML = '';
-  document.getElementById('renewalFormSection').style.display = 'block';
+  document.getElementById('selectedMemberSection').style.display = 'block';
 
-  document.getElementById('selectedMemberName').textContent = member.name;
-  document.getElementById('selectedMemberEmail').textContent = member.email || member.memberId;
+  const memberInfoCard = document.getElementById('memberInfoCard');
 
-  const currentMembershipsList = document.getElementById('currentMembershipsList');
+  let membershipHTML = '';
   if (member.memberships && member.memberships.length > 0) {
-    currentMembershipsList.innerHTML = member.memberships.map(m => {
+    membershipHTML = member.memberships
+      .map((m) => {
         const endDate = new Date(m.endDate);
         const isExpired = endDate < new Date();
-        const color = isExpired ? '#ff4d4d' : '#4caf50';
         return `
-        <div style="background: rgba(0,0,0,0.3); padding: 10px; border-left: 3px solid ${color}; margin-bottom: 8px; border-radius: 4px;">
-          <strong style="color:#fff; text-transform:uppercase;">${m.type}</strong> 
-          <span style="color:${color}; font-size: 0.85rem; margin-left:10px;">${isExpired ? 'EXPIRED' : 'ACTIVE'}</span><br>
-          <small style="color:#aaa;">Expires: ${formatDate(m.endDate)}</small>
-        </div>`;
-      }).join('');
+        <div class="membership-item ${isExpired ? 'expired' : m.status}">
+          <span class="membership-type">${m.type.toUpperCase()}</span>
+          <span class="membership-status">${m.status}</span>
+          <span class="membership-date">Expires: ${formatDate(m.endDate.split('T')[0])}</span>
+        </div>
+      `;
+      })
+      .join('');
   } else {
-    currentMembershipsList.innerHTML = '<p style="color:#aaa; font-style:italic;">No active memberships</p>';
+    membershipHTML = '<p class="no-membership">No active memberships</p>';
+  }
+
+  if (memberInfoCard) {
+    memberInfoCard.innerHTML = `
+      <h4><i class="fas fa-user-circle"></i> ${member.name}</h4>
+      <p><strong>Member ID:</strong> ${member.memberId}</p>
+      <p><strong>Status:</strong> <span class="status-badge status-${member.status}">${member.status}</span></p>
+      <div class="membership-list">
+        <strong>Current Memberships:</strong>
+        ${membershipHTML}
+      </div>
+    `;
   }
 }
 
 function updateRenewalInfo() {
   if (!selectedMember) return;
 
-  const dateVal = document.getElementById('renewStartDate')?.value;
-  const renewalDate = dateVal ? new Date(dateVal) : new Date();
-  
+  const renewalDateInput = document.getElementById('renewalDate');
+  if (!renewalDateInput?.value) return;
+
+  const renewalDate = new Date(renewalDateInput.value);
   const monthlyChecked = document.getElementById('renewMonthly').checked;
   const combativeChecked = document.getElementById('renewCombative').checked;
   const infoBox = document.getElementById('renewalInfoBox');
@@ -405,53 +721,64 @@ function updateRenewalInfo() {
     return;
   }
 
-  let infoHTML = '<strong style="color:#B30000;"><i class="fas fa-info-circle"></i> Renewal Summary:</strong><br><br>';
+  let infoHTML = '<strong><i class="fas fa-info-circle"></i> Renewal Summary:</strong><br><br>';
 
   if (monthlyChecked) {
     const duration = parseInt(document.getElementById('renewMonthlyDuration').value) || 1;
-    const currentMembership = selectedMember.memberships?.find(m => m.type === 'monthly');
+    const currentMembership = selectedMember.memberships?.find((m) => m.type === 'monthly');
     const endDate = calculateNewEndDate(renewalDate, currentMembership?.endDate, duration, 'monthly');
 
     infoHTML += `
-      <div style="margin-bottom:10px; color:#ddd; font-size:0.9rem;">
-        <strong style="color:#fff;">Monthly Gym:</strong><br>
-        • Start Date: ${formatDate(renewalDate)}<br>
-        • End Date: ${formatDate(endDate)}<br>
-        • Duration: ${duration} month(s)
-      </div>`;
+      <div class="info-item">
+        <strong>Monthly Membership:</strong><br>
+        <span class="detail-line">Start Date: ${formatDate(renewalDateInput.value)}</span><br>
+        <span class="detail-line">End Date: ${formatDate(endDate.toISOString().split('T')[0])}</span><br>
+        <span class="detail-line">Duration: ${duration} month(s)</span>
+      </div>
+    `;
   }
 
   if (combativeChecked) {
-    // New UI: Combative duration is in MONTHS (1 month = 12 sessions)
-    const durationMonths = parseInt(document.getElementById('renewCombativeDuration').value) || 1;
-    const sessions = durationMonths * 12;
-    const currentMembership = selectedMember.memberships?.find(m => m.type === 'combative');
-    const endDate = calculateNewEndDate(renewalDate, currentMembership?.endDate, durationMonths, 'combative');
+    const duration = parseInt(document.getElementById('renewCombativeDuration').value) || 1;
+    const currentMembership = selectedMember.memberships?.find((m) => m.type === 'combative');
+    const endDate = calculateNewEndDate(renewalDate, currentMembership?.endDate, duration, 'combative');
 
     infoHTML += `
-      <div style="color:#ddd; font-size:0.9rem;">
-        <strong style="color:#fff;">Combative Sports:</strong><br>
-        • Start Date: ${formatDate(renewalDate)}<br>
-        • End Date: ${formatDate(endDate)}<br>
-        • Duration: ${durationMonths} month(s)<br>
-        • Sessions Allowed: ${sessions}
-      </div>`;
+      <div class="info-item">
+        <strong>Combative Membership:</strong><br>
+        <span class="detail-line">Start Date: ${formatDate(renewalDateInput.value)}</span><br>
+        <span class="detail-line">End Date: ${formatDate(endDate.toISOString().split('T')[0])}</span><br>
+        <span class="detail-line">Duration: ${duration} month(s)</span><br>
+        <span class="detail-line">Sessions: ${duration * 12}</span>
+      </div>
+    `;
   }
 
   if (infoBox) {
     infoBox.innerHTML = infoHTML;
     infoBox.style.display = 'block';
-    infoBox.style.background = 'rgba(179, 0, 0, 0.1)';
-    infoBox.style.padding = '15px';
-    infoBox.style.borderRadius = '8px';
-    infoBox.style.border = '1px solid rgba(179, 0, 0, 0.3)';
-    infoBox.style.marginTop = '15px';
   }
 }
 
-function calculateNewEndDate(renewalDate, currentEndDateStr, durationMonths, membershipType) {
+function calculateNewEndDate(
+  renewalDate,
+  currentEndDateStr,
+  durationMonths,
+  membershipType
+) {
   const renewal = new Date(renewalDate);
   const currentEnd = currentEndDateStr ? new Date(currentEndDateStr) : null;
+
+  if (membershipType === 'combative' && currentEnd) {
+    const twoMonthsAgo = new Date(renewal);
+    twoMonthsAgo.setMonth(twoMonthsAgo.getMonth() - 2);
+
+    if (currentEnd < twoMonthsAgo) {
+      const newEnd = new Date(renewal);
+      newEnd.setMonth(newEnd.getMonth() + durationMonths);
+      return newEnd;
+    }
+  }
 
   if (currentEnd && renewal < currentEnd) {
     const newEnd = new Date(currentEnd);
@@ -476,11 +803,11 @@ async function handleRenewal(e) {
   const combativeChecked = document.getElementById('renewCombative').checked;
 
   if (!monthlyChecked && !combativeChecked) {
-    showMessage('Please select at least one membership type to renew', 'error');
+    showMessage('Please select a membership type to renew', 'error');
     return;
   }
 
-  const submitBtn = document.getElementById('renewSubmitBtn');
+  const submitBtn = e.target.querySelector('button[type="submit"]');
   const originalText = submitBtn?.innerHTML;
   if (submitBtn) {
     submitBtn.disabled = true;
@@ -488,21 +815,31 @@ async function handleRenewal(e) {
   }
 
   try {
-    const dateVal = document.getElementById('renewStartDate').value;
-    const renewalDate = dateVal ? new Date(dateVal) : new Date();
+    const renewalDate = new Date(document.getElementById('renewalDate').value);
     const updatedMemberships = [];
 
     if (selectedMember.memberships) {
       selectedMember.memberships.forEach((m) => {
-        if (m.type === 'monthly' && !monthlyChecked) updatedMemberships.push(m);
-        else if (m.type === 'combative' && !combativeChecked) updatedMemberships.push(m);
+        if (m.type === 'monthly' && !monthlyChecked) {
+          updatedMemberships.push(m);
+        } else if (m.type === 'combative' && !combativeChecked) {
+          updatedMemberships.push(m);
+        }
       });
     }
 
     if (monthlyChecked) {
-      const duration = parseInt(document.getElementById('renewMonthlyDuration').value) || 1;
-      const currentMembership = selectedMember.memberships?.find(m => m.type === 'monthly');
-      const endDate = calculateNewEndDate(renewalDate, currentMembership?.endDate, duration, 'monthly');
+      const duration =
+        parseInt(document.getElementById('renewMonthlyDuration').value) || 1;
+      const currentMembership = selectedMember.memberships?.find(
+        (m) => m.type === 'monthly'
+      );
+      const endDate = calculateNewEndDate(
+        renewalDate,
+        currentMembership?.endDate,
+        duration,
+        'monthly'
+      );
 
       updatedMemberships.push({
         type: 'monthly',
@@ -514,23 +851,21 @@ async function handleRenewal(e) {
     }
 
     if (combativeChecked) {
-      const durationMonths = parseInt(document.getElementById('renewCombativeDuration').value) || 1;
-      const sessions = durationMonths * 12; // 1 month = 12 sessions
-      const currentMembership = selectedMember.memberships?.find(m => m.type === 'combative');
-      const endDate = calculateNewEndDate(renewalDate, currentMembership?.endDate, durationMonths, 'combative');
+      const duration = parseInt(document.getElementById('renewCombativeDuration').value) || 1;
+      const currentMembership = selectedMember.memberships?.find((m) => m.type === 'combative');
+      const endDate = calculateNewEndDate(renewalDate, currentMembership?.endDate, duration, 'combative');
 
       updatedMemberships.push({
         type: 'combative',
-        duration: durationMonths, // passing the duration to backend
-        remainingSessions: sessions, // Explicitly pass sessions
+        duration: duration, 
+        remainingSessions: duration * 12,
         startDate: renewalDate.toISOString(),
         endDate: endDate.toISOString(),
         status: 'active',
       });
     }
 
-    // POINTING TO THE NEW /RENEW ENDPOINT
-    const result = await apiFetch(`/api/members/${selectedMember._id}/renew`, {
+    const result = await apiFetch(`/api/members/${selectedMember._id}`, {
       method: 'PUT',
       body: JSON.stringify({
         memberships: updatedMemberships,
@@ -562,7 +897,7 @@ async function handleRenewal(e) {
 // ------------------------------
 async function handleFormSubmit(e) {
   e.preventDefault();
-  const btn = document.getElementById('submitBtn');
+  const btn = e.target.querySelector('button[type="submit"]');
   const originalText = btn?.textContent;
 
   if (btn) {
@@ -571,39 +906,40 @@ async function handleFormSubmit(e) {
   }
 
   const memberships = [];
-  if (document.getElementById('monthly').checked) {
+  if (document.getElementById('monthlyRadio').checked) {
     memberships.push({
       type: 'monthly',
-      duration: parseInt(document.getElementById('monthlyDuration').value) || 1,
+      duration: parseInt(document.getElementById('monthlyDuration').value),
     });
-  }
-  if (document.getElementById('combative').checked) {
-    const durationMonths = parseInt(document.getElementById('combativeDuration').value) || 1;
+  } else if (document.getElementById('combativeRadio').checked) {
     memberships.push({
       type: 'combative',
-      duration: durationMonths,
-      // The backend will handle the 1 month = 12 sessions conversion if configured,
-      // but you can also pass remainingSessions directly if your backend schema allows it.
-      remainingSessions: durationMonths * 12
+      duration: parseInt(document.getElementById('combativeDuration').value),
     });
   }
 
   if (memberships.length === 0) {
-    showMessage('Please select at least one membership type', 'error');
-    if (btn) { btn.disabled = false; btn.textContent = originalText; }
+    showMessage('Please select a membership type', 'error');
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = originalText;
+    }
     return;
   }
 
-  // Handle custom date fields or fallback to current date
-  const dobVal = document.getElementById('dob').value;
-  const joinDateVal = document.getElementById('startDate').value;
-
   const formData = new FormData();
-  formData.append('name', document.getElementById('name').value.trim());
-  formData.append('birthdate', dobVal || new Date().toISOString());
-  formData.append('joinDate', joinDateVal || new Date().toISOString());
+  formData.append('name', document.getElementById('memberName').value.trim());
+  formData.append('birthdate', document.getElementById('birthdate').value);
+  formData.append('gender', document.getElementById('gender').value);
+  formData.append('joinDate', document.getElementById('joinDate').value);
+  formData.append('address', document.getElementById('address')?.value.trim() || '');
   formData.append('phone', document.getElementById('phone').value.trim() || '');
   formData.append('email', document.getElementById('email').value.trim() || '');
+  
+  formData.append('emergencyName', document.getElementById('emergencyName')?.value.trim() || '');
+  formData.append('emergencyPhone', document.getElementById('emergencyPhone')?.value.trim() || '');
+  formData.append('emergencyRelation', document.getElementById('emergencyRelation')?.value.trim() || '');
+
   formData.append('faceEnrolled', faceSuccessfullyCaptured ? 'yes' : 'no');
   formData.append('memberships', JSON.stringify(memberships));
 
@@ -622,20 +958,34 @@ async function handleFormSubmit(e) {
     if (result.success) {
       showMessage('Member added successfully!', 'success');
       setTimeout(() => {
-        document.getElementById('addMemberForm').reset();
+        const form = document.getElementById('memberForm');
+        if (form) {
+          const formElements = form.querySelectorAll('input, select, textarea');
+          formElements.forEach(element => {
+            const key = `${window.location.pathname}-${element.id || element.name}`;
+            sessionStorage.removeItem(key);
+          });
+        }
+        
+        document.getElementById('memberForm').reset();
+
+        const today = new Date();
+        document.getElementById('joinDate').valueAsDate = today;
+        document.getElementById('joinDateDisplay').value = formatDate(today.toISOString().split('T')[0]);
+        document.getElementById('birthdateDisplay').value = '';
+
         document.getElementById('monthlyDetails').style.display = 'none';
         document.getElementById('combativeDetails').style.display = 'none';
-        
-        const faceStatus = document.getElementById('faceStatus');
-        if(faceStatus) faceStatus.textContent = 'No face data registered';
-        
+        document.getElementById('faceStatus').textContent = '';
         faceSuccessfullyCaptured = false;
         faceImageBlobs = [];
+        document.getElementById('message').className = 'message hidden';
       }, 2000);
     } else {
       throw new Error(result.error || 'Failed to add member');
     }
   } catch (error) {
+    console.error('Add member error:', error);
     showMessage('Network error: ' + error.message, 'error');
   } finally {
     if (btn) {
@@ -649,13 +999,13 @@ async function handleFormSubmit(e) {
 // Face capture
 // ------------------------------
 function setupFaceCapture() {
-  const openBtn = document.getElementById('openFacePane');
-  const closeBtn = document.getElementById('closeFacePane');
-  const captureBtn = document.getElementById('captureBtn');
+  const openBtn = document.getElementById('openFacePaneBtn');
+  const closeBtn = document.getElementById('closeFacePaneBtn');
+  const captureBtn = document.getElementById('captureFaceBtn');
   const confirmBtn = document.getElementById('confirmFaceBtn');
   const facePane = document.getElementById('facePane');
-  const video = document.getElementById('video');
-  const canvas = document.getElementById('canvas');
+  const video = document.getElementById('camera');
+  const canvas = document.getElementById('snapshot');
   const faceStatus = document.getElementById('faceStatus');
   const resultMsg = document.getElementById('faceResultMsg');
 
@@ -665,21 +1015,30 @@ function setupFaceCapture() {
     openBtn.addEventListener('click', async () => {
       try {
         stream = await navigator.mediaDevices.getUserMedia({ video: true });
-        if (video) { video.srcObject = stream; video.style.display = 'block'; }
+        if (video) {
+          video.srcObject = stream;
+          video.style.display = 'block';
+        }
         if (canvas) canvas.style.display = 'none';
         if (facePane) facePane.style.display = 'flex';
         if (confirmBtn) confirmBtn.disabled = true;
         if (resultMsg) resultMsg.textContent = '';
-        faceImageBlobs = [];
-        if (captureBtn) captureBtn.disabled = false;
-      } catch (err) { alert('Camera access denied or unavailable'); }
+        faceImageBlobs = []; // Reset on open
+        captureBtn.disabled = false;
+      } catch (err) {
+        alert('Camera access denied or unavailable');
+      }
     });
   }
 
   if (closeBtn) {
     closeBtn.addEventListener('click', () => {
-      if (stream) stream.getTracks().forEach((track) => track.stop());
+      if (stream) {
+        stream.getTracks().forEach((track) => track.stop());
+      }
       if (facePane) facePane.style.display = 'none';
+      if (video) video.style.display = 'block';
+      if (canvas) canvas.style.display = 'none';
     });
   }
 
@@ -703,6 +1062,7 @@ function setupFaceCapture() {
           }
         }, 'image/jpeg');
       }
+
       if (video) video.style.display = 'none';
       if (canvas) canvas.style.display = 'block';
     });
@@ -714,10 +1074,14 @@ function setupFaceCapture() {
         faceSuccessfullyCaptured = true;
         if (faceStatus) {
           faceStatus.textContent = '✓ 3 Faces Captured';
-          faceStatus.style.color = '#4caf50';
+          faceStatus.className = 'fp-status-message success';
         }
-        if (stream) stream.getTracks().forEach((track) => track.stop());
+
+        if (stream) {
+          stream.getTracks().forEach((track) => track.stop());
+        }
         if (facePane) facePane.style.display = 'none';
+        if (resultMsg) resultMsg.textContent = '';
       }
     });
   }
@@ -730,24 +1094,9 @@ function showMessage(text, type) {
   const messageDiv = document.getElementById('message');
   if (messageDiv) {
     messageDiv.textContent = text;
-    messageDiv.style.display = 'block';
-    messageDiv.style.padding = '15px';
-    messageDiv.style.borderRadius = '5px';
-    messageDiv.style.marginBottom = '20px';
-    messageDiv.style.textAlign = 'center';
-    
-    if (type === 'success') {
-      messageDiv.style.backgroundColor = 'rgba(76, 175, 80, 0.1)';
-      messageDiv.style.border = '1px solid #4caf50';
-      messageDiv.style.color = '#4caf50';
-    } else {
-      messageDiv.style.backgroundColor = 'rgba(244, 67, 54, 0.1)';
-      messageDiv.style.border = '1px solid #f44336';
-      messageDiv.style.color = '#f44336';
-    }
-
-    setTimeout(() => { messageDiv.style.display = 'none'; }, 5000);
-  } else {
-    alert(text);
+    messageDiv.className = `message ${type}`;
+    setTimeout(() => {
+      messageDiv.className = 'message hidden';
+    }, 5000);
   }
 }
