@@ -506,3 +506,86 @@ select:focus {
     input[type="text"], input[type="number"], input[type="date"], select { padding: 0.8rem 1rem; }
     .member-list td:nth-child(4), .member-list th:nth-child(4), .member-list td:nth-child(5), .member-list th:nth-child(5) { display: none; }
 }
+
+/* ========================================
+   VIEW DETAILS MODAL & BUTTON
+   ======================================== */
+.view-button {
+    background: transparent;
+    border: 2px solid #888;
+    color: #ccc;
+    padding: 0.8rem 1.2rem;
+    border-radius: var(--radius, 4px);
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    min-width: 80px;
+    white-space: nowrap;
+}
+
+.view-button:hover {
+    background: #888;
+    color: #fff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(136, 136, 136, 0.4);
+}
+
+.details-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-top: 1rem;
+}
+
+.detail-group {
+    background: rgba(0, 0, 0, 0.3);
+    padding: 1.2rem;
+    border-radius: 8px;
+    border-left: 4px solid #ff3333;
+}
+
+.detail-group.full-width {
+    grid-column: 1 / -1;
+}
+
+.detail-group.warning-accent {
+    border-left-color: #ffbe18;
+}
+
+.detail-group h4 {
+    color: #aaa;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    margin-bottom: 0.4rem;
+    letter-spacing: 0.5px;
+    margin-top: 0;
+}
+
+.detail-group p {
+    color: #fff;
+    font-size: 1.05rem;
+    font-weight: 500;
+    margin: 0;
+    word-break: break-word;
+}
+
+@media (max-width: 600px) {
+    .details-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+#joinDateDisplay,
+#renewalDateDisplay,
+.edit-start-date-display {
+    flex: 1;
+    cursor: default;
+    background: #000305;
+    color: #ffffff;
+    padding: 10px 40px 10px 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+}

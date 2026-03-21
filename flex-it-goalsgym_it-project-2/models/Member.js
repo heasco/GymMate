@@ -7,6 +7,9 @@ const membershipSchema = new mongoose.Schema({
     enum: ['monthly', 'combative', 'student', 'dropsin'],
     required: true
   },
+  duration: {
+    type: Number 
+  },
   startDate: {
     type: Date,
     required: true
@@ -53,13 +56,12 @@ const memberSchema = new mongoose.Schema({
   },
   email: {
     type: String,
-    unique: true,
-    sparse: true, // Prevents conflicts if email is left empty
+    // REMOVED: unique: true and sparse: true
     lowercase: true,
     trim: true
   },
   phone: {
-    type: String // Optional
+    type: String 
   },
   dob: {
     type: Date,
@@ -71,16 +73,16 @@ const memberSchema = new mongoose.Schema({
     required: true
   },
   address: {
-    type: String // Optional
+    type: String 
   },
   emergencyContact: {
-    name: { type: String }, // Optional
-    phone: { type: String }, // Optional
-    relation: { type: String } // Optional
+    name: { type: String }, 
+    phone: { type: String }, 
+    relation: { type: String } 
   },
   joinDate: { 
     type: Date, 
-    default: Date.now // Ensures the joinDate sent by frontend is saved
+    default: Date.now 
   },
   memberships: [membershipSchema],
   faceEnrolled: {
@@ -106,7 +108,7 @@ const memberSchema = new mongoose.Schema({
 // Create compound index for active memberships
 memberSchema.index({ 'memberships.status': 1, 'memberships.endDate': 1 });
 
-// Auto-generate memberId before validating so it satisfies `required: true`
+// Auto-generate memberId before validating
 memberSchema.pre('validate', async function (next) {
   if (!this.isNew || this.memberId) return next();
   try {

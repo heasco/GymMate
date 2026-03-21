@@ -257,6 +257,7 @@ const tabActive = document.getElementById('tabActive');
 const tabInactive = document.getElementById('tabInactive');
 const memberListSection = document.getElementById('memberListSection');
 const inactiveListSection = document.getElementById('inactiveListSection');
+const editMemberSection = document.getElementById('editMemberSection'); // FIX: Added reference
 
 if (tabActive) {
   tabActive.addEventListener('click', () => {
@@ -264,15 +265,18 @@ if (tabActive) {
     if (tabInactive) tabInactive.classList.remove('active');
     if (memberListSection) memberListSection.classList.add('active');
     if (inactiveListSection) inactiveListSection.classList.remove('active');
+    if (editMemberSection) editMemberSection.classList.remove('active'); // FIX: Hide edit form
     loadMembersStrict('active'); 
   });
 }
+
 if (tabInactive) {
   tabInactive.addEventListener('click', async () => {
     tabInactive.classList.add('active');
     if (tabActive) tabActive.classList.remove('active');
     if (inactiveListSection) inactiveListSection.classList.add('active');
     if (memberListSection) memberListSection.classList.remove('active');
+    if (editMemberSection) editMemberSection.classList.remove('active'); // FIX: Hide edit form
     await loadMembersStrict('inactive'); 
   });
 }
@@ -533,8 +537,11 @@ function displayMembersActive(members) {
       <td>${membershipsText}</td>
       <td>${member.status}</td>
       <td>
-        <button class="action-button" onclick="editMemberById('${member.memberId}')">Edit</button>
-        <button class="archive-button" onclick="confirmArchive('${member.memberId}')">Archive</button>
+        <div class="action-buttons">
+          <button class="view-button" onclick="openViewDetailsModal('${member.memberId}')">View</button>
+          <button class="action-button" onclick="editMemberById('${member.memberId}')">Edit</button>
+          <button class="archive-button" onclick="confirmArchive('${member.memberId}')">Archive</button>
+        </div>
       </td>
     `;
     memberListBody.appendChild(row);
@@ -605,7 +612,10 @@ function displayMembersInactive(members) {
       <td>${membershipsText}</td>
       <td>${member.status}</td>
       <td>
-        <button class="action-button" onclick="openRenewalModal('${member.memberId}')">Activate</button>
+        <div class="action-buttons">
+          <button class="view-button" onclick="openViewDetailsModal('${member.memberId}')">View</button>
+          <button class="action-button" onclick="openRenewalModal('${member.memberId}')">Activate</button>
+        </div>
       </td>
     `;
     tbody.appendChild(row);
@@ -619,6 +629,72 @@ function displayMembersInactive(members) {
 // ------------------------------
 // Modals & Action Flows
 // ------------------------------
+
+function openViewDetailsModal(memberId) {
+    const member = allMembersMap.get(memberId);
+    if (!member) return;
+
+    const modal = document.getElementById('viewDetailsModal');
+    const body = document.getElementById('viewDetailsBody');
+
+    // Format dates safely
+    const dob = member.dob ? new Date(member.dob).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : 'N/A';
+    const joinDate = member.joinDate ? new Date(member.joinDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : 'N/A';
+
+    // Safely handle emergency contact
+    const ec = member.emergencyContact || {};
+    const ecName = ec.name || 'Not provided';
+    const ecPhone = ec.phone || 'Not provided';
+    const ecRel = ec.relation || 'Not provided';
+
+    body.innerHTML = `
+        <div class="details-grid">
+            <div class="detail-group">
+                <h4>Full Name</h4>
+                <p>${member.name}</p>
+            </div>
+            <div class="detail-group">
+                <h4>Member ID</h4>
+                <p>${member.memberId}</p>
+            </div>
+            <div class="detail-group">
+                <h4>Email</h4>
+                <p>${member.email || 'Not provided'}</p>
+            </div>
+            <div class="detail-group">
+                <h4>Phone</h4>
+                <p>${member.phone || 'Not provided'}</p>
+            </div>
+            <div class="detail-group">
+                <h4>Gender</h4>
+                <p>${member.gender || 'Not specified'}</p>
+            </div>
+            <div class="detail-group">
+                <h4>Date of Birth</h4>
+                <p>${dob}</p>
+            </div>
+            <div class="detail-group full-width">
+                <h4>Address</h4>
+                <p>${member.address || 'Not provided'}</p>
+            </div>
+            <div class="detail-group full-width warning-accent">
+                <h4 style="color: #ffbe18;">Emergency Contact</h4>
+                <p>${ecName} (${ecRel}) <br> <span style="color: #ccc; font-size: 0.95rem;">${ecPhone}</span></p>
+            </div>
+            <div class="detail-group">
+                <h4>Join Date</h4>
+                <p>${joinDate}</p>
+            </div>
+            <div class="detail-group">
+                <h4>Face Enrolled</h4>
+                <p>${member.faceEnrolled ? '<span class="status-active">Yes</span>' : '<span class="status-inactive">No</span>'}</p>
+            </div>
+        </div>
+    `;
+
+    modal.style.display = 'flex';
+}
+
 function setupModals() {
     const archiveModal = document.getElementById('archiveConfirmModal');
     const closeArchiveBtn = document.getElementById('closeArchiveModalBtn');
@@ -638,12 +714,17 @@ function setupModals() {
 
     const renewalModal = document.getElementById('renewalModal');
     const closeRenewalBtn = document.getElementById('closeRenewalBtn');
-    
     if(closeRenewalBtn) closeRenewalBtn.addEventListener('click', () => renewalModal.style.display = 'none');
+
+    // NEW: View Details Modal
+    const viewDetailsModal = document.getElementById('viewDetailsModal');
+    const closeViewDetailsBtn = document.getElementById('closeViewDetailsBtn');
+    if(closeViewDetailsBtn) closeViewDetailsBtn.addEventListener('click', () => viewDetailsModal.style.display = 'none');
 
     window.addEventListener('click', (e) => {
         if (e.target === archiveModal) archiveModal.style.display = 'none';
         if (e.target === renewalModal) renewalModal.style.display = 'none';
+        if (e.target === viewDetailsModal) viewDetailsModal.style.display = 'none';
     });
 }
 
@@ -847,7 +928,7 @@ function calculateNewEndDate(renewalDate, currentEndDateStr, durationMonths, mem
     return newEnd;
   }
 }
-
+//Renews membership / activate archived member
 async function handleRenewal(e) {
   e.preventDefault();
 
@@ -872,7 +953,7 @@ async function handleRenewal(e) {
     const renewalDate = new Date(document.getElementById('renewalDate').value);
     const updatedMemberships = [];
 
-    // Keep non-selected existing memberships
+    // Keep non-selected existing memberships so we don't accidentally delete them
     if (selectedMemberForRenewal.memberships) {
       selectedMemberForRenewal.memberships.forEach((m) => {
         if (m.type === 'monthly' && !monthlyChecked) {
@@ -898,22 +979,22 @@ async function handleRenewal(e) {
     }
 
     if (combativeChecked) {
-      const sessions = parseInt(document.getElementById('renewCombativeSessions').value) || 12;
+      const duration = parseInt(document.getElementById('renewCombativeDuration').value) || 1;
       const currentMembership = selectedMemberForRenewal.memberships?.find(m => m.type === 'combative');
-      const endDate = calculateNewEndDate(renewalDate, currentMembership?.endDate, 1, 'combative');
+      const endDate = calculateNewEndDate(renewalDate, currentMembership?.endDate, duration, 'combative');
 
       updatedMemberships.push({
         type: 'combative',
-        duration: sessions,
-        remainingSessions: sessions,
+        duration: duration,
+        remainingSessions: duration * 12,
         startDate: renewalDate.toISOString(),
         endDate: endDate.toISOString(),
         status: 'active',
       });
     }
 
-    // Call the same update endpoint used in add-member
-    const result = await apiFetch(`/api/members/${selectedMemberForRenewal._id}`, {
+    // Call the renew endpoint
+    const result = await apiFetch(`/api/members/${selectedMemberForRenewal._id}/renew`, {
       method: 'PUT',
       body: JSON.stringify({
         memberships: updatedMemberships,
@@ -930,7 +1011,7 @@ async function handleRenewal(e) {
       }
       
       document.getElementById('renewalModal').style.display = 'none';
-      await loadMembersStrict('inactive'); // Refresh list
+      await loadMembersStrict('inactive'); // Refresh list to show they moved
     } else {
       throw new Error(result.error || 'Failed to renew membership');
     }
@@ -948,7 +1029,6 @@ async function handleRenewal(e) {
     }
   }
 }
-
 // ------------------------------
 // Edit member flow (UPDATED)
 // ------------------------------
@@ -963,8 +1043,10 @@ function editMemberById(memberId) {
 
     document.getElementById('edit_member_id').value = member.memberId;
     document.getElementById('edit_name').value = member.name;
-    document.getElementById('edit_phone').value = member.phone || '';
-    document.getElementById('edit_email').value = member.email || '';
+    
+    // Clean up placeholders like '-' from the database so they don't trigger backend 400 validation errors
+    document.getElementById('edit_phone').value = (member.phone && member.phone !== '-') ? member.phone : '';
+    document.getElementById('edit_email').value = (member.email && member.email !== '-') ? member.email : '';
 
     const membershipsContainer = document.getElementById('membershipsContainer');
     if (!membershipsContainer) return;
@@ -995,6 +1077,8 @@ function createActiveMembershipEditField(membership, index) {
   membershipDiv.dataset.originalIndex = index;
 
   const startDateValue = membership.startDate ? new Date(membership.startDate).toISOString().split('T')[0] : '';
+  const startDateDisplayValue = startDateValue ? formatDate(startDateValue) : ''; // Format for the dummy text box
+  const durationValue = membership.duration || 1; // Default to existing duration or 1
 
   membershipDiv.innerHTML = `
     <h4>Editing Active Membership (${membership.type.toUpperCase()})</h4>
@@ -1008,12 +1092,79 @@ function createActiveMembershipEditField(membership, index) {
     </div>
 
     <div class="form-group">
-      <label for="membership_start_date_${index}">Start Date:</label>
-      <input type="date" id="membership_start_date_${index}" class="edit-start-date" value="${startDateValue}" required>
+      <label>Start Date:</label>
+      <div style="position: relative; display: flex; align-items: center; width: 100%; border-radius: 4px;">
+        <input type="text" id="membership_start_date_display_${index}" value="${startDateDisplayValue}" readonly placeholder="Select start date" required
+               style="width: 100%; background: #000305; color: #ffffff; padding: 1rem 3rem 1rem 1.2rem; border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 4px; font-family: 'Poppins', sans-serif; font-size: 1rem; box-sizing: border-box; cursor: pointer;"
+               onclick="try { document.getElementById('membership_start_date_${index}').showPicker(); } catch(e) {}">
+               
+        <i class="fas fa-calendar-alt" style="position: absolute; right: 1.2rem; color: #ebebeb; z-index: 5; font-size: 1.1rem; pointer-events: none;"></i>
+        
+        <input type="date" id="membership_start_date_${index}" class="edit-start-date" value="${startDateValue}" required
+               style="position: absolute; left: 0; top: 0; width: 100%; height: 100%; opacity: 0; z-index: 10; cursor: pointer; box-sizing: border-box; margin: 0; padding: 0;"
+               onclick="try { this.showPicker(); } catch(e) {}">
+      </div>
     </div>
+
+    <div class="form-group">
+      <label for="membership_duration_${index}">Duration (months):</label>
+      <input type="number" id="membership_duration_${index}" class="edit-duration" value="${durationValue}" min="1" required>
+    </div>
+
+    <div class="form-group" style="background: rgba(255, 51, 51, 0.1); padding: 12px; border-left: 3px solid #ff3333; border-radius: 4px; margin-top: 15px;">
+      <strong style="color: #ccc;"><i class="fas fa-calendar-check"></i> Expected End Date: </strong> 
+      <span id="membership_end_date_display_${index}" style="color: #fff; font-weight: bold; font-size: 1.05rem;"></span>
+    </div>
+
      <input type="hidden" id="original_type_${index}" value="${membership.type}">
   `;
   membershipsContainer.appendChild(membershipDiv);
+
+  const typeSelect = membershipDiv.querySelector('.edit-type-select');
+  const startDateInput = membershipDiv.querySelector('.edit-start-date');
+  const displayInput = membershipDiv.querySelector(`#membership_start_date_display_${index}`);
+  const durationInput = membershipDiv.querySelector('.edit-duration');
+  const endDateDisplay = membershipDiv.querySelector(`#membership_end_date_display_${index}`);
+
+  // --- Expected End Date Math ---
+  function updateEndDate() {
+     const start = new Date(startDateInput.value);
+     if (isNaN(start.getTime())) {
+         endDateDisplay.textContent = 'Invalid Date';
+         return;
+     }
+     const dur = parseInt(durationInput.value) || 1;
+     
+     // Add duration (months) to start date
+     const end = new Date(start);
+     end.setMonth(end.getMonth() + dur);
+     
+     endDateDisplay.textContent = end.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+  }
+
+  // Update text box and End Date whenever calendar selection changes
+  startDateInput.addEventListener('change', () => {
+      if (startDateInput.value) {
+          displayInput.value = formatDate(startDateInput.value);
+      } else {
+          displayInput.value = '';
+      }
+      updateEndDate(); // Triggers Expected End Date instantly
+  });
+
+  // Handle immediate input triggers for compatible browsers
+  startDateInput.addEventListener('input', () => {
+      if (startDateInput.value) {
+          displayInput.value = formatDate(startDateInput.value);
+          updateEndDate();
+      }
+  });
+
+  typeSelect.addEventListener('change', updateEndDate);
+  durationInput.addEventListener('input', updateEndDate);
+  
+  // Initial calculation on load
+  updateEndDate();
 }
 
 // ------------------------------
@@ -1025,7 +1176,6 @@ if (editForm) {
     e.preventDefault();
     
     const memberIdStr = document.getElementById('edit_member_id').value;
-    // Get original member object to ensure we don't lose inactive/expired memberships
     const originalMember = allMembersMap.get(memberIdStr);
     if(!originalMember) {
         alert("Error finding member data.");
@@ -1036,30 +1186,51 @@ if (editForm) {
     const phone = document.getElementById('edit_phone').value.trim();
     const email = document.getElementById('edit_email').value.trim().toLowerCase();
 
-    // Clone the original memberships array so we can modify it
-    let updatedMemberships = [...(originalMember.memberships || [])];
+    // Deep clone memberships to prevent mutating cached frontend data
+    let updatedMemberships = JSON.parse(JSON.stringify(originalMember.memberships || []));
+    let hasInvalidDate = false;
 
     // Iterate over the active edit fields within the container
     document.querySelectorAll('.active-edit-container').forEach((container) => {
       const index = parseInt(container.dataset.originalIndex);
       const newType = container.querySelector('.edit-type-select').value;
       const newStartDate = container.querySelector('.edit-start-date').value;
+      const newDuration = parseInt(container.querySelector('.edit-duration').value) || 1;
       const originalType = container.querySelector(`#original_type_${index}`).value;
 
-      if (updatedMemberships[index]) {
-          // Update basic fields
+      if (!newStartDate) {
+          hasInvalidDate = true;
+      }
+
+      if (updatedMemberships[index] && newStartDate) {
+          // Update fields
           updatedMemberships[index].type = newType;
           updatedMemberships[index].startDate = new Date(newStartDate).toISOString();
+          updatedMemberships[index].duration = newDuration;
 
-          // Business Rule: If changing FROM monthly TO combative, force 12 sessions.
+          // Calculate end date based on duration
+          const end = new Date(newStartDate);
+          end.setMonth(end.getMonth() + newDuration);
+          updatedMemberships[index].endDate = end.toISOString();
+
+          // Map sessions if switching from monthly to combative
           if (originalType === 'monthly' && newType === 'combative') {
-              updatedMemberships[index].duration = 12; // Standard sessions
-              updatedMemberships[index].remainingSessions = 12; // Reset remaining
+              updatedMemberships[index].remainingSessions = newDuration * 12;
+          } else if (newType === 'monthly') {
+              updatedMemberships[index].remainingSessions = 0;
           }
-          // Note: We don't need a rule for Combative -> Monthly based on current requirements. 
-          // It will just keep its existing 'duration' value (e.g. 1 month) if it had one, which is acceptable.
       }
     });
+
+    if (hasInvalidDate) {
+        const errorMessage = document.getElementById('errorMessage');
+        if (errorMessage) {
+            errorMessage.textContent = 'Please select a valid start date for all memberships.';
+            errorMessage.style.display = 'block';
+            setTimeout(() => (errorMessage.style.display = 'none'), 5000);
+        }
+        return;
+    }
 
     const updateData = { 
         name,
@@ -1072,15 +1243,22 @@ if (editForm) {
     const errorMessage = document.getElementById('errorMessage');
 
     try {
-      // Use Mongo ID for the API call
-      const result = await apiFetch(`/api/members/${originalMember._id}`, {
+      // Manual fetch call instead of apiFetch to accurately catch and display specific 400 validation errors
+      const token = AdminStore.getToken();
+      const response = await fetch(`${getApiBase()}/api/members/${originalMember._id}`, {
         method: 'PUT',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+        },
         body: JSON.stringify(updateData),
       });
 
-      if (result.success) {
+      const result = await response.json();
+
+      if (response.ok && result.success) {
         if (successMessage) {
-          successMessage.textContent = result.message;
+          successMessage.textContent = result.message || 'Member updated successfully!';
           successMessage.style.display = 'block';
           setTimeout(() => (successMessage.style.display = 'none'), 5000);
         }
@@ -1092,9 +1270,9 @@ if (editForm) {
     } catch (error) {
       console.error('Error updating member:', error);
       if (errorMessage) {
-        errorMessage.textContent = 'Network error: ' + error.message;
+        errorMessage.textContent = 'Validation Error: ' + error.message;
         errorMessage.style.display = 'block';
-        setTimeout(() => (errorMessage.style.display = 'none'), 5000);
+        setTimeout(() => (errorMessage.style.display = 'none'), 6000);
       }
     }
   });

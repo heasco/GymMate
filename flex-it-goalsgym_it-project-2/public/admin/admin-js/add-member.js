@@ -905,6 +905,28 @@ async function handleFormSubmit(e) {
     btn.textContent = 'Adding...';
   }
 
+  // --- DOB FIX: Calculate directly on submit bypassing form-persistence missing event triggers ---
+  const bYear = document.getElementById('birthYear').value;
+  const bMonth = document.getElementById('birthMonth').value;
+  const bDay = document.getElementById('birthDay').value;
+
+  if (!bYear || !bMonth || !bDay) {
+    showMessage('Please complete the Date of Birth', 'error');
+    if (btn) { btn.disabled = false; btn.textContent = originalText; }
+    return;
+  }
+  
+  // Format securely to YYYY-MM-DD
+  const dob = `${bYear}-${bMonth.padStart(2, '0')}-${bDay.padStart(2, '0')}`;
+
+  // --- GENDER FIX: Ensure gender is actually selected ---
+  const genderVal = document.getElementById('gender').value;
+  if (!genderVal) {
+    showMessage('Please select a gender', 'error');
+    if (btn) { btn.disabled = false; btn.textContent = originalText; }
+    return;
+  }
+
   const memberships = [];
   if (document.getElementById('monthlyRadio').checked) {
     memberships.push({
@@ -929,8 +951,8 @@ async function handleFormSubmit(e) {
 
   const formData = new FormData();
   formData.append('name', document.getElementById('memberName').value.trim());
-  formData.append('birthdate', document.getElementById('birthdate').value);
-  formData.append('gender', document.getElementById('gender').value);
+  formData.append('birthdate', dob); // Using the newly calculated string
+  formData.append('gender', genderVal);
   formData.append('joinDate', document.getElementById('joinDate').value);
   formData.append('address', document.getElementById('address')?.value.trim() || '');
   formData.append('phone', document.getElementById('phone').value.trim() || '');
@@ -957,30 +979,54 @@ async function handleFormSubmit(e) {
 
     if (result.success) {
       showMessage('Member added successfully!', 'success');
+      
       setTimeout(() => {
+        // --- FORM PERSISTENCE FIX: Target the library's actual storage keys ---
+        
+        // 1. Clear standard library tags directly
+        sessionStorage.removeItem('form#memberForm');
+        localStorage.removeItem('form#memberForm');
+
         const form = document.getElementById('memberForm');
         if (form) {
+          // 2. Bruteforce fallback covering all elements
           const formElements = form.querySelectorAll('input, select, textarea');
           formElements.forEach(element => {
-            const key = `${window.location.pathname}-${element.id || element.name}`;
-            sessionStorage.removeItem(key);
+            const idKey = element.id;
+            const nameKey = element.name;
+            const pathKey = `${window.location.pathname}-${idKey || nameKey}`;
+            
+            sessionStorage.removeItem(pathKey);
+            localStorage.removeItem(pathKey);
+            if(idKey) { sessionStorage.removeItem(idKey); localStorage.removeItem(idKey); }
+            if(nameKey) { sessionStorage.removeItem(nameKey); localStorage.removeItem(nameKey); }
           });
+          
+          form.reset();
         }
-        
-        document.getElementById('memberForm').reset();
 
+        // Reset all custom UI logic
         const today = new Date();
-        document.getElementById('joinDate').valueAsDate = today;
-        document.getElementById('joinDateDisplay').value = formatDate(today.toISOString().split('T')[0]);
-        document.getElementById('birthdateDisplay').value = '';
+        const joinDateInput = document.getElementById('joinDate');
+        if(joinDateInput) joinDateInput.valueAsDate = today;
+
+        const joinDateDisplay = document.getElementById('joinDateDisplay');
+        if(joinDateDisplay) joinDateDisplay.value = formatDate(today.toISOString().split('T')[0]);
+        
+        // Manually blank out the dropdowns just in case
+        document.getElementById('birthYear').value = "";
+        document.getElementById('birthMonth').value = "";
+        document.getElementById('birthDay').value = "";
 
         document.getElementById('monthlyDetails').style.display = 'none';
         document.getElementById('combativeDetails').style.display = 'none';
         document.getElementById('faceStatus').textContent = '';
         faceSuccessfullyCaptured = false;
         faceImageBlobs = [];
+        
         document.getElementById('message').className = 'message hidden';
       }, 2000);
+      
     } else {
       throw new Error(result.error || 'Failed to add member');
     }
@@ -994,6 +1040,7 @@ async function handleFormSubmit(e) {
     }
   }
 }
+
 
 // ------------------------------
 // Face capture

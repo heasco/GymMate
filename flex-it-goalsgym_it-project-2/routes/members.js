@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const asyncHandler = require('../middleware/asyncHandler');
 const { protect } = require('../middleware/auth'); 
 const Member = require('../models/Member');
-const MembershipHistory = require('../models/MembershipHistory'); // Retained History Archiving Model
+const MembershipHistory = require('../models/MembershipHistory'); 
 const transporter = require('../utils/nodemailer');
 const axios = require('axios');
 const FormData = require('form-data');
@@ -11,14 +11,12 @@ const multer = require('multer');
 const upload = multer();
 const router = express.Router();
 
-// Middleware for handling multiple image uploads
 const faceUploads = upload.fields([
   { name: 'faceImage1', maxCount: 1 },
   { name: 'faceImage2', maxCount: 1 },
   { name: 'faceImage3', maxCount: 1 },
 ]);
 
-// Get all members
 router.get('/', protect, asyncHandler(async (req, res) => {
   const { status } = req.query;
   const filter = {};
@@ -30,7 +28,6 @@ router.get('/', protect, asyncHandler(async (req, res) => {
   res.json({ success: true, count: members.length, data: members });
 }));
 
-// Search members
 router.get('/search', asyncHandler(async (req, res) => {
   const { query, type } = req.query;
   if (!query || query.trim().length < 2) {
@@ -51,7 +48,6 @@ router.get('/search', asyncHandler(async (req, res) => {
   res.json({ success: true, count: members.length, data: members });
 }));
 
-// Get one member by id/username/memberId/faceId
 router.get('/:id', protect, asyncHandler(async (req, res) => {
   const { id } = req.params;
   let query = { $or: [{ memberId: id }, { username: id }, { faceId: id }] };
@@ -64,7 +60,6 @@ router.get('/:id', protect, asyncHandler(async (req, res) => {
   res.json({ success: true, data: member });
 }));
 
-// Create member
 router.post('/', protect, faceUploads, asyncHandler(async (req, res) => {
   let memberships = req.body.memberships;
   if (typeof memberships === 'string') {
@@ -84,7 +79,6 @@ router.post('/', protect, faceUploads, asyncHandler(async (req, res) => {
   const phone = rawPhone?.trim();
   const email = rawEmail?.trim()?.toLowerCase();
   
-  // Validate Required Fields
   if (!name || !memberships || !Array.isArray(memberships) || memberships.length === 0) {
     const errors = {};
     if (!name) errors.name = 'Name is required';
@@ -99,7 +93,6 @@ router.post('/', protect, faceUploads, asyncHandler(async (req, res) => {
     return res.status(400).json({ success: false, error: 'Date of birth is required' });
   }
   
-  // Generate Username & Temp Password
   const nameParts = name.split(/\s+/);
   const firstName = nameParts[0].toLowerCase();
   const lastName = nameParts.slice(1).join('').toLowerCase();
@@ -111,7 +104,6 @@ router.post('/', protect, faceUploads, asyncHandler(async (req, res) => {
   }
   const tempPassword = firstName + Math.floor(1000 + Math.random() * 9000);
   
-  // Validate and Format Memberships
   const validatedMemberships = [];
   for (const m of memberships) {
     if (!m?.type || !['monthly', 'combative'].includes(m.type)) {
@@ -127,6 +119,7 @@ router.post('/', protect, faceUploads, asyncHandler(async (req, res) => {
       endDate.setMonth(endDate.getMonth() + Number(m.duration));
       validatedMemberships.push({
         type: m.type,
+        duration: Number(m.duration), 
         startDate,
         endDate,
         status: m.status && ['active', 'inactive', 'suspended', 'expired', 'cancelled'].includes(m.status) ? m.status : 'active',
@@ -134,10 +127,10 @@ router.post('/', protect, faceUploads, asyncHandler(async (req, res) => {
         paymentStatus: 'paid'
       });
     } else {
-      // Combative: Converts inputted months into sessions (1 month = 12 sessions)
       endDate.setMonth(endDate.getMonth() + Number(m.duration));
       validatedMemberships.push({
         type: m.type,
+        duration: Number(m.duration), 
         startDate,
         endDate,
         status: m.status && ['active', 'inactive', 'suspended', 'expired', 'cancelled'].includes(m.status) ? m.status : 'active',
@@ -174,15 +167,54 @@ router.post('/', protect, faceUploads, asyncHandler(async (req, res) => {
       to: saved.email,
       subject: 'Welcome to GOALS Gym!',
       html: `
-        <h2>Your account has been created.</h2>
-        <p><strong>Username:</strong> ${saved.username}</p>
-        <p><strong>Temporary Password:</strong> ${tempPassword}</p>
-        <p>Please change your password on first login.</p>
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <style>
+            body { font-family: 'Poppins', Helvetica, Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 0; }
+            .wrapper { max-width: 600px; margin: 30px auto; background-color: #1e1e1e; border-radius: 10px; overflow: hidden; box-shadow: 0 8px 25px rgba(0,0,0,0.3); }
+            .header { background: linear-gradient(135deg, #b30000 0%, #ff3333 100%); color: #ffffff; padding: 25px; text-align: center; text-transform: uppercase; letter-spacing: 2px; }
+            .header h1 { margin: 0; font-size: 26px; font-weight: 800; }
+            .content { padding: 35px; color: #e0e0e0; line-height: 1.6; }
+            .content h2 { color: #ffffff; margin-top: 0; font-size: 22px; }
+            .credentials-box { background-color: rgba(0, 0, 0, 0.4); border-left: 4px solid #ff3333; padding: 20px; margin: 25px 0; border-radius: 6px; }
+            .credentials-box p { margin: 8px 0; font-size: 16px; }
+            .highlight { color: #ff3333; font-weight: 700; }
+            .footer { background-color: #111111; color: #777777; text-align: center; padding: 20px; font-size: 12px; }
+            .note { font-size: 13px; color: #aaaaaa; font-style: italic; margin-top: 20px; }
+          </style>
+        </head>
+        <body>
+          <div class="wrapper">
+            <div class="header">
+              <h1>GOALS Gym</h1>
+            </div>
+            <div class="content">
+              <h2>Welcome to the family, ${saved.name}!</h2>
+              <p>Your membership account has been successfully created. We are thrilled to have you join us and can't wait to see you crush your fitness goals!</p>
+              <p>Below are your official account credentials to access the member portal:</p>
+              
+              <div class="credentials-box">
+                <p><strong>Username:</strong> <span class="highlight">${saved.username}</span></p>
+                <p><strong>Temporary Password:</strong> <span class="highlight">${tempPassword}</span></p>
+              </div>
+              
+              <p class="note">* For your own security, please make sure to change your password immediately after your first login.</p>
+              
+              <p>See you on the gym floor!</p>
+              <p><strong>- The GOALS Gym Team</strong></p>
+            </div>
+            <div class="footer">
+              <p>This is an automated message, please do not reply to this email.</p>
+              <p>&copy; ${new Date().getFullYear()} GOALS Gym. All rights reserved.</p>
+            </div>
+          </div>
+        </body>
+        </html>
       `
     }).catch(err => console.error('Welcome email error:', err));
   }
 
-  // Face Enrollment
   if (req.files && req.files.faceImage1 && req.files.faceImage2 && req.files.faceImage3) {
     const fd = new FormData();
     fd.append('image1', req.files.faceImage1[0].buffer, { filename: 'face1.jpg', contentType: req.files.faceImage1[0].mimetype });
@@ -217,17 +249,15 @@ router.post('/', protect, faceUploads, asyncHandler(async (req, res) => {
   });
 }));
 
-// Legacy: profile update
 router.put('/:id/profile', protect, asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { phone, email } = req.body || {};
   const updates = {};
   if (typeof phone !== 'undefined') updates.phone = phone ? phone.trim() : '';
   if (typeof email !== 'undefined') updates.email = email ? email.trim().toLowerCase() : '';
-  if (updates.phone && updates.phone !== '' && !/^\+63\d{10}$/.test(updates.phone)) {
-    return res.status(400).json({ success: false, error: 'Invalid Philippine phone format. Use +63XXXXXXXXXX' });
-  }
-  if (updates.email && updates.email !== '' && !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(updates.email)) {
+
+  // FIX: Replaced \\s with \s
+  if (updates.email && updates.email !== '' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(updates.email)) {
     return res.status(400).json({ success: false, error: 'Invalid email address' });
   }
   let query = { memberId: id };
@@ -238,7 +268,6 @@ router.put('/:id/profile', protect, asyncHandler(async (req, res) => {
   res.json({ success: true, message: 'Profile updated successfully', data: member });
 }));
 
-// General update
 router.put('/:id', protect, asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { name, phone, email, status, memberships, gender, address, emergencyName, emergencyPhone, emergencyRelation } = req.body || {};
@@ -261,10 +290,8 @@ router.put('/:id', protect, asyncHandler(async (req, res) => {
     updates.status = status;
   }
   
-  if (updates.phone && updates.phone !== '' && !/^\+63\d{10}$/.test(updates.phone)) {
-    return res.status(400).json({ success: false, error: 'Invalid Philippine phone format. Use +63XXXXXXXXXX' });
-  }
-  if (updates.email && updates.email !== '' && !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(updates.email)) {
+  // FIX: Replaced \\s with \s
+  if (updates.email && updates.email !== '' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(updates.email)) {
     return res.status(400).json({ success: false, error: 'Invalid email address' });
   }
 
@@ -279,7 +306,7 @@ router.put('/:id', protect, asyncHandler(async (req, res) => {
       const startDate = m.startDate ? new Date(m.startDate) : new Date();
       const out = {
         type: m.type,
-        duration: Number(m.duration),
+        duration: Number(m.duration), 
         startDate,
         status: m.status && ['active', 'inactive', 'suspended', 'expired', 'cancelled'].includes(m.status) ? m.status : 'active'
       };
@@ -313,7 +340,6 @@ router.put('/:id', protect, asyncHandler(async (req, res) => {
   });
 }));
 
-// 🔴 RENEWAL ROUTE - ARCHIVES HISTORY & UPDATES MEMBERSHIP 🔴
 router.put('/:id/renew', protect, asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { memberships, status } = req.body;
@@ -327,30 +353,35 @@ router.put('/:id/renew', protect, asyncHandler(async (req, res) => {
   if (!currentMember) return res.status(404).json({ success: false, error: 'Member not found' });
 
   if (Array.isArray(memberships)) {
-    // 1. Find missing old memberships and archive them to MembershipHistory
     const incomingIds = memberships.filter(m => m._id).map(m => m._id.toString());
     const archivedMemberships = currentMember.memberships.filter(m => !incomingIds.includes(m._id.toString()));
 
     if (archivedMemberships.length > 0) {
       try {
-        const historyDocs = archivedMemberships.map(m => ({
-          member: currentMember._id,
-          memberIdString: currentMember.memberId,
-          type: m.type,
-          duration: m.duration,
-          startDate: m.startDate,
-          endDate: m.endDate,
-          remainingSessions: m.remainingSessions,
-          status: m.status,
-          archivedAt: new Date()
-        }));
+        const historyDocs = archivedMemberships.map(m => {
+          const now = new Date();
+          let dur = m.duration;
+          if (!dur && m.startDate && m.endDate) {
+            dur = (new Date(m.endDate).getFullYear() - new Date(m.startDate).getFullYear()) * 12 + 
+                  (new Date(m.endDate).getMonth() - new Date(m.startDate).getMonth());
+          }
+          return {
+            member: currentMember._id,
+            memberIdString: currentMember.memberId,
+            type: m.type,
+            duration: dur || 1, 
+            startDate: m.startDate,
+            endDate: now, 
+            remainingSessions: m.remainingSessions,
+            archivedAt: now
+          };
+        });
         await MembershipHistory.insertMany(historyDocs);
       } catch (err) {
         console.error("Error archiving membership history:", err);
       }
     }
 
-    // 2. Validate and map the newly renewed memberships
     const validated = memberships.map(m => {
       if (!m?.type || !['monthly', 'combative'].includes(m.type)) {
         throw new Error('Each membership must have a valid type');
@@ -368,6 +399,7 @@ router.put('/:id/renew', protect, asyncHandler(async (req, res) => {
 
       const out = {
         type: m.type,
+        duration: Number(m.duration),
         startDate,
         endDate,
         status: m.status || 'active',
@@ -375,8 +407,6 @@ router.put('/:id/renew', protect, asyncHandler(async (req, res) => {
       };
       
       if (m._id) out._id = m._id; 
-      
-      // Preserve combative session calculation
       if (m.type === 'combative') {
          out.remainingSessions = m.remainingSessions !== undefined ? Number(m.remainingSessions) : Number(m.duration) * 12;
       } else {
@@ -398,25 +428,61 @@ router.put('/:id/renew', protect, asyncHandler(async (req, res) => {
   });
 }));
 
-// Archive limited to inactive/suspended
 router.patch('/:id/archive', protect, asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { status } = req.body;
+  
   if (!['inactive'].includes(status)) {
     return res.status(400).json({ success: false, error: 'Invalid status. Must be inactive' });
   }
+  
   let query = { memberId: id };
-  if (mongoose.Types.ObjectId.isValid(id)) query = { $or: [{ memberId: id }, { _id: new mongoose.Types.ObjectId(id) }] };
-  const updated = await Member.findOneAndUpdate(query, { $set: { status } }, { new: true });
-  if (!updated) return res.status(404).json({ success: false, error: 'Member not found' });
+  if (mongoose.Types.ObjectId.isValid(id)) {
+    query = { $or: [{ memberId: id }, { _id: new mongoose.Types.ObjectId(id) }] };
+  }
+
+  const member = await Member.findOne(query);
+  if (!member) return res.status(404).json({ success: false, error: 'Member not found' });
+
+  if (member.memberships && member.memberships.length > 0) {
+    try {
+      const now = new Date();
+      const historyDocs = member.memberships.map(m => {
+        let dur = m.duration;
+        if (!dur && m.startDate && m.endDate) {
+          dur = (new Date(m.endDate).getFullYear() - new Date(m.startDate).getFullYear()) * 12 + 
+                (new Date(m.endDate).getMonth() - new Date(m.startDate).getMonth());
+        }
+        return {
+          member: member._id,
+          memberIdString: member.memberId,
+          type: m.type,
+          duration: dur || 1, 
+          startDate: m.startDate,
+          endDate: now, 
+          remainingSessions: m.remainingSessions,
+          archivedAt: now
+        };
+      });
+      
+      await MembershipHistory.insertMany(historyDocs);
+      member.memberships = [];
+    } catch (err) {
+      console.error("Error archiving membership history:", err);
+      return res.status(500).json({ success: false, error: 'Failed to save membership history' });
+    }
+  }
+
+  member.status = status;
+  await member.save();
+
   res.json({
     success: true,
-    message: `Member ${status} successfully`,
-    data: { memberId: updated.memberId, name: updated.name, status: updated.status }
+    message: `Member archived successfully`,
+    data: { memberId: member.memberId, name: member.name, status: member.status }
   });
 }));
 
-// Set status including active
 router.patch('/:id/status', protect, asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { status } = req.body;
