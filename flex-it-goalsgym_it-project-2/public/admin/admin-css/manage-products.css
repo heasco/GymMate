@@ -1,0 +1,39 @@
+@import url('manage-members.css');
+
+/* FIX: Apply flex ONLY when the section has the .active class. 
+   This prevents the forms from overriding the .section { display: none; } rule. */
+#addProductSection.active,
+#editProductSection.active {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+#addProductSection .form-group,
+#editProductSection .form-group {
+    max-width: 600px;
+    width: 100%;
+}
+
+#addProductForm,
+#editProductForm {
+    width: 100%;
+}
+
+.status-badge {
+    padding: 0.3rem 0.6rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.status-active { 
+    background: rgba(40, 167, 69, 0.2); 
+    color: #28a745; 
+}
+
+/* Modal sizing for feedback */
+#feedbackModal .modal-content {
+    max-width: 600px;
+}

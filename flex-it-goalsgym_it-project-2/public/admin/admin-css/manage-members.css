@@ -589,3 +589,43 @@ select:focus {
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 4px;
 }
+/* FIXED: Centers the modal perfectly on the screen */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.85);
+    z-index: 9999; /* Ensures it sits above the sidebar */
+    justify-content: center;
+    align-items: center;
+    backdrop-filter: blur(5px);
+}
+
+.modal-content {
+    background: rgba(30, 30, 30, 0.95);
+    padding: 2.5rem;
+    border-radius: var(--radius, 8px);
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6);
+    border: 1px solid rgba(255, 51, 51, 0.3);
+    width: 90%;
+    max-width: 450px;
+    position: relative;
+    text-align: left;
+}
+
+.close-btn {
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    font-size: 1.5rem;
+    color: #888;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.close-btn:hover {
+    color: #ff3333;
+}

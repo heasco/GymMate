@@ -43,6 +43,7 @@ const memberSchema = new mongoose.Schema({
     type: String,
     required: true,
     trim: true
+    // No unique tag here, duplicates allowed
   },
   username: { 
     type: String, 
@@ -56,12 +57,13 @@ const memberSchema = new mongoose.Schema({
   },
   email: {
     type: String,
-    // REMOVED: unique: true and sparse: true
     lowercase: true,
-    trim: true
+    trim: true,
+    default: "" // Safely allows empty strings instead of null
   },
   phone: {
-    type: String 
+    type: String,
+    default: "" // Safely allows empty strings instead of null
   },
   dob: {
     type: Date,
@@ -73,12 +75,13 @@ const memberSchema = new mongoose.Schema({
     required: true
   },
   address: {
-    type: String 
+    type: String,
+    default: ""
   },
   emergencyContact: {
-    name: { type: String }, 
-    phone: { type: String }, 
-    relation: { type: String } 
+    name: { type: String, default: "" }, 
+    phone: { type: String, default: "" }, 
+    relation: { type: String, default: "" } 
   },
   joinDate: { 
     type: Date, 
@@ -90,7 +93,8 @@ const memberSchema = new mongoose.Schema({
     default: false
   },
   faceId: {
-    type: String
+    type: String,
+    default: ""
   },
   faceImagePaths: [{
     type: String

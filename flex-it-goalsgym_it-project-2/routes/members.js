@@ -76,8 +76,8 @@ router.post('/', protect, faceUploads, asyncHandler(async (req, res) => {
   } = req.body;
   
   const name = rawName?.trim();
-  const phone = rawPhone?.trim();
-  const email = rawEmail?.trim()?.toLowerCase();
+  const phone = rawPhone?.trim() || "";
+  const email = rawEmail?.trim()?.toLowerCase() || "";
   
   if (!name || !memberships || !Array.isArray(memberships) || memberships.length === 0) {
     const errors = {};
@@ -124,7 +124,7 @@ router.post('/', protect, faceUploads, asyncHandler(async (req, res) => {
         endDate,
         status: m.status && ['active', 'inactive', 'suspended', 'expired', 'cancelled'].includes(m.status) ? m.status : 'active',
         remainingSessions: 0,
-        paymentStatus: 'paid'
+        paymentStatus: m.paymentStatus === 'unpaid' ? 'unpaid' : 'paid' 
       });
     } else {
       endDate.setMonth(endDate.getMonth() + Number(m.duration));
@@ -135,7 +135,7 @@ router.post('/', protect, faceUploads, asyncHandler(async (req, res) => {
         endDate,
         status: m.status && ['active', 'inactive', 'suspended', 'expired', 'cancelled'].includes(m.status) ? m.status : 'active',
         remainingSessions: Number(m.duration) * 12,
-        paymentStatus: 'paid'
+        paymentStatus: m.paymentStatus === 'unpaid' ? 'unpaid' : 'paid' 
       });
     }
   }
@@ -146,20 +146,33 @@ router.post('/', protect, faceUploads, asyncHandler(async (req, res) => {
     password: tempPassword,
     memberships: validatedMemberships,
     joinDate: joinDate ? new Date(joinDate) : new Date(),
-    phone: phone || undefined,
-    email: email || undefined,
+    phone: phone,
+    email: email,
     dob: new Date(birthdate),
     gender,
-    address: address || undefined,
+    address: address || "",
     emergencyContact: {
-      name: emergencyName || undefined,
-      phone: emergencyPhone || undefined,
-      relation: emergencyRelation || undefined
+      name: emergencyName || "",
+      phone: emergencyPhone || "",
+      relation: emergencyRelation || ""
     },
     faceEnrolled: faceEnrolled === 'yes'
   });
 
-  const saved = await newMember.save();
+  let saved;
+  try {
+      saved = await newMember.save();
+  } catch (error) {
+      // FIX: Catch the exact 11000 MongoDB error caused by old database unique indexes.
+      if (error.code === 11000) {
+          const field = Object.keys(error.keyValue)[0];
+          return res.status(400).json({ 
+              success: false, 
+              error: `Database Conflict: ${field} is still marked as unique in your old MongoDB index. Please clear your MongoDB database collection or drop the ${field} index to allow duplicates.` 
+          });
+      }
+      throw error; // If it's a normal error, throw it so it gets logged.
+  }
   
   if (saved.email) {
     transporter.sendMail({
@@ -256,7 +269,6 @@ router.put('/:id/profile', protect, asyncHandler(async (req, res) => {
   if (typeof phone !== 'undefined') updates.phone = phone ? phone.trim() : '';
   if (typeof email !== 'undefined') updates.email = email ? email.trim().toLowerCase() : '';
 
-  // FIX: Replaced \\s with \s
   if (updates.email && updates.email !== '' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(updates.email)) {
     return res.status(400).json({ success: false, error: 'Invalid email address' });
   }
@@ -290,7 +302,6 @@ router.put('/:id', protect, asyncHandler(async (req, res) => {
     updates.status = status;
   }
   
-  // FIX: Replaced \\s with \s
   if (updates.email && updates.email !== '' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(updates.email)) {
     return res.status(400).json({ success: false, error: 'Invalid email address' });
   }

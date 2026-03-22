@@ -20,20 +20,16 @@
             </div>
             <nav class="sidebar-nav">
                 <a href="./admin-mainpage.html"><span>Dashboard</span></a>
-                <a href="./add-classes.html"><span>Add Classes</span></a>
                 <a href="./add-member.html" class="active"><span>Add Member</span></a>
                 <a href="./manage-members.html"><span>Manage Member</span></a>
-                <a href="./add-trainer.html"><span>Add Trainer</span></a>
-                <a href="./manage-trainer.html"><span>Manage Trainer</span></a>
-                <a href="./manage-class-enrollment.html"><span>Manage Enrollment</span></a>
+                <a href="./manage-products.html"><span>Manage Products</span></a>
                 <a href="./add-and-view-transaction.html"><span>Add & View Transaction</span></a>
                 <a href="./view-classes-and-feedback.html"><span>View Classes</span></a>
-                <a href="./trainer-schedule-management.html"><span>Trainer Schedule Management</span></a>
                 <a href="./attendance-checker.html"><span>Attendance System</span></a>
                 <a href="./send-announcement-email.html"><span>Send Announcement</span></a>
                 <a href="./view-logs.html"><span>View Logs</span></a>
                 <a href="./admin-settings.html"><span>Settings</span></a>
-            </nav>        
+            </nav>
         </aside>
 
         <header class="header">
@@ -43,7 +39,14 @@
         </header>
 
         <main class="main-content">
-            <h2>Add New Member</h2>
+
+            <div class="renew-btn-container">
+                <button type="button" id="renewBtn" class="renew-btn">
+                    <i class="fas fa-sync-alt"></i> Renew Existing Member
+                </button>
+            </div>
+
+            <h2 class="form-header">Add New Member</h2>
 
             <form id="memberForm" class="member-form">
                 <div class="form-group">
@@ -91,23 +94,29 @@
                     </div>
                 </div>
 
-                <div class="form-group membership-details" id="monthlyDetails" style="display: none;">
-                    <label for="monthlyDuration">Duration (months):</label>
-                    <input type="number" id="monthlyDuration" name="monthlyDuration" min="1" value="1">
-                </div>
-
-                <div class="form-group membership-details" id="combativeDetails" style="display: none;">
-                    <label for="combativeDuration">Duration (months):</label>
-                    <input type="number" id="combativeDuration" name="combativeDuration" min="1" value="1">
-                    <p class="help">1 month = 12 sessions</p>
+                <div class="form-group product-select-container" id="productSelectContainer">
+                    <label class="product-select-label">Select Product / Plan *</label>
+                    <div class="product-select-card" id="productCard">
+                        <div class="product-card-header" id="productCardHeader">
+                            <span id="productTitle">Select Membership Type...</span>
+                        </div>
+                        <div class="product-card-body">
+                            <select id="productSelect" required class="payment-select">
+                                <option value="" disabled selected>Select a product...</option>
+                            </select>
+                            <ul class="product-details-list" id="productDetailsList">
+                                <li><i class="fas fa-info-circle"></i> Select a membership type above to view details.</li>
+                            </ul>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="form-group">
                     <label for="joinDate">Join Date *</label>
-                    <div class="date-wrapper">
-                        <input type="text" id="joinDateDisplay" readonly placeholder="Select join date" required>
-                        <input type="date" id="joinDate" name="joinDate" class="hidden-date" required>
-                        <i class="fas fa-calendar-alt date-icon" id="joinDateIcon"></i>
+                    <div class="date-wrapper date-input-wrapper">
+                        <div id="joinDateDisplay" class="date-display">Select join date</div>
+                        <input type="date" id="joinDate" name="joinDate" class="hidden-native-date" required>
+                        <i class="fas fa-calendar-alt date-icon icon-calendar" id="joinDateIcon"></i>
                     </div>
                 </div>
 
@@ -123,53 +132,176 @@
 
                 <div class="form-group">
                     <label for="address">Address (Optional)</label>
-                    <input type="text" id="address" name="address" placeholder="Home address">
+                    <input type="text" id="address" name="address" placeholder="Complete home address">
                 </div>
 
-                <div class="form-group">
-                    <label>Emergency Contact (Optional)</label>
-                    <div style="display: flex; gap: 0.8rem; margin-bottom: 0.8rem; flex-wrap: wrap;">
-                        <input type="text" id="emergencyName" name="emergencyName" placeholder="Full Name" style="flex: 1; min-width: 150px;">
-                        <input type="tel" id="emergencyPhone" name="emergencyPhone" placeholder="Phone Number" style="flex: 1; min-width: 150px;">
+                <div class="form-group" style="background: rgba(255, 190, 24, 0.05); padding: 1.5rem; border-left: 3px solid #ffbe18; border-radius: 4px; margin-bottom: 1.5rem;">
+                    <h4 style="color: #ffbe18; margin-top: 0; margin-bottom: 1.2rem; font-size: 1.1rem; text-transform: uppercase;">
+                        <i class="fas fa-heartbeat"></i> Emergency Contact (Optional)
+                    </h4>
+
+                    <div class="form-group" style="margin-bottom: 1rem;">
+                        <label for="emergencyName" style="color: #ffbe18;">Contact Name (Optional)</label>
+                        <input type="text" id="emergencyName" name="emergencyName"
+                            placeholder="Full name of emergency contact">
                     </div>
-                    <input type="text" id="emergencyRelation" name="emergencyRelation" placeholder="Relationship (e.g., Parent, Spouse)">
+
+                    <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                        <div class="form-group" style="flex: 1; min-width: 200px; margin-bottom: 0;">
+                            <label for="emergencyPhone" style="color: #ffbe18;">Contact Phone (Optional)</label>
+                            <input type="tel" id="emergencyPhone" name="emergencyPhone" placeholder="Phone number">
+                        </div>
+                        <div class="form-group" style="flex: 1; min-width: 200px; margin-bottom: 0;">
+                            <label for="emergencyRelation" style="color: #ffbe18;">Relation (Optional)</label>
+                            <input type="text" id="emergencyRelation" name="emergencyRelation"
+                                placeholder="e.g., Parent, Spouse">
+                        </div>
+                    </div>
                 </div>
 
                 <div class="form-group">
-                    <label>Facial Recognition Enrollment</label>
+                    <label>Facial Recognition Enrollment (Optional)</label>
                     <div class="fp-controls">
                         <input type="hidden" id="faceEnrolled" name="faceEnrolled">
                         <button type="button" class="face-capture-btn" id="openFacePaneBtn">
-                            <i class="fas fa-user-check"></i>
-                            Capture Face
+                            <i class="fas fa-user-check"></i> Capture Face
                         </button>
                         <span id="faceStatus" class="fp-status-message"></span>
                     </div>
                 </div>
 
-                <button type="submit" class="submit-btn">Add Member</button>
+                <button type="button" id="initiateSubmitBtn" class="submit-btn">Continue to Payment</button>
             </form>
-
-            <div class="or-divider">
-                <span>OR</span>
-            </div>
-            <button type="button" class="renew-btn" id="renewBtn">
-                <i class="fas fa-sync-alt"></i> Renew Membership
-            </button>
-
             <div id="message" class="message hidden"></div>
         </main>
     </div>
 
-    <div id="facePane" class="face-pane">
-        <div class="face-modal">
-            <h3>Facial Enrollment</h3>
+    <div id="renewalModal" class="modal">
+        <div class="modal-content renewal-modal-content">
+            <div class="renewal-header">
+                <h3 class="modal-title"><i class="fas fa-sync-alt modal-icon-red"></i> Renew Member</h3>
+                <span class="close-btn" id="closeRenewalBtn">&times;</span>
+            </div>
+
+            <div class="renewal-body">
+                <div class="form-group">
+                    <label for="searchMember">Search Member to Renew</label>
+                    <div class="search-input-group">
+                        <input type="text" id="searchMember" class="search-input"
+                            placeholder="Enter name or member ID...">
+                        <button type="button" id="searchBtn" class="btn-primary search-btn">Search</button>
+                    </div>
+                    <div id="searchResults" class="search-results"></div>
+                </div>
+
+                <div id="selectedMemberSection" class="selected-member-section">
+                    <div class="member-info-card" id="memberInfoCard"></div>
+
+                    <form id="renewalForm">
+                        
+                        <div class="form-group date-picker-group">
+                            <label for="renewalDate"><i class="fas fa-calendar-alt"></i> Select Renewal Date *</label>
+                            <div class="date-wrapper date-input-wrapper">
+                                <div id="renewalDateDisplay" class="date-display">Select renewal date</div>
+                                <input type="date" id="renewalDate" name="renewalDate" class="hidden-native-date" required>
+                                <i class="fas fa-calendar-alt date-icon icon-calendar"></i>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Select Membership to Renew *</label>
+                            <div class="checkbox-group">
+                                <label class="checkbox renewal-checkbox">
+                                    <input type="radio" name="renewRadio" id="renewMonthly" value="monthly"> Monthly Gym
+                                    Membership
+                                </label>
+                                <label class="checkbox renewal-checkbox">
+                                    <input type="radio" name="renewRadio" id="renewCombative" value="combative">
+                                    Combative Sports Membership
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="form-group product-select-container" id="renewalProductGroup">
+                            <label class="product-select-label">Select Product / Plan *</label>
+                            <div class="product-select-card">
+                                <div class="product-card-header">
+                                    <span id="renewalProductTitle">Select Membership Type...</span>
+                                </div>
+                                <div class="product-card-body">
+                                    <select id="renewalProductSelect" required class="payment-select">
+                                        <option value="" disabled selected>Select a product...</option>
+                                    </select>
+                                    <ul class="product-details-list" id="renewalProductDetailsList">
+                                        <li><i class="fas fa-info-circle"></i> Select a membership type above to view details.</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group membership-details" id="renewMonthlyDetails">
+                            <label for="renewMonthlyDuration">Duration (months):</label>
+                            <input type="number" id="renewMonthlyDuration" min="1" value="1">
+                        </div>
+
+                        <div class="form-group membership-details" id="renewCombativeDetails">
+                            <label for="renewCombativeSessions">Number of Sessions:</label>
+                            <input type="number" id="renewCombativeSessions" min="1" value="12">
+                        </div>
+
+                        <div id="renewalInfoBox" class="renewal-info-box"></div>
+
+                        <div class="modal-actions spacing-top-large">
+                            <button type="submit" id="initiateRenewalBtn" class="submit-btn btn-full-large">
+                                <i class="fas fa-arrow-right"></i> Continue to Payment
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="paymentModal" class="modal">
+        <div class="modal-content payment-modal-content">
+            <span class="close-btn" id="closePaymentModalBtn">&times;</span>
+            <h2 class="modal-title payment-title"><i class="fas fa-money-bill-wave"></i> Payment Details</h2>
+
+            <p id="paymentSummaryText" class="payment-summary"></p>
+
+            <div class="form-group payment-group">
+                <label class="payment-label">Has the member paid? *</label>
+                <select id="paymentStatusSelect" class="payment-select">
+                    <option value="paid" selected>Yes, Paid</option>
+                    <option value="unpaid">No, Unpaid</option>
+                </select>
+            </div>
+
+            <div class="form-group payment-group" id="paymentMethodGroup">
+                <label class="payment-label">Payment Method *</label>
+                <select id="paymentMethodSelect" class="payment-select">
+                    <option value="cash">Cash</option>
+                    <option value="e-wallet">E-Wallet / Gcash</option>
+                    <option value="bank">Bank Transfer</option>
+                    <option value="others">Others</option>
+                </select>
+            </div>
+
+            <div class="modal-actions payment-actions">
+                <button id="confirmPaymentAndSaveBtn" class="btn-success btn-full-large">Confirm Payment</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="facePane" class="modal">
+        <div class="modal-content face-modal-content">
+            <h3 class="face-title">Facial Enrollment</h3>
             <div class="face-capture-area">
                 <video id="camera" autoplay></video>
                 <canvas id="snapshot"></canvas>
                 <div class="face-center-box"></div>
             </div>
-            <div class="face-controls">
+            <div class="face-controls-group">
                 <button type="button" class="btn-primary" id="captureFaceBtn">Capture Photo</button>
                 <button type="button" class="btn-success" id="confirmFaceBtn" disabled>Confirm & Save</button>
                 <button type="button" class="btn-secondary" id="closeFacePaneBtn">Close</button>
@@ -178,77 +310,8 @@
         </div>
     </div>
 
-    <div id="renewalModal" class="renewal-modal">
-        <div class="renewal-content">
-            <div class="renewal-header">
-                <h3><i class="fas fa-sync-alt"></i> Renew Member Membership</h3>
-                <button type="button" class="close-modal" id="closeRenewalBtn">&times;</button>
-            </div>
-
-            <div class="renewal-body">
-                <div class="search-section">
-                    <label for="searchMember">Search Member *</label>
-                    <div class="search-input-group">
-                        <input type="text" id="searchMember" placeholder="Enter Member ID or Name">
-                        <button type="button" class="search-btn" id="searchBtn">
-                            <i class="fas fa-search"></i> Search
-                        </button>
-                    </div>
-                    <div id="searchResults" class="search-results"></div>
-                </div>
-
-                <div id="selectedMemberSection" class="selected-member-section" style="display: none;">
-                    <div class="member-info-card" id="memberInfoCard"></div>
-
-                    <form id="renewalForm">
-                        <div class="form-group date-picker-group">
-                            <label for="renewalDate">
-                                <i class="fas fa-calendar-alt"></i> Select Renewal Date *
-                            </label>
-                            <div class="date-input-wrapper">
-                                <input type="date" id="renewalDate" required>
-                                <i class="fas fa-calendar icon-calendar"></i>
-                            </div>
-                            <p class="help">Choose the date when the renewal should start</p>
-                        </div>
-
-                        <div class="form-group">
-                            <label>Select Membership to Renew *</label>
-                            <div class="checkbox-group">
-                                <label class="checkbox renewal-checkbox">
-                                    <input type="radio" id="renewMonthly" name="renewMembershipType" value="monthly">
-                                    Monthly Gym Membership
-                                </label>
-                                <label class="checkbox renewal-checkbox">
-                                    <input type="radio" id="renewCombative" name="renewMembershipType" value="combative">
-                                    Combative Sports Membership
-                                </label>
-                            </div>
-                        </div>
-
-                        <div class="form-group membership-details" id="renewMonthlyDetails" style="display: none;">
-                            <label for="renewMonthlyDuration">Duration (months):</label>
-                            <input type="number" id="renewMonthlyDuration" min="1" value="1">
-                        </div>
-
-                        <div class="form-group membership-details" id="renewCombativeDetails" style="display: none;">
-                            <label for="renewCombativeDuration">Duration (months):</label>
-                            <input type="number" id="renewCombativeDuration" min="1" value="1">
-                            <p class="help">1 month = 12 sessions</p>
-                        </div>
-
-                        <div id="renewalInfoBox" class="renewal-info-box" style="display: none;"></div>
-
-                        <button type="submit" class="submit-btn">
-                            <i class="fas fa-check"></i> Confirm Renewal
-                        </button>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-    
     <script src="../assets/js/form-persistence.js" defer></script>
     <script src="admin-js/add-member.js"></script>
 </body>
+
 </html>

@@ -17,19 +17,16 @@
         <p id="adminFullName" class="admin-fullname">Loading...</p>
       </div>
       <nav class="sidebar-nav">
-        <a href="./admin-mainpage.html"><span>Dashboard</span></a>
-        <a href="./add-classes.html"><span>Add Classes</span></a>
-        <a href="./add-member.html"><span>Add Member</span></a>
-        <a href="./manage-members.html" class="active"><span>Manage Member</span></a>
-        <a href="./add-trainer.html"><span>Add Trainer</span></a>
-        <a href="./manage-trainer.html"><span>Manage Trainer</span></a>
-        <a href="./manage-class-enrollment.html"><span>Manage Enrollment</span></a>
-        <a href="./add-and-view-transaction.html"><span>Add & View Transaction</span></a>
-        <a href="./view-classes-and-feedback.html"><span>View Classes</span></a>
-        <a href="./trainer-schedule-management.html"><span>Trainer Schedule Management</span></a>
-        <a href="./attendance-checker.html"><span>Attendance System</span></a>
-        <a href="./send-announcement-email.html"><span>Send Announcement</span></a>
-        <a href="./view-logs.html"><span>View Logs</span></a>
+                <a href="./admin-mainpage.html" ><span>Dashboard</span></a>
+                <a href="./add-member.html"><span>Add Member</span></a>
+                <a href="./manage-members.html" class="active"><span>Manage Member</span></a>
+                <a href="./manage-products.html"><span>Manage Products</span></a>
+                <a href="./add-and-view-transaction.html"><span>Add & View Transaction</span></a>
+                <a href="./view-classes-and-feedback.html"><span>View Classes</span></a>
+                <a href="./attendance-checker.html"  ><span>Attendance System</span></a>
+                <a href="./send-announcement-email.html"><span>Send Announcement</span></a>
+                <a href="./view-logs.html"><span>View Logs</span></a>
+                <a href="./admin-settings.html"><span>Settings</span></a>
       </nav>
     </aside>
 
@@ -87,10 +84,6 @@
               </thead>
               <tbody id="memberListBody"></tbody>
             </table>
-          </div>
-
-          <div class="nav-buttons">
-            <button type="button" class="action-button" onclick="window.location.href='add-classes.html'">Back to Add Class</button>
           </div>
         </div>
 
@@ -150,7 +143,7 @@
     </main>
   </div>
 
-  <div id="archiveConfirmModal" class="modal">
+  <div id="archiveConfirmModal" class="modal" style="display: none;">
       <div class="modal-content text-center">
           <span class="close-btn" id="closeArchiveModalBtn">&times;</span>
           <h2 class="modal-title warning-text">Confirm Archiving</h2>
@@ -165,15 +158,15 @@
       </div>
   </div>
 
-  <div id="renewalModal" class="modal">
-      <div class="modal-content">
+  <div id="renewalModal" class="modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 9999; justify-content: center; align-items: center;">
+      <div class="modal-content" style="background: #1e1e1e; padding: 2.5rem; border-radius: 8px; width: 90%; max-width: 500px; position: relative;">
           <div class="renewal-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 2px solid #ff3333; padding-bottom: 0.5rem;">
               <h3 style="margin: 0; color: #fff; text-transform: uppercase; font-size: 1.4rem;"><i class="fas fa-sync-alt" style="color: #ff3333;"></i> Renew & Activate Member</h3>
-              <span class="close-btn" id="closeRenewalBtn" style="position: static;">&times;</span>
+              <span class="close-btn" id="closeRenewalBtn" style="cursor: pointer; font-size: 1.5rem; color: #888;">&times;</span>
           </div>
 
           <div class="renewal-body">
-              <div id="selectedMemberSection" class="selected-member-section">
+              <div id="selectedMemberSection" class="selected-member-section" style="display: block;">
                   <div class="member-info-card" id="memberInfoCard"></div>
 
                   <form id="renewalForm">
@@ -182,21 +175,27 @@
                               <i class="fas fa-calendar-alt"></i> Select Renewal Date *
                           </label>
                           <input type="date" id="renewalDate" required>
-                          <p class="help" style="color: #888; font-size: 0.85rem; margin-top: 0.2rem;">Choose the date when the renewal should start</p>
                       </div>
 
                       <div class="form-group">
                           <label>Select Membership to Renew *</label>
                           <div class="checkbox-group">
                               <label class="checkbox renewal-checkbox">
-                                  <input type="checkbox" id="renewMonthly" value="monthly">
+                                  <input type="radio" name="renewRadio" id="renewMonthly" value="monthly">
                                   Monthly Gym Membership
                               </label>
                               <label class="checkbox renewal-checkbox">
-                                  <input type="checkbox" id="renewCombative" value="combative">
+                                  <input type="radio" name="renewRadio" id="renewCombative" value="combative">
                                   Combative Sports Membership
                               </label>
                           </div>
+                      </div>
+
+                      <div class="form-group" id="renewalProductGroup" style="display: none; background: rgba(255,51,51,0.1); padding: 1rem; border-left: 3px solid #ff3333; border-radius: 4px; margin-top: 1rem;">
+                          <label for="renewalProductSelect">Select Product / Plan *</label>
+                          <select id="renewalProductSelect" required>
+                              <option value="" disabled selected>Select a product...</option>
+                          </select>
                       </div>
 
                       <div class="form-group membership-details" id="renewMonthlyDetails" style="display: none;">
@@ -209,11 +208,11 @@
                           <input type="number" id="renewCombativeSessions" min="1" value="12">
                       </div>
 
-                      <div id="renewalInfoBox" class="warning-box" style="display: none;"></div>
+                      <div id="renewalInfoBox" class="warning-box" style="display: none; margin-top: 1rem;"></div>
 
                       <div class="modal-actions" style="margin-top: 2rem;">
-                          <button type="submit" class="btn-success">
-                              <i class="fas fa-check"></i> Confirm Renewal & Activate
+                          <button type="submit" id="initiateRenewalBtn" class="btn-success" style="width: 100%; padding: 1rem; font-weight: bold;">
+                              <i class="fas fa-arrow-right"></i> Continue to Payment
                           </button>
                       </div>
                   </form>
@@ -222,7 +221,38 @@
       </div>
   </div>
 
-  <div id="viewDetailsModal" class="modal">
+  <div id="renewalPaymentModal" class="modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 9999; justify-content: center; align-items: center;">
+    <div class="modal-content" style="background: #1e1e1e; padding: 2.5rem; border-radius: 8px; width: 90%; max-width: 400px; text-align: center; position: relative;">
+        <span class="close-btn" id="closeRenewalPaymentModalBtn" style="position: absolute; top: 15px; right: 20px; font-size: 1.5rem; cursor: pointer; color: #888;">&times;</span>
+        <h2 class="modal-title" style="border-bottom: 2px solid #ffbe18; padding-bottom: 0.5rem; color: #fff;"><i class="fas fa-money-bill-wave"></i> Payment Details</h2>
+        
+        <p id="renewalPaymentSummaryText" style="color: #ccc; margin-bottom: 1.5rem;"></p>
+
+        <div class="form-group" style="text-align: left;">
+            <label style="color: #fff;">Has the member paid? *</label>
+            <select id="renewalPaymentStatusSelect" style="width: 100%; padding: 0.8rem; background: #000; color: #fff; border: 1px solid #333;">
+                <option value="paid" selected>Yes, Paid</option>
+                <option value="unpaid">No, Unpaid</option>
+            </select>
+        </div>
+
+        <div class="form-group" id="renewalPaymentMethodGroup" style="text-align: left;">
+            <label style="color: #fff;">Payment Method *</label>
+            <select id="renewalPaymentMethodSelect" style="width: 100%; padding: 0.8rem; background: #000; color: #fff; border: 1px solid #333;">
+                <option value="cash">Cash</option>
+                <option value="e-wallet">E-Wallet / Gcash</option>
+                <option value="bank">Bank Transfer</option>
+                <option value="others">Others</option>
+            </select>
+        </div>
+
+        <div class="modal-actions" style="margin-top: 1.5rem;">
+            <button id="confirmRenewalPaymentBtn" class="btn-success" style="width: 100%; padding: 1rem; font-weight: bold;">Confirm & Renew</button>
+        </div>
+    </div>
+  </div>
+
+  <div id="viewDetailsModal" class="modal" style="display: none;">
       <div class="modal-content">
           <div class="renewal-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 2px solid #ff3333; padding-bottom: 0.5rem;">
               <h3 style="margin: 0; color: #fff; text-transform: uppercase; font-size: 1.4rem;"><i class="fas fa-id-card" style="color: #ff3333;"></i> Member Details</h3>

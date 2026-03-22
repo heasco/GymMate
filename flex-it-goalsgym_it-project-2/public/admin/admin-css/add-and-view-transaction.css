@@ -1134,3 +1134,65 @@ button:disabled {
         width: 100%;
     }
 }
+/* ========================================
+   DATE PICKER STYLES (Refactored)
+======================================== */
+
+.date-picker-group label {
+    color: var(--accent);
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.95rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+}
+
+.date-display {
+    width: 100%;
+    padding: 1rem 1.2rem;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: var(--radius);
+    font-size: 1rem;
+    background: rgba(0, 0, 0, 0.5);
+    color: var(--accent);
+    font-family: 'Poppins', sans-serif;
+    cursor: pointer;
+    transition: var(--transition);
+    display: block;
+}
+
+.date-input-wrapper:hover .date-display {
+    border-color: rgba(255, 255, 255, 0.4);
+}
+
+.date-display:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px rgba(179, 0, 0, 0.2);
+    background: rgba(0, 0, 0, 0.7);
+}
+
+.hidden-native-date {
+    position: absolute;
+    visibility: hidden;
+    width: 0;
+    height: 0;
+    pointer-events: none;
+    z-index: -1;
+}
+
+.date-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.form-group .date-icon {
+    position: static;
+    color: var(--primary);
+    font-size: 1.1rem;
+}

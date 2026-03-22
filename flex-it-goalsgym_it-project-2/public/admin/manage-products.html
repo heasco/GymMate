@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manage Products - GOALS Gym</title>
+  <link rel="icon" type="image/png" href="../image/logo2.png">
+  <link rel="stylesheet" href="./admin-css/admin-mainpage.css">
+  <link rel="stylesheet" href="./admin-css/manage-products.css">
+  <script src="https://kit.fontawesome.com/1d0b8c9b1d.js" crossorigin="anonymous"></script>
+</head>
+<body>
+  <div class="admin-container">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <h2>GOALS Gym Admin</h2>
+        <p id="adminFullName" class="admin-fullname">Loading...</p>
+      </div>
+      <nav class="sidebar-nav">
+                <a href="./admin-mainpage.html" ><span>Dashboard</span></a>
+                <a href="./add-member.html"><span>Add Member</span></a>
+                <a href="./manage-members.html" ><span>Manage Member</span></a>
+                <a href="./manage-products.html" class="active"><span>Manage Products</span></a>
+                <a href="./add-and-view-transaction.html"><span>Add & View Transaction</span></a>
+                <a href="./view-classes-and-feedback.html"><span>View Classes</span></a>
+                <a href="./attendance-checker.html"  ><span>Attendance System</span></a>
+                <a href="./send-announcement-email.html"><span>Send Announcement</span></a>
+                <a href="./view-logs.html"><span>View Logs</span></a>
+                <a href="./admin-settings.html"><span>Settings</span></a>
+      </nav>
+    </aside>
+
+    <header class="header">
+      <button class="menu-toggle" id="menuToggle">☰</button>
+      <h1>Manage Products</h1>
+      <button class="logout-btn" id="logoutBtn">Logout</button>
+    </header>
+
+    <main class="main-content">
+      <div class="container">
+        <div id="serverStatus" class="server-status">Checking server connection...</div>
+        <div id="successMessage" class="success-message"></div>
+        <div id="errorMessage" class="error-message"></div>
+
+        <div class="tabs">
+          <button id="tabList" class="tab-btn active">Product List</button>
+          <button id="tabAdd" class="tab-btn">Add New Product</button>
+        </div>
+
+        <div id="productListSection" class="section active">
+          <h2 style="text-align: center;">Active Products</h2>
+          <div class="member-list">
+            <table>
+              <thead>
+                <tr>
+                  <th>Product Name</th>
+                  <th>Type</th>
+                  <th>Price</th>
+                  <th>Schedule</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="productListBody">
+                <tr><td colspan="6" class="text-center">Loading...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div id="addProductSection" class="section">
+          <h2 style="border-bottom: 2px solid #ff3333; padding-bottom: 0.5rem;">Create New Product</h2>
+          <form id="addProductForm">
+            <div class="form-group">
+              <label for="product_name">Product Name *</label>
+              <input type="text" id="product_name" required placeholder="e.g., Premium Treadmill Monthly">
+            </div>
+            
+            <div class="form-group">
+              <label for="membership_type">Membership Type *</label>
+              <select id="membership_type" required>
+                <option value="monthly">Monthly Access</option>
+                <option value="combative">Combative Class</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="price">Price (₱) *</label>
+              <input type="number" id="price" required min="0" placeholder="e.g., 1500">
+            </div>
+
+            <div class="form-group">
+              <label for="schedule">Schedule (Optional)</label>
+              <input type="text" id="schedule" placeholder="e.g., MWF 6:00 PM - 8:00 PM">
+              <small style="color: #888;">Leave blank if this is a standard monthly pass.</small>
+            </div>
+
+            <div class="form-group">
+              <label for="description">Description</label>
+              <input type="text" id="description" placeholder="Brief description of the product">
+            </div>
+
+            <div class="nav-buttons">
+              <button type="submit" class="action-button" style="background: #ff3333; color: white;">Save Product</button>
+            </div>
+          </form>
+        </div>
+
+        <div id="editProductSection" class="section">
+          <h2 style="border-bottom: 2px solid #ff3333; padding-bottom: 0.5rem;">Edit Product Details</h2>
+          <form id="editProductForm">
+            <input type="hidden" id="edit_product_id">
+            
+            <div class="form-group">
+              <label for="edit_product_name">Product Name *</label>
+              <input type="text" id="edit_product_name" required>
+            </div>
+            
+            <div class="form-group">
+              <label for="edit_membership_type">Membership Type *</label>
+              <select id="edit_membership_type" required>
+                <option value="monthly">Monthly Access</option>
+                <option value="combative">Combative Class</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="edit_price">Price (₱) *</label>
+              <input type="number" id="edit_price" required min="0">
+            </div>
+
+            <div class="form-group">
+              <label for="edit_schedule">Schedule (Optional)</label>
+              <input type="text" id="edit_schedule">
+            </div>
+
+            <div class="form-group">
+              <label for="edit_description">Description</label>
+              <input type="text" id="edit_description">
+            </div>
+
+            <div class="nav-buttons">
+              <button type="submit" class="action-button" style="background: #ff3333; color: white;">Update Product</button>
+              <button type="button" class="action-button" onclick="showProductList()" style="background: transparent; border: 2px solid #888; color: #ccc;">Cancel</button>
+            </div>
+          </form>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <div id="feedbackModal" class="modal">
+    <div class="modal-content">
+        <div class="renewal-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 2px solid #ff3333; padding-bottom: 0.5rem;">
+            <h3 style="margin: 0; color: #fff; text-transform: uppercase;"><i class="fas fa-star" style="color: #ffbe18;"></i> Product Feedback</h3>
+            <span class="close-btn" id="closeFeedbackBtn" style="position: static; cursor: pointer;">&times;</span>
+        </div>
+        <div class="renewal-body" id="feedbackBody">
+            </div>
+    </div>
+  </div>
+
+<script src="./admin-js/manage-products.js"></script>
+</body>
+</html>

@@ -6,7 +6,9 @@
 #selectedMemberSection,
 #renewMonthlyDetails,
 #renewCombativeDetails,
-#renewalInfoBox {
+#renewalInfoBox,
+#productSelectionGroup,
+#renewalProductGroup {
     display: none;
 }
 
@@ -63,7 +65,10 @@ h3 {
     letter-spacing: 0.5px;
 }
 
-.form-group input {
+.form-group input[type="text"],
+.form-group input[type="number"],
+.form-group input[type="tel"],
+.form-group input[type="email"] {
     width: 100%;
     padding: 1rem 1.2rem;
     border: 1px solid rgba(255, 255, 255, 0.2);
@@ -96,30 +101,12 @@ h3 {
     letter-spacing: 0.5px;
 }
 
-.field .input {
-    width: 100%;
-    padding: 1rem 1.2rem;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: var(--radius);
-    font-size: 1rem;
-    background: rgba(0, 0, 0, 0.5);
-    color: var(--accent);
-    font-family: 'Poppins', sans-serif;
-    transition: var(--transition);
-}
-
-.help {
-    color: var(--neutral);
-    font-size: 0.85rem;
-    margin-top: 0.3rem;
-    font-style: italic;
-}
-
 /* ========================================
    UNIVERSAL DROPDOWN (SELECT) STYLES
 ======================================== */
 .form-group select,
-.dob-dropdowns select {
+.dob-dropdowns select,
+.payment-select {
     flex: 1;
     width: 100%;
     padding: 1rem 1.2rem;
@@ -147,12 +134,14 @@ h3 {
 }
 
 .form-group select:hover,
-.dob-dropdowns select:hover {
+.dob-dropdowns select:hover,
+.payment-select:hover {
     border-color: rgba(255, 255, 255, 0.4);
 }
 
 .form-group select:focus,
-.dob-dropdowns select:focus {
+.dob-dropdowns select:focus,
+.payment-select:focus {
     outline: none;
     border-color: var(--primary);
     box-shadow: 0 0 0 2px rgba(179, 0, 0, 0.2);
@@ -160,85 +149,23 @@ h3 {
 }
 
 .form-group select option,
-.dob-dropdowns select option {
+.dob-dropdowns select option,
+.payment-select option {
     background-color: #1e1e1e;
     color: #ffffff;
     padding: 10px;
 }
 
-.form-group select option:hover,
-.form-group select option:focus,
-.form-group select option:active,
-.form-group select option:checked,
-.dob-dropdowns select option:hover,
-.dob-dropdowns select option:focus,
-.dob-dropdowns select option:active,
-.dob-dropdowns select option:checked {
-    background-color: #b30000 !important;
-    color: #000000 !important;
-}
-
-/* ======================================== */
-
-/* Date input wrapper styling */
-.date-wrapper {
-    position: relative;
-    display: flex;
-    align-items: center;
-}
-
+/* ========================================
+   DATE PICKER STYLES (Unified & Robust)
+======================================== */
 #joinDateDisplay,
 #renewalDateDisplay {
-    flex: 1;
-    cursor: default;
-    background: #000305;
-    color: #ffffff;
-    padding: 10px 40px 10px 12px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 4px;
-}
-
-.date-icon {
-    position: absolute;
-    right: 12px;
-    color: #ebebeb;
-    cursor: pointer;
-    font-size: 1.1rem;
-    z-index: 5;
-    transition: color 0.2s;
-}
-
-.date-icon:hover {
-    color: #2d87f0;
-}
-
-/* Hidden actual date inputs - positioned on top but invisible */
-input[type="date"].hidden-date {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    opacity: 0;
-    z-index: 10;
-    cursor: pointer;
-}
-
-.date-wrapper {
-    position: relative;
-}
-
-.field .control.date-wrapper {
-    position: relative;
-}
-
-/* Date Picker Styling */
-.date-picker-group {
-    margin-bottom: 2rem;
+    display: none !important;
 }
 
 .date-picker-group label {
-    color: var(--accent);
+    color: var(--accent, #fff);
     font-weight: 600;
     margin-bottom: 0.5rem;
     display: flex;
@@ -249,53 +176,65 @@ input[type="date"].hidden-date {
     letter-spacing: 0.5px;
 }
 
+.date-wrapper,
 .date-input-wrapper {
     position: relative;
     display: flex;
     align-items: center;
+    width: 100%;
 }
 
-.date-input-wrapper input[type="date"] {
+.date-icon,
+.icon-calendar {
+    position: absolute;
+    right: 1.2rem;
+    color: var(--primary, #ff3333);
+    font-size: 1.2rem;
+    pointer-events: none;
+    z-index: 5;
+}
+
+input[type="date"],
+input[type="date"].hidden-date {
     width: 100%;
-    padding: 1rem 3rem 1rem 1.2rem;
-    border: 2px solid rgba(255, 255, 255, 0.2);
-    border-radius: var(--radius);
+    padding: 1rem 3rem 1rem 1.2rem; 
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: var(--radius, 4px);
     font-size: 1rem;
     background: rgba(0, 0, 0, 0.5);
-    color: var(--accent);
+    color: var(--accent, #ffffff);
     font-family: 'Poppins', sans-serif;
-    transition: var(--transition);
+    transition: var(--transition, 0.3s ease);
     cursor: pointer;
+    position: relative; 
+    opacity: 1 !important; 
+    z-index: 1 !important;
+    visibility: visible !important;
 }
 
-.date-input-wrapper input[type="date"]:hover {
-    border-color: var(--primary);
+input[type="date"]:hover {
+    border-color: rgba(255, 255, 255, 0.4);
     background: rgba(0, 0, 0, 0.6);
 }
 
-.date-input-wrapper input[type="date"]:focus {
+input[type="date"]:focus {
     outline: none;
-    border-color: var(--primary);
-    box-shadow: 0 0 0 3px rgba(179, 0, 0, 0.2);
+    border-color: var(--primary, #ff3333);
+    box-shadow: 0 0 0 2px rgba(179, 0, 0, 0.2);
     background: rgba(0, 0, 0, 0.7);
 }
 
-.date-input-wrapper .icon-calendar {
-    position: absolute;
-    right: 1rem;
-    color: var(--primary);
-    font-size: 1.2rem;
-    pointer-events: none;
-}
-
 input[type="date"]::-webkit-calendar-picker-indicator {
-    opacity: 0;
-    cursor: pointer;
-    width: 100%;
-    height: 100%;
     position: absolute;
     top: 0;
     left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0; 
+    cursor: pointer;
+    z-index: 10;
+    padding: 0;
+    margin: 0;
 }
 
 /* Checkbox/Radio Styles */
@@ -324,8 +263,27 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .checkbox input[type="checkbox"] {
     width: 18px;
     height: 18px;
-    accent-color: var(--primary);
+    accent-color: #ff3333; /* Forced to Red */
     cursor: pointer;
+    position: relative;
+    z-index: 3;
+}
+
+/* ADDING RED GLOW FOR SELECTED RADIOS */
+.checkbox input[type="radio"]:focus,
+.checkbox input[type="checkbox"]:focus {
+    box-shadow: 0 0 0 2px rgba(255, 51, 51, 0.7);
+    outline: none;
+}
+
+@keyframes pulseRedGlow {
+    0%, 100% { box-shadow: 0 0 0 2px rgba(255, 51, 51, 0.5); }
+    50% { box-shadow: 0 0 0 4px rgba(255, 51, 51, 0.7); }
+}
+
+.checkbox input[type="radio"]:checked,
+.checkbox input[type="checkbox"]:checked {
+    animation: pulseRedGlow 1.5s infinite;
 }
 
 /* Membership Details */
@@ -415,243 +373,254 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     transform: none;
 }
 
-/* OR Divider */
-.or-divider {
-    display: flex;
-    align-items: center;
-    text-align: center;
-    margin: 2rem auto;
+/* Prominent Gold Renew Button */
+.renew-btn-container {
     max-width: 600px;
+    margin: 0 auto 2.5rem auto;
+    position: relative;
+    z-index: 10;
 }
 
-.or-divider::before,
-.or-divider::after {
-    content: '';
-    flex: 1;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-.or-divider span {
-    padding: 0 1rem;
-    color: var(--neutral);
-    font-weight: 600;
-    font-size: 0.9rem;
-}
-
-/* Renew Button */
 .renew-btn {
-    background: transparent;
-    color: #ffbe18;
-    border: 2px solid #ffbe18;
-    padding: 1rem 2rem;
-    border-radius: var(--radius);
-    font-size: 1rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: var(--transition);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
     width: 100%;
-    max-width: 600px;
+    padding: 1.2rem;
+    font-size: 1.1rem;
+    box-shadow: 0 4px 15px rgba(255, 190, 24, 0.2);
+    background: #ffbe18; 
+    color: #000;
+    border: none;
+    border-radius: 4px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.3s ease;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 0.8rem;
-    margin: 0 auto;
 }
 
 .renew-btn:hover {
-    background: #ffbe18;
-    color: var(--dark);
+    background: #e0a800;
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(255, 190, 24, 0.4);
 }
 
-/* Renewal Modal */
-.renewal-modal {
+/* ========================================
+   MODALS BASE & SCROLLING FIX
+======================================== */
+.modal {
     display: none;
     position: fixed;
     top: 0;
     left: 0;
-    width: 100vw;
-    height: 100vh;
+    width: 100%; /* Fixes shift from 100vw */
+    height: 100%;
     background: rgba(0, 0, 0, 0.85);
-    z-index: 3000;
+    z-index: 9999; 
+    backdrop-filter: blur(5px);
+    
+    /* Center the modal using Flexbox */
     justify-content: center;
     align-items: center;
-    backdrop-filter: blur(5px);
-    padding: 1rem;
 }
 
-.renewal-content {
-    background: var(--darker);
-    border-radius: var(--radius);
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    max-width: 700px;
-    width: 100%;
-    max-height: 90vh;
-    overflow-y: auto;
-    color: var(--accent);
+.modal-content {
+    background: #1e1e1e;
+    padding: 2.5rem;
+    border-radius: 8px;
+    position: relative;
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6);
+    border: 1px solid rgba(255, 51, 51, 0.3);
+    
+    /* MODAL HEIGHT CONSTRAINT - ensuring internal scroll */
+    max-height: 90vh; /* Limits to 90% of screen height */
+    overflow-y: auto; /* enables internal vertical scrolling if too large */
 }
 
+/* Custom scrollbar for modals so it looks nice */
+.modal-content::-webkit-scrollbar {
+    width: 8px;
+}
+.modal-content::-webkit-scrollbar-thumb {
+    background-color: #333; 
+    border-radius: 4px;
+}
+.modal-content::-webkit-scrollbar-thumb:hover {
+    background-color: #ff3333; 
+}
+
+/* Specific Modal Constraints */
+.renewal-modal-content {
+    width: 90%;
+    max-width: 500px;
+}
+
+.payment-modal-content {
+    width: 90%;
+    max-width: 400px;
+    text-align: center;
+}
+
+.face-modal-content {
+    background: #1e1e1e;
+    padding: 2rem;
+    border-radius: 8px;
+    max-width: 600px;
+}
+
+/* Modal Headers and Typography */
 .renewal-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 1.5rem 2rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    position: sticky;
-    top: 0;
-    background: var(--darker);
-    z-index: 10;
+    margin-bottom: 1rem;
+    border-bottom: 2px solid #ff3333;
+    padding-bottom: 0.5rem;
 }
 
-.renewal-header h3 {
-    font-size: 1.4rem;
-    font-weight: 700;
-    color: var(--accent);
+.modal-title {
     margin: 0;
-    display: flex;
-    align-items: center;
-    gap: 0.8rem;
-}
-
-.close-modal {
-    background: transparent;
-    border: none;
-    color: var(--neutral);
-    font-size: 2rem;
-    cursor: pointer;
-    transition: var(--transition);
-    line-height: 1;
-}
-
-.close-modal:hover {
-    color: var(--accent);
-}
-
-.renewal-body {
-    padding: 2rem;
-}
-
-/* Search Section */
-.search-section {
-    margin-bottom: 2rem;
-}
-
-.search-section label {
-    color: var(--accent);
-    font-weight: 600;
-    margin-bottom: 0.5rem;
-    display: block;
-    font-size: 0.95rem;
+    color: #fff;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    font-size: 1.4rem;
 }
 
+.payment-title {
+    border-bottom: 2px solid #ffbe18;
+    padding-bottom: 0.5rem;
+    color: #fff;
+}
+
+.face-title {
+    color: #fff;
+    margin-bottom: 1rem;
+}
+
+.modal-icon-red {
+    color: #ff3333;
+}
+
+/* Modal Close Buttons */
+.close-btn {
+    font-size: 1.5rem;
+    color: #888;
+    cursor: pointer;
+    transition: 0.3s;
+    position: absolute;
+    top: 15px;
+    right: 20px;
+}
+
+.close-btn:hover {
+    color: #ff3333;
+}
+
+/* ========================================
+   IMPROVED SEARCH SECTION & RESULTS
+======================================== */
 .search-input-group {
     display: flex;
-    gap: 0.8rem;
+    gap: 10px;
+    align-items: stretch;
 }
 
-.search-input-group input {
+/* Force override browser autofill background */
+.search-input {
     flex: 1;
-    padding: 1rem 1.2rem;
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 1rem 1.2rem !important;
     border-radius: var(--radius);
-    font-size: 1rem;
-    background: rgba(0, 0, 0, 0.5);
-    color: var(--accent);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(0, 0, 0, 0.5) !important;
+    color: #fff !important;
     font-family: 'Poppins', sans-serif;
+    font-size: 1rem;
     transition: var(--transition);
 }
 
-.search-input-group input:focus {
+.search-input:focus {
     outline: none;
     border-color: var(--primary);
     box-shadow: 0 0 0 2px rgba(179, 0, 0, 0.2);
+    background: rgba(0, 0, 0, 0.7) !important;
 }
 
-.search-btn {
-    background: var(--primary);
-    color: var(--accent);
-    border: none;
-    padding: 0.8rem 1.5rem;
-    border-radius: var(--radius);
-    font-weight: 600;
-    cursor: pointer;
-    transition: var(--transition);
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    white-space: nowrap;
-}
-
-.search-btn:hover {
-    background: var(--highlight);
-    transform: translateY(-2px);
-}
-
-/* Search Results */
+/* Custom scrollbar for beautiful search results */
 .search-results {
-    margin-top: 1rem;
+    margin-top: 15px;
+    max-height: 220px;
+    overflow-y: auto;
+    padding-right: 5px;
 }
 
+.search-results::-webkit-scrollbar {
+    width: 8px;
+}
+
+.search-results::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+}
+
+.search-results::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+}
+
+.search-results::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 51, 51, 0.5);
+}
+
+/* Beautiful Search Result Cards */
 .search-result-item {
-    background: rgba(0, 0, 0, 0.3);
-    padding: 1rem;
+    background: rgba(0, 0, 0, 0.4);
+    padding: 1.2rem;
     border-radius: var(--radius);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-left: 4px solid transparent;
     margin-bottom: 0.8rem;
     cursor: pointer;
-    transition: var(--transition);
+    transition: all 0.2s ease;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
 .search-result-item:hover {
-    background: rgba(255, 255, 255, 0.1);
-    border-color: var(--primary);
-    transform: translateX(5px);
+    background: rgba(255, 255, 255, 0.05);
+    border-left: 4px solid var(--primary);
+    transform: translateX(4px);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
 }
 
 .result-info {
-    color: var(--accent);
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
 }
 
 .result-info strong {
-    color: var(--primary);
+    color: #fff;
     font-size: 1.1rem;
+    letter-spacing: 0.5px;
 }
 
-.result-info small {
-    color: var(--neutral);
-}
-
-.status-active {
-    color: #23d160;
-}
-
-.status-inactive {
-    color: #ff3860;
-}
-
-.status-suspended {
-    color: #ffbe18;
+.result-info span.member-id {
+    color: var(--primary);
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
 }
 
 .no-results {
-    color: var(--neutral);
     text-align: center;
-    padding: 1rem;
+    padding: 1.5rem;
+    color: #888;
     font-style: italic;
+    background: rgba(0,0,0,0.2);
+    border-radius: var(--radius);
 }
 
-/* Selected Member Section */
-.selected-member-section {
-    margin-top: 2rem;
-    display: none;
-}
-
+/* Member Card Styles */
 .member-info-card {
     background: rgba(0, 0, 0, 0.4);
     padding: 1.5rem;
@@ -696,6 +665,14 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .status-badge.status-suspended {
     background: rgba(255, 190, 24, 0.2);
     color: #ffbe18;
+}
+
+/* RED AND GREEN ACTIVE/INACTIVE TEXT FOR SEARCH RESULTS */
+.membership-active {
+    color: #23d160 !important; /* Green */
+}
+.membership-inactive {
+    color: #ff3860 !important; /* Red */
 }
 
 .membership-list {
@@ -806,47 +783,55 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     margin-right: 0.5rem;
 }
 
-/* Messages */
-.message {
-    padding: 1.2rem 1.5rem;
-    border-radius: var(--radius);
-    font-weight: 600;
-    text-align: center;
-    border: 1px solid;
+
+/* Payment Section Styling */
+.payment-summary {
+    color: #ccc;
+    margin-bottom: 1.5rem;
+    line-height: 1.6;
+}
+
+.payment-group {
+    text-align: left;
+}
+
+.payment-label {
+    color: #fff;
+    margin-bottom: 0.5rem;
+    display: block;
+}
+
+.payment-actions {
     margin-top: 1.5rem;
 }
 
-.message.success {
-    background: rgba(35, 209, 96, 0.1);
+/* Universal Layout Classes */
+.spacing-top-large {
+    margin-top: 2rem;
+}
+
+.btn-full-large {
+    width: 100%;
+    padding: 1rem;
+    font-weight: bold;
+}
+
+.face-controls-group {
+    margin-top: 1rem;
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+}
+
+/* Styling used via JavaScript innerHTML */
+.price-highlight {
     color: #23d160;
-    border-color: #23d160;
+    font-size: 1.2rem;
+    font-weight: bold;
 }
 
-.message.error {
-    background: rgba(255, 56, 96, 0.1);
-    color: #ff3860;
-    border-color: #ff3860;
-}
-
-.message.hidden {
-    display: none;
-}
 
 /* Face Pane Modal */
-.face-pane {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    background: rgba(24, 24, 24, 0.95);
-    z-index: 3000;
-    justify-content: center;
-    align-items: center;
-    backdrop-filter: blur(5px);
-}
-
 .face-modal {
     background: var(--darker);
     padding: 2.5rem;
@@ -904,13 +889,6 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 
 /* Face Pane Buttons */
-.face-controls {
-    display: flex;
-    justify-content: center;
-    gap: 1rem;
-    margin-top: 1.5rem;
-}
-
 .btn-primary,
 .btn-success,
 .btn-secondary {
@@ -960,6 +938,32 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     color: #ffbe18;
 }
 
+/* Messages */
+.message {
+    padding: 1.2rem 1.5rem;
+    border-radius: var(--radius);
+    font-weight: 600;
+    text-align: center;
+    border: 1px solid;
+    margin-top: 1.5rem;
+}
+
+.message.success {
+    background: rgba(35, 209, 96, 0.1);
+    color: #23d160;
+    border-color: #23d160;
+}
+
+.message.error {
+    background: rgba(255, 56, 96, 0.1);
+    color: #ff3860;
+    border-color: #ff3860;
+}
+
+.message.hidden {
+    display: none;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
     .member-form {
@@ -979,7 +983,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
         height: 300px;
     }
 
-    .face-controls {
+    .face-controls-group {
         flex-direction: column;
         gap: 0.8rem;
     }
@@ -988,10 +992,6 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     .btn-success,
     .btn-secondary {
         width: 100%;
-    }
-
-    .renewal-content {
-        max-height: 95vh;
     }
 
     .renewal-body {
@@ -1019,7 +1019,11 @@ input[type="date"]::-webkit-calendar-picker-indicator {
         padding: 1.5rem;
     }
 
-    .form-group input {
+    .form-group input[type="text"],
+    .form-group input[type="number"],
+    .form-group input[type="tel"],
+    .form-group input[type="email"],
+    input[type="date"] {
         padding: 0.8rem 1rem;
     }
 
@@ -1043,4 +1047,115 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     .renewal-header {
         padding: 1rem 1.5rem;
     }
+}
+/* ========================================
+   ADD MEMBER - CONDITIONAL PRODUCT FIELD
+======================================== */
+
+.product-select-container {
+    display: none; /* Hidden by default */
+    margin-top: 1.5rem;
+    background-color: #0d0d0d; /* Slightly different dark bg to distinguish */
+    padding: 1.5rem;
+    border-radius: var(--radius);
+    border-left: 4px solid var(--primary); /* Intense red accent line */
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+}
+
+.product-select-container.active {
+    display: block;
+    opacity: 1;
+}
+
+.product-select-label {
+    color: var(--accent);
+    font-weight: 600;
+    margin-bottom: 0.8rem;
+    display: block;
+    font-size: 0.95rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Red Product Selection Card */
+.product-select-card {
+    background-color: var(--primary); /* Full Intense Red Background */
+    border-radius: 6px;
+    color: #ffffff; /* White text on red */
+    overflow: hidden;
+    box-shadow: 0 4px 15px rgba(179, 0, 0, 0.2);
+}
+
+.product-card-header {
+    background-color: rgba(0, 0, 0, 0.2); /* Darker red overlay for header */
+    padding: 0.8rem 1.2rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.product-card-header span {
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 500;
+    opacity: 0.8;
+}
+
+.product-card-body {
+    padding: 1.2rem;
+}
+
+.product-details-list {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 1rem 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+}
+
+.product-details-list li {
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    font-weight: 400;
+}
+
+/* Icons within list (assuming fontawesome) */
+.product-details-list li i {
+    color: #55efc4; /* Intense green icon like in reference image */
+    font-size: 1.1rem;
+}
+
+.product-card-footer {
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 1rem 0 0 0;
+    display: flex;
+    justify-content: flex-start;
+}
+
+.product-update-btn {
+    background-color: rgba(255, 255, 255, 0.1); /* Subtle white overlay */
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 0.6rem 1.5rem;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: var(--transition);
+}
+
+.product-update-btn:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+/* Sidebar red accent fix to match flow */
+.sidebar-nav a.active {
+    background-color: rgba(179, 0, 0, 0.1); /* Subtle red overlay */
+    border-right: 4px solid var(--primary); /* Intense red accent line */
 }

@@ -17,8 +17,13 @@ const TransactionSchema = new mongoose.Schema({
   },
   payment_method: {
     type: String,
-    enum: ['cash', 'e-wallet', 'bank'],
+    enum: ['cash', 'e-wallet', 'bank', 'others', 'none'],
     required: true
+  },
+  status: {
+    type: String,
+    enum: ['paid', 'unpaid'],
+    default: 'paid'
   },
   payment_date: {
     type: Date,
