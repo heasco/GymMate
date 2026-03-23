@@ -653,28 +653,65 @@ button:disabled {
     box-shadow: 0 0 20px rgba(179, 0, 0, 0.5);
 }
 
-/* View section filters */
+/* ========================================
+   View section filters (UPDATED)
+======================================== */
 .tx-filters {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+    background: rgba(0, 0, 0, 0.2);
+    padding: 1.5rem;
+    border-radius: var(--radius);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.tx-filter-row {
     display: flex;
     flex-wrap: wrap;
     gap: 1.25rem;
-    margin-bottom: 1.5rem;
+    align-items: flex-end; /* Aligns inputs and buttons at the bottom */
 }
 
-.tx-filter-item {
-    flex: 1 1 220px;
+/* Remove bottom margin from form-groups inside rows so they align nicely */
+.tx-filter-row .form-group {
+    margin-bottom: 0;
 }
 
-.tx-filter-actions {
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-end;
-    flex: 0 0 200px;
+/* Top Row Styles */
+.tx-filter-search {
+    flex: 1 1 300px; /* Allows the search bar to stretch and fill space */
+}
+
+input.pretty-search-bar {
+    padding: 1rem 1.2rem;
+    font-size: 1rem;
+    background: rgba(0, 0, 0, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+    transition: all 0.3s ease;
+    width: 100%;
+    border-radius: var(--radius);
+    color: var(--accent);
+}
+
+input.pretty-search-bar:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 10px rgba(179, 0, 0, 0.4), inset 0 2px 4px rgba(0, 0, 0, 0.3);
+    background: rgba(10, 10, 10, 0.9);
 }
 
 .tx-filter-buttons {
     display: flex;
     gap: 0.75rem;
+    flex: 0 0 auto; /* Keep buttons to their natural width */
+}
+
+/* Bottom Row Styles */
+.tx-filter-row.bottom-row .tx-filter-item {
+    flex: 1 1 200px; /* Distribute date and status evenly */
 }
 
 .tx-date-filter .tx-date-input {
@@ -683,13 +720,31 @@ button:disabled {
     gap: 0.5rem;
 }
 
-.tx-date-icon-btn {
-    background: rgba(0, 0, 0, 0.6);
-    border-radius: 50%;
-    width: 40px;
-    height: 40px;
-    padding: 0;
-    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.4);
+/* Red secondary button style for the reset button */
+.tx-filter-buttons .secondary-btn {
+    background: rgba(220, 53, 69, 0.8);
+    border-color: rgba(220, 53, 69, 1);
+    color: white;
+}
+
+.tx-filter-buttons .secondary-btn:hover {
+    background: rgba(220, 53, 69, 1);
+    box-shadow: 0 4px 15px rgba(220, 53, 69, 0.4);
+}
+
+/* Responsive fixes for small screens */
+@media (max-width: 768px) {
+    .tx-filter-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .tx-filter-buttons {
+        width: 100%;
+        justify-content: space-between;
+    }
+    .tx-filter-buttons button {
+        flex: 1;
+    }
 }
 
 /* Table */
@@ -771,14 +826,6 @@ button:disabled {
 
 /* Responsive */
 @media (max-width: 768px) {
-    .tx-filters {
-        flex-direction: column;
-    }
-
-    .tx-filter-actions {
-        flex: 1 1 auto;
-    }
-
     .tx-toggle-bar {
         width: 100%;
         justify-content: space-between;
@@ -789,6 +836,7 @@ button:disabled {
         text-align: center;
         padding: 0.6rem 0.4rem;
         font-size: 0.85rem;
+        min-width: auto;
     }
 }
 
@@ -1037,6 +1085,8 @@ button:disabled {
 .edit-tx-panel {
   width: 420px;
   max-width: 95%;
+  max-height: 90vh; /* Added to limit height so it doesn't run off screen */
+  overflow-y: auto; /* Added to allow scrolling inside the modal */
   background: rgba(20, 20, 20, 0.98);
   border-radius: var(--radius);
   border: 1px solid rgba(255, 255, 255, 0.15);
@@ -1045,6 +1095,22 @@ button:disabled {
   display: flex;
   flex-direction: column;
   animation: fadeInScale 0.2s ease-out;
+}
+
+/* Custom scrollbar for the modal so it matches the theme */
+.edit-tx-panel::-webkit-scrollbar {
+    width: 6px;
+}
+.edit-tx-panel::-webkit-scrollbar-track {
+    background: rgba(0,0,0,0.2);
+    border-radius: 4px;
+}
+.edit-tx-panel::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.2);
+    border-radius: 4px;
+}
+.edit-tx-panel::-webkit-scrollbar-thumb:hover {
+    background: rgba(255,255,255,0.4);
 }
 
 @keyframes fadeInScale {
@@ -1134,6 +1200,7 @@ button:disabled {
         width: 100%;
     }
 }
+
 /* ========================================
    DATE PICKER STYLES (Refactored)
 ======================================== */
@@ -1195,4 +1262,29 @@ button:disabled {
     position: static;
     color: var(--primary);
     font-size: 1.1rem;
+}
+
+/* ========================================
+   Transaction Status Badges
+======================================== */
+.status-badge {
+    padding: 0.3rem 0.8rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: inline-block;
+}
+
+.status-paid {
+    background: rgba(40, 167, 69, 0.15);
+    color: #28a745;
+    border: 1px solid rgba(40, 167, 69, 0.4);
+}
+
+.status-unpaid {
+    background: rgba(220, 53, 69, 0.15);
+    color: #dc3545;
+    border: 1px solid rgba(220, 53, 69, 0.4);
 }

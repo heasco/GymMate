@@ -10,7 +10,6 @@
 </head>
 <body>
   <div class="admin-container">
-    <!-- Sidebar -->
     <aside class="sidebar">
       <div class="sidebar-header">
         <h2>GOALS Gym Admin</h2>
@@ -30,21 +29,18 @@
       </nav>
     </aside>
 
-    <!-- Header -->
     <header class="header">
       <button class="menu-toggle" id="menuToggle">☰</button>
       <h1>Transactions</h1>
       <button class="logout-btn" id="logoutBtn">Logout</button>
     </header>
 
-    <!-- Main -->
     <main class="main-content">
       <div class="container">
         <div id="serverStatus" class="server-status">
           Checking server connection...
         </div>
 
-        <!-- Centered Add/View toggle -->
         <div class="tx-toggle-wrapper">
           <div class="tx-toggle-bar">
             <button id="tabAdd" class="tx-toggle-btn" type="button">
@@ -56,9 +52,7 @@
           </div>
         </div>
 
-        <!-- ADD TRANSACTION -->
         <section id="addSection" class="hidden">
-          <!-- Step Indicator -->
           <div class="step-indicator">
             <div class="step active" id="step1">
               <div class="step-number">1</div>
@@ -74,7 +68,6 @@
             </div>
           </div>
 
-          <!-- Step 1 -->
           <div class="card" id="step1Card">
             <h2>Step 1: Select Member</h2>
             <div class="form-group">
@@ -92,7 +85,6 @@
             <div id="selectedMemberInfo" class="member-info hidden"></div>
           </div>
 
-          <!-- Step 2 -->
           <div class="card" id="step2Card">
             <h2>Step 2: Enter Transaction Details</h2>
             <form id="transactionForm">
@@ -166,7 +158,6 @@
             </form>
           </div>
 
-          <!-- Step 3 -->
           <div class="card" id="step3Card">
             <h2>Step 3: Confirm Transaction</h2>
             <div id="confirmationSummary">
@@ -180,68 +171,66 @@
           </div>
         </section>
 
-        <!-- VIEW TRANSACTIONS -->
         <section id="viewSection">
           <div class="card">
             <h2>View Transactions</h2>
 
-            <!-- Filters -->
             <div class="tx-filters">
-              <div class="form-group tx-filter-item">
-                <label for="txSearch">Search Member / Transaction ID</label>
-                <input
-                  type="text"
-                  id="txSearch"
-                  placeholder="Search by member name, Member ID, or TRX-0001..."
-                />
-              </div>
-
-              <div class="form-group tx-filter-item tx-date-filter">
-                <label for="txDate">Filter by Date</label>
-                <div class="date-with-popup">
-                  <input type="date" id="txDate" />
-                  <button
-                    type="button"
-                    id="txDateIcon"
-                    class="mini-calendar-btn"
-                    title="Pick date"
-                  >
-                    📅
-                  </button>
-                  <div
-                    id="txDatePopup"
-                    class="mini-calendar-popup hidden"
-                    data-target-input="txDate"
-                  >
-                    <div class="mini-calendar-header">
-                      <button
-                        type="button"
-                        class="mini-cal-nav"
-                        data-dir="-1"
-                      >
-                        ‹
-                      </button>
-                      <span class="mini-calendar-title"></span>
-                      <button
-                        type="button"
-                        class="mini-cal-nav"
-                        data-dir="1"
-                      >
-                        ›
-                      </button>
-                    </div>
-                    <div class="mini-calendar-grid"></div>
-                  </div>
+              
+              <div class="tx-filter-row top-row">
+                <div class="form-group tx-filter-search">
+                  <label for="txSearch">Search Member / Transaction ID</label>
+                  <input
+                    type="text"
+                    id="txSearch"
+                    placeholder="Search by member name, Member ID, or TRX-0001..."
+                    class="pretty-search-bar"
+                  />
                 </div>
-              </div>
-
-              <div class="form-group tx-filter-actions">
-                <label>&nbsp;</label>
                 <div class="tx-filter-buttons">
                   <button type="button" id="txSearchBtn">Search</button>
-                  <button type="button" id="txResetBtn">Reset</button>
+                  <button type="button" id="txResetBtn" class="secondary-btn">Reset</button>
                 </div>
               </div>
+
+              <div class="tx-filter-row bottom-row">
+                <div class="form-group tx-filter-item tx-date-filter">
+                  <label for="txDate">Filter by Date</label>
+                  <div class="date-with-popup">
+                    <input type="date" id="txDate" />
+                    <button
+                      type="button"
+                      id="txDateIcon"
+                      class="mini-calendar-btn"
+                      title="Pick date"
+                    >
+                      📅
+                    </button>
+                    <div
+                      id="txDatePopup"
+                      class="mini-calendar-popup hidden"
+                      data-target-input="txDate"
+                    >
+                      <div class="mini-calendar-header">
+                        <button type="button" class="mini-cal-nav" data-dir="-1">‹</button>
+                        <span class="mini-calendar-title"></span>
+                        <button type="button" class="mini-cal-nav" data-dir="1">›</button>
+                      </div>
+                      <div class="mini-calendar-grid"></div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="form-group tx-filter-item">
+                  <label for="txStatusFilter">Filter by Status</label>
+                  <select id="txStatusFilter">
+                    <option value="all">All Statuses</option>
+                    <option value="paid">Paid</option>
+                    <option value="unpaid">Unpaid</option>
+                  </select>
+                </div>
+              </div>
+
             </div>
 
             <div id="txViewStatus" class="loading">
@@ -257,6 +246,7 @@
                     <th>Transaction ID</th>
                     <th>Member</th>
                     <th>Payment Method</th>
+                    <th class="center-align">Status</th>
                     <th class="right-align">Amount (₱)</th>
                     <th>Description</th>
                     <th class="center-align">Actions</th>
@@ -273,7 +263,6 @@
         </section>
       </div>
 
-      <!-- Edit Transaction Modal (hidden until JS adds is-open) -->
       <div id="editTxOverlay" class="edit-tx-overlay">
         <div class="edit-tx-panel">
           <div class="edit-tx-header">
@@ -303,6 +292,13 @@
                 <option value="cash">Cash</option>
                 <option value="e-wallet">E-Wallet</option>
                 <option value="bank">Bank Transfer / Deposit</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="editStatus">Status</label>
+              <select id="editStatus">
+                <option value="paid">Paid</option>
+                <option value="unpaid">Unpaid</option>
               </select>
             </div>
             <div class="form-group">

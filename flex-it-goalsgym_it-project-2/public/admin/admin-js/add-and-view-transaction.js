@@ -685,6 +685,7 @@ function setupViewSectionEventListeners() {
   const searchBtn = $('txSearchBtn');
   const resetBtn = $('txResetBtn');
   const dateInput = $('txDate');
+  const statusFilter = $('txStatusFilter');
 
   if (searchBtn) {
     searchBtn.addEventListener('click', () => {
@@ -713,10 +714,17 @@ function setupViewSectionEventListeners() {
     });
   }
 
+  if (statusFilter) {
+    statusFilter.addEventListener('change', () => {
+      renderTxTable(window.lastFetchedTx || []);
+    });
+  }
+
   if (resetBtn) {
     resetBtn.addEventListener('click', () => {
       if (searchInput) searchInput.value = '';
       if (dateInput) dateInput.value = '';
+      if (statusFilter) statusFilter.value = 'all';
       $('txViewError')?.classList.add('hidden');
       $('txEmpty')?.classList.add('hidden');
       loadLatestTransactions();
@@ -750,16 +758,26 @@ function renderTxTable(list) {
   if (!body) return;
 
   body.innerHTML = '';
+  // Keep track of the last fetched list for frontend status filtering
+  window.lastFetchedTx = list;
 
-  if (!list || list.length === 0) {
+  // Apply frontend status filter
+  const statusFilterVal = $('txStatusFilter')?.value || 'all';
+  const filteredList = statusFilterVal === 'all' 
+    ? list 
+    : list.filter(tx => (tx.status || 'paid') === statusFilterVal);
+
+  if (!filteredList || filteredList.length === 0) {
     if (empty) empty.classList.remove('hidden');
     return;
   }
 
   if (empty) empty.classList.add('hidden');
 
-  list.forEach((tx) => {
+  filteredList.forEach((tx) => {
     const tr = document.createElement('tr');
+    const txStatus = tx.status || 'paid'; // Default fallback
+    
     tr.dataset.txId = tx.transaction_id || '';
     tr.dataset.txMemberName = tx.member_name || 'Unknown';
     tr.dataset.txMemberId = tx.member_id || '';
@@ -767,30 +785,22 @@ function renderTxTable(list) {
     tr.dataset.txMethod = tx.payment_method || '';
     tr.dataset.txDate = tx.payment_date || tx.createdAt || '';
     tr.dataset.txDesc = tx.description || '';
+    tr.dataset.txStatus = txStatus; // Store status in dataset
 
     tr.innerHTML = `
       <td>${formatDate(tx.payment_date || tx.createdAt)}</td>
       <td>${tx.transaction_id || '—'}</td>
       <td>${tx.member_name || 'Unknown'}<br><small>${tx.member_id}</small></td>
       <td>${(tx.payment_method || '').toUpperCase()}</td>
+      <td class="center-align">
+        <span class="status-badge status-${txStatus}">${txStatus}</span>
+      </td>
       <td class="right-align">${Number(tx.amount || 0).toFixed(2)}</td>
       <td>${tx.description || '—'}</td>
       <td class="center-align">
         <div class="tx-actions">
-          <button
-            type="button"
-            class="tx-action-btn edit"
-            data-tx-id="${tx.transaction_id}"
-          >
-            Edit
-          </button>
-          <button
-            type="button"
-            class="tx-action-btn delete"
-            data-tx-id="${tx.transaction_id}"
-          >
-            Delete
-          </button>
+          <button type="button" class="tx-action-btn edit" data-tx-id="${tx.transaction_id}">Edit</button>
+          <button type="button" class="tx-action-btn delete" data-tx-id="${tx.transaction_id}">Delete</button>
         </div>
       </td>
     `;
@@ -798,14 +808,10 @@ function renderTxTable(list) {
   });
 
   body.querySelectorAll('.tx-action-btn.edit').forEach((btn) =>
-    btn.addEventListener('click', () =>
-      openEditPanel(btn.getAttribute('data-tx-id'))
-    )
+    btn.addEventListener('click', () => openEditPanel(btn.getAttribute('data-tx-id')))
   );
   body.querySelectorAll('.tx-action-btn.delete').forEach((btn) =>
-    btn.addEventListener('click', () =>
-      handleDeleteTransaction(btn.getAttribute('data-tx-id'))
-    )
+    btn.addEventListener('click', () => handleDeleteTransaction(btn.getAttribute('data-tx-id')))
   );
 }
 
@@ -959,6 +965,8 @@ function showEditPanel() {
   const overlay = $('editTxOverlay');
   if (!overlay) return;
   overlay.classList.add('is-open');
+  // ADDED: Lock the background page from scrolling when modal is open
+  document.body.style.overflow = 'hidden';
 }
 
 function hideEditPanel() {
@@ -970,6 +978,8 @@ function hideEditPanel() {
     msg.className = 'hidden';
     msg.textContent = '';
   }
+  // ADDED: Unlock the background page scrolling when modal is closed
+  document.body.style.overflow = '';
 }
 
 function openEditPanel(txId) {
@@ -992,9 +1002,9 @@ function openEditPanel(txId) {
 function fillEditFormFromRow(row) {
   const txId = row.querySelector('.tx-action-btn.edit')?.dataset.txId || '';
   const memberCell = row.children[2];
-  const amountCell = row.children[4];
-  const descCell = row.children[5];
   const methodCell = row.children[3];
+  const amountCell = row.children[5];
+  const descCell = row.children[6];
 
   const memberName = memberCell
     ? memberCell.childNodes[0].textContent.trim()
@@ -1026,6 +1036,9 @@ function fillEditFormFromRow(row) {
   }
 
   $('editDesc').value = descCell ? descCell.textContent.trim() : '';
+
+  const status = row.dataset.txStatus || 'paid';
+  $('editStatus').value = status;
 }
 
 async function handleEditSubmit(e) {
@@ -1038,6 +1051,15 @@ async function handleEditSubmit(e) {
   if (msg) {
     msg.className = 'hidden';
     msg.textContent = '';
+  }
+
+  const row = document.querySelector(`tr[data-tx-id="${currentEditTx}"]`);
+  const originalStatus = row ? row.dataset.txStatus : 'paid';
+  const newStatus = $('editStatus').value;
+
+  if (originalStatus === 'paid' && newStatus === 'unpaid') {
+    const isSure = window.confirm("Are you sure you want to change this member's transaction status from Paid to Unpaid?");
+    if (!isSure) return; 
   }
 
   const payload = {};
@@ -1061,6 +1083,7 @@ async function handleEditSubmit(e) {
   if (method) payload.payment_method = method;
   if (dateStr) payload.payment_date = dateStr;
   payload.description = desc;
+  payload.status = newStatus; 
 
   if (Object.keys(payload).length === 0) {
     hideEditPanel();
@@ -1198,5 +1221,3 @@ function initMiniCalendar(inputId, buttonId, popupId, onSelect) {
     }
   });
 }
-
-
