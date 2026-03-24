@@ -1,23 +1,18 @@
 const express = require('express');
 const router = express.Router();
 const Member = require('../models/Member');
-const Trainer = require('../models/Trainer');
 const Announcement = require('../models/Announcement');
 const transporter = require('../utils/nodemailer');
 
-
-// @desc    Get all members and trainers for recipient list
+// @desc    Get all members for recipient list
 // @route   GET /api/announcements/recipients
 // @access  Private/Admin
 router.get('/recipients', async (req, res) => {
   try {
     const members = await Member.find({}, 'name email');
-    const trainers = await Trainer.find({}, 'name email');
 
-    const recipients = [
-      ...members.map(m => ({ name: m.name, email: m.email, role: 'member' })),
-      ...trainers.map(t => ({ name: t.name, email: t.email, role: 'trainer' }))
-    ];
+    // Only map members now
+    const recipients = members.map(m => ({ name: m.name, email: m.email, role: 'member' }));
 
     res.json({ success: true, data: recipients });
   } catch (error) {

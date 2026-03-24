@@ -456,7 +456,7 @@ function displayRecipients(recipients) {
         item.className = 'recipient-item';
         item.innerHTML = `
             <input type="checkbox" id="recipient_${r.email}" name="recipients" value="${r.email}" data-role="${r.role}">
-            <label for="recipient_${r.email}">${r.name} (${r.email}) - ${r.role}</label>
+            <label for="recipient_${r.email}">${r.name} (${r.email})</label>
         `;
         recipientList.appendChild(item);
     });
@@ -632,22 +632,6 @@ function setupFormListener() {
         }
     });
 
-    // Select Members Only logic
-    document.getElementById('selectMembersBtn').addEventListener('click', () => {
-        const checkboxes = document.querySelectorAll('#recipientList input[name="recipients"]');
-        checkboxes.forEach(cb => {
-            cb.checked = (cb.dataset.role === 'member');
-        });
-    });
-
-    // Select Trainers Only logic
-    document.getElementById('selectTrainersBtn').addEventListener('click', () => {
-        const checkboxes = document.querySelectorAll('#recipientList input[name="recipients"]');
-        checkboxes.forEach(cb => {
-            cb.checked = (cb.dataset.role === 'trainer');
-        });
-    });
-
     document.getElementById('selectAllBtn').addEventListener('click', () => {
         document.querySelectorAll('#recipientList input[name="recipients"]').forEach(c => c.checked = true);
     });
@@ -656,12 +640,12 @@ function setupFormListener() {
         document.querySelectorAll('#recipientList input[name="recipients"]').forEach(c => c.checked = false);
     });
 
+    // Auto-search logic
     document.getElementById('recipient_search').addEventListener('input', (e) => {
         const filter = e.target.value.toLowerCase();
         const filteredRecipients = allRecipients.filter(r => 
             r.name.toLowerCase().includes(filter) || 
-            r.email.toLowerCase().includes(filter) || 
-            r.role.toLowerCase().includes(filter)
+            r.email.toLowerCase().includes(filter)
         );
         displayRecipients(filteredRecipients);
     });
