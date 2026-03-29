@@ -430,6 +430,46 @@ function setupTabToggle() {
 // ADD TRANSACTION SECTION
 // =======================================
 function setupAddSectionEventListeners() {
+  // Setup radio toggle for member vs walkin
+  const memberRadios = document.querySelectorAll('input[name="memberType"]');
+  const regGroup = $('registeredMemberGroup');
+  const walkinGroup = $('walkinMemberGroup');
+  const guestNameInput = $('guestName');
+
+  memberRadios.forEach(radio => {
+    radio.addEventListener('change', (e) => {
+      if (e.target.value === 'walkin') {
+        regGroup.classList.add('hidden');
+        walkinGroup.classList.remove('hidden');
+        
+        $('memberSearch').value = '';
+        if ($('selectedMemberInfo')) $('selectedMemberInfo').classList.add('hidden');
+        
+        const val = guestNameInput.value.trim();
+        selectedMember = val ? { memberId: `Walk-in: ${val}`, name: val, isWalkIn: true } : null;
+      } else {
+        walkinGroup.classList.add('hidden');
+        regGroup.classList.remove('hidden');
+        
+        guestNameInput.value = '';
+        selectedMember = null;
+      }
+      checkFormCompletion();
+    });
+  });
+
+  if (guestNameInput) {
+    guestNameInput.addEventListener('input', (e) => {
+      const val = e.target.value.trim();
+      if (val) {
+        selectedMember = { memberId: `Walk-in: ${val}`, name: val, isWalkIn: true };
+      } else {
+        selectedMember = null;
+      }
+      checkFormCompletion();
+    });
+  }
+
   const memberSearch = $('memberSearch');
   if (memberSearch) {
     memberSearch.addEventListener('input', (e) => {
@@ -444,6 +484,20 @@ function setupAddSectionEventListeners() {
       searchTimeout = setTimeout(async () => {
         await searchMembers(query);
       }, 300);
+    });
+  }
+
+  const txTypeSelect = $('transactionType');
+  if (txTypeSelect) {
+    txTypeSelect.addEventListener('change', (e) => {
+      const specifyGroup = $('specifyTypeGroup');
+      if (e.target.value === 'Others') {
+        specifyGroup.classList.remove('hidden');
+      } else {
+        specifyGroup.classList.add('hidden');
+        $('specifyType').value = ''; 
+      }
+      checkFormCompletion();
     });
   }
 
@@ -545,16 +599,29 @@ function handleMemberSelect(memberId, list) {
 function checkFormCompletion() {
   const amount = $('amount');
   const method = $('paymentMethod');
+  const status = $('status');
   const date = $('paymentDate');
+  const txType = $('transactionType');
+  const specifyType = $('specifyType');
 
-  const complete =
+  let complete =
     selectedMember &&
     amount &&
     method &&
     date &&
-    Number(amount.value) > 0 &&
+    status &&
+    txType &&
+    Number(amount.value) >= 0 &&
     method.value &&
-    date.value;
+    status.value &&
+    date.value &&
+    txType.value;
+
+  if (complete && txType.value === 'Others') {
+    if (!specifyType.value.trim()) {
+      complete = false;
+    }
+  }
 
   const btn = $('submitTransactionBtn');
   if (btn) btn.disabled = !complete;
@@ -574,15 +641,22 @@ function updateConfirmationSummary() {
 
   const amount = $('amount')?.value || '';
   const method = $('paymentMethod')?.value || '';
+  const status = $('status')?.value || 'paid';
   const date = $('paymentDate')?.value || '';
+  const txType = $('transactionType')?.value || '';
+  const specifyType = $('specifyType')?.value || '';
   const desc = $('description')?.value || '';
 
+  let finalType = txType === 'Others' ? specifyType : txType;
+
   summaryDiv.innerHTML = `
-    <p><strong>Member:</strong> ${selectedMember.name} (${selectedMember.memberId})</p>
+    <p><strong>Member:</strong> ${selectedMember.name} ${selectedMember.isWalkIn ? '(Walk-in)' : `(${selectedMember.memberId})`}</p>
     <p><strong>Amount:</strong> ₱${amount || '0.00'}</p>
     <p><strong>Payment Method:</strong> ${method || '—'}</p>
+    <p><strong>Status:</strong> ${status}</p>
     <p><strong>Payment Date:</strong> ${date || '—'}</p>
-    <p><strong>Description:</strong> ${desc || '—'}</p>
+    <p><strong>Transaction Type:</strong> ${finalType || '—'}</p>
+    <p><strong>Notes:</strong> ${desc || '—'}</p>
   `;
 }
 
@@ -603,12 +677,22 @@ async function submitTransaction() {
     resultMsg.classList.add('hidden');
   }
 
+  const txType = $('transactionType').value;
+  const specifyType = $('specifyType').value.trim();
+  let finalDesc = txType === 'Others' ? specifyType : txType;
+  const notes = ($('description').value || '').trim();
+
+  if (notes) {
+      finalDesc += ` - ${notes}`;
+  }
+
   const payload = {
     member_id: selectedMember.memberId,
     amount: Number($('amount').value),
     payment_method: $('paymentMethod').value,
+    status: $('status').value,
     payment_date: $('paymentDate').value,
-    description: ($('description').value || '').trim(),
+    description: finalDesc,
   };
 
   try {
@@ -632,9 +716,10 @@ async function submitTransaction() {
       resultBox.classList.remove('hidden');
       resultBox.innerHTML = `
         <p><strong>Transaction ID:</strong> ${res.data.transaction_id}</p>
-        <p><strong>Member:</strong> ${selectedMember.name} (${selectedMember.memberId})</p>
+        <p><strong>Member:</strong> ${selectedMember.name} ${selectedMember.isWalkIn ? '(Walk-in)' : `(${selectedMember.memberId})`}</p>
         <p><strong>Amount:</strong> ₱${res.data.amount.toFixed(2)}</p>
         <p><strong>Payment Method:</strong> ${res.data.payment_method}</p>
+        <p><strong>Status:</strong> ${res.data.status}</p>
         <p><strong>Payment Date:</strong> ${new Date(
           res.data.payment_date
         ).toLocaleDateString()}</p>
@@ -651,12 +736,24 @@ async function submitTransaction() {
             sessionStorage.removeItem(key);
         });
         form.reset();
+        const specifyGroup = $('specifyTypeGroup');
+        if (specifyGroup) specifyGroup.classList.add('hidden');
     }
+
+    // Reset member selection UI back to default
+    const registeredRadio = document.querySelector('input[name="memberType"][value="registered"]');
+    if (registeredRadio) registeredRadio.checked = true;
+    $('registeredMemberGroup').classList.remove('hidden');
+    $('walkinMemberGroup').classList.add('hidden');
+    $('guestName').value = '';
+    $('memberSearch').value = '';
+
     selectedMember = null;
     const selectedMemberInfo = document.getElementById('selectedMemberInfo');
     if (selectedMemberInfo) {
         selectedMemberInfo.classList.add('hidden');
     }
+    
     checkFormCompletion();
     updateConfirmationSummary();
 
@@ -790,7 +887,7 @@ function renderTxTable(list) {
     tr.innerHTML = `
       <td>${formatDate(tx.payment_date || tx.createdAt)}</td>
       <td>${tx.transaction_id || '—'}</td>
-      <td>${tx.member_name || 'Unknown'}<br><small>${tx.member_id}</small></td>
+      <td>${tx.member_name || 'Unknown'}<br><small>${tx.member_id.startsWith('Walk-in:') ? 'Guest' : tx.member_id}</small></td>
       <td>${(tx.payment_method || '').toUpperCase()}</td>
       <td class="center-align">
         <span class="status-badge status-${txStatus}">${txStatus}</span>
@@ -1023,7 +1120,7 @@ function fillEditFormFromRow(row) {
 
   const method = methodCell ? methodCell.textContent.trim().toLowerCase() : '';
   $('editMethod').value =
-    method === 'cash' || method === 'e-wallet' || method === 'bank'
+    ['cash', 'e-wallet', 'bank', 'none', 'others'].includes(method)
       ? method
       : '';
 
@@ -1070,9 +1167,9 @@ async function handleEditSubmit(e) {
 
   if (amountStr) {
     const num = Number(amountStr);
-    if (Number.isNaN(num) || num <= 0) {
+    if (Number.isNaN(num) || num < 0) {
       if (msg) {
-        msg.textContent = 'Amount must be a positive number.';
+        msg.textContent = 'Amount must be a valid number.';
         msg.className = 'error';
       }
       return;

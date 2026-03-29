@@ -28,21 +28,26 @@ router.post('/', asyncHandler(async (req, res) => {
       return res.status(400).json({ success: false, error: 'Invalid payment date format' });
     }
 
-    let memberQuery = { memberId: member_id };
+    const isWalkIn = typeof member_id === 'string' && member_id.startsWith('Walk-in:');
+    let member = null;
 
-    if (mongoose.Types.ObjectId.isValid(member_id)) {
-      memberQuery = {
-        $or: [{ memberId: member_id }, { _id: new mongoose.Types.ObjectId(member_id) }],
-      };
-    }
+    if (!isWalkIn) {
+      let memberQuery = { memberId: member_id };
 
-    const member = await Member.findOne(memberQuery);
-    if (!member) {
-      return res.status(404).json({ success: false, error: 'Member not found' });
+      if (mongoose.Types.ObjectId.isValid(member_id)) {
+        memberQuery = {
+          $or: [{ memberId: member_id }, { _id: new mongoose.Types.ObjectId(member_id) }],
+        };
+      }
+
+      member = await Member.findOne(memberQuery);
+      if (!member) {
+        return res.status(404).json({ success: false, error: 'Member not found' });
+      }
     }
 
     const newTransaction = new Transaction({
-      member_id: member.memberId || member._id.toString(),
+      member_id: isWalkIn ? member_id : (member.memberId || member._id.toString()),
       amount,
       payment_method,
       status: status || 'paid',
@@ -52,9 +57,11 @@ router.post('/', asyncHandler(async (req, res) => {
 
     const savedTransaction = await newTransaction.save();
 
-    await Member.findByIdAndUpdate(member._id, {
-      $push: { transactions: savedTransaction.transaction_id },
-    });
+    if (!isWalkIn && member) {
+      await Member.findByIdAndUpdate(member._id, {
+        $push: { transactions: savedTransaction.transaction_id },
+      });
+    }
 
     res.status(201).json({
       success: true,
@@ -95,11 +102,18 @@ router.get('/', asyncHandler(async (req, res) => {
     const memberMap = new Map(members.map((m) => [m.memberId, { name: m.name, memberId: m.memberId }]));
 
     const data = transactions.map((t) => {
-      const m = memberMap.get(t.member_id) || {};
+      let mName = 'Unknown';
+      if (t.member_id && t.member_id.startsWith('Walk-in:')) {
+        mName = t.member_id.replace('Walk-in:', '').trim() + ' (Walk-in)';
+      } else {
+        const m = memberMap.get(t.member_id) || {};
+        mName = m.name || 'Unknown';
+      }
+
       return {
         transaction_id: t.transaction_id,
         member_id: t.member_id,
-        member_name: m.name || 'Unknown',
+        member_name: mName,
         amount: t.amount,
         payment_method: t.payment_method,
         status: t.status,
@@ -132,6 +146,7 @@ router.get('/search', asyncHandler(async (req, res) => {
     const txFilter = { $or: [] };
     if (memberIds.length) txFilter.$or.push({ member_id: { $in: memberIds } });
     txFilter.$or.push({ transaction_id: { $regex: query, $options: 'i' } });
+    txFilter.$or.push({ member_id: { $regex: query, $options: 'i' } }); // Search Walk-in names too
 
     const transactions = await Transaction.find(txFilter)
       .sort({ payment_date: -1, createdAt: -1 })
@@ -141,11 +156,18 @@ router.get('/search', asyncHandler(async (req, res) => {
     const memberMap = new Map(members.map((m) => [m.memberId, { name: m.name, memberId: m.memberId }]));
 
     const data = transactions.map((t) => {
-      const m = memberMap.get(t.member_id) || {};
+      let mName = 'Unknown';
+      if (t.member_id && t.member_id.startsWith('Walk-in:')) {
+        mName = t.member_id.replace('Walk-in:', '').trim() + ' (Walk-in)';
+      } else {
+        const m = memberMap.get(t.member_id) || {};
+        mName = m.name || 'Unknown';
+      }
+
       return {
         transaction_id: t.transaction_id,
         member_id: t.member_id,
-        member_name: m.name || 'Unknown',
+        member_name: mName,
         amount: t.amount,
         payment_method: t.payment_method,
         status: t.status,
@@ -178,11 +200,18 @@ router.get('/date', asyncHandler(async (req, res) => {
     const memberMap = new Map(members.map((m) => [m.memberId, { name: m.name, memberId: m.memberId }]));
 
     const data = transactions.map((t) => {
-      const m = memberMap.get(t.member_id) || {};
+      let mName = 'Unknown';
+      if (t.member_id && t.member_id.startsWith('Walk-in:')) {
+        mName = t.member_id.replace('Walk-in:', '').trim() + ' (Walk-in)';
+      } else {
+        const m = memberMap.get(t.member_id) || {};
+        mName = m.name || 'Unknown';
+      }
+
       return {
         transaction_id: t.transaction_id,
         member_id: t.member_id,
-        member_name: m.name || 'Unknown',
+        member_name: mName,
         amount: t.amount,
         payment_method: t.payment_method,
         status: t.status,
@@ -203,7 +232,7 @@ router.put('/:transaction_id', asyncHandler(async (req, res) => {
     const update = {};
 
     if (amount !== undefined) {
-      if (amount <= 0) return res.status(400).json({ success: false, error: 'Amount must be positive' });
+      if (amount < 0) return res.status(400).json({ success: false, error: 'Amount must be positive' });
       update.amount = amount;
     }
 
