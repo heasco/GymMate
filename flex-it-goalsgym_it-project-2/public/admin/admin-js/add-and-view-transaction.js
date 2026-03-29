@@ -13,7 +13,6 @@ let currentEditTx = null;
 // --------------------------------------
 const ADMIN_SESSION_MAX_AGE_MS = 2 * 60 * 60 * 1000; // 2 hours
 
-// Admin-scoped storage keys to avoid cross-role interference
 const ADMIN_KEYS = {
   token: 'admin_token',
   authUser: 'admin_authUser',
@@ -21,9 +20,6 @@ const ADMIN_KEYS = {
   logoutEvent: 'adminLogoutEvent',
 };
 
-// --------------------------------------
-// Admin storage helpers (namespaced)
-// --------------------------------------
 const AdminStore = {
   set(token, userPayload) {
     try {
@@ -89,10 +85,6 @@ const AdminStore = {
   },
 };
 
-// --------------------------------------
-// Backward‑compatible bootstrap
-// Copy valid admin session from generic keys into admin_* once
-// --------------------------------------
 function bootstrapAdminFromGenericIfNeeded() {
   try {
     if (AdminStore.hasSession()) return;
@@ -110,25 +102,14 @@ function bootstrapAdminFromGenericIfNeeded() {
   }
 }
 
-
-// ------------------------------
-// Shared auth helpers (admin only)
-// ------------------------------
 function clearLocalAuth() {
-  // Clear admin-scoped keys
   AdminStore.clear();
-
-  // Also clear legacy generic keys if they currently represent an admin session.
-  // This prevents login.js from auto-redirecting back into admin after logout.
   try {
-    const genericRole =
-      localStorage.getItem('role') || sessionStorage.getItem('role');
-
+    const genericRole = localStorage.getItem('role') || sessionStorage.getItem('role');
     if (genericRole === 'admin') {
       localStorage.removeItem('token');
       localStorage.removeItem('authUser');
       localStorage.removeItem('role');
-
       sessionStorage.removeItem('token');
       sessionStorage.removeItem('authUser');
       sessionStorage.removeItem('role');
@@ -149,49 +130,36 @@ function getToken() {
 }
 
 function adminLogout(reason, loginPath = '../login.html') {
-  console.log('[Admin Logout]:', reason || 'no reason');
   clearLocalAuth();
-  // Notify admin tabs only
   localStorage.setItem(ADMIN_KEYS.logoutEvent, Date.now().toString());
   window.location.href = loginPath;
 }
 
-// Centralized admin auth check
 function ensureAdminAuthOrLogout(loginPath) {
   try {
-    // Populate admin_* from generic admin keys if needed
-    if (!AdminStore.hasSession()) {
-      bootstrapAdminFromGenericIfNeeded();
-    }
-
+    if (!AdminStore.hasSession()) bootstrapAdminFromGenericIfNeeded();
     if (!AdminStore.hasSession()) {
       adminLogout('missing admin session', loginPath);
       return false;
     }
-
     const authUser = AdminStore.getAuthUser();
     if (!authUser || authUser.role !== 'admin') {
       adminLogout('invalid or non-admin authUser', loginPath);
       return false;
     }
-
     const ts = authUser.timestamp || 0;
     if (!ts || Date.now() - ts > ADMIN_SESSION_MAX_AGE_MS) {
       adminLogout('admin session max age exceeded', loginPath);
       return false;
     }
-
-    // Refresh timestamp on successful check
     authUser.timestamp = Date.now();
     AdminStore.set(AdminStore.getToken(), authUser);
 
-    // Cross-tab logout sync for admin only
     window.addEventListener('storage', (event) => {
       if (event.key === ADMIN_KEYS.logoutEvent) {
         adminLogout('adminLogoutEvent from another tab', loginPath);
       }
     });
-
     return true;
   } catch (e) {
     console.error('Auth check failed:', e);
@@ -200,26 +168,16 @@ function ensureAdminAuthOrLogout(loginPath) {
   }
 }
 
-/**
- * Require a valid auth session for this page.
- * - expectedRole: 'admin' | 'member' | 'trainer'
- * - loginPath: relative path to the corresponding login page
- *
- * For this admin module we delegate to ensureAdminAuthOrLogout,
- * keeping the signature unchanged at the call site.
- */
 function requireAuth(expectedRole, loginPath) {
   return ensureAdminAuthOrLogout(loginPath);
 }
 
-// Global cross‑tab admin logout sync (admin_* only)
 window.addEventListener('storage', (event) => {
   if (event.key === ADMIN_KEYS.logoutEvent) {
     adminLogout('adminLogoutEvent from another tab (global)', '../login.html');
   }
 });
 
-// ---------- Shared secure fetch ----------
 async function apiFetch(endpoint, options = {}) {
   const ok = ensureAdminAuthOrLogout('../login.html');
   if (!ok) return;
@@ -232,34 +190,23 @@ async function apiFetch(endpoint, options = {}) {
     return;
   }
 
-  // Basic timestamp check (same as requireAuth)
   try {
     const ts = authUser.timestamp || 0;
     if (!ts || Date.now() - ts > ADMIN_SESSION_MAX_AGE_MS) {
       adminLogout('admin session max age exceeded in apiFetch', '../login.html');
       return;
     }
-    // Refresh timestamp on successful API use
     authUser.timestamp = Date.now();
     AdminStore.set(token, authUser);
   } catch (e) {
-    console.error('Failed to refresh authUser in apiFetch:', e);
     adminLogout('invalid authUser JSON in apiFetch', '../login.html');
     return;
   }
 
-  const url =
-    window.location.hostname === 'localhost' ||
-    window.location.hostname === '127.0.0.1'
-      ? `${SERVER_URL}${endpoint}`
-      : endpoint;
+  const url = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+      ? `${SERVER_URL}${endpoint}` : endpoint;
 
-  const headers = {
-    ...options.headers,
-    Authorization: `Bearer ${token}`,
-    'Content-Type': 'application/json',
-  };
-
+  const headers = { ...options.headers, Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
   const res = await fetch(url, { ...options, headers });
 
   if (res.status === 401) {
@@ -282,147 +229,134 @@ document.addEventListener('DOMContentLoaded', async () => {
   await checkServerConnection();
   setupAddSectionEventListeners();
   setupViewSectionEventListeners();
+  setupSalesSectionEventListeners();
   setupTabToggle();
   setupEditPanelEvents();
 
-  // Mini calendars
+  // Add Section Minicalendar
   initMiniCalendar('paymentDate', 'paymentDateIcon', 'paymentDatePopup');
-  initMiniCalendar('txDate', 'txDateIcon', 'txDatePopup', (dateStr) => {
-    if (dateStr) filterTransactionsByDate(dateStr);
-  });
+
+  // View Section Minicalendars (Removed custom callbacks to allow default 'change' event to bubble)
+  initMiniCalendar('txStartDate', 'txStartDateIcon', 'txStartDatePopup');
+  initMiniCalendar('txEndDate', 'txEndDateIcon', 'txEndDatePopup');
+
+  // Sales Section Minicalendars
+  initMiniCalendar('salesStartDate', 'salesStartDateIcon', 'salesStartDatePopup');
+  initMiniCalendar('salesEndDate', 'salesEndDateIcon', 'salesEndDatePopup');
+
+  // Edit Panel Minicalendar
   initMiniCalendar('editDate', 'editDateIcon', 'editDatePopup');
 
-  // Load latest 10 transactions on initial load of view tab
   loadLatestTransactions();
 });
 
-// ---------- Helpers ----------
-function $(id) {
-  return document.getElementById(id);
-}
+function $(id) { return document.getElementById(id); }
 
 function setupLayoutChrome() {
   const menuToggle = $('menuToggle');
   const sidebar = document.querySelector('.sidebar');
   const logoutBtn = $('logoutBtn');
 
-  // Security: Check timestamp + clear token/role on invalid
   try {
     const authUser = AdminStore.getAuthUser();
     const ts = authUser?.timestamp || 0;
     if (!authUser || !ts || Date.now() - ts > ADMIN_SESSION_MAX_AGE_MS) {
-      adminLogout('admin session max age exceeded in setupLayoutChrome', '../login.html');
+      adminLogout('admin session max age exceeded', '../login.html');
       return;
     }
   } catch (e) {
-    adminLogout('invalid authUser JSON in setupLayoutChrome', '../login.html');
+    adminLogout('invalid authUser JSON', '../login.html');
     return;
   }
 
-  // Display admin full name in sidebar
   const adminNameEl = document.getElementById('adminFullName');
   if (adminNameEl) {
     const authUser = AdminStore.getAuthUser();
-    if (authUser?.name) {
-      adminNameEl.textContent = authUser.name;
-    } else {
-      adminNameEl.textContent = 'Admin';
-    }
+    adminNameEl.textContent = authUser?.name ? authUser.name : 'Admin';
   }
 
   if (menuToggle && sidebar) {
-    menuToggle.addEventListener('click', () => {
-      sidebar.classList.toggle('collapsed');
-    });
+    menuToggle.addEventListener('click', () => sidebar.classList.toggle('collapsed'));
   }
 
   if (logoutBtn) {
     logoutBtn.addEventListener('click', async () => {
       const token = getToken();
       try {
-        if (token) {
-          const logoutUrl = `${getApiBase()}/api/logout`;
-          await fetch(logoutUrl, {
-            method: 'POST',
-            headers: { Authorization: `Bearer ${token}` },
-          });
-        }
+        if (token) await fetch(`${getApiBase()}/api/logout`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } });
       } catch (e) {
         console.error('Logout error:', e);
       } finally {
-        clearLocalAuth();
-        localStorage.setItem(ADMIN_KEYS.logoutEvent, Date.now().toString());
-        window.location.href = '../login.html';
+        adminLogout('user manually logged out', '../login.html');
       }
     });
   }
 
-  // Close sidebar when clicking outside on mobile
   document.addEventListener('click', (e) => {
-    if (
-      window.innerWidth <= 768 &&
-      sidebar &&
-      menuToggle &&
-      !sidebar.contains(e.target) &&
-      !menuToggle.contains(e.target)
-    ) {
+    if (window.innerWidth <= 768 && sidebar && menuToggle && !sidebar.contains(e.target) && !menuToggle.contains(e.target)) {
       sidebar.classList.remove('collapsed');
     }
   });
 
   if (sidebar) {
     sidebar.addEventListener('transitionend', () => {
-      if (window.innerWidth <= 768 && sidebar.classList.contains('collapsed')) {
-        document.body.style.overflow = 'hidden';
-      } else {
-        document.body.style.overflow = 'auto';
-      }
+      document.body.style.overflow = (window.innerWidth <= 768 && sidebar.classList.contains('collapsed')) ? 'hidden' : 'auto';
     });
   }
 }
 
-
 async function checkServerConnection() {
   const statusElement = $('serverStatus');
   if (!statusElement) return;
-
   try {
     const result = await apiFetch('/health');
     if (result) {
       statusElement.textContent = 'Connected to server successfully';
       statusElement.className = 'server-status server-connected';
     } else {
-      throw new Error('Server response not OK');
+      throw new Error('Server not OK');
     }
   } catch (error) {
-    statusElement.textContent =
-      'Cannot connect to server. Please try again later.';
+    statusElement.textContent = 'Cannot connect to server. Please try again later.';
     statusElement.className = 'server-status server-disconnected';
   }
 }
 
-// ---------- Tab toggle (Add / View) ----------
+// ---------- Tab toggle (Add / View / Sales) ----------
 function setupTabToggle() {
   const tabAdd = $('tabAdd');
   const tabView = $('tabView');
+  const tabSales = $('tabSales');
+  
   const addSection = $('addSection');
   const viewSection = $('viewSection');
+  const salesSection = $('salesSection');
 
-  if (!tabAdd || !tabView || !addSection || !viewSection) return;
+  if (!tabAdd || !tabView || !tabSales) return;
+
+  function resetTabs() {
+    [tabAdd, tabView, tabSales].forEach(t => t.classList.remove('active'));
+    [addSection, viewSection, salesSection].forEach(s => s.classList.add('hidden'));
+  }
 
   tabAdd.addEventListener('click', () => {
+    resetTabs();
     tabAdd.classList.add('active');
-    tabView.classList.remove('active');
     addSection.classList.remove('hidden');
-    viewSection.classList.add('hidden');
   });
 
   tabView.addEventListener('click', () => {
+    resetTabs();
     tabView.classList.add('active');
-    tabAdd.classList.remove('active');
-    addSection.classList.add('hidden');
     viewSection.classList.remove('hidden');
     loadLatestTransactions();
+  });
+
+  tabSales.addEventListener('click', () => {
+    resetTabs();
+    tabSales.classList.add('active');
+    salesSection.classList.remove('hidden');
+    loadSalesData(); // Auto load all sales when entering tab
   });
 }
 
@@ -430,7 +364,6 @@ function setupTabToggle() {
 // ADD TRANSACTION SECTION
 // =======================================
 function setupAddSectionEventListeners() {
-  // Setup radio toggle for member vs walkin
   const memberRadios = document.querySelectorAll('input[name="memberType"]');
   const regGroup = $('registeredMemberGroup');
   const walkinGroup = $('walkinMemberGroup');
@@ -441,16 +374,13 @@ function setupAddSectionEventListeners() {
       if (e.target.value === 'walkin') {
         regGroup.classList.add('hidden');
         walkinGroup.classList.remove('hidden');
-        
         $('memberSearch').value = '';
         if ($('selectedMemberInfo')) $('selectedMemberInfo').classList.add('hidden');
-        
         const val = guestNameInput.value.trim();
         selectedMember = val ? { memberId: `Walk-in: ${val}`, name: val, isWalkIn: true } : null;
       } else {
         walkinGroup.classList.add('hidden');
         regGroup.classList.remove('hidden');
-        
         guestNameInput.value = '';
         selectedMember = null;
       }
@@ -461,11 +391,7 @@ function setupAddSectionEventListeners() {
   if (guestNameInput) {
     guestNameInput.addEventListener('input', (e) => {
       const val = e.target.value.trim();
-      if (val) {
-        selectedMember = { memberId: `Walk-in: ${val}`, name: val, isWalkIn: true };
-      } else {
-        selectedMember = null;
-      }
+      selectedMember = val ? { memberId: `Walk-in: ${val}`, name: val, isWalkIn: true } : null;
       checkFormCompletion();
     });
   }
@@ -501,26 +427,17 @@ function setupAddSectionEventListeners() {
     });
   }
 
-  const formInputs = document.querySelectorAll(
-    '#transactionForm input, #transactionForm select, #transactionForm textarea'
-  );
-  formInputs.forEach((input) => {
-    input.addEventListener('input', checkFormCompletion);
-  });
+  const formInputs = document.querySelectorAll('#transactionForm input, #transactionForm select, #transactionForm textarea');
+  formInputs.forEach((input) => input.addEventListener('input', checkFormCompletion));
 
   document.addEventListener('click', (e) => {
-    if (
-      !e.target.closest('#memberSearch') &&
-      !e.target.closest('#searchResults')
-    ) {
+    if (!e.target.closest('#memberSearch') && !e.target.closest('#searchResults')) {
       hideSearchResults();
     }
   });
 
   const submitBtn = $('submitTransactionBtn');
-  if (submitBtn) {
-    submitBtn.addEventListener('click', submitTransaction);
-  }
+  if (submitBtn) submitBtn.addEventListener('click', submitTransaction);
 }
 
 async function searchMembers(query) {
@@ -529,39 +446,28 @@ async function searchMembers(query) {
   if (!resultsDiv || !searchLoading) return;
 
   try {
-    const result = await apiFetch(
-      `/api/members/search?query=${encodeURIComponent(query)}`
-    );
+    const result = await apiFetch(`/api/members/search?query=${encodeURIComponent(query)}`);
     searchLoading.classList.add('hidden');
 
     if (!result.success || !result.data || result.data.length === 0) {
-      resultsDiv.innerHTML =
-        '<div class="member-result">No members found.</div>';
+      resultsDiv.innerHTML = '<div class="member-result">No members found.</div>';
       resultsDiv.classList.remove('hidden');
       return;
     }
 
-    resultsDiv.innerHTML = result.data
-      .map(
-        (m) => `
+    resultsDiv.innerHTML = result.data.map(m => `
         <div class="member-result" data-member-id="${m.memberId}">
-          <strong>${m.name}</strong><br>
-          <small>Member ID: ${m.memberId}</small>
+          <strong>${m.name}</strong><br><small>Member ID: ${m.memberId}</small>
         </div>
-      `
-      )
-      .join('');
+      `).join('');
     resultsDiv.classList.remove('hidden');
 
     resultsDiv.querySelectorAll('.member-result').forEach((el) =>
-      el.addEventListener('click', () =>
-        handleMemberSelect(el.getAttribute('data-member-id'), result.data)
-      )
+      el.addEventListener('click', () => handleMemberSelect(el.getAttribute('data-member-id'), result.data))
     );
   } catch (error) {
     searchLoading.classList.add('hidden');
-    resultsDiv.innerHTML =
-      '<div class="member-result">Error searching members.</div>';
+    resultsDiv.innerHTML = '<div class="member-result">Error searching members.</div>';
     resultsDiv.classList.remove('hidden');
   }
 }
@@ -604,38 +510,21 @@ function checkFormCompletion() {
   const txType = $('transactionType');
   const specifyType = $('specifyType');
 
-  let complete =
-    selectedMember &&
-    amount &&
-    method &&
-    date &&
-    status &&
-    txType &&
-    Number(amount.value) >= 0 &&
-    method.value &&
-    status.value &&
-    date.value &&
-    txType.value;
+  let complete = selectedMember && amount && method && date && status && txType &&
+    Number(amount.value) >= 0 && method.value && status.value && date.value && txType.value;
 
-  if (complete && txType.value === 'Others') {
-    if (!specifyType.value.trim()) {
-      complete = false;
-    }
-  }
+  if (complete && txType.value === 'Others' && !specifyType.value.trim()) complete = false;
 
   const btn = $('submitTransactionBtn');
   if (btn) btn.disabled = !complete;
-
   updateConfirmationSummary();
 }
 
 function updateConfirmationSummary() {
   const summaryDiv = $('confirmationSummary');
   if (!summaryDiv) return;
-
   if (!selectedMember) {
-    summaryDiv.textContent =
-      'Please select a member and enter details first.';
+    summaryDiv.textContent = 'Please select a member and enter details first.';
     return;
   }
 
@@ -662,29 +551,19 @@ function updateConfirmationSummary() {
 
 async function submitTransaction() {
   if (!selectedMember) return;
-
   const btn = $('submitTransactionBtn');
   const resultBox = $('transactionResult');
   const resultMsg = $('resultMessage');
 
   if (btn) btn.disabled = true;
-  if (resultBox) {
-    resultBox.className = '';
-    resultBox.classList.add('hidden');
-  }
-  if (resultMsg) {
-    resultMsg.className = '';
-    resultMsg.classList.add('hidden');
-  }
+  if (resultBox) { resultBox.className = ''; resultBox.classList.add('hidden'); }
+  if (resultMsg) { resultMsg.className = ''; resultMsg.classList.add('hidden'); }
 
   const txType = $('transactionType').value;
   const specifyType = $('specifyType').value.trim();
   let finalDesc = txType === 'Others' ? specifyType : txType;
   const notes = ($('description').value || '').trim();
-
-  if (notes) {
-      finalDesc += ` - ${notes}`;
-  }
+  if (notes) finalDesc += ` - ${notes}`;
 
   const payload = {
     member_id: selectedMember.memberId,
@@ -696,14 +575,8 @@ async function submitTransaction() {
   };
 
   try {
-    const res = await apiFetch('/api/transactions', {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    });
-
-    if (!res || res.success === false) {
-      throw new Error(res?.error || 'Failed to add transaction.');
-    }
+    const res = await apiFetch('/api/transactions', { method: 'POST', body: JSON.stringify(payload) });
+    if (!res || res.success === false) throw new Error(res?.error || 'Failed to add transaction.');
 
     if (resultMsg) {
       resultMsg.textContent = res.message || 'Transaction added successfully.';
@@ -720,27 +593,21 @@ async function submitTransaction() {
         <p><strong>Amount:</strong> ₱${res.data.amount.toFixed(2)}</p>
         <p><strong>Payment Method:</strong> ${res.data.payment_method}</p>
         <p><strong>Status:</strong> ${res.data.status}</p>
-        <p><strong>Payment Date:</strong> ${new Date(
-          res.data.payment_date
-        ).toLocaleDateString()}</p>
+        <p><strong>Payment Date:</strong> ${new Date(res.data.payment_date).toLocaleDateString()}</p>
         <p><strong>Description:</strong> ${res.data.description || '—'}</p>
       `;
     }
 
-    // Clear form for next entry
     const form = document.getElementById('transactionForm');
     if (form) {
-        const formElements = form.querySelectorAll('input, select, textarea');
-        formElements.forEach(element => {
-            const key = `${window.location.pathname}-${element.id || element.name}`;
-            sessionStorage.removeItem(key);
+        form.querySelectorAll('input, select, textarea').forEach(element => {
+            sessionStorage.removeItem(`${window.location.pathname}-${element.id || element.name}`);
         });
         form.reset();
         const specifyGroup = $('specifyTypeGroup');
         if (specifyGroup) specifyGroup.classList.add('hidden');
     }
 
-    // Reset member selection UI back to default
     const registeredRadio = document.querySelector('input[name="memberType"][value="registered"]');
     if (registeredRadio) registeredRadio.checked = true;
     $('registeredMemberGroup').classList.remove('hidden');
@@ -750,13 +617,10 @@ async function submitTransaction() {
 
     selectedMember = null;
     const selectedMemberInfo = document.getElementById('selectedMemberInfo');
-    if (selectedMemberInfo) {
-        selectedMemberInfo.classList.add('hidden');
-    }
+    if (selectedMemberInfo) selectedMemberInfo.classList.add('hidden');
     
     checkFormCompletion();
     updateConfirmationSummary();
-
     loadLatestTransactions();
   } catch (error) {
     if (resultMsg) {
@@ -764,14 +628,31 @@ async function submitTransaction() {
       resultMsg.className = 'error';
       resultMsg.classList.remove('hidden');
     }
-    if (resultBox) {
-      resultBox.className = 'error';
-      resultBox.classList.remove('hidden');
-      resultBox.innerHTML = '';
-    }
   } finally {
     if (btn) btn.disabled = false;
   }
+}
+
+// =======================================
+// DATE FILTER LOGIC HELPER
+// =======================================
+function handleDateDependencies(startInputId, startIconId, endInputId, endIconId) {
+  const startIn = $(startInputId);
+  const endIn = $(endInputId);
+  const endIcon = $(endIconId);
+
+  if (!startIn || !endIn || !endIcon) return;
+
+  startIn.addEventListener('change', () => {
+    if (startIn.value) {
+      endIn.disabled = false;
+      endIcon.disabled = false;
+    } else {
+      endIn.value = ''; // clear end date
+      endIn.disabled = true;
+      endIcon.disabled = true;
+    }
+  });
 }
 
 // =======================================
@@ -781,33 +662,38 @@ function setupViewSectionEventListeners() {
   const searchInput = $('txSearch');
   const searchBtn = $('txSearchBtn');
   const resetBtn = $('txResetBtn');
-  const dateInput = $('txDate');
   const statusFilter = $('txStatusFilter');
+
+  const startDateInput = $('txStartDate');
+  const endDateInput = $('txEndDate');
+
+  // Handle locking/unlocking the End Date based on Start Date
+  handleDateDependencies('txStartDate', 'txStartDateIcon', 'txEndDate', 'txEndDateIcon');
+
+  // Listeners to automatically filter whenever the standard 'change' event fires
+  if (startDateInput) {
+    startDateInput.addEventListener('change', () => filterViewTransactionsByRange());
+  }
+  if (endDateInput) {
+    endDateInput.addEventListener('change', () => filterViewTransactionsByRange());
+  }
 
   if (searchBtn) {
     searchBtn.addEventListener('click', () => {
       const q = searchInput ? searchInput.value.trim() : '';
-      if (!q && (!dateInput || !dateInput.value)) {
-        loadLatestTransactions();
-      } else if (q) {
+      if (q) {
         searchTransactions(q);
+      } else if (startDateInput.value) {
+        filterViewTransactionsByRange();
+      } else {
+        loadLatestTransactions();
       }
     });
   }
 
   if (searchInput) {
     searchInput.addEventListener('keyup', (e) => {
-      if (e.key === 'Enter') {
-        searchBtn?.click();
-      }
-    });
-  }
-
-  if (dateInput) {
-    dateInput.addEventListener('change', () => {
-      if (dateInput.value) {
-        filterTransactionsByDate(dateInput.value);
-      }
+      if (e.key === 'Enter') searchBtn?.click();
     });
   }
 
@@ -820,7 +706,12 @@ function setupViewSectionEventListeners() {
   if (resetBtn) {
     resetBtn.addEventListener('click', () => {
       if (searchInput) searchInput.value = '';
-      if (dateInput) dateInput.value = '';
+      if (startDateInput) startDateInput.value = '';
+      if (endDateInput) {
+        endDateInput.value = '';
+        endDateInput.disabled = true;
+        $('txEndDateIcon').disabled = true;
+      }
       if (statusFilter) statusFilter.value = 'all';
       $('txViewError')?.classList.add('hidden');
       $('txEmpty')?.classList.add('hidden');
@@ -831,49 +722,35 @@ function setupViewSectionEventListeners() {
 
 function formatPeso(amount) {
   const n = Number(amount || 0);
-  return n.toLocaleString('en-PH', {
-    style: 'currency',
-    currency: 'PHP',
-    minimumFractionDigits: 2,
-  });
+  return n.toLocaleString('en-PH', { style: 'currency', currency: 'PHP', minimumFractionDigits: 2 });
 }
 
 function formatDate(date) {
   if (!date) return '—';
   const d = new Date(date);
   if (Number.isNaN(d.getTime())) return '—';
-  return d.toLocaleDateString('en-PH', {
-    year: 'numeric',
-    month: 'short',
-    day: '2-digit',
-  });
+  return d.toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: '2-digit' });
 }
 
 function renderTxTable(list) {
   const body = $('txTableBody');
   const empty = $('txEmpty');
   if (!body) return;
-
   body.innerHTML = '';
-  // Keep track of the last fetched list for frontend status filtering
+  
   window.lastFetchedTx = list;
-
-  // Apply frontend status filter
   const statusFilterVal = $('txStatusFilter')?.value || 'all';
-  const filteredList = statusFilterVal === 'all' 
-    ? list 
-    : list.filter(tx => (tx.status || 'paid') === statusFilterVal);
+  const filteredList = statusFilterVal === 'all' ? list : list.filter(tx => (tx.status || 'paid') === statusFilterVal);
 
   if (!filteredList || filteredList.length === 0) {
     if (empty) empty.classList.remove('hidden');
     return;
   }
-
   if (empty) empty.classList.add('hidden');
 
   filteredList.forEach((tx) => {
     const tr = document.createElement('tr');
-    const txStatus = tx.status || 'paid'; // Default fallback
+    const txStatus = tx.status || 'paid';
     
     tr.dataset.txId = tx.transaction_id || '';
     tr.dataset.txMemberName = tx.member_name || 'Unknown';
@@ -882,16 +759,14 @@ function renderTxTable(list) {
     tr.dataset.txMethod = tx.payment_method || '';
     tr.dataset.txDate = tx.payment_date || tx.createdAt || '';
     tr.dataset.txDesc = tx.description || '';
-    tr.dataset.txStatus = txStatus; // Store status in dataset
+    tr.dataset.txStatus = txStatus;
 
     tr.innerHTML = `
       <td>${formatDate(tx.payment_date || tx.createdAt)}</td>
       <td>${tx.transaction_id || '—'}</td>
       <td>${tx.member_name || 'Unknown'}<br><small>${tx.member_id.startsWith('Walk-in:') ? 'Guest' : tx.member_id}</small></td>
       <td>${(tx.payment_method || '').toUpperCase()}</td>
-      <td class="center-align">
-        <span class="status-badge status-${txStatus}">${txStatus}</span>
-      </td>
+      <td class="center-align"><span class="status-badge status-${txStatus}">${txStatus}</span></td>
       <td class="right-align">${Number(tx.amount || 0).toFixed(2)}</td>
       <td>${tx.description || '—'}</td>
       <td class="center-align">
@@ -904,37 +779,22 @@ function renderTxTable(list) {
     body.appendChild(tr);
   });
 
-  body.querySelectorAll('.tx-action-btn.edit').forEach((btn) =>
-    btn.addEventListener('click', () => openEditPanel(btn.getAttribute('data-tx-id')))
-  );
-  body.querySelectorAll('.tx-action-btn.delete').forEach((btn) =>
-    btn.addEventListener('click', () => handleDeleteTransaction(btn.getAttribute('data-tx-id')))
-  );
+  body.querySelectorAll('.tx-action-btn.edit').forEach((btn) => btn.addEventListener('click', () => openEditPanel(btn.getAttribute('data-tx-id'))));
+  body.querySelectorAll('.tx-action-btn.delete').forEach((btn) => btn.addEventListener('click', () => handleDeleteTransaction(btn.getAttribute('data-tx-id'))));
 }
 
 async function loadLatestTransactions() {
   const status = $('txViewStatus');
   const errorBox = $('txViewError');
-  if (status) {
-    status.textContent = 'Loading latest 10 transactions...';
-    status.classList.remove('hidden');
-  }
-  if (errorBox) {
-    errorBox.classList.add('hidden');
-    errorBox.textContent = '';
-  }
+  if (status) { status.textContent = 'Loading latest transactions...'; status.classList.remove('hidden'); }
+  if (errorBox) { errorBox.classList.add('hidden'); errorBox.textContent = ''; }
 
   try {
     const res = await apiFetch('/api/transactions');
-    if (!res || res.success === false) {
-      throw new Error(res?.error || 'Failed to load transactions.');
-    }
+    if (!res || res.success === false) throw new Error(res?.error || 'Failed to load transactions.');
     renderTxTable(res.data || []);
   } catch (error) {
-    if (errorBox) {
-      errorBox.textContent = error.message;
-      errorBox.classList.remove('hidden');
-    }
+    if (errorBox) { errorBox.textContent = error.message; errorBox.classList.remove('hidden'); }
   } finally {
     if (status) status.classList.add('hidden');
   }
@@ -943,83 +803,164 @@ async function loadLatestTransactions() {
 async function searchTransactions(query) {
   const status = $('txViewStatus');
   const errorBox = $('txViewError');
-  if (status) {
-    status.textContent = 'Searching transactions...';
-    status.classList.remove('hidden');
-  }
-  if (errorBox) {
-    errorBox.classList.add('hidden');
-    errorBox.textContent = '';
-  }
+  if (status) { status.textContent = 'Searching transactions...'; status.classList.remove('hidden'); }
+  if (errorBox) { errorBox.classList.add('hidden'); errorBox.textContent = ''; }
 
   try {
-    const res = await apiFetch(
-      `/api/transactions/search?q=${encodeURIComponent(query)}`
-    );
-    if (!res || res.success === false) {
-      throw new Error(res?.error || 'Failed to search transactions.');
-    }
+    const res = await apiFetch(`/api/transactions/search?q=${encodeURIComponent(query)}`);
+    if (!res || res.success === false) throw new Error(res?.error || 'Failed to search transactions.');
     renderTxTable(res.data || []);
   } catch (error) {
-    if (errorBox) {
-      errorBox.textContent = error.message;
-      errorBox.classList.remove('hidden');
-    }
+    if (errorBox) { errorBox.textContent = error.message; errorBox.classList.remove('hidden'); }
   } finally {
     if (status) status.classList.add('hidden');
   }
 }
 
-async function filterTransactionsByDate(dateStr) {
+async function filterViewTransactionsByRange() {
   const status = $('txViewStatus');
   const errorBox = $('txViewError');
-  if (status) {
-    status.textContent = 'Filtering by date...';
-    status.classList.remove('hidden');
-  }
-  if (errorBox) {
-    errorBox.classList.add('hidden');
-    errorBox.textContent = '';
+  const start = $('txStartDate').value;
+  const end = $('txEndDate').value;
+
+  if (!start) {
+    // If user clears the start date, go back to latest transactions
+    loadLatestTransactions();
+    return; 
   }
 
+  if (status) { status.textContent = 'Filtering by date...'; status.classList.remove('hidden'); }
+  if (errorBox) { errorBox.classList.add('hidden'); errorBox.textContent = ''; }
+
   try {
-    const res = await apiFetch(
-      `/api/transactions/date?date=${encodeURIComponent(dateStr)}`
-    );
-    if (!res || res.success === false) {
-      throw new Error(res?.error || 'Failed to filter transactions by date.');
-    }
+    let url = `/api/transactions/range?startDate=${encodeURIComponent(start)}`;
+    if (end) url += `&endDate=${encodeURIComponent(end)}`;
+
+    const res = await apiFetch(url);
+    if (!res || res.success === false) throw new Error(res?.error || 'Failed to filter transactions.');
     renderTxTable(res.data || []);
   } catch (error) {
-    if (errorBox) {
-      errorBox.textContent = error.message;
-      errorBox.classList.remove('hidden');
-    }
+    if (errorBox) { errorBox.textContent = error.message; errorBox.classList.remove('hidden'); }
   } finally {
     if (status) status.classList.add('hidden');
   }
 }
 
-// ---------- Delete ----------
 async function handleDeleteTransaction(txId) {
   if (!txId) return;
-  const confirmDelete = window.confirm(
-    `Are you sure you want to delete transaction ${txId}?`
-  );
+  const confirmDelete = window.confirm(`Are you sure you want to delete transaction ${txId}?`);
   if (!confirmDelete) return;
 
   try {
-    const res = await apiFetch(`/api/transactions/${encodeURIComponent(txId)}`, {
-      method: 'DELETE',
-    });
-    if (!res || res.success === false) {
-      throw new Error(res?.error || 'Failed to delete transaction.');
-    }
+    const res = await apiFetch(`/api/transactions/${encodeURIComponent(txId)}`, { method: 'DELETE' });
+    if (!res || res.success === false) throw new Error(res?.error || 'Failed to delete transaction.');
     alert('Transaction deleted successfully.');
-    loadLatestTransactions();
+    
+    // Refresh the currently active view
+    if ($('tabSales').classList.contains('active')) {
+      loadSalesData();
+    } else {
+      if ($('txStartDate').value) filterViewTransactionsByRange();
+      else if ($('txSearch').value) searchTransactions($('txSearch').value);
+      else loadLatestTransactions();
+    }
   } catch (e) {
     alert(e.message || 'Failed to delete transaction.');
   }
+}
+
+// =======================================
+// TOTAL SALES SECTION
+// =======================================
+function setupSalesSectionEventListeners() {
+  const searchBtn = $('salesSearchBtn');
+  const resetBtn = $('salesResetBtn');
+  
+  handleDateDependencies('salesStartDate', 'salesStartDateIcon', 'salesEndDate', 'salesEndDateIcon');
+
+  if (searchBtn) {
+    searchBtn.addEventListener('click', () => {
+      loadSalesData();
+    });
+  }
+
+  if (resetBtn) {
+    resetBtn.addEventListener('click', () => {
+      $('salesStartDate').value = '';
+      const endIn = $('salesEndDate');
+      endIn.value = '';
+      endIn.disabled = true;
+      $('salesEndDateIcon').disabled = true;
+      
+      $('salesViewError')?.classList.add('hidden');
+      $('salesEmpty')?.classList.add('hidden');
+      loadSalesData();
+    });
+  }
+}
+
+async function loadSalesData() {
+  const status = $('salesViewStatus');
+  const errorBox = $('salesViewError');
+  const start = $('salesStartDate').value;
+  const end = $('salesEndDate').value;
+
+  if (status) { status.classList.remove('hidden'); }
+  if (errorBox) { errorBox.classList.add('hidden'); errorBox.textContent = ''; }
+
+  try {
+    let url = `/api/transactions/range`;
+    if (start) {
+      url += `?startDate=${encodeURIComponent(start)}`;
+      if (end) url += `&endDate=${encodeURIComponent(end)}`;
+    }
+
+    const res = await apiFetch(url);
+    if (!res || res.success === false) throw new Error(res?.error || 'Failed to load sales data.');
+    
+    renderSalesTable(res.data || []);
+  } catch (error) {
+    if (errorBox) { errorBox.textContent = error.message; errorBox.classList.remove('hidden'); }
+  } finally {
+    if (status) status.classList.add('hidden');
+  }
+}
+
+function renderSalesTable(list) {
+  const body = $('salesTableBody');
+  const empty = $('salesEmpty');
+  const totalValStr = $('salesTotalVal');
+  
+  if (!body) return;
+  body.innerHTML = '';
+
+  // Only consider 'paid' transactions for revenue total
+  const paidTransactions = list.filter(tx => (tx.status || 'paid') === 'paid');
+
+  let totalRevenue = paidTransactions.reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0);
+  if (totalValStr) {
+    totalValStr.textContent = formatPeso(totalRevenue);
+  }
+
+  if (!paidTransactions || paidTransactions.length === 0) {
+    if (empty) empty.classList.remove('hidden');
+    return;
+  }
+  
+  if (empty) empty.classList.add('hidden');
+
+  paidTransactions.forEach((tx) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${formatDate(tx.payment_date || tx.createdAt)}</td>
+      <td>${tx.transaction_id || '—'}</td>
+      <td>${tx.member_name || 'Unknown'}<br><small>${tx.member_id.startsWith('Walk-in:') ? 'Guest' : tx.member_id}</small></td>
+      <td>${tx.description || '—'}</td>
+      <td class="center-align">${(tx.payment_method || '').toUpperCase()}</td>
+      <td class="right-align" style="font-weight:600; color:var(--accent);">${Number(tx.amount || 0).toFixed(2)}</td>
+    `;
+    body.appendChild(tr);
+  });
 }
 
 // =======================================
@@ -1034,35 +975,22 @@ function setupEditPanelEvents() {
   if (!overlay) return;
 
   if (closeBtn) {
-    closeBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      hideEditPanel();
-    });
+    closeBtn.addEventListener('click', (e) => { e.preventDefault(); hideEditPanel(); });
   }
 
   if (cancelBtn) {
-    cancelBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      hideEditPanel();
-    });
+    cancelBtn.addEventListener('click', (e) => { e.preventDefault(); hideEditPanel(); });
   }
 
-  overlay.addEventListener('click', (e) => {
-    if (e.target === overlay) {
-      hideEditPanel();
-    }
-  });
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) hideEditPanel(); });
 
-  if (form) {
-    form.addEventListener('submit', handleEditSubmit);
-  }
+  if (form) form.addEventListener('submit', handleEditSubmit);
 }
 
 function showEditPanel() {
   const overlay = $('editTxOverlay');
   if (!overlay) return;
   overlay.classList.add('is-open');
-  // ADDED: Lock the background page from scrolling when modal is open
   document.body.style.overflow = 'hidden';
 }
 
@@ -1071,11 +999,7 @@ function hideEditPanel() {
   const msg = $('editTxMessage');
   currentEditTx = null;
   if (overlay) overlay.classList.remove('is-open');
-  if (msg) {
-    msg.className = 'hidden';
-    msg.textContent = '';
-  }
-  // ADDED: Unlock the background page scrolling when modal is closed
+  if (msg) { msg.className = 'hidden'; msg.textContent = ''; }
   document.body.style.overflow = '';
 }
 
@@ -1085,9 +1009,7 @@ function openEditPanel(txId) {
   if (!body) return;
 
   const row = [...body.querySelectorAll('tr')].find(
-    (tr) =>
-      tr.querySelector('.tx-action-btn.edit') &&
-      tr.querySelector('.tx-action-btn.edit').dataset.txId === txId
+    (tr) => tr.querySelector('.tx-action-btn.edit') && tr.querySelector('.tx-action-btn.edit').dataset.txId === txId
   );
   if (!row) return;
 
@@ -1103,26 +1025,17 @@ function fillEditFormFromRow(row) {
   const amountCell = row.children[5];
   const descCell = row.children[6];
 
-  const memberName = memberCell
-    ? memberCell.childNodes[0].textContent.trim()
-    : '';
-  const memberId = memberCell
-    ? (memberCell.querySelector('small')?.textContent || '').trim()
-    : '';
+  const memberName = memberCell ? memberCell.childNodes[0].textContent.trim() : '';
+  const memberId = memberCell ? (memberCell.querySelector('small')?.textContent || '').trim() : '';
 
   $('editTxId').value = txId;
-  $('editTxMember').value = memberId
-    ? `${memberName} (${memberId})`
-    : memberName;
+  $('editTxMember').value = memberId ? `${memberName} (${memberId})` : memberName;
 
   const rawAmount = amountCell ? amountCell.textContent.replace(/[^0-9.]/g, '') : '';
   $('editAmount').value = rawAmount || '';
 
   const method = methodCell ? methodCell.textContent.trim().toLowerCase() : '';
-  $('editMethod').value =
-    ['cash', 'e-wallet', 'bank', 'none', 'others'].includes(method)
-      ? method
-      : '';
+  $('editMethod').value = ['cash', 'e-wallet', 'bank', 'none', 'others'].includes(method) ? method : '';
 
   const dateText = row.children[0].textContent.trim();
   const parsed = new Date(dateText);
@@ -1145,10 +1058,7 @@ async function handleEditSubmit(e) {
   const msg = $('editTxMessage');
   const saveBtn = $('editTxSaveBtn');
 
-  if (msg) {
-    msg.className = 'hidden';
-    msg.textContent = '';
-  }
+  if (msg) { msg.className = 'hidden'; msg.textContent = ''; }
 
   const row = document.querySelector(`tr[data-tx-id="${currentEditTx}"]`);
   const originalStatus = row ? row.dataset.txStatus : 'paid';
@@ -1168,10 +1078,7 @@ async function handleEditSubmit(e) {
   if (amountStr) {
     const num = Number(amountStr);
     if (Number.isNaN(num) || num < 0) {
-      if (msg) {
-        msg.textContent = 'Amount must be a valid number.';
-        msg.className = 'error';
-      }
+      if (msg) { msg.textContent = 'Amount must be a valid number.'; msg.className = 'error'; }
       return;
     }
     payload.amount = num;
@@ -1190,29 +1097,22 @@ async function handleEditSubmit(e) {
   if (saveBtn) saveBtn.disabled = true;
 
   try {
-    const res = await apiFetch(
-      `/api/transactions/${encodeURIComponent(currentEditTx)}`,
-      {
-        method: 'PUT',
-        body: JSON.stringify(payload),
-      }
-    );
-    if (!res || res.success === false) {
-      throw new Error(res?.error || 'Failed to update transaction.');
-    }
+    const res = await apiFetch(`/api/transactions/${encodeURIComponent(currentEditTx)}`, { method: 'PUT', body: JSON.stringify(payload) });
+    if (!res || res.success === false) throw new Error(res?.error || 'Failed to update transaction.');
 
-    if (msg) {
-      msg.textContent = 'Transaction updated successfully.';
-      msg.className = 'success';
-    }
+    if (msg) { msg.textContent = 'Transaction updated successfully.'; msg.className = 'success'; }
 
-    await loadLatestTransactions();
+    // Refresh currently active tab
+    if ($('tabSales').classList.contains('active')) {
+      loadSalesData();
+    } else {
+      if ($('txStartDate').value) filterViewTransactionsByRange();
+      else if ($('txSearch').value) searchTransactions($('txSearch').value);
+      else loadLatestTransactions();
+    }
     hideEditPanel();
   } catch (error) {
-    if (msg) {
-      msg.textContent = error.message || 'Failed to update transaction.';
-      msg.className = 'error';
-    }
+    if (msg) { msg.textContent = error.message || 'Failed to update transaction.'; msg.className = 'error'; }
   } finally {
     if (saveBtn) saveBtn.disabled = false;
   }
@@ -1237,10 +1137,7 @@ function initMiniCalendar(inputId, buttonId, popupId, onSelect) {
     const month = current.getMonth();
 
     if (titleEl) {
-      const formatter = new Intl.DateTimeFormat('en-PH', {
-        month: 'long',
-        year: 'numeric',
-      });
+      const formatter = new Intl.DateTimeFormat('en-PH', { month: 'long', year: 'numeric' });
       titleEl.textContent = formatter.format(current);
     }
 
@@ -1264,7 +1161,6 @@ function initMiniCalendar(inputId, buttonId, popupId, onSelect) {
       const empty = document.createElement('button');
       empty.type = 'button';
       empty.className = 'mini-cal-day mini-cal-day-disabled';
-      empty.textContent = '';
       gridEl.appendChild(empty);
     }
 
@@ -1278,18 +1174,13 @@ function initMiniCalendar(inputId, buttonId, popupId, onSelect) {
 
       const thisDate = new Date(year, month, day);
       const iso = thisDate.toISOString().slice(0, 10);
-      if (selectedDateStr && iso === selectedDateStr) {
-        btnDay.classList.add('mini-cal-day-selected');
-      }
+      if (selectedDateStr && iso === selectedDateStr) btnDay.classList.add('mini-cal-day-selected');
 
       btnDay.addEventListener('click', () => {
         input.value = iso;
         popup.classList.add('hidden');
-        if (typeof onSelect === 'function') {
-          onSelect(iso);
-        } else {
-          input.dispatchEvent(new Event('change'));
-        }
+        if (typeof onSelect === 'function') onSelect(iso);
+        else input.dispatchEvent(new Event('change'));
       });
 
       gridEl.appendChild(btnDay);
@@ -1306,6 +1197,7 @@ function initMiniCalendar(inputId, buttonId, popupId, onSelect) {
 
   btn.addEventListener('click', (e) => {
     e.stopPropagation();
+    if(btn.disabled) return; // Disallow opening if button is disabled (e.g., End Date missing Start)
     popup.classList.toggle('hidden');
     current = input.value ? new Date(input.value) : new Date();
     if (Number.isNaN(current.getTime())) current = new Date();

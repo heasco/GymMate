@@ -180,18 +180,33 @@ router.get('/search', asyncHandler(async (req, res) => {
     res.json({ success: true, count: data.length, data });
 }));
 
-// GET /api/transactions/date
-router.get('/date', asyncHandler(async (req, res) => {
-    const { date } = req.query;
-    if (!date) return res.status(400).json({ success: false, error: 'date query param is required' });
+// GET /api/transactions/range
+router.get('/range', asyncHandler(async (req, res) => {
+    const { startDate, endDate } = req.query;
+    let query = {};
 
-    const target = new Date(date);
-    if (isNaN(target.getTime())) return res.status(400).json({ success: false, error: 'Invalid date format' });
+    if (startDate) {
+        const start = new Date(startDate);
+        start.setHours(0, 0, 0, 0);
+        if (isNaN(start.getTime())) return res.status(400).json({ success: false, error: 'Invalid start date format' });
 
-    const start = new Date(target); start.setHours(0, 0, 0, 0);
-    const end = new Date(target); end.setHours(23, 59, 59, 999);
+        if (endDate) {
+            const end = new Date(endDate);
+            end.setHours(23, 59, 59, 999);
+            if (isNaN(end.getTime())) return res.status(400).json({ success: false, error: 'Invalid end date format' });
+            query.payment_date = { $gte: start, $lte: end };
+        } else {
+            // If no end date, filter ONLY that specific start date
+            const end = new Date(start);
+            end.setHours(23, 59, 59, 999);
+            query.payment_date = { $gte: start, $lte: end };
+        }
+    } else if (endDate) {
+        return res.status(400).json({ success: false, error: 'Start date is required if end date is provided' });
+    }
 
-    const transactions = await Transaction.find({ payment_date: { $gte: start, $lte: end } })
+    // No limit added so Total Sales can fetch all matching documents
+    const transactions = await Transaction.find(query)
       .sort({ payment_date: -1, createdAt: -1 })
       .lean();
 

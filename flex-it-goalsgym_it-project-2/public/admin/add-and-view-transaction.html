@@ -49,6 +49,9 @@
             <button id="tabView" class="tx-toggle-btn active" type="button">
               VIEW TRANSACTIONS
             </button>
+            <button id="tabSales" class="tx-toggle-btn" type="button">
+              TOTAL SALES
+            </button>
           </div>
         </div>
 
@@ -83,14 +86,8 @@
             <div id="registeredMemberGroup">
               <div class="form-group">
                 <label for="memberSearch">Search Member</label>
-                <input
-                  type="text"
-                  id="memberSearch"
-                  placeholder="Search by name or Member ID..."
-                />
-                <div id="searchLoading" class="loading hidden">
-                  Searching members...
-                </div>
+                <input type="text" id="memberSearch" placeholder="Search by name or Member ID..." />
+                <div id="searchLoading" class="loading hidden">Searching members...</div>
                 <div id="searchResults" class="search-results hidden"></div>
               </div>
               <div id="selectedMemberInfo" class="member-info hidden"></div>
@@ -99,11 +96,7 @@
             <div id="walkinMemberGroup" class="hidden">
               <div class="form-group">
                 <label for="guestName">Guest Name</label>
-                <input
-                  type="text"
-                  id="guestName"
-                  placeholder="Enter guest or walk-in name..."
-                />
+                <input type="text" id="guestName" placeholder="Enter guest or walk-in name..." />
               </div>
             </div>
           </div>
@@ -113,13 +106,7 @@
             <form id="transactionForm">
               <div class="form-group">
                 <label for="amount">Amount (₱)</label>
-                <input
-                  type="number"
-                  id="amount"
-                  min="0"
-                  step="0.01"
-                  placeholder="Enter amount paid"
-                />
+                <input type="number" id="amount" min="0" step="0.01" placeholder="Enter amount paid" />
               </div>
 
               <div class="form-group">
@@ -146,35 +133,12 @@
                 <label for="paymentDate">Payment Date</label>
                 <div class="date-with-popup">
                   <input type="date" id="paymentDate" />
-                  <button
-                    type="button"
-                    id="paymentDateIcon"
-                    class="mini-calendar-btn"
-                    title="Pick date"
-                  >
-                    📅
-                  </button>
-                  <div
-                    id="paymentDatePopup"
-                    class="mini-calendar-popup hidden"
-                    data-target-input="paymentDate"
-                  >
+                  <button type="button" id="paymentDateIcon" class="mini-calendar-btn" title="Pick date">📅</button>
+                  <div id="paymentDatePopup" class="mini-calendar-popup hidden" data-target-input="paymentDate">
                     <div class="mini-calendar-header">
-                      <button
-                        type="button"
-                        class="mini-cal-nav"
-                        data-dir="-1"
-                      >
-                        ‹
-                      </button>
+                      <button type="button" class="mini-cal-nav" data-dir="-1">‹</button>
                       <span class="mini-calendar-title"></span>
-                      <button
-                        type="button"
-                        class="mini-cal-nav"
-                        data-dir="1"
-                      >
-                        ›
-                      </button>
+                      <button type="button" class="mini-cal-nav" data-dir="1">›</button>
                     </div>
                     <div class="mini-calendar-grid"></div>
                   </div>
@@ -200,10 +164,7 @@
 
               <div class="form-group">
                 <label for="description">Additional Notes / Details</label>
-                <textarea
-                  id="description"
-                  placeholder="Optional details..."
-                ></textarea>
+                <textarea id="description" placeholder="Optional details..."></textarea>
               </div>
             </form>
           </div>
@@ -230,12 +191,7 @@
               <div class="tx-filter-row top-row">
                 <div class="form-group tx-filter-search">
                   <label for="txSearch">Search Member / Transaction ID</label>
-                  <input
-                    type="text"
-                    id="txSearch"
-                    placeholder="Search by member name, Member ID, or TRX-0001..."
-                    class="pretty-search-bar"
-                  />
+                  <input type="text" id="txSearch" placeholder="Search by member name, Member ID, or TRX-0001..." class="pretty-search-bar" />
                 </div>
                 <div class="tx-filter-buttons">
                   <button type="button" id="txSearchBtn">Search</button>
@@ -245,22 +201,27 @@
 
               <div class="tx-filter-row bottom-row">
                 <div class="form-group tx-filter-item tx-date-filter">
-                  <label for="txDate">Filter by Date</label>
+                  <label for="txStartDate">Start Date</label>
                   <div class="date-with-popup">
-                    <input type="date" id="txDate" />
-                    <button
-                      type="button"
-                      id="txDateIcon"
-                      class="mini-calendar-btn"
-                      title="Pick date"
-                    >
-                      📅
-                    </button>
-                    <div
-                      id="txDatePopup"
-                      class="mini-calendar-popup hidden"
-                      data-target-input="txDate"
-                    >
+                    <input type="date" id="txStartDate" />
+                    <button type="button" id="txStartDateIcon" class="mini-calendar-btn" title="Pick date">📅</button>
+                    <div id="txStartDatePopup" class="mini-calendar-popup hidden" data-target-input="txStartDate">
+                      <div class="mini-calendar-header">
+                        <button type="button" class="mini-cal-nav" data-dir="-1">‹</button>
+                        <span class="mini-calendar-title"></span>
+                        <button type="button" class="mini-cal-nav" data-dir="1">›</button>
+                      </div>
+                      <div class="mini-calendar-grid"></div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="form-group tx-filter-item tx-date-filter">
+                  <label for="txEndDate">End Date</label>
+                  <div class="date-with-popup">
+                    <input type="date" id="txEndDate" disabled />
+                    <button type="button" id="txEndDateIcon" class="mini-calendar-btn" title="Pick date" disabled>📅</button>
+                    <div id="txEndDatePopup" class="mini-calendar-popup hidden" data-target-input="txEndDate">
                       <div class="mini-calendar-header">
                         <button type="button" class="mini-cal-nav" data-dir="-1">‹</button>
                         <span class="mini-calendar-title"></span>
@@ -284,7 +245,7 @@
             </div>
 
             <div id="txViewStatus" class="loading">
-              Loading latest 10 transactions...
+              Loading latest transactions...
             </div>
             <div id="txViewError" class="error hidden"></div>
 
@@ -311,15 +272,91 @@
             </div>
           </div>
         </section>
+
+        <section id="salesSection" class="hidden">
+          <div class="card">
+            <h2>Total Sales</h2>
+
+            <div class="sales-total-box">
+              <h3>TOTAL REVENUE: <span id="salesTotalVal">₱0.00</span></h3>
+              <p><small>(Calculates all "Paid" transactions for the selected period)</small></p>
+              <p><small>Disclaimer: This system is not a BIR-registered software. The sales data shown is for internal tracking only and cannot be used for official tax filing purposes.</small></p>
+            </div>
+
+            <div class="tx-filters">
+              <div class="tx-filter-row bottom-row">
+                <div class="form-group tx-filter-item tx-date-filter">
+                  <label for="salesStartDate">Start Date (Optional)</label>
+                  <div class="date-with-popup">
+                    <input type="date" id="salesStartDate" />
+                    <button type="button" id="salesStartDateIcon" class="mini-calendar-btn" title="Pick date">📅</button>
+                    <div id="salesStartDatePopup" class="mini-calendar-popup hidden" data-target-input="salesStartDate">
+                      <div class="mini-calendar-header">
+                        <button type="button" class="mini-cal-nav" data-dir="-1">‹</button>
+                        <span class="mini-calendar-title"></span>
+                        <button type="button" class="mini-cal-nav" data-dir="1">›</button>
+                      </div>
+                      <div class="mini-calendar-grid"></div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="form-group tx-filter-item tx-date-filter">
+                  <label for="salesEndDate">End Date</label>
+                  <div class="date-with-popup">
+                    <input type="date" id="salesEndDate" disabled />
+                    <button type="button" id="salesEndDateIcon" class="mini-calendar-btn" title="Pick date" disabled>📅</button>
+                    <div id="salesEndDatePopup" class="mini-calendar-popup hidden" data-target-input="salesEndDate">
+                      <div class="mini-calendar-header">
+                        <button type="button" class="mini-cal-nav" data-dir="-1">‹</button>
+                        <span class="mini-calendar-title"></span>
+                        <button type="button" class="mini-cal-nav" data-dir="1">›</button>
+                      </div>
+                      <div class="mini-calendar-grid"></div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="tx-filter-buttons" style="align-self: flex-end;">
+                  <button type="button" id="salesSearchBtn">Filter Dates</button>
+                  <button type="button" id="salesResetBtn" class="secondary-btn">View All Time</button>
+                </div>
+              </div>
+            </div>
+
+            <div id="salesViewStatus" class="loading hidden">Loading total sales...</div>
+            <div id="salesViewError" class="error hidden"></div>
+
+            <div class="tx-table-wrapper">
+              <table class="tx-table">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Transaction ID</th>
+                    <th>Member</th>
+                    <th>Type / Desc</th>
+                    <th class="center-align">Method</th>
+                    <th class="right-align">Amount (₱)</th>
+                  </tr>
+                </thead>
+                <tbody id="salesTableBody"></tbody>
+              </table>
+            </div>
+
+            <div id="salesEmpty" class="empty-state hidden">
+              No sales found for the current period.
+            </div>
+
+          </div>
+        </section>
+
       </div>
 
       <div id="editTxOverlay" class="edit-tx-overlay">
         <div class="edit-tx-panel">
           <div class="edit-tx-header">
             <h2>Edit Transaction</h2>
-            <button type="button" id="editTxCloseBtn" class="edit-tx-close">
-              ✕
-            </button>
+            <button type="button" id="editTxCloseBtn" class="edit-tx-close">✕</button>
           </div>
           <div id="editTxMessage" class="hidden"></div>
           <form id="editTxForm">
@@ -357,35 +394,12 @@
               <label for="editDate">Payment Date</label>
               <div class="date-with-popup">
                 <input type="date" id="editDate" />
-                <button
-                  type="button"
-                  id="editDateIcon"
-                  class="mini-calendar-btn"
-                  title="Pick date"
-                >
-                  📅
-                </button>
-                <div
-                  id="editDatePopup"
-                  class="mini-calendar-popup hidden"
-                  data-target-input="editDate"
-                >
+                <button type="button" id="editDateIcon" class="mini-calendar-btn" title="Pick date">📅</button>
+                <div id="editDatePopup" class="mini-calendar-popup hidden" data-target-input="editDate">
                   <div class="mini-calendar-header">
-                    <button
-                      type="button"
-                      class="mini-cal-nav"
-                      data-dir="-1"
-                    >
-                      ‹
-                    </button>
+                    <button type="button" class="mini-cal-nav" data-dir="-1">‹</button>
                     <span class="mini-calendar-title"></span>
-                    <button
-                      type="button"
-                      class="mini-cal-nav"
-                      data-dir="1"
-                    >
-                      ›
-                    </button>
+                    <button type="button" class="mini-cal-nav" data-dir="1">›</button>
                   </div>
                   <div class="mini-calendar-grid"></div>
                 </div>
@@ -396,16 +410,8 @@
               <textarea id="editDesc"></textarea>
             </div>
             <div class="edit-tx-footer">
-              <button
-                type="button"
-                id="editTxCancelBtn"
-                class="secondary-btn"
-              >
-                Cancel
-              </button>
-              <button type="submit" id="editTxSaveBtn">
-                Save Changes
-              </button>
+              <button type="button" id="editTxCancelBtn" class="secondary-btn">Cancel</button>
+              <button type="submit" id="editTxSaveBtn">Save Changes</button>
             </div>
           </form>
         </div>
