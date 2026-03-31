@@ -53,6 +53,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   const editForm = document.getElementById('editProductForm');
   if (editForm) editForm.addEventListener('submit', handleEditProduct);
+
+  // Toggle fields based on membership type selection
+  const addMemType = document.getElementById('membership_type');
+  if (addMemType) addMemType.addEventListener('change', () => toggleFields('add'));
+
+  const editMemType = document.getElementById('edit_membership_type');
+  if (editMemType) editMemType.addEventListener('change', () => toggleFields('edit'));
+
+  toggleFields('add'); 
 });
 
 // --- Server Health Check ---
@@ -73,18 +82,68 @@ async function checkServerConnection() {
   }
 }
 
-// --- Section Switcher (Fixes the overlapping bug) ---
+// --- Dynamically Build Dropdown ---
+function populateCategoryDropdowns() {
+  const addSelect = document.getElementById('membership_type');
+  const editSelect = document.getElementById('edit_membership_type');
+  
+  const standardTypes = ['monthly', 'combative', 'dance', 'walk-in', 'others'];
+  const uniqueCategories = [...new Set(allProducts.map(p => p.membership_type))]
+                           .filter(c => c && !standardTypes.includes(c));
+
+  const buildOptions = () => `
+    <option value="monthly">Monthly Access (Gym)</option>
+    <option value="combative">Combative Class</option>
+    <option value="dance">Dance Class</option>
+    <option value="walk-in">Walk-in Session</option>
+    ${uniqueCategories.map(cat => `<option value="${cat}">${cat}</option>`).join('')}
+    <option value="others">Others (Create New)</option>
+  `;
+
+  if(addSelect) {
+     const currentAddVal = addSelect.value;
+     addSelect.innerHTML = buildOptions();
+     if(addSelect.querySelector(`option[value="${currentAddVal}"]`)) addSelect.value = currentAddVal;
+  }
+
+  if(editSelect) {
+     const currentEditVal = editSelect.value;
+     editSelect.innerHTML = buildOptions();
+     if(editSelect.querySelector(`option[value="${currentEditVal}"]`)) editSelect.value = currentEditVal;
+  }
+}
+
+// --- Toggle Form Fields Logic ---
+function toggleFields(formType) {
+  const prefix = formType === 'add' ? '' : 'edit_';
+  const typeSelect = document.getElementById(prefix + 'membership_type').value;
+  
+  const sessionsGroup = document.getElementById(prefix + 'sessionsGroup');
+  const scheduleGroup = document.getElementById(prefix + 'scheduleGroup');
+  const specifyGroup = document.getElementById(prefix + 'specifyOthersGroup');
+
+  // Any custom merchandise/product won't have schedule/sessions. Only standard ones do.
+  const hideScheduleAndSessions = !['monthly', 'combative', 'dance', 'walk-in'].includes(typeSelect.toLowerCase());
+
+  if (typeSelect === 'others') {
+    if (specifyGroup) specifyGroup.style.display = 'block';
+    if (sessionsGroup) sessionsGroup.style.display = 'none';
+    if (scheduleGroup) scheduleGroup.style.display = 'none';
+  } else {
+    if (specifyGroup) specifyGroup.style.display = 'none';
+    if (sessionsGroup) sessionsGroup.style.display = hideScheduleAndSessions ? 'none' : 'block';
+    if (scheduleGroup) scheduleGroup.style.display = hideScheduleAndSessions ? 'none' : 'block';
+  }
+}
+
+// --- Section Switcher ---
 function switchSection(targetSectionId, targetTabId = null) {
-  // Hide all sections
   document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
-  // Remove active state from all tabs
   document.querySelectorAll('.tab-btn').forEach(tab => tab.classList.remove('active'));
   
-  // Show target section
   const targetSection = document.getElementById(targetSectionId);
   if (targetSection) targetSection.classList.add('active');
 
-  // Highlight target tab (if one was provided)
   if (targetTabId) {
     const targetTab = document.getElementById(targetTabId);
     if (targetTab) targetTab.classList.add('active');
@@ -133,15 +192,16 @@ function showMessage(msg, type = 'success') {
 async function loadProducts() {
   const tbody = document.getElementById('productListBody');
   if(!tbody) return;
-  tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">Loading...</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;">Loading...</td></tr>';
   
   try {
     const result = await apiFetch('/api/products?status=active');
     allProducts = result.data || [];
+    populateCategoryDropdowns(); // Update UI Select Menus dynamically
     renderTable(allProducts);
   } catch (error) {
     showMessage(error.message, 'error');
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #ff3333;">Failed to load products</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: #ff3333;">Failed to load products</td></tr>';
   }
 }
 
@@ -151,17 +211,28 @@ function renderTable(products) {
   tbody.innerHTML = '';
 
   if (products.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">No active products found.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;">No active products found.</td></tr>';
     return;
   }
 
   products.forEach(prod => {
+    const isMainType = ['monthly', 'combative', 'dance', 'walk-in'].includes(prod.membership_type.toLowerCase());
+    
+    const sessionsDisplay = isMainType 
+      ? (prod.sessions ? prod.sessions : '<span style="color:#777;">Unlimited</span>') 
+      : '<span style="color:#777;">N/A</span>';
+      
+    const scheduleDisplay = isMainType
+      ? (prod.schedule ? prod.schedule : '<span style="color:#777;">N/A</span>')
+      : '<span style="color:#777;">N/A</span>';
+
     const row = document.createElement('tr');
     row.innerHTML = `
       <td><strong>${prod.product_name}</strong></td>
       <td style="text-transform: capitalize;">${prod.membership_type}</td>
       <td>₱${prod.price.toLocaleString()}</td>
-      <td>${prod.schedule || '<span style="color:#777;">N/A</span>'}</td>
+      <td>${scheduleDisplay}</td>
+      <td>${sessionsDisplay}</td>
       <td><span class="status-badge status-active">${prod.status}</span></td>
       <td>
         <div class="action-buttons">
@@ -180,10 +251,19 @@ async function handleAddProduct(e) {
   const submitBtn = e.target.querySelector('button[type="submit"]');
   submitBtn.disabled = true;
 
+  let mType = document.getElementById('membership_type').value;
+  if (mType === 'others') {
+      const specificVal = document.getElementById('specify_others').value.trim();
+      if (specificVal) mType = specificVal; 
+  }
+
+  const sessionsVal = document.getElementById('sessions').value;
+  
   const data = {
     product_name: document.getElementById('product_name').value.trim(),
-    membership_type: document.getElementById('membership_type').value,
+    membership_type: mType,
     price: parseFloat(document.getElementById('price').value),
+    sessions: sessionsVal ? parseInt(sessionsVal) : null,
     schedule: document.getElementById('schedule').value.trim(),
     description: document.getElementById('description').value.trim()
   };
@@ -192,8 +272,9 @@ async function handleAddProduct(e) {
     await apiFetch('/api/products', { method: 'POST', body: JSON.stringify(data) });
     showMessage('Product created successfully!');
     e.target.reset();
+    toggleFields('add'); 
     showProductList();
-    loadProducts();
+    loadProducts(); // This refreshes table AND dropdowns
   } catch (error) {
     showMessage(error.message, 'error');
   } finally {
@@ -206,14 +287,25 @@ function editProduct(id) {
   const product = allProducts.find(p => p._id === id);
   if (!product) return;
 
-  // Use the clean section switcher (don't highlight any tab since we are in "Edit" mode)
   switchSection('editProductSection');
 
-  // Populate Form
   document.getElementById('edit_product_id').value = product._id;
   document.getElementById('edit_product_name').value = product.product_name;
-  document.getElementById('edit_membership_type').value = product.membership_type;
+  
+  // Try mapping it automatically (because our dropdown injected custom tags!)
+  const selectNode = document.getElementById('edit_membership_type');
+  if (Array.from(selectNode.options).some(opt => opt.value === product.membership_type)) {
+      selectNode.value = product.membership_type;
+      document.getElementById('edit_specify_others').value = '';
+  } else {
+      selectNode.value = 'others';
+      document.getElementById('edit_specify_others').value = product.membership_type || ''; 
+  }
+  
+  toggleFields('edit');
+
   document.getElementById('edit_price').value = product.price;
+  document.getElementById('edit_sessions').value = product.sessions || '';
   document.getElementById('edit_schedule').value = product.schedule || '';
   document.getElementById('edit_description').value = product.description || '';
 }
@@ -224,10 +316,20 @@ async function handleEditProduct(e) {
   submitBtn.disabled = true;
 
   const id = document.getElementById('edit_product_id').value;
+
+  let mType = document.getElementById('edit_membership_type').value;
+  if (mType === 'others') {
+      const specificVal = document.getElementById('edit_specify_others').value.trim();
+      if (specificVal) mType = specificVal; 
+  }
+
+  const sessionsVal = document.getElementById('edit_sessions').value;
+
   const data = {
     product_name: document.getElementById('edit_product_name').value.trim(),
-    membership_type: document.getElementById('edit_membership_type').value,
+    membership_type: mType,
     price: parseFloat(document.getElementById('edit_price').value),
+    sessions: sessionsVal ? parseInt(sessionsVal) : null,
     schedule: document.getElementById('edit_schedule').value.trim(),
     description: document.getElementById('edit_description').value.trim()
   };
@@ -236,7 +338,7 @@ async function handleEditProduct(e) {
     await apiFetch(`/api/products/${id}`, { method: 'PUT', body: JSON.stringify(data) });
     showMessage('Product updated successfully!');
     showProductList();
-    loadProducts();
+    loadProducts(); // This refreshes table AND dropdowns
   } catch (error) {
     showMessage(error.message, 'error');
   } finally {

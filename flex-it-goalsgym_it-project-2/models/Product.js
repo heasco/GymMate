@@ -12,17 +12,20 @@ const ProductSchema = new mongoose.Schema({
   },
   membership_type: {
     type: String,
-    enum: ['monthly', 'combative'],
-    required: true
+    required: true // Removed the strict enum so custom types like "Merchandise" or "Dance" can be saved
   },
   price: {
     type: Number,
     required: true,
     min: 0
   },
+  sessions: {
+    type: Number,
+    default: null // Added to handle the new consumable sessions feature
+  },
   schedule: {
     type: String,
-    default: '' // Optional, mostly used for combative classes
+    default: '' 
   },
   feedback: [{
     member_id: String,

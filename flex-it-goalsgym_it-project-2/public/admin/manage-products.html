@@ -54,15 +54,16 @@
               <thead>
                 <tr>
                   <th>Product Name</th>
-                  <th>Type</th>
+                  <th>Category</th>
                   <th>Price</th>
                   <th>Schedule</th>
+                  <th>Sessions</th>
                   <th>Status</th>
                   <th>Actions</th>
                 </tr>
               </thead>
               <tbody id="productListBody">
-                <tr><td colspan="6" class="text-center">Loading...</td></tr>
+                <tr><td colspan="7" class="text-center">Loading...</td></tr>
               </tbody>
             </table>
           </div>
@@ -79,9 +80,17 @@
             <div class="form-group">
               <label for="membership_type">Membership Type *</label>
               <select id="membership_type" required>
-                <option value="monthly">Monthly Access</option>
+                <option value="monthly">Monthly Access (Gym)</option>
                 <option value="combative">Combative Class</option>
+                <option value="dance">Dance Class</option>
+                <option value="walk-in">Walk-in Session</option>
+                <option value="others">Others (Create New)</option>
               </select>
+            </div>
+
+            <div class="form-group" id="specifyOthersGroup" style="display: none;">
+              <label for="specify_others">Specify Other Type *</label>
+              <input type="text" id="specify_others" placeholder="e.g., Merchandise, Food, Supplements">
             </div>
 
             <div class="form-group">
@@ -89,10 +98,15 @@
               <input type="number" id="price" required min="0" placeholder="e.g., 1500">
             </div>
 
-            <div class="form-group">
+            <div class="form-group" id="sessionsGroup">
+              <label for="sessions">Sessions (Consumable in 1 month)</label>
+              <input type="number" id="sessions" min="1" placeholder="e.g., 12">
+              <small style="color: #888;">Leave blank if unlimited.</small>
+            </div>
+
+            <div class="form-group" id="scheduleGroup">
               <label for="schedule">Schedule (Optional)</label>
               <input type="text" id="schedule" placeholder="e.g., MWF 6:00 PM - 8:00 PM">
-              <small style="color: #888;">Leave blank if this is a standard monthly pass.</small>
             </div>
 
             <div class="form-group">
@@ -119,9 +133,17 @@
             <div class="form-group">
               <label for="edit_membership_type">Membership Type *</label>
               <select id="edit_membership_type" required>
-                <option value="monthly">Monthly Access</option>
+                <option value="monthly">Monthly Access (Gym)</option>
                 <option value="combative">Combative Class</option>
+                <option value="dance">Dance Class</option>
+                <option value="walk-in">Walk-in Session</option>
+                <option value="others">Others (Create New)</option>
               </select>
+            </div>
+
+            <div class="form-group" id="edit_specifyOthersGroup" style="display: none;">
+              <label for="edit_specify_others">Specify Other Type *</label>
+              <input type="text" id="edit_specify_others">
             </div>
 
             <div class="form-group">
@@ -129,7 +151,13 @@
               <input type="number" id="edit_price" required min="0">
             </div>
 
-            <div class="form-group">
+            <div class="form-group" id="edit_sessionsGroup">
+              <label for="edit_sessions">Sessions (Consumable in 1 month)</label>
+              <input type="number" id="edit_sessions" min="1">
+              <small style="color: #888;">Leave blank if unlimited.</small>
+            </div>
+
+            <div class="form-group" id="edit_scheduleGroup">
               <label for="edit_schedule">Schedule (Optional)</label>
               <input type="text" id="edit_schedule">
             </div>

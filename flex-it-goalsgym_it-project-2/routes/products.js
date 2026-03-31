@@ -15,7 +15,8 @@ router.get('/', protect, asyncHandler(async (req, res) => {
 
 // Add a new product
 router.post('/', protect, asyncHandler(async (req, res) => {
-  const { product_name, description, membership_type, price, schedule } = req.body;
+  // Added sessions to the destructured body
+  const { product_name, description, membership_type, price, schedule, sessions } = req.body;
 
   if (!product_name || !membership_type || price === undefined) {
     return res.status(400).json({ success: false, error: 'Product name, membership type, and price are required.' });
@@ -26,7 +27,8 @@ router.post('/', protect, asyncHandler(async (req, res) => {
     description,
     membership_type,
     price,
-    schedule
+    schedule,
+    sessions // Save the sessions to the database
   });
 
   res.status(201).json({ success: true, data: newProduct });

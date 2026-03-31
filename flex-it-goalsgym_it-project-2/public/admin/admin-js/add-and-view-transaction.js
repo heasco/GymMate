@@ -7,6 +7,7 @@ const SERVER_URL = 'http://localhost:8080';
 let selectedMember = null;
 let searchTimeout = null;
 let currentEditTx = null;
+let availableProductsForTx = []; // Holds products for select mapping
 
 // --------------------------------------
 // Admin session configuration
@@ -227,6 +228,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   setupLayoutChrome();
   await checkServerConnection();
+  await loadProductsForTransactions();
   setupAddSectionEventListeners();
   setupViewSectionEventListeners();
   setupSalesSectionEventListeners();
@@ -236,7 +238,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Add Section Minicalendar
   initMiniCalendar('paymentDate', 'paymentDateIcon', 'paymentDatePopup');
 
-  // View Section Minicalendars (Removed custom callbacks to allow default 'change' event to bubble)
+  // View Section Minicalendars 
   initMiniCalendar('txStartDate', 'txStartDateIcon', 'txStartDatePopup');
   initMiniCalendar('txEndDate', 'txEndDateIcon', 'txEndDatePopup');
 
@@ -322,6 +324,48 @@ async function checkServerConnection() {
   }
 }
 
+async function loadProductsForTransactions() {
+  try {
+     const res = await apiFetch('/api/products?status=active');
+     availableProductsForTx = res.data || [];
+     populateTransactionCategories(); // Build dynamic select menu
+  } catch(e) { 
+     console.error('Failed to load products', e); 
+  }
+}
+
+// --- Dynamic Category Loader ---
+function populateTransactionCategories() {
+    const txTypeSelect = $('transactionType');
+    if(!txTypeSelect) return;
+    
+    // We filter out standard ones so we can explicitly place them, then loop unique custom ones
+    const standardTypes = ['monthly', 'combative', 'dance', 'walk-in', 'others', 'Custom'];
+    const uniqueCategories = [...new Set(availableProductsForTx.map(p => p.membership_type))]
+                             .filter(c => c && !standardTypes.includes(c));
+
+    let html = `
+      <option value="">-- Select Category --</option>
+      <option value="monthly">Gym Membership (Monthly)</option>
+      <option value="combative">Combative Class</option>
+      <option value="dance">Dance Class</option>
+      <option value="walk-in">Walk-in Session</option>
+    `;
+    
+    uniqueCategories.forEach(cat => {
+        html += `<option value="${cat}">${cat}</option>`;
+    });
+
+    html += `<option value="Custom">Custom / Others</option>`;
+    
+    const currentVal = txTypeSelect.value;
+    txTypeSelect.innerHTML = html;
+    
+    if (txTypeSelect.querySelector(`option[value="${currentVal}"]`)) {
+        txTypeSelect.value = currentVal;
+    }
+}
+
 // ---------- Tab toggle (Add / View / Sales) ----------
 function setupTabToggle() {
   const tabAdd = $('tabAdd');
@@ -356,7 +400,7 @@ function setupTabToggle() {
     resetTabs();
     tabSales.classList.add('active');
     salesSection.classList.remove('hidden');
-    loadSalesData(); // Auto load all sales when entering tab
+    loadSalesData(); 
   });
 }
 
@@ -416,12 +460,53 @@ function setupAddSectionEventListeners() {
   const txTypeSelect = $('transactionType');
   if (txTypeSelect) {
     txTypeSelect.addEventListener('change', (e) => {
+      const val = e.target.value;
       const specifyGroup = $('specifyTypeGroup');
-      if (e.target.value === 'Others') {
+      const productGroup = $('productSelectGroup');
+      const productSelect = $('productSelect');
+      
+      // Reset displays and values
+      specifyGroup.classList.add('hidden');
+      productGroup.classList.add('hidden');
+      $('specifyType').value = '';
+      productSelect.innerHTML = '<option value="">-- Select Package --</option>';
+
+      if (val === 'Custom') {
         specifyGroup.classList.remove('hidden');
+        checkFormCompletion();
+      } else if (val) {
+        productGroup.classList.remove('hidden');
+        
+        // Populate specific products matching whatever category was selected
+        const filtered = availableProductsForTx.filter(p => p.membership_type === val);
+
+        if(filtered.length === 0) {
+           productSelect.innerHTML += '<option value="" disabled>No products available</option>';
+        } else {
+           filtered.forEach(p => {
+             const opt = document.createElement('option');
+             opt.value = p._id;
+             opt.dataset.price = p.price;
+             opt.dataset.name = p.product_name;
+             opt.textContent = `${p.product_name} - ₱${p.price.toLocaleString()}`;
+             productSelect.appendChild(opt);
+           });
+        }
+        checkFormCompletion();
       } else {
-        specifyGroup.classList.add('hidden');
-        $('specifyType').value = ''; 
+        checkFormCompletion(); // Handles empty selection
+      }
+    });
+  }
+
+  const productSelect = $('productSelect');
+  if (productSelect) {
+    productSelect.addEventListener('change', (e) => {
+      const selectedOpt = e.target.options[e.target.selectedIndex];
+      if (selectedOpt && selectedOpt.value) {
+         $('amount').value = selectedOpt.dataset.price;
+      } else {
+         $('amount').value = '';
       }
       checkFormCompletion();
     });
@@ -509,11 +594,15 @@ function checkFormCompletion() {
   const date = $('paymentDate');
   const txType = $('transactionType');
   const specifyType = $('specifyType');
+  const productSelect = $('productSelect');
 
   let complete = selectedMember && amount && method && date && status && txType &&
     Number(amount.value) >= 0 && method.value && status.value && date.value && txType.value;
 
-  if (complete && txType.value === 'Others' && !specifyType.value.trim()) complete = false;
+  if (complete && txType.value === 'Custom' && !specifyType.value.trim()) complete = false;
+  
+  // Custom categories or standard memberships must have an item selected
+  if (complete && txType.value !== 'Custom' && !productSelect.value) complete = false;
 
   const btn = $('submitTransactionBtn');
   if (btn) btn.disabled = !complete;
@@ -532,11 +621,20 @@ function updateConfirmationSummary() {
   const method = $('paymentMethod')?.value || '';
   const status = $('status')?.value || 'paid';
   const date = $('paymentDate')?.value || '';
-  const txType = $('transactionType')?.value || '';
+  const txTypeSelect = $('transactionType');
+  const txType = txTypeSelect?.value || '';
   const specifyType = $('specifyType')?.value || '';
   const desc = $('description')?.value || '';
 
-  let finalType = txType === 'Others' ? specifyType : txType;
+  // Get correct label if it's dynamic
+  let finalType = txTypeSelect.options[txTypeSelect.selectedIndex]?.text || txType;
+  
+  if (txType === 'Custom') {
+      finalType = specifyType;
+  } else if (txType) {
+      const prodOpt = $('productSelect').options[$('productSelect').selectedIndex];
+      finalType = prodOpt && prodOpt.dataset && prodOpt.dataset.name ? prodOpt.dataset.name : finalType;
+  }
 
   summaryDiv.innerHTML = `
     <p><strong>Member:</strong> ${selectedMember.name} ${selectedMember.isWalkIn ? '(Walk-in)' : `(${selectedMember.memberId})`}</p>
@@ -559,9 +657,17 @@ async function submitTransaction() {
   if (resultBox) { resultBox.className = ''; resultBox.classList.add('hidden'); }
   if (resultMsg) { resultMsg.className = ''; resultMsg.classList.add('hidden'); }
 
-  const txType = $('transactionType').value;
+  const txTypeSelect = $('transactionType');
+  const txType = txTypeSelect.value;
   const specifyType = $('specifyType').value.trim();
-  let finalDesc = txType === 'Others' ? specifyType : txType;
+  
+  let finalDesc = txTypeSelect.options[txTypeSelect.selectedIndex]?.text || txType;
+  if (txType === 'Custom') finalDesc = specifyType;
+  else if (txType) {
+      const prodOpt = $('productSelect').options[$('productSelect').selectedIndex];
+      finalDesc = prodOpt && prodOpt.dataset && prodOpt.dataset.name ? prodOpt.dataset.name : finalDesc;
+  }
+  
   const notes = ($('description').value || '').trim();
   if (notes) finalDesc += ` - ${notes}`;
 
@@ -604,8 +710,8 @@ async function submitTransaction() {
             sessionStorage.removeItem(`${window.location.pathname}-${element.id || element.name}`);
         });
         form.reset();
-        const specifyGroup = $('specifyTypeGroup');
-        if (specifyGroup) specifyGroup.classList.add('hidden');
+        $('specifyTypeGroup')?.classList.add('hidden');
+        $('productSelectGroup')?.classList.add('hidden');
     }
 
     const registeredRadio = document.querySelector('input[name="memberType"][value="registered"]');
