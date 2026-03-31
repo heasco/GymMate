@@ -37,3 +37,99 @@
 #feedbackModal .modal-content {
     max-width: 600px;
 }
+
+@import url('manage-members.css');
+
+/* FIX: Apply flex ONLY when the section has the .active class. 
+   This prevents the forms from overriding the .section { display: none; } rule. */
+#addProductSection.active,
+#editProductSection.active {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+#addProductSection .form-group,
+#editProductSection .form-group {
+    max-width: 600px;
+    width: 100%;
+}
+
+#addProductForm,
+#editProductForm {
+    width: 100%;
+}
+
+.status-badge {
+    padding: 0.3rem 0.6rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.status-active { 
+    background: rgba(40, 167, 69, 0.2); 
+    color: #28a745; 
+}
+
+/* New Status badge for Archived items */
+.status-archived {
+    background: rgba(220, 53, 69, 0.2);
+    color: #dc3545;
+}
+
+/* Modal sizing for feedback */
+#feedbackModal .modal-content {
+    max-width: 600px;
+}
+
+/* Search and Filter container */
+.filters-container {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    align-items: center;
+    width: 100%; /* Ensures the container stretches fully */
+}
+
+.pretty-search-bar, .pretty-select {
+    padding: 0.8rem 1.2rem;
+    font-size: 1rem;
+    background: rgba(0, 0, 0, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 8px;
+    color: #fff;
+    transition: all 0.3s ease;
+}
+
+/* Force the 3/4 and 1/4 layout ratio */
+.pretty-search-bar {
+    flex: 3; /* Takes up 3 parts (75%) */
+    width: 100%;
+}
+
+.pretty-select {
+    flex: 1; /* Takes up 1 part (25%) */
+    width: 100%;
+    cursor: pointer;
+}
+
+.pretty-search-bar:focus, .pretty-select:focus {
+    outline: none;
+    border-color: #ff3333;
+    box-shadow: 0 0 10px rgba(255, 51, 51, 0.4);
+    background: rgba(10, 10, 10, 0.9);
+}
+
+/* Stack them on smaller screens so they don't get too squeezed */
+@media (max-width: 768px) {
+    .filters-container {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .pretty-search-bar, .pretty-select {
+        flex: none;
+        width: 100%;
+    }
+}

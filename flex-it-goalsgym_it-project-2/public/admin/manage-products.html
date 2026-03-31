@@ -48,7 +48,17 @@
         </div>
 
         <div id="productListSection" class="section active">
-          <h2 style="text-align: center;">Active Products</h2>
+          <h2 style="text-align: center;">Product Inventory</h2>
+          
+          <div class="filters-container">
+            <input type="text" id="searchProduct" class="pretty-search-bar" placeholder="Search by product name or category...">
+            <select id="filterStatus" class="pretty-select">
+              <option value="active">Active Products</option>
+              <option value="archived">Archived / Inactive</option>
+              <option value="all">View All</option>
+            </select>
+          </div>
+
           <div class="member-list">
             <table>
               <thead>

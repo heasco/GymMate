@@ -61,6 +61,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   const editMemType = document.getElementById('edit_membership_type');
   if (editMemType) editMemType.addEventListener('change', () => toggleFields('edit'));
 
+  // Event Listeners for Search & Filter
+  const searchInput = document.getElementById('searchProduct');
+  if (searchInput) searchInput.addEventListener('input', filterAndRenderProducts);
+  
+  const filterStatus = document.getElementById('filterStatus');
+  if (filterStatus) filterStatus.addEventListener('change', filterAndRenderProducts);
+
   toggleFields('add'); 
 });
 
@@ -195,14 +202,30 @@ async function loadProducts() {
   tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;">Loading...</td></tr>';
   
   try {
-    const result = await apiFetch('/api/products?status=active');
+    // Note: We fetch ALL products now (removed ?status=active) to handle the filter locally.
+    const result = await apiFetch('/api/products');
     allProducts = result.data || [];
     populateCategoryDropdowns(); // Update UI Select Menus dynamically
-    renderTable(allProducts);
+    filterAndRenderProducts(); // Calls renderTable with filtered items
   } catch (error) {
     showMessage(error.message, 'error');
     tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: #ff3333;">Failed to load products</td></tr>';
   }
+}
+
+function filterAndRenderProducts() {
+  const searchTerm = (document.getElementById('searchProduct')?.value || '').toLowerCase();
+  const statusVal = document.getElementById('filterStatus')?.value || 'active';
+
+  const filtered = allProducts.filter(p => {
+    const matchesSearch = p.product_name.toLowerCase().includes(searchTerm) || 
+                          p.membership_type.toLowerCase().includes(searchTerm);
+    const matchesStatus = statusVal === 'all' ? true : p.status === statusVal;
+    
+    return matchesSearch && matchesStatus;
+  });
+
+  renderTable(filtered);
 }
 
 function renderTable(products) {
@@ -211,7 +234,7 @@ function renderTable(products) {
   tbody.innerHTML = '';
 
   if (products.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;">No active products found.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;">No products found matching your criteria.</td></tr>';
     return;
   }
 
@@ -226,6 +249,14 @@ function renderTable(products) {
       ? (prod.schedule ? prod.schedule : '<span style="color:#777;">N/A</span>')
       : '<span style="color:#777;">N/A</span>';
 
+    // Status Badge Logic
+    const badgeClass = prod.status === 'archived' ? 'status-archived' : 'status-active';
+    
+    // Dynamic Archive / Restore Button
+    const toggleStatusBtn = prod.status === 'active'
+        ? `<button class="archive-button" style="background: transparent; border: 1px solid #dc3545; color: #dc3545; padding: 5px 10px; border-radius: 4px;" onclick="toggleProductStatus('${prod._id}', 'archived')">Archive</button>`
+        : `<button class="archive-button" style="background: transparent; border: 1px solid #28a745; color: #28a745; padding: 5px 10px; border-radius: 4px;" onclick="toggleProductStatus('${prod._id}', 'active')">Restore</button>`;
+
     const row = document.createElement('tr');
     row.innerHTML = `
       <td><strong>${prod.product_name}</strong></td>
@@ -233,12 +264,12 @@ function renderTable(products) {
       <td>₱${prod.price.toLocaleString()}</td>
       <td>${scheduleDisplay}</td>
       <td>${sessionsDisplay}</td>
-      <td><span class="status-badge status-active">${prod.status}</span></td>
+      <td><span class="status-badge ${badgeClass}">${prod.status}</span></td>
       <td>
         <div class="action-buttons">
           <button class="view-button" style="background: transparent; border: 1px solid #ccc; color: #ccc; padding: 5px 10px; border-radius: 4px;" onclick="viewFeedback('${prod._id}')">Feedback (${prod.feedback ? prod.feedback.length : 0})</button>
           <button class="action-button" style="background: #ff3333; color: white; padding: 5px 10px; border: none; border-radius: 4px;" onclick="editProduct('${prod._id}')">Edit</button>
-          <button class="archive-button" style="background: transparent; border: 1px solid #dc3545; color: #dc3545; padding: 5px 10px; border-radius: 4px;" onclick="archiveProduct('${prod._id}')">Archive</button>
+          ${toggleStatusBtn}
         </div>
       </td>
     `;
@@ -346,12 +377,14 @@ async function handleEditProduct(e) {
   }
 }
 
-async function archiveProduct(id) {
-  if (!confirm('Are you sure you want to archive this product?')) return;
+// Unified Archive/Restore Function
+async function toggleProductStatus(id, newStatus) {
+  const actionText = newStatus === 'archived' ? 'archive' : 'restore';
+  if (!confirm(`Are you sure you want to ${actionText} this product?`)) return;
   try {
-    await apiFetch(`/api/products/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status: 'archived' }) });
-    showMessage('Product archived.');
-    loadProducts();
+    await apiFetch(`/api/products/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status: newStatus }) });
+    showMessage(`Product ${actionText}d successfully.`);
+    loadProducts(); // Refresh list to reflect the new status
   } catch (error) {
     showMessage(error.message, 'error');
   }
