@@ -232,7 +232,7 @@ function displayMembersActive(members) {
   filtered.forEach((member) => {
     const activeMemberships = (member.memberships || []).filter(m => m.status === 'active');
     let membershipsText = activeMemberships.length > 0 ? activeMemberships.map((m) => {
-        const durationLabel = m.type === 'combative' ? `${m.remainingSessions || m.duration} sessions` : `${m.duration} months`;
+        const durationLabel = ['combative', 'dance'].includes(m.type) ? `${m.remainingSessions || m.duration} sessions` : `${m.duration} months`;
         return `${m.type} (${m.status}, ${durationLabel}, ends ${new Date(m.endDate).toLocaleDateString()})`;
     }).join(', ') : 'None';
       
@@ -272,7 +272,7 @@ function displayMembersInactive(members) {
     let membershipsText = 'None';
     if (member.memberships && member.memberships.length > 0) {
       const m = [...member.memberships].sort((a, b) => new Date(b.endDate) - new Date(a.endDate))[0];
-      const durationLabel = m.type === 'combative' ? `${m.remainingSessions || m.duration} sessions` : `${m.duration} months`;
+      const durationLabel = ['combative', 'dance'].includes(m.type) ? `${m.remainingSessions || m.duration} sessions` : `${m.duration} months`;
       const verb = new Date(m.endDate) < new Date() ? 'ended' : 'ends';
       membershipsText = `${m.type} (${m.status}, ${durationLabel}, ${verb} ${new Date(m.endDate).toLocaleDateString()})`;
     }
@@ -370,6 +370,7 @@ function openRenewalModal(memberId) {
     if (document.getElementById('renewalForm')) document.getElementById('renewalForm').reset();
     document.getElementById('renewMonthlyDetails').style.display = 'none';
     document.getElementById('renewCombativeDetails').style.display = 'none';
+    if(document.getElementById('renewDanceDetails')) document.getElementById('renewDanceDetails').style.display = 'none';
     document.getElementById('renewalProductGroup').style.display = 'none';
     document.getElementById('renewalInfoBox').style.display = 'none';
     
@@ -394,15 +395,17 @@ function openRenewalModal(memberId) {
 function setupRenewalForm() {
   const renewMonthly = document.getElementById('renewMonthly');
   const renewCombative = document.getElementById('renewCombative');
+  const renewDance = document.getElementById('renewDance');
   
   function toggleRenewDetails() {
     document.getElementById('renewMonthlyDetails').style.display = renewMonthly?.checked ? 'block' : 'none';
     document.getElementById('renewCombativeDetails').style.display = renewCombative?.checked ? 'block' : 'none';
+    if(document.getElementById('renewDanceDetails')) document.getElementById('renewDanceDetails').style.display = renewDance?.checked ? 'block' : 'none';
     
     const productGroup = document.getElementById('renewalProductGroup');
     const productSelect = document.getElementById('renewalProductSelect');
     
-    if (!renewMonthly?.checked && !renewCombative?.checked) {
+    if (!renewMonthly?.checked && !renewCombative?.checked && !renewDance?.checked) {
         if (productGroup) productGroup.style.display = 'none';
     } else {
         if (productGroup) productGroup.style.display = 'block';
@@ -411,6 +414,7 @@ function setupRenewalForm() {
             const validTypes = [];
             if (renewMonthly?.checked) validTypes.push('monthly');
             if (renewCombative?.checked) validTypes.push('combative');
+            if (renewDance?.checked) validTypes.push('dance');
             
             const filtered = activeProducts.filter(p => validTypes.includes(p.membership_type));
             if (filtered.length === 0) productSelect.innerHTML = '<option value="" disabled>No products available</option>';
@@ -428,10 +432,12 @@ function setupRenewalForm() {
 
   if (renewMonthly) renewMonthly.addEventListener('change', toggleRenewDetails);
   if (renewCombative) renewCombative.addEventListener('change', toggleRenewDetails);
+  if (renewDance) renewDance.addEventListener('change', toggleRenewDetails);
 
   if (document.getElementById('renewalDate')) document.getElementById('renewalDate').addEventListener('change', updateRenewalInfo);
   if (document.getElementById('renewMonthlyDuration')) document.getElementById('renewMonthlyDuration').addEventListener('input', updateRenewalInfo);
   if (document.getElementById('renewCombativeSessions')) document.getElementById('renewCombativeSessions').addEventListener('input', updateRenewalInfo);
+  if (document.getElementById('renewDanceSessions')) document.getElementById('renewDanceSessions').addEventListener('input', updateRenewalInfo);
 
   const renewalForm = document.getElementById('renewalForm');
   if (renewalForm) renewalForm.addEventListener('submit', validateAndShowRenewalPaymentModal);
@@ -459,9 +465,10 @@ function updateRenewalInfo() {
   const renewalDate = new Date(document.getElementById('renewalDate').value);
   const monthlyChecked = document.getElementById('renewMonthly').checked;
   const combativeChecked = document.getElementById('renewCombative').checked;
+  const danceChecked = document.getElementById('renewDance')?.checked;
   const infoBox = document.getElementById('renewalInfoBox');
 
-  if (!monthlyChecked && !combativeChecked) { if (infoBox) infoBox.style.display = 'none'; return; }
+  if (!monthlyChecked && !combativeChecked && !danceChecked) { if (infoBox) infoBox.style.display = 'none'; return; }
   let infoHTML = '<strong><i class="fas fa-info-circle"></i> Renewal Summary:</strong><br><br>';
 
   if (monthlyChecked) {
@@ -477,13 +484,20 @@ function updateRenewalInfo() {
     const endDate = calculateNewEndDate(renewalDate, currentMembership?.endDate, durationM, 'combative');
     infoHTML += `<div><strong>Combative Membership:</strong><br><span style="color: #ccc;">Start: ${formatDate(renewalDate)}</span><br><span style="color: #ccc;">End: ${formatDate(endDate)}</span><br><span style="color: #ccc;">Sessions: ${sessions}</span></div>`;
   }
+  if (danceChecked) {
+    const sessions = parseInt(document.getElementById('renewDanceSessions').value) || 12;
+    const durationM = Math.ceil(sessions / 12);
+    const currentMembership = selectedMemberForRenewal.memberships?.find(m => m.type === 'dance');
+    const endDate = calculateNewEndDate(renewalDate, currentMembership?.endDate, durationM, 'dance');
+    infoHTML += `<div style="margin-top: 10px;"><strong>Dance Class:</strong><br><span style="color: #ccc;">Start: ${formatDate(renewalDate)}</span><br><span style="color: #ccc;">End: ${formatDate(endDate)}</span><br><span style="color: #ccc;">Sessions: ${sessions}</span></div>`;
+  }
   if (infoBox) { infoBox.innerHTML = infoHTML; infoBox.style.display = 'block'; }
 }
 
 function calculateNewEndDate(renewalDate, currentEndDateStr, durationMonths, membershipType) {
   const renewal = new Date(renewalDate);
   const currentEnd = currentEndDateStr ? new Date(currentEndDateStr) : null;
-  if (membershipType === 'combative' && currentEnd) {
+  if (['combative', 'dance'].includes(membershipType) && currentEnd) {
     const twoMonthsAgo = new Date(renewal); twoMonthsAgo.setMonth(twoMonthsAgo.getMonth() - 2);
     if (currentEnd < twoMonthsAgo) { const newEnd = new Date(renewal); newEnd.setMonth(newEnd.getMonth() + durationMonths); return newEnd; }
   }
@@ -497,7 +511,8 @@ function validateAndShowRenewalPaymentModal(e) {
     
     const monthlyChecked = document.getElementById('renewMonthly').checked;
     const combativeChecked = document.getElementById('renewCombative').checked;
-    if (!monthlyChecked && !combativeChecked) return showMessage('Please select a membership type to renew', 'error');
+    const danceChecked = document.getElementById('renewDance')?.checked;
+    if (!monthlyChecked && !combativeChecked && !danceChecked) return showMessage('Please select a membership type to renew', 'error');
 
     const productSelect = document.getElementById('renewalProductSelect');
     if (!productSelect || !productSelect.value) return showMessage('Please select a Product/Plan', 'error');
@@ -536,11 +551,13 @@ async function executeRenewalSave() {
         const updatedMemberships = [];
         const monthlyChecked = document.getElementById('renewMonthly').checked;
         const combativeChecked = document.getElementById('renewCombative').checked;
+        const danceChecked = document.getElementById('renewDance')?.checked;
 
         if (selectedMemberForRenewal.memberships) {
             selectedMemberForRenewal.memberships.forEach((m) => {
                 if (m.type === 'monthly' && !monthlyChecked) updatedMemberships.push(m);
                 else if (m.type === 'combative' && !combativeChecked) updatedMemberships.push(m);
+                else if (m.type === 'dance' && !danceChecked) updatedMemberships.push(m);
             });
         }
 
@@ -561,6 +578,18 @@ async function executeRenewalSave() {
             const endDate = calculateNewEndDate(renewalDate, cm?.endDate, duration, 'combative');
             updatedMemberships.push({
                 type: 'combative', duration: duration, remainingSessions: sessions,
+                startDate: renewalDate.toISOString(), endDate: endDate.toISOString(),
+                status: 'active', paymentStatus: isPaid ? 'paid' : 'unpaid'
+            });
+        }
+
+        if (danceChecked) {
+            const sessions = parseInt(document.getElementById('renewDanceSessions').value) || 12;
+            const duration = Math.ceil(sessions / 12);
+            const cm = selectedMemberForRenewal.memberships?.find(m => m.type === 'dance');
+            const endDate = calculateNewEndDate(renewalDate, cm?.endDate, duration, 'dance');
+            updatedMemberships.push({
+                type: 'dance', duration: duration, remainingSessions: sessions,
                 startDate: renewalDate.toISOString(), endDate: endDate.toISOString(),
                 status: 'active', paymentStatus: isPaid ? 'paid' : 'unpaid'
             });
@@ -642,6 +671,7 @@ function createActiveMembershipEditField(membership, index) {
       <select id="membership_type_${index}" class="edit-type-select" required>
         <option value="monthly" ${membership.type === 'monthly' ? 'selected' : ''}>Monthly</option>
         <option value="combative" ${membership.type === 'combative' ? 'selected' : ''}>Combative</option>
+        <option value="dance" ${membership.type === 'dance' ? 'selected' : ''}>Dance</option>
       </select>
     </div>
     <div class="form-group">
@@ -689,7 +719,7 @@ if (document.getElementById('editMemberForm')) {
       if (updatedMemberships[idx] && ns) {
           updatedMemberships[idx].type = nt; updatedMemberships[idx].startDate = new Date(ns).toISOString(); updatedMemberships[idx].duration = nd;
           const end = new Date(ns); end.setMonth(end.getMonth() + nd); updatedMemberships[idx].endDate = end.toISOString();
-          if (c.querySelector(`#original_type_${idx}`).value === 'monthly' && nt === 'combative') updatedMemberships[idx].remainingSessions = nd * 12;
+          if (c.querySelector(`#original_type_${idx}`).value === 'monthly' && ['combative', 'dance'].includes(nt)) updatedMemberships[idx].remainingSessions = nd * 12;
           else if (nt === 'monthly') updatedMemberships[idx].remainingSessions = 0;
       }
     });

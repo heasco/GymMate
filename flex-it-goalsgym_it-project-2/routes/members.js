@@ -106,7 +106,7 @@ router.post('/', protect, faceUploads, asyncHandler(async (req, res) => {
   
   const validatedMemberships = [];
   for (const m of memberships) {
-    if (!m?.type || !['monthly', 'combative'].includes(m.type)) {
+    if (!m?.type || !['monthly', 'combative', 'dance'].includes(m.type)) {
       return res.status(400).json({ success: false, error: 'Each membership must have a valid type (monthly or combative)' });
     }
     if (!m?.duration || Number(m.duration) < 1) {

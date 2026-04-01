@@ -132,11 +132,12 @@ function initializeForm() {
 
   const monthlyRadio = document.getElementById('monthlyRadio');
   const combativeRadio = document.getElementById('combativeRadio');
+  const danceRadio = document.getElementById('danceRadio');
   const productGroup = document.getElementById('productSelectionGroup');
   const productSelect = document.getElementById('productSelect');
 
   function updateProductDropdown() {
-    const selectedType = monthlyRadio?.checked ? 'monthly' : combativeRadio?.checked ? 'combative' : null;
+    const selectedType = monthlyRadio?.checked ? 'monthly' : combativeRadio?.checked ? 'combative' : danceRadio?.checked ? 'dance' : null;
     if (!selectedType) {
         if(productGroup) productGroup.style.display = 'none';
         return;
@@ -160,6 +161,7 @@ function initializeForm() {
 
   if (monthlyRadio) monthlyRadio.addEventListener('change', updateProductDropdown);
   if (combativeRadio) combativeRadio.addEventListener('change', updateProductDropdown);
+  if (danceRadio) danceRadio.addEventListener('change', updateProductDropdown);
 
   const initiateBtn = document.getElementById('initiateSubmitBtn');
   if (initiateBtn) initiateBtn.addEventListener('click', validateAndShowAddPaymentModal);
@@ -246,7 +248,7 @@ function validateAndShowAddPaymentModal() {
     if (!bYear || !bMonth || !bDay) return showMessage('Date of Birth is incomplete. Please select Day, Month, and Year.', 'error');
     if (!genderVal) return showMessage('Gender is required', 'error');
     if (!joinDate) return showMessage('Join Date is required', 'error');
-    if (!document.getElementById('monthlyRadio').checked && !document.getElementById('combativeRadio').checked) return showMessage('Please select a Membership Type', 'error');
+    if (!document.getElementById('monthlyRadio').checked && !document.getElementById('combativeRadio').checked && !document.getElementById('danceRadio').checked) return showMessage('Please select a Membership Type', 'error');
     if (!productSelect || !productSelect.value) return showMessage('Please select a Product/Plan', 'error');
 
     const selectedOpt = productSelect.options[productSelect.selectedIndex];
@@ -271,7 +273,7 @@ async function processAddMember(btn) {
     
     const productSelect = document.getElementById('productSelect');
     const selectedOpt = productSelect.options[productSelect.selectedIndex];
-    const membershipType = document.getElementById('monthlyRadio').checked ? 'monthly' : 'combative';
+    const membershipType = document.getElementById('monthlyRadio').checked ? 'monthly' : document.getElementById('combativeRadio').checked ? 'combative' : 'dance';
 
     const memberships = [{ type: membershipType, duration: 1, paymentStatus: isPaid ? 'paid' : 'unpaid' }];
     
@@ -362,31 +364,35 @@ function setupRenewalModal() {
 
   const renewMonthly = document.getElementById('renewMonthly');
   const renewCombative = document.getElementById('renewCombative');
+  const renewDance = document.getElementById('renewDance');
   
   function toggleRenewDetails() {
     const rmDet = document.getElementById('renewMonthlyDetails');
     const rcDet = document.getElementById('renewCombativeDetails');
+    const rdDet = document.getElementById('renewDanceDetails');
+
     if(rmDet) rmDet.style.display = renewMonthly?.checked ? 'block' : 'none';
     if(rcDet) rcDet.style.display = renewCombative?.checked ? 'block' : 'none';
+    if(rdDet) rdDet.style.display = renewDance?.checked ? 'block' : 'none';
     
     const productGroup = document.getElementById('renewalProductGroup');
     const productSelect = document.getElementById('renewalProductSelect');
     const productTitleSpan = document.getElementById('renewalProductTitle');
     const productDetailsList = document.getElementById('renewalProductDetailsList');
     
-    if (!renewMonthly?.checked && !renewCombative?.checked) {
+    if (!renewMonthly?.checked && !renewCombative?.checked && !renewDance?.checked) {
         if (productGroup) {
             productGroup.style.display = 'none';
-            productGroup.classList.remove('active'); // FIX: Remove opacity class
+            productGroup.classList.remove('active');
         }
     } else {
         if (productGroup) {
             productGroup.style.display = 'block';
-            setTimeout(() => productGroup.classList.add('active'), 10); // FIX: Add opacity class
+            setTimeout(() => productGroup.classList.add('active'), 10);
         }
         if (productSelect) {
             productSelect.innerHTML = '<option value="" disabled selected>Select a product...</option>';
-            const selectedType = renewMonthly?.checked ? 'monthly' : renewCombative?.checked ? 'combative' : null;
+            const selectedType = renewMonthly?.checked ? 'monthly' : renewCombative?.checked ? 'combative' : renewDance?.checked ? 'dance' : null;
             
             const filtered = activeProducts.filter(p => p.membership_type === selectedType);
             if (filtered.length === 0) {
@@ -406,6 +412,9 @@ function setupRenewalModal() {
             } else if (selectedType === 'combative' && productTitleSpan) {
                 productTitleSpan.textContent = 'Combative Sports Membership';
                 productDetailsList.innerHTML = `<li><i class="fas fa-check-circle"></i> 12 Sessions per month</li>`;
+            } else if (selectedType === 'dance' && productTitleSpan) {
+                productTitleSpan.textContent = 'Dance Class';
+                productDetailsList.innerHTML = `<li><i class="fas fa-check-circle"></i> Dance sessions per month</li>`;
             }
         }
     }
@@ -414,10 +423,12 @@ function setupRenewalModal() {
 
   if (renewMonthly) renewMonthly.addEventListener('change', toggleRenewDetails);
   if (renewCombative) renewCombative.addEventListener('change', toggleRenewDetails);
+  if (renewDance) renewDance.addEventListener('change', toggleRenewDetails);
 
   if (document.getElementById('renewalDate')) document.getElementById('renewalDate').addEventListener('change', updateRenewalInfo);
   if (document.getElementById('renewMonthlyDuration')) document.getElementById('renewMonthlyDuration').addEventListener('input', updateRenewalInfo);
-  if (document.getElementById('renewCombativeDuration')) document.getElementById('renewCombativeDuration').addEventListener('input', updateRenewalInfo); 
+  if (document.getElementById('renewCombativeSessions')) document.getElementById('renewCombativeSessions').addEventListener('input', updateRenewalInfo); 
+  if (document.getElementById('renewDanceSessions')) document.getElementById('renewDanceSessions').addEventListener('input', updateRenewalInfo); 
   
   if (renewalForm) renewalForm.addEventListener('submit', validateAndShowRenewalPaymentModal);
 }
@@ -430,6 +441,7 @@ function resetRenewalModal() {
   if (document.getElementById('renewalDate')) document.getElementById('renewalDate').valueAsDate = new Date();
   if (document.getElementById('renewMonthlyDetails')) document.getElementById('renewMonthlyDetails').style.display = 'none';
   if (document.getElementById('renewCombativeDetails')) document.getElementById('renewCombativeDetails').style.display = 'none';
+  if (document.getElementById('renewDanceDetails')) document.getElementById('renewDanceDetails').style.display = 'none';
   if (document.getElementById('renewalInfoBox')) document.getElementById('renewalInfoBox').style.display = 'none';
   
   const productGroup = document.getElementById('renewalProductGroup');
@@ -498,9 +510,10 @@ function updateRenewalInfo() {
   const renewalDate = new Date(renewalDateInput.value);
   const monthlyChecked = document.getElementById('renewMonthly')?.checked;
   const combativeChecked = document.getElementById('renewCombative')?.checked;
+  const danceChecked = document.getElementById('renewDance')?.checked;
   const infoBox = document.getElementById('renewalInfoBox');
 
-  if (!monthlyChecked && !combativeChecked) { if (infoBox) infoBox.style.display = 'none'; return; }
+  if (!monthlyChecked && !combativeChecked && !danceChecked) { if (infoBox) infoBox.style.display = 'none'; return; }
   let infoHTML = '<strong><i class="fas fa-info-circle"></i> Renewal Summary:</strong><br><br>';
 
   if (monthlyChecked) {
@@ -511,10 +524,17 @@ function updateRenewalInfo() {
   }
 
   if (combativeChecked) {
-    const duration = parseInt(document.getElementById('renewCombativeDuration')?.value) || 1;
+    const duration = parseInt(document.getElementById('renewCombativeSessions')?.value) || 12; // defaulting to 12 if tracking by sessions
     const currentMembership = selectedMember.memberships?.find((m) => m.type === 'combative');
-    const endDate = calculateNewEndDate(renewalDate, currentMembership?.endDate, duration, 'combative');
-    infoHTML += `<div class="info-item"><strong>Combative Membership:</strong><br><span class="detail-line">Start Date: ${formatDate(renewalDateInput.value)}</span><br><span class="detail-line">End Date: ${formatDate(endDate.toISOString().split('T')[0])}</span><br><span class="detail-line">Duration: ${duration} month(s)</span><br><span class="detail-line">Sessions: ${duration * 12}</span></div>`;
+    const endDate = calculateNewEndDate(renewalDate, currentMembership?.endDate, 1, 'combative'); // Assuming combative renews for 1 month block at a time
+    infoHTML += `<div class="info-item"><strong>Combative Membership:</strong><br><span class="detail-line">Start Date: ${formatDate(renewalDateInput.value)}</span><br><span class="detail-line">End Date: ${formatDate(endDate.toISOString().split('T')[0])}</span><br><span class="detail-line">Sessions: ${duration}</span></div>`;
+  }
+
+  if (danceChecked) {
+    const duration = parseInt(document.getElementById('renewDanceSessions')?.value) || 12; // assuming dance tracks similarly to combative
+    const currentMembership = selectedMember.memberships?.find((m) => m.type === 'dance');
+    const endDate = calculateNewEndDate(renewalDate, currentMembership?.endDate, 1, 'dance');
+    infoHTML += `<div class="info-item"><strong>Dance Class:</strong><br><span class="detail-line">Start Date: ${formatDate(renewalDateInput.value)}</span><br><span class="detail-line">End Date: ${formatDate(endDate.toISOString().split('T')[0])}</span><br><span class="detail-line">Sessions: ${duration}</span></div>`;
   }
 
   if (infoBox) { infoBox.innerHTML = infoHTML; infoBox.style.display = 'block'; }
@@ -523,7 +543,7 @@ function updateRenewalInfo() {
 function calculateNewEndDate(renewalDate, currentEndDateStr, durationMonths, membershipType) {
   const renewal = new Date(renewalDate);
   const currentEnd = currentEndDateStr ? new Date(currentEndDateStr) : null;
-  if (membershipType === 'combative' && currentEnd) {
+  if ((membershipType === 'combative' || membershipType === 'dance') && currentEnd) {
     const twoMonthsAgo = new Date(renewal);
     twoMonthsAgo.setMonth(twoMonthsAgo.getMonth() - 2);
     if (currentEnd < twoMonthsAgo) { const newEnd = new Date(renewal); newEnd.setMonth(newEnd.getMonth() + durationMonths); return newEnd; }
@@ -538,7 +558,8 @@ function validateAndShowRenewalPaymentModal(e) {
     
     const monthlyChecked = document.getElementById('renewMonthly').checked;
     const combativeChecked = document.getElementById('renewCombative').checked;
-    if (!monthlyChecked && !combativeChecked) return showMessage('Please select a membership type to renew', 'error');
+    const danceChecked = document.getElementById('renewDance').checked;
+    if (!monthlyChecked && !combativeChecked && !danceChecked) return showMessage('Please select a membership type to renew', 'error');
 
     const productSelect = document.getElementById('renewalProductSelect');
     if (!productSelect || !productSelect.value) return showMessage('Please select a Product/Plan', 'error');
@@ -579,11 +600,13 @@ async function processRenewal(btn) {
         const updatedMemberships = [];
         const monthlyChecked = document.getElementById('renewMonthly').checked;
         const combativeChecked = document.getElementById('renewCombative').checked;
+        const danceChecked = document.getElementById('renewDance').checked;
 
         if (selectedMember.memberships) {
             selectedMember.memberships.forEach((m) => {
                 if (m.type === 'monthly' && !monthlyChecked) updatedMemberships.push(m);
                 else if (m.type === 'combative' && !combativeChecked) updatedMemberships.push(m);
+                else if (m.type === 'dance' && !danceChecked) updatedMemberships.push(m);
             });
         }
 
@@ -595,11 +618,18 @@ async function processRenewal(btn) {
         }
 
         if (combativeChecked) {
-            const duration = parseInt(document.getElementById('renewCombativeDuration').value) || 1;
-            const sessions = duration * 12;
+            // duration mapping is handled safely - 1 month block for the number of sessions
+            const sessions = parseInt(document.getElementById('renewCombativeSessions').value) || 12;
             const cm = selectedMember.memberships?.find((m) => m.type === 'combative');
-            const endDate = calculateNewEndDate(renewalDate, cm?.endDate, duration, 'combative');
-            updatedMemberships.push({ type: 'combative', duration: duration, remainingSessions: sessions, startDate: renewalDate.toISOString(), endDate: endDate.toISOString(), status: 'active', paymentStatus: isPaid ? 'paid' : 'unpaid' });
+            const endDate = calculateNewEndDate(renewalDate, cm?.endDate, 1, 'combative'); 
+            updatedMemberships.push({ type: 'combative', duration: 1, remainingSessions: sessions, startDate: renewalDate.toISOString(), endDate: endDate.toISOString(), status: 'active', paymentStatus: isPaid ? 'paid' : 'unpaid' });
+        }
+
+        if (danceChecked) {
+            const sessions = parseInt(document.getElementById('renewDanceSessions').value) || 12;
+            const cm = selectedMember.memberships?.find((m) => m.type === 'dance');
+            const endDate = calculateNewEndDate(renewalDate, cm?.endDate, 1, 'dance'); 
+            updatedMemberships.push({ type: 'dance', duration: 1, remainingSessions: sessions, startDate: renewalDate.toISOString(), endDate: endDate.toISOString(), status: 'active', paymentStatus: isPaid ? 'paid' : 'unpaid' });
         }
 
         const result = await apiFetch(`/api/members/${selectedMember._id}/renew`, {
@@ -636,78 +666,6 @@ async function processRenewal(btn) {
 /* =========================================================
    SECTION 5: SHARED UTILITIES
    ========================================================= */
-function setupDOBDropdowns() {
-  const monthSelect = document.getElementById('birthMonth');
-  const daySelect = document.getElementById('birthDay');
-  const yearSelect = document.getElementById('birthYear');
-  const hiddenInput = document.getElementById('birthdate');
-  if (!monthSelect || !daySelect || !yearSelect || !hiddenInput) return;
-  const today = new Date(); const currentYear = today.getFullYear(); const currentMonth = today.getMonth(); const currentDay = today.getDate();
-  const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-  for (let y = currentYear; y >= 1900; y--) { const opt = document.createElement('option'); opt.value = y; opt.textContent = y; yearSelect.appendChild(opt); }
-  months.forEach((m, index) => { const opt = document.createElement('option'); opt.value = index + 1; opt.textContent = m; monthSelect.appendChild(opt); });
-  for (let d = 1; d <= 31; d++) { const opt = document.createElement('option'); opt.value = d; opt.textContent = d; daySelect.appendChild(opt); }
-
-  function updateDays() {
-    const y = parseInt(yearSelect.value); const m = parseInt(monthSelect.value);
-    if (!y || !m) return;
-    const daysInMonth = new Date(y, m, 0).getDate(); const selectedDay = parseInt(daySelect.value);
-    daySelect.innerHTML = '<option value="" disabled selected>Day</option>';
-    let maxDay = daysInMonth;
-    if (y === currentYear && m === currentMonth + 1) maxDay = Math.min(daysInMonth, currentDay);
-    for (let d = 1; d <= maxDay; d++) { const opt = document.createElement('option'); opt.value = d; opt.textContent = d; daySelect.appendChild(opt); }
-    if (selectedDay && selectedDay <= maxDay) daySelect.value = selectedDay; else daySelect.value = "";
-    updateHiddenInput();
-  }
-
-  function updateHiddenInput() {
-    const y = yearSelect.value; const m = monthSelect.value; const d = daySelect.value;
-    if (y && m && d) { hiddenInput.value = `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`; } 
-    else { hiddenInput.value = ''; }
-  }
-  yearSelect.addEventListener('change', () => { updateDays(); updateHiddenInput(); });
-  monthSelect.addEventListener('change', updateDays);
-  daySelect.addEventListener('change', updateHiddenInput);
-}
-
-function setupPaymentModal() {
-    const modal = document.getElementById('paymentModal');
-    const closeBtn = document.getElementById('closePaymentModalBtn');
-    const statusSelect = document.getElementById('paymentStatusSelect');
-    const methodGroup = document.getElementById('paymentMethodGroup');
-    const confirmBtn = document.getElementById('confirmPaymentAndSaveBtn');
-
-    if (closeBtn) closeBtn.addEventListener('click', () => { if(modal) modal.style.display = 'none'; });
-    if (statusSelect) {
-        statusSelect.addEventListener('change', (e) => {
-            if (methodGroup) methodGroup.style.display = e.target.value === 'paid' ? 'block' : 'none';
-        });
-    }
-    if (confirmBtn) confirmBtn.addEventListener('click', executeFinalSave);
-}
-
-async function executeFinalSave() {
-    const btn = document.getElementById('confirmPaymentAndSaveBtn');
-    if(btn) { btn.disabled = true; btn.textContent = 'Processing...'; }
-
-    if (paymentContext === 'add') {
-        await processAddMember(btn);
-    } else {
-        await processRenewal(btn);
-    }
-}
-
-function calculateNewEndDate(renewalDate, currentEndDateStr, durationMonths, membershipType) {
-  const renewal = new Date(renewalDate);
-  const currentEnd = currentEndDateStr ? new Date(currentEndDateStr) : null;
-  if (membershipType === 'combative' && currentEnd) {
-    const twoMonthsAgo = new Date(renewal);
-    twoMonthsAgo.setMonth(twoMonthsAgo.getMonth() - 2);
-    if (currentEnd < twoMonthsAgo) { const newEnd = new Date(renewal); newEnd.setMonth(newEnd.getMonth() + durationMonths); return newEnd; }
-  }
-  if (currentEnd && renewal < currentEnd) { const newEnd = new Date(currentEnd); newEnd.setMonth(newEnd.getMonth() + durationMonths); return newEnd; } 
-  else { const newEnd = new Date(renewal); newEnd.setMonth(newEnd.getMonth() + durationMonths); return newEnd; }
-}
 
 function setupFaceCapture() {
   const openBtn = document.getElementById('openFacePaneBtn');
@@ -793,18 +751,21 @@ function showMessage(text, type) {
 document.addEventListener('DOMContentLoaded', () => {
     const monthlyRadio = document.getElementById('monthlyRadio');
     const combativeRadio = document.getElementById('combativeRadio');
+    const danceRadio = document.getElementById('danceRadio');
     const productSelectContainer = document.getElementById('productSelectContainer');
     const productCardHeader = document.getElementById('productCardHeader');
     const productTitleSpan = document.getElementById('productTitle');
     const productDetailsList = document.getElementById('productDetailsList');
 
-    if (!monthlyRadio || !combativeRadio || !productSelectContainer) return;
+    if (!monthlyRadio || !combativeRadio || !danceRadio || !productSelectContainer) return;
 
     function handleRadioChange() {
         if (monthlyRadio.checked) {
             updateProductField('monthly');
         } else if (combativeRadio.checked) {
             updateProductField('combative');
+        } else if (danceRadio.checked) {
+            updateProductField('dance');
         }
     }
 
@@ -831,11 +792,20 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
             const oldProductSelectGroup = document.getElementById('productSelectionGroup');
             if(oldProductSelectGroup) oldProductSelectGroup.style.display = 'none';
+        } else if (type === 'dance') {
+            productTitleSpan.textContent = 'Dance Class';
+            productDetailsList.innerHTML = `
+                <li><i class="fas fa-check-circle"></i> Dance sessions, valid for 1 month</li>
+                <li><i class="fas fa-check-circle"></i> Requires initial payment</li>
+            `;
+            const oldProductSelectGroup = document.getElementById('productSelectionGroup');
+            if(oldProductSelectGroup) oldProductSelectGroup.style.display = 'none';
         }
     }
 
     monthlyRadio.addEventListener('change', handleRadioChange);
     combativeRadio.addEventListener('change', handleRadioChange);
+    danceRadio.addEventListener('change', handleRadioChange);
 
     handleRadioChange();
 });

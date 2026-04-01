@@ -91,6 +91,10 @@
                             <input type="radio" id="combativeRadio" name="membershipType" value="combative">
                             Combative Sports Membership
                         </label>
+                        <label class="checkbox">
+                            <input type="radio" id="danceRadio" name="membershipType" value="dance">
+                            Dance Class
+                        </label>
                     </div>
                 </div>
 
@@ -219,6 +223,10 @@
                                     <input type="radio" name="renewRadio" id="renewCombative" value="combative">
                                     Combative Sports Membership
                                 </label>
+                                <label class="checkbox renewal-checkbox">
+                                    <input type="radio" name="renewRadio" id="renewDance" value="dance">
+                                    Dance Class
+                                </label>
                             </div>
                         </div>
 
@@ -247,6 +255,11 @@
                         <div class="form-group membership-details" id="renewCombativeDetails">
                             <label for="renewCombativeSessions">Number of Sessions:</label>
                             <input type="number" id="renewCombativeSessions" min="1" value="12">
+                        </div>
+                        
+                        <div class="form-group membership-details" id="renewDanceDetails">
+                            <label for="renewDanceSessions">Number of Sessions:</label>
+                            <input type="number" id="renewDanceSessions" min="1" value="12">
                         </div>
 
                         <div id="renewalInfoBox" class="renewal-info-box"></div>

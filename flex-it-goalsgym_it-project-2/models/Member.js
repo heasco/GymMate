@@ -4,7 +4,7 @@ const bcrypt = require('bcryptjs');
 const membershipSchema = new mongoose.Schema({
   type: {
     type: String,
-    enum: ['monthly', 'combative', 'student', 'dropsin'],
+    enum: ['monthly', 'combative', 'student', 'dance', 'dropsin'],
     required: true
   },
   duration: {
