@@ -5,6 +5,7 @@ const Log = require('../models/Log');
 const Admin = require('../models/Admin');
 const Trainer = require('../models/Trainer');
 const Member = require('../models/Member');
+const MembershipHistory = require('../models/MembershipHistory'); // ADDED: Import MembershipHistory model
 const asyncHandler = require('../middleware/asyncHandler');
 
 // @desc    Get all logs
@@ -75,6 +76,48 @@ router.get(
     res.json({
       success: true,
       data: populatedLogs,
+    });
+  })
+);
+
+// @desc    Get expired memberships
+// @route   GET /api/logs/expired
+// @access  Private/Admin
+router.get(
+  '/expired',
+  asyncHandler(async (req, res) => {
+    const { name, startDate } = req.query;
+    const filter = {};
+
+    // Filter by the date the membership was archived (expired)
+    if (startDate) {
+      const start = new Date(startDate);
+      start.setHours(0, 0, 0, 0);
+      
+      let end = new Date(startDate);
+      end.setHours(23, 59, 59, 999);
+
+      filter.archivedAt = { $gte: start, $lte: end };
+    }
+
+    // Fetch and populate member details
+    let expiredMemberships = await MembershipHistory.find(filter)
+      .populate('member', 'name') // Populate member to get the name
+      .sort({ archivedAt: -1 })
+      .lean();
+
+    // Filter by member name in-memory
+    if (name) {
+      const nameRegex = new RegExp(name, 'i');
+      expiredMemberships = expiredMemberships.filter((record) => {
+        const memberName = record.member ? record.member.name : '';
+        return nameRegex.test(memberName);
+      });
+    }
+
+    res.json({
+      success: true,
+      data: expiredMemberships,
     });
   })
 );

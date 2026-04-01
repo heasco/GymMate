@@ -50,7 +50,7 @@
   letter-spacing: 0.5px;
   cursor: pointer;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6);
-  min-width: 200px;
+  min-width: 160px; /* MODIFIED: Reduced from 200px to fit 3 buttons nicely */
   font-size: 0.9rem;
   transition: var(--transition);
 }
