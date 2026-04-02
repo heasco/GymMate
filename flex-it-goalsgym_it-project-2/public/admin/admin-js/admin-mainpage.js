@@ -19,12 +19,10 @@ const ADMIN_KEYS = {
 // Admin storage helpers (namespaced)
 // --------------------------------------
 const AdminStore = {
-  // Prefer localStorage for cross-tab persistence; mirror to sessionStorage for convenience
   set(token, userPayload) {
     try {
       const authUser = {
         ...userPayload,
-        // maintain/refresh timestamp for page activity checks
         timestamp: Date.now(),
         role: 'admin',
         token,
@@ -86,8 +84,6 @@ const AdminStore = {
 
 // --------------------------------------
 // Backward‑compatible bootstrap
-// Copies a valid admin session from generic keys into admin_*,
-// so admin stays logged in across tabs without affecting other roles.
 // --------------------------------------
 function bootstrapAdminFromGenericIfNeeded() {
   try {
@@ -100,7 +96,6 @@ function bootstrapAdminFromGenericIfNeeded() {
     if (!genToken || !genRole || genRole !== 'admin' || !genAuthRaw) return;
 
     const genAuth = JSON.parse(genAuthRaw);
-    // If generic keys indeed hold an admin session, copy them to admin_*.
     AdminStore.set(genToken, genAuth);
   } catch (e) {
     console.error('[bootstrapAdminFromGenericIfNeeded] failed:', e);
@@ -124,24 +119,18 @@ async function adminLogout(reason) {
   try {
     console.log('[Admin Logout]:', reason || 'no reason');
     const token = AdminStore.getToken();
-    // Best effort server logout; keep route unchanged
     if (token) {
       const logoutUrl = `${getApiBase()}/api/logout`;
       await fetch(logoutUrl, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
-      }).catch(() => {
-        // ignore network error on logout
-      });
+      }).catch(() => {});
     }
   } catch (e) {
     console.error('[adminLogout] server call failed:', e);
   } finally {
-    // Clear admin-scoped keys
     AdminStore.clear();
 
-    // Also clear old generic keys if they currently represent an admin session.
-    // This prevents login.js from auto-redirecting you back into admin after logout.
     try {
       const genericRole =
         localStorage.getItem('role') || sessionStorage.getItem('role');
@@ -159,20 +148,16 @@ async function adminLogout(reason) {
       console.error('[adminLogout] failed to clear generic admin keys:', e);
     }
 
-    // Notify only admin tabs in this browser
     localStorage.setItem(ADMIN_KEYS.logoutEvent, Date.now().toString());
-    // Redirect to the same login page as before
     window.location.href = '../login.html';
   }
 }
-
 
 // --------------------------------------
 // Auth check used on load and inside apiFetch
 // --------------------------------------
 function ensureAdminAuthOrLogout() {
   try {
-    // If admin_* keys are missing, try bootstrapping once from generic admin login
     if (!AdminStore.hasSession()) {
       bootstrapAdminFromGenericIfNeeded();
     }
@@ -194,7 +179,6 @@ function ensureAdminAuthOrLogout() {
       return false;
     }
 
-    // Refresh timestamp on activity/auth check
     authUser.timestamp = Date.now();
     AdminStore.set(AdminStore.getToken(), authUser);
     return true;
@@ -205,23 +189,13 @@ function ensureAdminAuthOrLogout() {
   }
 }
 
-// --------------------------------------
-// Cross‑tab admin‑only logout sync
-// --------------------------------------
 window.addEventListener('storage', (event) => {
   if (event.key === ADMIN_KEYS.logoutEvent) {
-    // Another admin tab logged out
     adminLogout('adminLogoutEvent from another tab');
   }
 });
 
-// --------------------------------------
-// Idle watcher (admin)
-// Removed the 15‑minute “stay logged in?” prompt for admin.
-// Only enforce the hard 2‑hour cap for security.
-// --------------------------------------
 function setupAdminIdleWatcher() {
-  // Periodic check for the hard cap only
   setInterval(() => {
     const authUser = AdminStore.getAuthUser();
     if (!authUser) return;
@@ -231,18 +205,16 @@ function setupAdminIdleWatcher() {
       console.log('Admin session exceeded 2 hours, logging out (idle watcher).');
       adminLogout('admin session max age exceeded in idle watcher');
     }
-  }, 30000); // 30s cadence
+  }, 30000);
 }
 
 // --------------------------------------
 // Utility for authenticated API calls
 // --------------------------------------
 async function apiFetch(endpoint, options = {}, timeoutMs = 10000) {
-  // Centralized auth check for this call
   const ok = ensureAdminAuthOrLogout();
   if (!ok) return;
 
-  // Support full URLs or relative /api routes, keep routes unchanged
   let url = endpoint;
   if (!endpoint.startsWith('http://') && !endpoint.startsWith('https://')) {
     if (!endpoint.startsWith('/api/')) {
@@ -297,196 +269,111 @@ async function apiFetch(endpoint, options = {}, timeoutMs = 10000) {
 // --------------------------------------
 document.addEventListener('DOMContentLoaded', () => {
   setupAdminIdleWatcher();
-
-  // One-time bootstrap from generic admin keys if needed, then verify
   bootstrapAdminFromGenericIfNeeded();
 
   const ok = ensureAdminAuthOrLogout();
   if (!ok) return;
 
-  // Load page data
   if (document.getElementById('statTotalMembers')) {
     loadDashboardStats();
-  }
-  if (document.getElementById('scheduleTableBody')) {
-    loadTodayClassSchedules();
   }
   setupSidebarAndSession();
 });
 
 // --------------------------------------
-// Dashboard stats (existing logic preserved)
+// Dashboard Stats & Recent Activity
 // --------------------------------------
 async function loadDashboardStats() {
   try {
-    // --- Member count ---
+    // 1. Total Members
     const memResp = await apiFetch('/api/members');
     const memJson = memResp || {};
-    if (Array.isArray(memJson.data)) {
-      document.getElementById('statTotalMembers').textContent =
-        memJson.data.length;
-    } else if (typeof memJson.count === 'number') {
-      document.getElementById('statTotalMembers').textContent = memJson.count;
-    } else {
-      document.getElementById('statTotalMembers').textContent = 0;
-    }
+    const totalMembers = Array.isArray(memJson.data) ? memJson.data.length : (memJson.count || 0);
+    document.getElementById('statTotalMembers').textContent = totalMembers;
 
-    // Trainer count
-    const trainerResp = await apiFetch('/api/trainers');
-    const trainerJson = trainerResp || {};
-    document.getElementById('statTotalTrainers').textContent =
-      trainerJson.count || (trainerJson.data && trainerJson.data.length) || 0;
+    // 2. Active Members
+    const activeMemResp = await apiFetch('/api/members?status=active');
+    const activeMemJson = activeMemResp || {};
+    const activeMembers = Array.isArray(activeMemJson.data) ? activeMemJson.data.length : (activeMemJson.count || 0);
+    document.getElementById('statActiveMembers').textContent = activeMembers;
 
-    // Classes and attendance today
-    const classResp = await apiFetch('/api/classes');
-    const classJson = classResp || {};
-    let classesToday = 0,
-      totalAttendance = 0;
+    // 3. Expired Memberships
+    const expiredResp = await apiFetch('/api/logs/expired');
+    const expiredJson = expiredResp || {};
+    const expiredCount = Array.isArray(expiredJson.data) ? expiredJson.data.length : 0;
+    document.getElementById('statExpiredMemberships').textContent = expiredCount;
 
-    const today = new Date();
-    for (const cls of classJson.data || []) {
-      const enrollResp = await apiFetch(`/api/classes/${cls.class_id}/enrollments`);
-      const enrollJson = enrollResp || {};
-      const todayAttendance =
-        (enrollJson.data &&
-          enrollJson.data.filter((e) => {
-            if (!e.session_date) return false;
-            const eDate = new Date(e.session_date);
-            return (
-              eDate.getFullYear() === today.getFullYear() &&
-              eDate.getMonth() === today.getMonth() &&
-              eDate.getDate() === today.getDate()
-            );
-          }).length) || 0;
+    // 4. Attendance Today & Recent Activity
+    const attResp = await apiFetch('/api/attendance/today');
+    const attJson = attResp || {};
+    
+    if (attJson.success && attJson.data) {
+      // Top stats
+      document.getElementById('statCheckinsToday').textContent = attJson.data.totalCheckins || 0;
+      document.getElementById('statInGymNow').textContent = attJson.data.currentlyInGym || 0;
 
-      if (todayAttendance > 0) classesToday++;
-      totalAttendance += todayAttendance;
-    }
+      // Populate Recent Activity Table
+      const tableBody = document.getElementById('recentActivityTableBody');
+      const statusText = document.getElementById('dashboardStatus');
+      
+      if (tableBody) {
+        tableBody.innerHTML = '';
+        const activities = attJson.data.recentActivity || [];
+        
+        activities.forEach(act => {
+          const tr = document.createElement('tr');
+          const timeStr = new Date(act.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+          
+          // Re-using CSS classes from the server status for visual flair
+          const badgeClass = act.type === 'check-in' ? 'server-connected' : 'server-disconnected';
+          const typeFormatted = act.type.replace('-', ' ').toUpperCase();
+          const areaFormatted = act.attendedType ? act.attendedType.charAt(0).toUpperCase() + act.attendedType.slice(1) : 'Gym';
+          
+          tr.innerHTML = `
+            <td><strong>${act.memberName}</strong></td>
+            <td><span class="${badgeClass}" style="padding: 0.3rem 0.6rem; border-radius: 4px; font-size: 0.8rem;">${typeFormatted}</span></td>
+            <td>${areaFormatted}</td>
+            <td>${timeStr}</td>
+          `;
+          tableBody.appendChild(tr);
+        });
 
-    document.getElementById('statClassesToday').textContent = classesToday;
-    document.getElementById('statAttendanceToday').textContent =
-      totalAttendance;
-
-    // In Gym Right Now
-    const logsResp = await apiFetch('/api/attendance/logs/today');
-    const logsJson = logsResp || {};
-    if (logsJson.success && Array.isArray(logsJson.logs)) {
-      const latestEvent = {};
-      for (const log of logsJson.logs) {
-        const mId = log.memberId && (log.memberId._id || log.memberId);
-        if (!mId) continue;
-        if (
-          !latestEvent[mId] ||
-          new Date(log.timestamp).getTime() >
-            new Date(latestEvent[mId].timestamp).getTime()
-        ) {
-          latestEvent[mId] = log;
+        if (statusText) {
+          statusText.textContent = activities.length ? '' : 'No recent activity recorded today.';
+          statusText.style.display = activities.length ? 'none' : 'block';
         }
       }
-      const inGymCount = Object.values(latestEvent).filter(
-        (ev) => ev.logType === 'login'
-      ).length;
-      document.getElementById('statInGymNow').textContent = inGymCount;
     } else {
+      document.getElementById('statCheckinsToday').textContent = '?';
       document.getElementById('statInGymNow').textContent = '?';
     }
 
-    // Auto-refresh every 5 seconds
-    setTimeout(loadDashboardStats, 5000);
+    // Auto-refresh every 8 seconds
+    setTimeout(loadDashboardStats, 8000);
   } catch (err) {
     console.error('Dashboard stats error:', err);
-    document.getElementById('statTotalMembers').textContent =
-      document.getElementById('statTotalTrainers').textContent =
-      document.getElementById('statClassesToday').textContent =
-      document.getElementById('statAttendanceToday').textContent =
-      document.getElementById('statInGymNow').textContent =
-        '?';
+    document.getElementById('statTotalMembers').textContent = '?';
+    document.getElementById('statActiveMembers').textContent = '?';
+    document.getElementById('statExpiredMemberships').textContent = '?';
+    document.getElementById('statCheckinsToday').textContent = '?';
+    document.getElementById('statInGymNow').textContent = '?';
+    
+    const statusText = document.getElementById('dashboardStatus');
+    if (statusText) statusText.textContent = 'Failed to load activity logs.';
+    
+    // Retry automatically
+    setTimeout(loadDashboardStats, 10000);
   }
 }
 
 // --------------------------------------
-// Today class schedules (existing logic preserved)
-// --------------------------------------
-async function loadTodayClassSchedules() {
-  const status = document.getElementById('dashboardStatus');
-  const tableBody = document.getElementById('scheduleTableBody');
-  if (tableBody) tableBody.innerHTML = '';
-
-  try {
-    const today = new Date();
-    const yyyyMMdd = today.toISOString().split('T')[0];
-
-    const classesResp = await apiFetch('/api/classes');
-    const classJson = classesResp || {};
-    if (!classJson.success) throw new Error('Failed to fetch classes');
-    const allClasses = classJson.data || [];
-
-    const trainersResp = await apiFetch('/api/trainers');
-    const trainerJson = trainersResp || {};
-    const trainersMap = (trainerJson.data || []).reduce((map, t) => {
-      map[t.trainer_id] = t.name;
-      return map;
-    }, {});
-
-    let shown = 0;
-    for (const cls of allClasses) {
-      const enrollResp = await apiFetch(
-        `/api/classes/${cls.class_id}/enrollments`
-      );
-      const enrollJson = enrollResp || {};
-      let todayAttendance = 0;
-      const todayDate = new Date(yyyyMMdd);
-
-      if (enrollJson.data && enrollJson.data.length > 0) {
-        todayAttendance = enrollJson.data.filter((e) => {
-          if (!e.session_date) return false;
-          const eDate = new Date(e.session_date);
-          return (
-            eDate.getFullYear() === todayDate.getFullYear() &&
-            eDate.getMonth() === todayDate.getMonth() &&
-            eDate.getDate() === todayDate.getDate()
-          );
-        }).length;
-      }
-
-      if (todayAttendance === 0 && enrollJson.data) {
-        todayAttendance = enrollJson.data.filter((e) => e.status === 'active')
-          .length;
-      }
-
-      if (tableBody) {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td>${cls.class_name || ''}</td>
-          <td>${trainersMap[cls.trainer_id] || 'Unknown'}</td>
-          <td>${cls.schedule || ''}</td>
-          <td style="text-align:center"><b>${todayAttendance}</b></td>
-        `;
-        tableBody.appendChild(tr);
-        shown++;
-      }
-    }
-
-    if (status) {
-      status.textContent = shown ? '' : 'No classes scheduled for today.';
-    }
-  } catch (err) {
-    console.error('Schedule load error:', err);
-    if (status) {
-      status.textContent = `Failed to load schedule/attendance. ${err.message || err}`;
-    }
-  }
-}
-
-// --------------------------------------
-// Sidebar + session handling (existing logic preserved)
+// Sidebar + session handling
 // --------------------------------------
 function setupSidebarAndSession() {
   const menuToggle = document.getElementById('menuToggle');
   const sidebar = document.querySelector('.sidebar');
   const logoutBtn = document.getElementById('logoutBtn');
 
-  // Extra safety re-check timestamp
   try {
     const authUser = AdminStore.getAuthUser();
     const ts = authUser?.timestamp || 0;
@@ -500,7 +387,6 @@ function setupSidebarAndSession() {
     return;
   }
 
-  // Display admin full name in sidebar
   const adminNameEl = document.getElementById('adminFullName');
   if (adminNameEl) {
     const authUser = AdminStore.getAuthUser();
@@ -514,7 +400,6 @@ function setupSidebarAndSession() {
   if (menuToggle && sidebar) {
     menuToggle.addEventListener('click', () => {
       sidebar.classList.toggle('collapsed');
-      // No special idle logic; admin prompt removed by request
     });
   }
 
@@ -548,4 +433,3 @@ function setupSidebarAndSession() {
     });
   }
 }
-

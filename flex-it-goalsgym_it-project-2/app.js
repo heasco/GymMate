@@ -5,8 +5,6 @@ const cors = require('cors');
 
 const authRoutes = require('./routes/auth');
 const memberRoutes = require('./routes/members');
-const trainerRoutes = require('./routes/trainers');
-const classRoutes = require('./routes/classes');
 const enrollmentRoutes = require('./routes/enrollments');
 const feedbackRoutes = require('./routes/feedbacks');
 const transactionRoutes = require('./routes/transactions');
@@ -87,8 +85,6 @@ app.use('/api', authRoutes); // /api/login etc. - NO PROTECTION (public login)
 
 // Protected routes: Apply protect middleware to secure data fetching
 app.use('/api/members', protect, memberRoutes);
-app.use('/api/trainers', protect, trainerRoutes);
-app.use('/api/classes', protect, classRoutes);
 app.use('/api/enrollments', protect, enrollmentRoutes);
 app.use('/api/feedbacks', protect, feedbackRoutes);
 app.use('/api/transactions', protect, transactionRoutes);

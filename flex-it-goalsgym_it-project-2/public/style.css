@@ -81,18 +81,7 @@ body {
     overflow: hidden;
 }
 
-/* Video Background */
-.hero-video {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    z-index: -1;
-}
-
-/* Dark overlay */
+/* Grey and Blurry overlay */
 .business-hero::before {
     content: '';
     position: absolute;
@@ -100,8 +89,25 @@ body {
     left: 0;
     width: 100%;
     height: 100%;
-    background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.8));
+    background: rgba(70, 70, 70, 0.55); /* Grey tint overlay */
+    backdrop-filter: blur(6px); /* Blurs the video behind it */
+    -webkit-backdrop-filter: blur(6px); /* Safari support */
     z-index: -1;
+}
+
+/* Smart Video Background Crop */
+.hero-video {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    /* By forcing the element to always maintain a strict 16:9 aspect ratio 
+       relative to the screen size, object-fit: cover will naturally zoom into 
+       the center landscape frame and crop out the black bars of the portrait video */
+    width: max(100vw, 177.78vh);
+    height: max(56.25vw, 100vh);
+    object-fit: cover;
+    z-index: -2; /* Pushed further back to accommodate the blurred overlay */
 }
 
 .hero-container {
@@ -132,7 +138,8 @@ body {
 
 .hero-content p {
     font-size: 1.2rem;
-    color: #BFBFBF;
+    color: #FFFFFF; /* Changed to white to pop better against the grey/blur */
+    text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.5); /* Added light shadow for readability */
     margin-bottom: 2.5rem;
     line-height: 1.8;
 }
@@ -179,6 +186,7 @@ body {
     color: #BFBFBF;
     margin-bottom: 1.5rem;
     line-height: 1.6;
+    text-shadow: none; /* Reset shadow for slider text */
 }
 
 .slide-date {
@@ -368,140 +376,11 @@ body {
     min-width: 120px;
 }
 
-.business-nav a[href="#login"]:hover {
+.business-nav a[href="./login.html"]:hover {
     background: linear-gradient(135deg, #FF3333 0%, #B30000 100%);
     border-color: #FF3333;
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(179, 0, 0, 0.3);
-}
-
-/* ---------- Hero Section ---------- */
-.business-hero {
-    background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.8)),
-                url('../public/image/gym-video.mp4') no-repeat center center/cover;
-    min-height: 85vh;
-    display: flex;
-    align-items: center;
-    padding: 4rem 0;
-}
-
-
-
-
-.hero-container {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 3rem;
-    width: 100%;
-}
-
-.hero-content {
-    flex: 1;
-    max-width: 600px;
-    animation: fadeInUp 1s ease forwards;
-}
-
-.hero-content h2 {
-    font-size: 3.5rem;
-    font-weight: 800;
-    margin-bottom: 1.5rem;
-    color: var(--accent);
-    text-transform: uppercase;
-    letter-spacing: 2px;
-    text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.7);
-}
-
-.hero-content p {
-    font-size: 1.2rem;
-    color: var(--neutral);
-    margin-bottom: 2.5rem;
-    line-height: 1.8;
-}
-
-.hero-slider {
-    flex: 1;
-    max-width: 500px;
-    background: rgba(30, 30, 30, 0.8);
-    border-radius: var(--radius);
-    overflow: hidden;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-}
-
-.slider-container {
-    position: relative;
-    height: 350px;
-    overflow: hidden;
-}
-
-.slider-track {
-    display: flex;
-    transition: transform 0.5s ease;
-    height: 100%;
-}
-
-.slide {
-    min-width: 100%;
-    padding: 2rem;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-}
-
-.slide h3 {
-    font-size: 1.5rem;
-    color: var(--primary);
-    margin-bottom: 1rem;
-}
-
-.slide p {
-    color: var(--neutral);
-    margin-bottom: 1.5rem;
-}
-
-.slide-date {
-    color: var(--neutral);
-    font-size: 0.9rem;
-    margin-bottom: 1rem;
-}
-
-.slide-btn {
-    display: inline-block;
-    background-color: var(--primary);
-    color: var(--accent);
-    padding: 0.6rem 1.2rem;
-    border-radius: var(--radius);
-    text-decoration: none;
-    font-weight: 500;
-    font-size: 0.9rem;
-    transition: var(--transition);
-    align-self: flex-start;
-}
-
-.slide-btn:hover {
-    background-color: var(--highlight);
-}
-
-.slider-indicators {
-    display: flex;
-    justify-content: center;
-    gap: 10px;
-    padding: 1rem;
-    background: rgba(0, 0, 0, 0.5);
-}
-
-.indicator {
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    background-color: var(--neutral);
-    cursor: pointer;
-    transition: var(--transition);
-}
-
-.indicator.active {
-    background-color: var(--primary);
-    transform: scale(1.2);
 }
 
 /* ---------- Buttons ---------- */
