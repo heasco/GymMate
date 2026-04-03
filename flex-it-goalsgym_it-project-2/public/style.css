@@ -22,18 +22,32 @@
     box-sizing: border-box;
 }
 
+/* STRICT MOBILE OVERFLOW PREVENTION */
+html, body {
+    width: 100%;
+    max-width: 100vw;
+    overflow-x: hidden;
+}
 
+/* Logo container is now a link */
 .logo-container {
     display: flex;
     align-items: center;
     gap: 15px;
+    text-decoration: none; /* Prevents underline since it's an <a> tag */
+    cursor: pointer;
+}
+
+.logo-container:hover .logo-img {
+    transform: scale(1.05); /* Slight pop effect on hover */
 }
 
 .logo-img {
-    width: 55px;
-    height: 55px;
+    width: 75px; 
+    height: 75px; 
     object-fit: contain;
     filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.3));
+    transition: transform 0.3s ease;
 }
 
 .logo-text h1 {
@@ -53,14 +67,12 @@
     letter-spacing: 1px;
 }
 
-
-
 body {
     font-family: 'Poppins', sans-serif;
     background-color: var(--secondary);
     color: var(--accent);
     line-height: 1.6;
-    overflow-x: hidden;
+    padding-top: 109px; /* Desktop exact header height */
 }
 
 .container {
@@ -70,6 +82,106 @@ body {
 }
 
 /* ---------- Header ---------- */
+
+/* Hamburger Menu Base Styles */
+.hamburger {
+    display: none;
+    cursor: pointer;
+    z-index: 1001;
+}
+
+.hamburger .bar {
+    display: block;
+    width: 25px;
+    height: 3px;
+    margin: 5px auto;
+    background-color: var(--accent);
+    border-radius: 2px;
+    transition: all 0.3s ease-in-out;
+}
+
+.business-header {
+    background-color: rgba(0, 0, 0, 0.95);
+    padding: 1rem 0;
+    position: fixed; /* Upgraded to fixed so it always follows on scroll */
+    width: 100%;
+    left: 0;
+    top: 0;
+    z-index: 1000;
+    border-bottom: 2px solid var(--primary);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+.header-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap; /* Wraps ONLY on desktop if absolutely needed */
+}
+
+.business-nav {
+    display: flex;
+    gap: 1.8rem;
+}
+
+.business-nav a {
+    color: var(--accent);
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 0.95rem;
+    position: relative;
+    transition: var(--transition);
+    padding: 8px 0;
+}
+
+.business-nav a::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 0%;
+    height: 2px;
+    background-color: var(--primary);
+    transition: var(--transition);
+}
+
+.business-nav a:hover {
+    color: var(--primary);
+}
+
+.business-nav a:hover::after {
+    width: 100%;
+}
+
+.business-nav a.active {
+    color: var(--primary);
+}
+
+.business-nav a.active::after {
+    width: 100%;
+}
+
+/* Square Login Button */
+.business-nav a[href="./login.html"] {
+    background: linear-gradient(135deg, #B30000 0%, #8A0000 100%);
+    color: #FFFFFF;
+    text-decoration: none;
+    font-weight: 600;
+    padding: 12px 20px;
+    border-radius: 4px;
+    border: 2px solid #B30000;
+    transition: all 0.3s ease;
+    display: inline-block;
+    text-align: center;
+    min-width: 120px;
+}
+
+.business-nav a[href="./login.html"]:hover {
+    background: linear-gradient(135deg, #FF3333 0%, #B30000 100%);
+    border-color: #FF3333;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(179, 0, 0, 0.3);
+}
 
 /* ---------- Hero Section with Video ---------- */
 .business-hero {
@@ -89,9 +201,9 @@ body {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(70, 70, 70, 0.55); /* Grey tint overlay */
-    backdrop-filter: blur(6px); /* Blurs the video behind it */
-    -webkit-backdrop-filter: blur(6px); /* Safari support */
+    background: rgba(70, 70, 70, 0.55); 
+    backdrop-filter: blur(6px); 
+    -webkit-backdrop-filter: blur(6px); 
     z-index: -1;
 }
 
@@ -101,13 +213,10 @@ body {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    /* By forcing the element to always maintain a strict 16:9 aspect ratio 
-       relative to the screen size, object-fit: cover will naturally zoom into 
-       the center landscape frame and crop out the black bars of the portrait video */
     width: max(100vw, 177.78vh);
     height: max(56.25vw, 100vh);
     object-fit: cover;
-    z-index: -2; /* Pushed further back to accommodate the blurred overlay */
+    z-index: -2; 
 }
 
 .hero-container {
@@ -127,21 +236,28 @@ body {
 }
 
 .hero-content h2 {
-    font-size: 3.5rem;
+    font-size: 3.8rem;
     font-weight: 800;
     margin-bottom: 1.5rem;
     color: #FFFFFF;
     text-transform: uppercase;
     letter-spacing: 2px;
-    text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.7);
+    text-shadow: 3px 4px 12px rgba(0, 0, 0, 0.85); 
+}
+
+/* Stylized Red Text highlight */
+.highlight-text {
+    color: var(--highlight);
+    text-shadow: 2px 3px 10px rgba(255, 51, 51, 0.4);
 }
 
 .hero-content p {
-    font-size: 1.2rem;
-    color: #FFFFFF; /* Changed to white to pop better against the grey/blur */
-    text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.5); /* Added light shadow for readability */
+    font-size: 1.15rem;
+    color: #E8E8E8; 
+    text-shadow: 1px 2px 6px rgba(0, 0, 0, 0.9); 
     margin-bottom: 2.5rem;
     line-height: 1.8;
+    font-weight: 400;
 }
 
 .hero-slider {
@@ -186,7 +302,7 @@ body {
     color: #BFBFBF;
     margin-bottom: 1.5rem;
     line-height: 1.6;
-    text-shadow: none; /* Reset shadow for slider text */
+    text-shadow: none; 
 }
 
 .slide-date {
@@ -271,6 +387,76 @@ body {
 }
 
 @media (max-width: 768px) {
+    /* Tablet exact header gap fix */
+    body {
+        padding-top: 89px; 
+    }
+    section {
+        scroll-margin-top: 89px; 
+    }
+
+    /* Hamburger Menu Reveal and Nav Transform */
+    .header-container {
+        flex-direction: row; /* Ensure logo and hamburger are inline */
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: nowrap; /* KEY FIX: prevents hamburger from dropping to next line */
+    }
+
+    /* Shrink the logo elements slightly so everything fits horizontally */
+    .logo-img {
+        width: 55px;
+        height: 55px;
+    }
+
+    .logo-text h1 {
+        font-size: 1.6rem;
+    }
+
+    .logo-text p {
+        font-size: 0.8rem;
+    }
+
+    .hamburger {
+        display: block;
+        flex-shrink: 0; /* Prevents hamburger from getting squished */
+    }
+
+    .hamburger.active .bar:nth-child(2) {
+        opacity: 0;
+    }
+
+    .hamburger.active .bar:nth-child(1) {
+        transform: translateY(8px) rotate(45deg);
+    }
+
+    .hamburger.active .bar:nth-child(3) {
+        transform: translateY(-8px) rotate(-45deg);
+    }
+    
+    .business-nav {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        width: 100%;
+        background-color: rgba(17, 17, 17, 0.98);
+        flex-direction: column;
+        align-items: center;
+        padding: 2rem 0;
+        gap: 1.5rem;
+        border-bottom: 2px solid var(--primary);
+        margin-top: 0;
+        max-height: calc(100vh - 89px); /* Scrollable if menu is too long */
+        overflow-y: auto;
+        /* Smooth clip path transition */
+        clip-path: polygon(0 0, 100% 0, 100% 0, 0 0);
+        transition: clip-path 0.4s ease-in-out;
+    }
+    
+    .business-nav.nav-active {
+        clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
+    }
+
     .hero-content h2 {
         font-size: 2rem;
     }
@@ -282,105 +468,126 @@ body {
     .slider-container {
         height: 300px;
     }
+
+    .facilities-grid,
+    .programs-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .login-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .footer-container {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .social-icons {
+        justify-content: center;
+    }
+
+    .form-row {
+        flex-direction: column;
+    }
+    
+    .rates-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .rates-card {
+        padding: 2rem 1rem;
+    }
+    
+    .rates-table th, .rates-table td {
+        padding: 0.8rem 0.5rem;
+        font-size: 0.9rem;
+    }
+    
+    .rates-section h3 {
+        font-size: 2rem;
+    }
+
+    .gallery-item {
+        flex: 0 0 50%; /* 2 items on tablets */
+    }
 }
 
+@media (max-width: 576px) {
+    /* Mobile exact header gap fix - This perfectly closes the black gap! */
+    body {
+        padding-top: 79px; 
+    }
+    section {
+        scroll-margin-top: 79px; 
+    }
 
+    /* Keep the sub-text but scale it down for mobile */
+    .logo-text p {
+        font-size: 0.65rem; /* Scaled down */
+        letter-spacing: 0.5px;
+    }
 
-.business-header {
-    background-color: rgba(0, 0, 0, 0.95);
-    padding: 1rem 0;
-    position: sticky;
-    top: 0;
-    z-index: 1000;
-    border-bottom: 2px solid var(--primary);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    .logo-text h1 {
+        font-size: 1.3rem; /* Scaled down */
+    }
+
+    .logo-img {
+        width: 45px; /* Scaled down */
+        height: 45px;
+    }
+
+    .logo-container {
+        gap: 8px; /* Brought items closer together */
+    }
+
+    .business-section {
+        padding: 3rem 0;
+    }
+    
+    .business-section h3 {
+        font-size: 2rem;
+    }
+    
+    .hero-content h2 {
+        font-size: 1.8rem;
+    }
 }
 
-.header-container {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
+@media (max-width: 992px) {
+    .login-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .hero-content h2 {
+        font-size: 2.8rem;
+    }
+
+    .hero-container {
+        flex-direction: column;
+    }
+
+    .hero-content, .hero-slider {
+        max-width: 100%;
+    }
+
+    .classes-container {
+        flex-direction: column;
+    }
+
+    .contact-container {
+        flex-direction: column;
+    }
+
+    .gallery-item {
+        flex: 0 0 33.33%; /* 3 images on laptops / large tablets */
+    }
 }
 
-.logo-container h1 {
-    font-size: 2.2rem;
-    font-weight: 800;
-    color: var(--primary);
-    text-transform: uppercase;
-    letter-spacing: 1.5px;
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
-}
-
-.logo-container p {
-    font-size: 0.9rem;
-    color: var(--neutral);
-    letter-spacing: 1px;
-}
-
-.business-nav {
-    display: flex;
-    gap: 1.8rem;
-}
-
-.business-nav a {
-    color: var(--accent);
-    text-decoration: none;
-    font-weight: 500;
-    font-size: 0.95rem;
-    position: relative;
-    transition: var(--transition);
-    padding: 8px 0;
-}
-
-.business-nav a::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 0%;
-    height: 2px;
-    background-color: var(--primary);
-    transition: var(--transition);
-}
-
-.business-nav a:hover {
-    color: var(--primary);
-}
-
-.business-nav a:hover::after {
-    width: 100%;
-}
-
-.business-nav a.active {
-    color: var(--primary);
-}
-
-.business-nav a.active::after {
-    width: 100%;
-}
-
-
-/* Square Login Button */
-.business-nav a[href="./login.html"] {
-    background: linear-gradient(135deg, #B30000 0%, #8A0000 100%);
-    color: #FFFFFF;
-    text-decoration: none;
-    font-weight: 600;
-    padding: 12px 20px;
-    border-radius: 4px;
-    border: 2px solid #B30000;
-    transition: all 0.3s ease;
-    display: inline-block;
-    text-align: center;
-    min-width: 120px;
-}
-
-.business-nav a[href="./login.html"]:hover {
-    background: linear-gradient(135deg, #FF3333 0%, #B30000 100%);
-    border-color: #FF3333;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(179, 0, 0, 0.3);
+@media (max-width: 480px) {
+    .gallery-item {
+        flex: 0 0 100%; /* 1 large image on mobile phones */
+    }
 }
 
 /* ---------- Buttons ---------- */
@@ -407,6 +614,10 @@ body {
 }
 
 /* ---------- Sections ---------- */
+section {
+    scroll-margin-top: 109px; /* Desktop */
+}
+
 .business-section {
     padding: 5rem 0;
 }
@@ -482,10 +693,6 @@ body {
     background-color: var(--darker);
 }
 
-.section-container {
-    text-align: center;
-}
-
 .rates-section h3 {
     font-size: 2.5rem;
     font-weight: 700;
@@ -495,17 +702,9 @@ body {
     letter-spacing: 1px;
 }
 
-.divider {
-    width: 80px;
-    height: 4px;
-    background-color: var(--primary);
-    margin: 0 auto 3rem;
-    border-radius: 2px;
-}
-
 .rates-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
     gap: 2rem;
     margin-top: 2rem;
 }
@@ -518,7 +717,7 @@ body {
     border: 1px solid rgba(255, 255, 255, 0.05);
     text-align: center;
     position: relative;
-    overflow: hidden;
+    overflow-x: auto; /* Prevents tables from pushing screen width out */
 }
 
 .rates-card::before {
@@ -601,26 +800,6 @@ body {
 .special-offer i {
     color: var(--primary);
     margin-right: 0.5rem;
-}
-
-/* ---------- Rates Section Responsive ---------- */
-@media (max-width: 768px) {
-    .rates-grid {
-        grid-template-columns: 1fr;
-    }
-    
-    .rates-card {
-        padding: 2rem 1rem;
-    }
-    
-    .rates-table th, .rates-table td {
-        padding: 0.8rem 0.5rem;
-        font-size: 0.9rem;
-    }
-    
-    .rates-section h3 {
-        font-size: 2rem;
-    }
 }
 
 /* ---------- Programs Section ---------- */
@@ -766,8 +945,7 @@ body {
 .transparent-logo-bg {
     width: 300px;
     height: 300px;
-    opacity: 0.8; /* 50% opacity */
-    
+    opacity: 0.8; 
 }
 
 /* Ensure login container stays above background logo */
@@ -783,6 +961,7 @@ body {
     left: 20px;
     z-index: 2;
 }
+
 .trainer-login {
     background: url('https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80') no-repeat center center/cover;
 }
@@ -841,21 +1020,12 @@ body {
     transition: var(--transition);
 }
 
-/* General Reset */
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-  font-family: "Poppins", sans-serif;
-}
-
 /* Login Container (fixed center only) */
 .login-container {
   position: fixed;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  
   background-color: rgba(17, 17, 17, 0.95);
   padding: 40px 50px;
   border-radius: 16px;
@@ -864,18 +1034,17 @@ body {
   max-width: 400px;
   text-align: center;
   animation: fadeIn 0.6s ease-in-out;
-  backdrop-filter: blur(5px); /* glassy look */
+  backdrop-filter: blur(5px);
 }
 
 /* Login Title */
 .login-title {
   font-size: 2rem;
   font-weight: 700;
-  color: #c82333; /* GOALS Gym crimson red */
+  color: #c82333; 
   margin-bottom: 20px;
   letter-spacing: 1px;
 }
-
 
 /* Additional styles for trainer login */
 .login-buttons {
@@ -969,10 +1138,6 @@ body {
     display: none !important;
 }
 
-
-
-
-
 /* Input Groups */
 .input-group {
   margin-bottom: 20px;
@@ -998,7 +1163,7 @@ body {
 }
 
 .input-field:focus {
-  border-color: #c82333; /* red accent */
+  border-color: #c82333; 
   outline: none;
   background-color: #222;
 }
@@ -1009,7 +1174,7 @@ body {
   padding: 12px 16px;
   border: none;
   border-radius: 8px;
-  background-color: #c82333; /* red primary */
+  background-color: #c82333; 
   color: #fff;
   font-size: 1rem;
   font-weight: 600;
@@ -1018,15 +1183,16 @@ body {
 }
 
 .login-button:hover {
-  background-color: #a71929; /* darker red hover */
+  background-color: #a71929; 
 }
+
 /* Top-left Back Button */
 .back-btn {
   position: fixed;
   top: 20px;
   left: 25px;
   background: transparent;
-  color: #f5c542; /* gold accent */
+  color: #f5c542; 
   border: none;
   font-size: 1rem;
   font-weight: 600;
@@ -1036,7 +1202,7 @@ body {
 }
 
 .back-btn:hover {
-  color: #c82333; /* crimson red on hover */
+  color: #c82333; 
 }
 
 /* Circular Back Button (Top Left) */
@@ -1047,9 +1213,9 @@ body {
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  border: 2px solid #f54242; /* gold border */
-  background-color: rgba(17, 17, 17, 0.9); /* dark background */
-  color: #f54242; /* gold text */
+  border: 2px solid #f54242; 
+  background-color: rgba(17, 17, 17, 0.9); 
+  color: #f54242; 
   font-size: 1.2rem;
   font-weight: bold;
   cursor: pointer;
@@ -1062,24 +1228,16 @@ body {
 
 /* Hover Effect */
 .circle-back-btn:hover {
-  background-color: #c82333; /* crimson red */
-  color: #fff; /* white text */
+  background-color: #c82333; 
+  color: #fff; 
   border-color: #c82333;
   transform: scale(1.05);
 }
-
-
-
-
-
-
-
 
 .login-btn:hover {
     background-color: var(--primary);
     color: var(--accent);
 }
-
 
 /* ---------- Call to Action ---------- */
 .cta-section {
@@ -1460,86 +1618,170 @@ body {
     to { opacity: 1; }
 }
 
-/* ---------- Responsive Design ---------- */
-@media (max-width: 992px) {
-    .login-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-    
-    .hero-content h2 {
-        font-size: 2.8rem;
-    }
-
-    .hero-container {
-        flex-direction: column;
-    }
-
-    .hero-content, .hero-slider {
-        max-width: 100%;
-    }
-
-    .classes-container {
-        flex-direction: column;
-    }
-
-    .contact-container {
-        flex-direction: column;
-    }
+/* ---------- Gym Gallery Section ---------- */
+#gallery {
+    padding: 5rem 0;
 }
 
+.gallery-slider-container {
+    position: relative;
+    width: 100%;
+    overflow: hidden;
+    margin-top: 2rem;
+}
+
+.gallery-track {
+    display: flex;
+    transition: transform 0.5s ease-in-out;
+    width: 100%;
+}
+
+/* DEFAULT: 5 images on large desktop screens */
+.gallery-item {
+    flex: 0 0 20%; 
+    padding: 10px;
+    box-sizing: border-box;
+    cursor: pointer;
+    position: relative;
+}
+
+.gallery-item-inner {
+    width: 100%;
+    padding-top: 100%;
+    position: relative;
+    overflow: hidden;
+    border-radius: var(--radius);
+}
+
+.gallery-item img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover; 
+    transition: transform 0.3s ease;
+}
+
+.gallery-item::after {
+    content: '';
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    right: 10px;
+    bottom: 10px;
+    background-color: rgba(70, 70, 70, 0.4); 
+    border-radius: var(--radius);
+    transition: background-color 0.3s ease;
+    z-index: 1; 
+}
+
+.gallery-item:hover .gallery-item-inner img {
+    transform: scale(1.05); 
+}
+
+.gallery-item:hover::after {
+    background-color: rgba(179, 0, 0, 0.2); 
+}
+
+/* ---------- Lightbox/Modal ---------- */
+.lightbox {
+    display: none; 
+    position: fixed;
+    z-index: 9999; 
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.95); 
+    backdrop-filter: blur(5px); 
+}
+
+/* FIXED LIGHTBOX IMAGE TO NOT STRETCH ON MOBILE */
+.lightbox-content {
+    display: block;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: auto;
+    height: auto;
+    max-width: 90vw;
+    max-height: 85vh;
+    object-fit: contain; /* Prevents stretching */
+    border: 3px solid var(--accent);
+    border-radius: 4px;
+    box-shadow: 0 0 30px rgba(179, 0, 0, 0.5); 
+}
+
+.lightbox-close {
+    position: absolute;
+    top: 25px;
+    right: 40px;
+    color: var(--accent);
+    font-size: 50px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: color 0.3s;
+    z-index: 10000;
+}
+
+.lightbox-close:hover {
+    color: var(--primary);
+}
+
+.lightbox-counter {
+    position: absolute;
+    bottom: 25px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: var(--neutral);
+    font-size: 1.1rem;
+    font-weight: 500;
+}
+
+.lightbox-prev, .lightbox-next {
+    cursor: pointer;
+    position: absolute;
+    top: 50%;
+    width: auto;
+    padding: 16px;
+    margin-top: -50px;
+    color: var(--accent);
+    font-weight: bold;
+    font-size: 30px;
+    transition: 0.6s ease;
+    border-radius: 3px;
+    user-select: none;
+    text-decoration: none;
+    z-index: 10000;
+}
+
+.lightbox-next {
+    right: 5%;
+}
+
+.lightbox-prev {
+    left: 5%;
+}
+
+.lightbox-prev:hover, .lightbox-next:hover {
+    background-color: rgba(179, 0, 0, 0.3);
+}
+
+/* Lightbox Mobile Adjustments */
 @media (max-width: 768px) {
-    .header-container {
-        flex-direction: column;
-        text-align: center;
+    .lightbox-close {
+        top: 10px;
+        right: 15px;
+        font-size: 40px;
     }
-    
-    .business-nav {
-        margin-top: 1.5rem;
-        flex-wrap: wrap;
-        justify-content: center;
+    .lightbox-prev, .lightbox-next {
+        font-size: 24px;
+        padding: 10px;
     }
-    
-    .hero-content h2 {
-        font-size: 2.2rem;
-    }
-    
-    .hero-content p {
-        font-size: 1rem;
-    }
-    
-    .facilities-grid,
-    .programs-grid {
-        grid-template-columns: 1fr;
-    }
-    
-    .login-grid {
-        grid-template-columns: 1fr;
-    }
-    
-    .footer-container {
-        flex-direction: column;
-        text-align: center;
-    }
-    
-    .social-icons {
-        justify-content: center;
-    }
-
-    .form-row {
-        flex-direction: column;
-    }
-}
-
-@media (max-width: 576px) {
-    .business-section {
-        padding: 3rem 0;
-    }
-    
-    .business-section h3 {
-        font-size: 2rem;
-    }
-    
-    .hero-content h2 {
-        font-size: 1.8rem;
+    .lightbox-content {
+        max-width: 95vw;
+        max-height: 75vh;
     }
 }
