@@ -116,6 +116,7 @@
             <h3>GYM RATES</h3>
             <div class="divider"></div>
             <div class="rates-grid">
+                
                 <div class="rates-card">
                     <h4>Gym Services</h4>
                     <table class="rates-table">
@@ -157,7 +158,7 @@
                             <tr>
                                 <td>Personal Trainer Fee</td>
                                 <td>
-                                    <span class="price-highlight">12 Sessions (Consumable in one month): ₱1,800</span><br>
+                                    <span class="price-highlight">12 Sessions: ₱1,800</span><br>
                                     <span class="price-highlight">1 Month: ₱3,000</span><br>
                                     <span class="price-highlight">Per Session: ₱200.00</span>
                                 </td>
@@ -189,13 +190,13 @@
                                 </td>
                             </tr>
                             <tr>
-                                <td>Kids MMA (11 years old and below)</td>
+                                <td>Kids MMA<br>(11 yrs & below)</td>
                                 <td>
                                     <span class="price-highlight">12 Sessions: ₱2,000</span>
                                 </td>
                             </tr>
                             <tr>
-                                <td>Brazilian Jiu Jitsu (MWF, Sat)</td>
+                                <td>Brazilian Jiu Jitsu<br>(MWF, Sat)</td>
                                 <td>
                                     <span class="price-highlight">12 Sessions: ₱1,500</span><br>
                                     <span class="price-highlight">Per Session: ₱200</span>
@@ -206,6 +207,20 @@
                     <div class="special-offer">
                         <p><i class="fas fa-star"></i> <strong>Special Offer:</strong> Sign up for any 12-session package and get one session FREE!</p>
                     </div>
+                </div>
+
+                <div class="rates-card">
+                    <h4>Classes & Packages</h4>
+                    <p style="color: var(--neutral); margin-bottom: 1.5rem; margin-top: 0.5rem; font-size: 0.85rem;">We offer specialized Dance, HIIT, Strength & Conditioning, and Training Packages!</p>
+                    
+                    <ul style="text-align: left; margin-bottom: 2rem; padding-left: 0.5rem; color: var(--neutral); list-style-type: none; flex-grow: 1; display: flex; flex-direction: column; justify-content: space-around;">
+                        <li style="margin-bottom: 10px; font-size: 0.85rem;"><i class="fas fa-music" style="color: var(--primary); margin-right: 15px; width: 20px; text-align: center;"></i>Dancesport (Latin & Standard)</li>
+                        <li style="margin-bottom: 10px; font-size: 0.85rem;"><i class="fas fa-child-reaching" style="color: var(--primary); margin-right: 15px; width: 20px; text-align: center;"></i>Kids & Adult Hip Hop</li>
+                        <li style="margin-bottom: 10px; font-size: 0.85rem;"><i class="fas fa-fire-flame-curved" style="color: var(--primary); margin-right: 15px; width: 20px; text-align: center;"></i>HIIT & Strength Conditioning</li>
+                        <li style="margin-bottom: 10px; font-size: 0.85rem;"><i class="fas fa-crown" style="color: var(--primary); margin-right: 15px; width: 20px; text-align: center;"></i>Bronze, Silver & Gold Packages</li>
+                    </ul>
+                    
+                    <button id="openClassesModal" class="business-btn" style="width: 100%; padding: 0.8rem; margin-top: auto; font-size: 0.9rem;">View Full Rates</button>
                 </div>
             </div>
         </div>
@@ -223,6 +238,7 @@
             </div>
         </div>
     </section>
+    
     <section id="programs" class="business-section dark-section">
         <div class="container section-container">
             <h3>TRAINING PROGRAMS</h3>
@@ -458,6 +474,100 @@
         <a class="lightbox-prev" id="lightboxPrev">❮</a>
         <a class="lightbox-next" id="lightboxNext">❯</a>
     </div>
+
+    <div id="classesModal" class="custom-modal">
+        <div class="custom-modal-content">
+            <span class="close-custom-modal">×</span>
+            <h3 style="color: var(--primary); margin-bottom: 0.5rem; text-align: center; font-size: 2rem; font-weight: 800;">CLASS RATES & PACKAGES</h3>
+            <p style="text-align: center; color: var(--neutral); margin-bottom: 2rem; font-style: italic;">*Rates are introductory (Pre-Opening).</p>
+            
+            <div class="modal-table-container">
+                <h4 style="color: var(--accent); margin-bottom: 1rem; border-left: 3px solid var(--primary); padding-left: 10px;">Dance Classes (DC)</h4>
+                <table class="rates-table">
+                    <thead>
+                        <tr>
+                            <th>Class</th>
+                            <th>Rate (Enrolled)</th>
+                            <th>Walk-in Rate</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>Juvenile Class Latin (DS)</td><td><span class="price-highlight">₱2,250.00</span> (10 Sessions)</td><td>₱250.00 / Head</td></tr>
+                        <tr><td>Juvenile Class Standard (DS)</td><td><span class="price-highlight">₱2,250.00</span> (10 Sessions)</td><td>₱250.00 / Head</td></tr>
+                        <tr><td>Junior Class Latin (DS)</td><td><span class="price-highlight">₱2,250.00</span> (10 Sessions)</td><td>₱250.00 / Head</td></tr>
+                        <tr><td>Junior Class Standard (DS)</td><td><span class="price-highlight">₱2,250.00</span> (10 Sessions)</td><td>₱250.00 / Head</td></tr>
+                        <tr><td>Youth Class Latin (DS)</td><td><span class="price-highlight">₱2,250.00</span> (10 Sessions)</td><td>₱250.00 / Head</td></tr>
+                        <tr><td>Youth Class Standard (DS)</td><td><span class="price-highlight">₱2,250.00</span> (10 Sessions)</td><td>₱250.00 / Head</td></tr>
+                        <tr><td>Adult Class Latin (DS)</td><td><span class="price-highlight">₱2,500.00</span> (10 Sessions)</td><td>₱280.00 / Head</td></tr>
+                        <tr><td>Kids Breaking</td><td><span class="price-highlight">₱2,250.00</span> (10 Sessions)</td><td>₱250.00 / Head</td></tr>
+                        <tr><td>Open Breaking</td><td><span class="price-highlight">₱2,500.00</span> (10 Sessions)</td><td>₱280.00 / Head</td></tr>
+                        <tr><td>Kids Hiphop</td><td><span class="price-highlight">₱2,500.00</span> (10 Sessions)</td><td>₱280.00 / Head</td></tr>
+                        <tr><td>Intermediate Hiphop</td><td><span class="price-highlight">₱2,500.00</span> (10 Sessions)</td><td>₱280.00 / Head</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="modal-table-container">
+                <h4 style="color: var(--accent); margin-bottom: 1rem; border-left: 3px solid var(--primary); padding-left: 10px;">Exercise & Sweat Classes</h4>
+                <table class="rates-table">
+                    <thead>
+                        <tr>
+                            <th>Class</th>
+                            <th>Rate (Enrolled)</th>
+                            <th>Walk-in Rate</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>Strength & Conditioning Class A</td><td><span class="price-highlight">₱2,250.00</span> (10 Sessions)</td><td>₱250.00 / Head</td></tr>
+                        <tr><td>Strength & Conditioning Class B</td><td><span class="price-highlight">₱2,500.00</span> (10 Sessions)</td><td>₱280.00 / Head</td></tr>
+                        <tr><td>HIIT Class A</td><td><span class="price-highlight">₱2,250.00</span> (10 Sessions)</td><td>₱250.00 / Head</td></tr>
+                        <tr><td>Zumba</td><td>-</td><td>₱120.00 / Head</td></tr>
+                        <tr><td>Latin Exercise</td><td><span class="price-highlight">₱1,500.00</span> (10 Sessions)</td><td>₱180.00 / Head</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="modal-table-container">
+                <h4 style="color: var(--accent); margin-bottom: 1rem; border-left: 3px solid var(--primary); padding-left: 10px;">Training Packages</h4>
+                <table class="rates-table">
+                    <thead>
+                        <tr>
+                            <th>Package</th>
+                            <th>Details</th>
+                            <th>Price</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Bronze Package</strong><br>(10 Sessions)</td>
+                            <td>6 Dance Class + 2 Strength & Conditioning or Yoga Class + 2 HIIT<br><em style="font-size:0.85rem; color: var(--neutral);">Consumable in 1 Month. No Walk-in.</em></td>
+                            <td><span class="price-highlight">₱2,500.00</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Silver Package</strong><br>(14 Sessions)</td>
+                            <td>8 Dance Class + 4 Strength & Conditioning or Yoga Class + 2 HIIT<br><em style="font-size:0.85rem; color: var(--neutral);">Consumable in 1.5 Months. No Walk-in.</em></td>
+                            <td><span class="price-highlight">₱3,500.00</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Gold Package</strong><br>(16 Sessions)</td>
+                            <td>10 Dance Class + 5 Strength & Conditioning or Yoga Class + 3 HIIT<br><em style="font-size:0.85rem; color: var(--neutral);">Consumable in 2 Months. No Walk-in.</em></td>
+                            <td><span class="price-highlight">₱4,500.00</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div style="background-color: rgba(179, 0, 0, 0.1); border-left: 3px solid var(--primary); padding: 1rem; margin-top: 2rem;">
+                <ul style="color: var(--neutral); font-size: 0.9rem; list-style-type: none;">
+                    <li><strong>*</strong> Classes are consumable in 1 month (unless package specifies otherwise).</li>
+                    <li><strong>*</strong> One-on-one or personal training shall be conducted in the open-time schedule (TBA). Rates to be updated.</li>
+                    <li><strong>*</strong> Open Training Membership (₱1,500.00) - Consumable in 1 month during open-time schedule.</li>
+                    <li><strong>*</strong> Juvenile = Elementary | Junior = Junior High School | Youth = Senior High School | DS = Dancesport</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
     <script src="assets/js/form-persistence.js" defer></script>
     <script src="index.js" defer></script>
 </body>

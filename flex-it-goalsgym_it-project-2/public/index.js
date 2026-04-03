@@ -303,3 +303,40 @@ if (hamburger) {
         });
     });
 }
+
+// ==============================================
+// NEW CLASSES MODAL FUNCTIONALITY
+// ==============================================
+const classesModal = document.getElementById('classesModal');
+const openModalBtn = document.getElementById('openClassesModal');
+const closeCustomModalBtn = document.querySelector('.close-custom-modal');
+
+if (classesModal && openModalBtn && closeCustomModalBtn) {
+    // Open Modal
+    openModalBtn.addEventListener('click', () => {
+        classesModal.style.display = 'block';
+        document.body.style.overflow = 'hidden'; // Stop background from scrolling
+    });
+
+    // Close Modal via X button
+    closeCustomModalBtn.addEventListener('click', () => {
+        classesModal.style.display = 'none';
+        document.body.style.overflow = 'auto'; // Restore scroll
+    });
+
+    // Close Modal by clicking outside of the content
+    window.addEventListener('click', (e) => {
+        if (e.target === classesModal) {
+            classesModal.style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }
+    });
+
+    // Close Modal via ESC key
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && classesModal.style.display === 'block') {
+            classesModal.style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }
+    });
+}

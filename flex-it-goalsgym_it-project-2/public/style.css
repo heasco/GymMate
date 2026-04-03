@@ -709,15 +709,21 @@ section {
     margin-top: 2rem;
 }
 
+/* LEVELED CARDS UPDATE: 
+   Display flex, flex direction column, and height 100% 
+   ensures all cards are exactly the same height. 
+*/
 .rates-card {
     background: linear-gradient(145deg, #1a1a1a, #2a2a2a);
-    padding: 2.5rem 2rem;
+    padding: 2rem 1.5rem; /* Slimmer padding for sleek look */
     border-radius: var(--radius);
     transition: var(--transition);
     border: 1px solid rgba(255, 255, 255, 0.05);
     text-align: center;
     position: relative;
-    overflow-x: auto; /* Prevents tables from pushing screen width out */
+    display: flex;
+    flex-direction: column;
+    height: 100%;
 }
 
 .rates-card::before {
@@ -742,32 +748,36 @@ section {
 }
 
 .rates-card h4 {
-    font-size: 1.8rem;
-    margin-bottom: 1.5rem;
+    font-size: 1.6rem; /* Slightly smaller for balance */
+    margin-bottom: 1rem;
     color: var(--primary);
     text-transform: uppercase;
     letter-spacing: 1px;
 }
 
+/* SLIMMER TABLES */
 .rates-table {
     width: 100%;
     border-collapse: collapse;
-    margin-top: 1rem;
+    margin-bottom: 1.5rem; /* Space before elements below it */
 }
 
 .rates-table th {
     background-color: rgba(179, 0, 0, 0.2);
     color: var(--accent);
-    padding: 1rem;
+    padding: 0.75rem 0.5rem; /* Reduced Padding */
     text-align: left;
     font-weight: 600;
+    font-size: 0.95rem; /* Reduced Font */
     border-bottom: 2px solid var(--primary);
 }
 
 .rates-table td {
-    padding: 1rem;
+    padding: 0.75rem 0.5rem; /* Reduced Padding */
     text-align: left;
     color: var(--neutral);
+    font-size: 0.85rem; /* Smaller, cleaner text */
+    line-height: 1.5;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
@@ -788,13 +798,13 @@ section {
     background-color: rgba(179, 0, 0, 0.1);
     border-left: 3px solid var(--primary);
     padding: 0.5rem 1rem;
-    margin-top: 1rem;
+    margin-top: auto; /* PUSHES THIS TO THE ABSOLUTE BOTTOM OF CARD */
     text-align: left;
 }
 
 .special-offer p {
     color: var(--neutral);
-    font-size: 0.9rem;
+    font-size: 0.85rem;
 }
 
 .special-offer i {
@@ -1783,5 +1793,68 @@ section {
     .lightbox-content {
         max-width: 95vw;
         max-height: 75vh;
+    }
+}
+
+/* ========================================
+   NEW CLASSES & PACKAGES CUSTOM MODAL
+   ======================================== */
+.custom-modal {
+    display: none; /* Hidden by default */
+    position: fixed;
+    z-index: 10001; /* Must be above the header */
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.85); /* Dark transparent background */
+    backdrop-filter: blur(5px);
+    overflow-y: auto; /* Allow scrolling within modal if table is long */
+}
+
+.custom-modal-content {
+    background-color: var(--darker);
+    margin: 5% auto; /* 5% from top, centered horizontally */
+    padding: 2.5rem;
+    border: 2px solid var(--primary);
+    border-radius: var(--radius);
+    width: 90%;
+    max-width: 900px;
+    position: relative;
+    box-shadow: 0 5px 30px rgba(179, 0, 0, 0.4);
+    animation: fadeInUp 0.4s ease-out;
+}
+
+.close-custom-modal {
+    color: var(--neutral);
+    position: absolute;
+    top: 15px;
+    right: 25px;
+    font-size: 35px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: color 0.3s ease;
+}
+
+.close-custom-modal:hover,
+.close-custom-modal:focus {
+    color: var(--primary);
+    text-decoration: none;
+}
+
+.modal-table-container {
+    overflow-x: auto; /* Allows horizontal scrolling on small screens */
+    margin-bottom: 2rem;
+}
+
+/* Mobile responsive modal adjustments */
+@media (max-width: 768px) {
+    .custom-modal-content {
+        padding: 1.5rem;
+        margin: 10% auto;
+    }
+    .close-custom-modal {
+        top: 10px;
+        right: 15px;
     }
 }
