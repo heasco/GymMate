@@ -5,7 +5,7 @@ const Log = require('../models/Log');
 const Admin = require('../models/Admin');
 const Trainer = require('../models/Trainer');
 const Member = require('../models/Member');
-const MembershipHistory = require('../models/MembershipHistory'); // ADDED: Import MembershipHistory model
+const MembershipHistory = require('../models/MembershipHistory'); 
 const asyncHandler = require('../middleware/asyncHandler');
 
 // @desc    Get all logs
@@ -15,6 +15,8 @@ router.get(
   '/',
   asyncHandler(async (req, res) => {
     const { role, startDate, endDate, name } = req.query;
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 25;
     const filter = {};
 
     if (role) {
@@ -23,24 +25,43 @@ router.get(
 
     if (startDate) {
       const start = new Date(startDate);
-      start.setHours(0, 0, 0, 0); // Start of day
+      start.setHours(0, 0, 0, 0); 
       
       let end = new Date(startDate);
       if (endDate) {
         end = new Date(endDate);
       }
-      end.setHours(23, 59, 59, 999); // End of day
+      end.setHours(23, 59, 59, 999); 
 
       filter.timestamp = { $gte: start, $lte: end };
     }
 
-    const logs = await Log.find(filter).sort({ timestamp: -1 }).lean();
+    // Server-side search by name across collections
+    if (name) {
+      const nameRegex = new RegExp(name, 'i');
+      const [admins, trainers, members] = await Promise.all([
+        Admin.find({ $or: [{ name: nameRegex }, { username: nameRegex }] }).select('_id'),
+        Trainer.find({ $or: [{ name: nameRegex }, { username: nameRegex }] }).select('_id'),
+        Member.find({ name: nameRegex }).select('_id')
+      ]);
+      const matchedUserIds = [...admins, ...trainers, ...members].map(u => u._id);
+      filter.userId = { $in: matchedUserIds };
+    }
+
+    const startIndex = (page - 1) * limit;
+    const total = await Log.countDocuments(filter);
+
+    const logs = await Log.find(filter)
+      .sort({ timestamp: -1 })
+      .skip(startIndex)
+      .limit(limit)
+      .lean();
 
     const userIdsByModel = logs.reduce((acc, log) => {
       if (!acc[log.userModel]) {
         acc[log.userModel] = new Set();
       }
-      acc[log.userModel].add(log.userId.toString());
+      acc[log.userModel].add(log.userId?.toString());
       return acc;
     }, {});
 
@@ -48,34 +69,33 @@ router.get(
     const models = { Admin, Trainer, Member };
 
     for (const modelName in userIdsByModel) {
-      const userIds = Array.from(userIdsByModel[modelName]);
-      const users = await models[modelName].find({ _id: { $in: userIds } });
-      userMaps[modelName] = users.reduce((acc, user) => {
-        acc[user._id.toString()] = user;
-        return acc;
-      }, {});
+      const userIds = Array.from(userIdsByModel[modelName]).filter(Boolean);
+      if (userIds.length > 0 && models[modelName]) {
+        const users = await models[modelName].find({ _id: { $in: userIds } });
+        userMaps[modelName] = users.reduce((acc, user) => {
+          acc[user._id.toString()] = user;
+          return acc;
+        }, {});
+      }
     }
 
-    let populatedLogs = logs.map((log) => {
-      const user = userMaps[log.userModel]?.[log.userId.toString()];
+    const populatedLogs = logs.map((log) => {
+      const user = userMaps[log.userModel]?.[log.userId?.toString()];
       return {
         ...log,
         userId: user || null,
       };
     });
 
-    // Filter by name in-memory after populating the users
-    if (name) {
-      const nameRegex = new RegExp(name, 'i');
-      populatedLogs = populatedLogs.filter((log) => {
-        const userName = log.userId ? (log.userId.name || log.userId.username || '') : '';
-        return nameRegex.test(userName);
-      });
-    }
-
     res.json({
       success: true,
       data: populatedLogs,
+      pagination: {
+        total,
+        page,
+        pages: Math.ceil(total / limit),
+        limit
+      }
     });
   })
 );
@@ -87,9 +107,10 @@ router.get(
   '/expired',
   asyncHandler(async (req, res) => {
     const { name, startDate } = req.query;
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 25;
     const filter = {};
 
-    // Filter by the date the membership was archived (expired)
     if (startDate) {
       const start = new Date(startDate);
       start.setHours(0, 0, 0, 0);
@@ -100,24 +121,31 @@ router.get(
       filter.archivedAt = { $gte: start, $lte: end };
     }
 
-    // Fetch and populate member details
-    let expiredMemberships = await MembershipHistory.find(filter)
-      .populate('member', 'name') // Populate member to get the name
-      .sort({ archivedAt: -1 })
-      .lean();
-
-    // Filter by member name in-memory
+    // Search for matching member IDs first
     if (name) {
-      const nameRegex = new RegExp(name, 'i');
-      expiredMemberships = expiredMemberships.filter((record) => {
-        const memberName = record.member ? record.member.name : '';
-        return nameRegex.test(memberName);
-      });
+      const members = await Member.find({ name: new RegExp(name, 'i') }).select('_id');
+      filter.member = { $in: members.map(m => m._id) };
     }
+
+    const startIndex = (page - 1) * limit;
+    const total = await MembershipHistory.countDocuments(filter);
+
+    const expiredMemberships = await MembershipHistory.find(filter)
+      .populate('member', 'name')
+      .sort({ archivedAt: -1 })
+      .skip(startIndex)
+      .limit(limit)
+      .lean();
 
     res.json({
       success: true,
       data: expiredMemberships,
+      pagination: {
+        total,
+        page,
+        pages: Math.ceil(total / limit),
+        limit
+      }
     });
   })
 );

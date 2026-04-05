@@ -321,10 +321,17 @@ async function processAddMember(btn) {
 
         showMessage('Member & Transaction saved successfully!', 'success');
 
+        // FIX: Properly clear inline styles to allow CSS classes to control the dropdown visibility
         setTimeout(() => {
             document.getElementById('paymentModal').style.display = 'none';
             document.getElementById('memberForm').reset();
-            document.getElementById('productSelectContainer').style.display = 'none';
+            
+            const productSelectContainer = document.getElementById('productSelectContainer');
+            if (productSelectContainer) {
+                productSelectContainer.classList.remove('active');
+                productSelectContainer.style.display = ''; // Clears the bug-causing inline style
+            }
+            
             document.getElementById('faceStatus').textContent = '';
             faceSuccessfullyCaptured = false;
             faceImageBlobs = [];

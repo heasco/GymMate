@@ -163,15 +163,30 @@ router.post('/', protect, faceUploads, asyncHandler(async (req, res) => {
   try {
       saved = await newMember.save();
   } catch (error) {
-      // FIX: Catch the exact 11000 MongoDB error caused by old database unique indexes.
+      // FIX: Automatically resolve MongoDB legacy unique index conflicts for email/phone
       if (error.code === 11000) {
           const field = Object.keys(error.keyValue)[0];
-          return res.status(400).json({ 
-              success: false, 
-              error: `Database Conflict: ${field} is still marked as unique in your old MongoDB index. Please clear your MongoDB database collection or drop the ${field} index to allow duplicates.` 
-          });
+          
+          if (field === 'email' || field === 'phone') {
+              try {
+                  // Drop the problematic index and seamlessly retry the save
+                  await mongoose.connection.db.collection('members').dropIndex(`${field}_1`);
+                  saved = await newMember.save(); 
+              } catch (retryError) {
+                  return res.status(400).json({ 
+                      success: false, 
+                      error: `Could not auto-resolve database index. Please manually drop the unique index for ${field}.` 
+                  });
+              }
+          } else {
+              return res.status(400).json({ 
+                  success: false, 
+                  error: `Database Conflict: ${field} is already in use.` 
+              });
+          }
+      } else {
+          throw error; 
       }
-      throw error; // If it's a normal error, throw it so it gets logged.
   }
   
   if (saved.email) {
@@ -274,7 +289,24 @@ router.put('/:id/profile', protect, asyncHandler(async (req, res) => {
   }
   let query = { memberId: id };
   if (mongoose.Types.ObjectId.isValid(id)) query = { $or: [{ memberId: id }, { _id: new mongoose.Types.ObjectId(id) }] };
-  const member = await Member.findOneAndUpdate(query, { $set: updates }, { new: true, runValidators: true }).lean();
+  
+  let member;
+  try {
+      member = await Member.findOneAndUpdate(query, { $set: updates }, { new: true, runValidators: true }).lean();
+  } catch (error) {
+      if (error.code === 11000) {
+          const field = Object.keys(error.keyValue)[0];
+          if (field === 'email' || field === 'phone') {
+              await mongoose.connection.db.collection('members').dropIndex(`${field}_1`).catch(() => {});
+              member = await Member.findOneAndUpdate(query, { $set: updates }, { new: true, runValidators: true }).lean();
+          } else {
+              return res.status(400).json({ success: false, error: `${field} is already in use.` });
+          }
+      } else {
+          throw error;
+      }
+  }
+
   if (!member) return res.status(404).json({ success: false, error: 'Member not found' });
   delete member.password;
   res.json({ success: true, message: 'Profile updated successfully', data: member });
@@ -334,7 +366,24 @@ router.put('/:id', protect, asyncHandler(async (req, res) => {
 
   let query = { memberId: id };
   if (mongoose.Types.ObjectId.isValid(id)) query = { $or: [{ memberId: id }, { _id: new mongoose.Types.ObjectId(id) }] };
-  const updated = await Member.findOneAndUpdate(query, { $set: updates }, { new: true, runValidators: true });
+  
+  let updated;
+  try {
+      updated = await Member.findOneAndUpdate(query, { $set: updates }, { new: true, runValidators: true });
+  } catch (error) {
+      if (error.code === 11000) {
+          const field = Object.keys(error.keyValue)[0];
+          if (field === 'email' || field === 'phone') {
+              await mongoose.connection.db.collection('members').dropIndex(`${field}_1`).catch(() => {});
+              updated = await Member.findOneAndUpdate(query, { $set: updates }, { new: true, runValidators: true });
+          } else {
+              return res.status(400).json({ success: false, error: `${field} is already in use.` });
+          }
+      } else {
+          throw error;
+      }
+  }
+
   if (!updated) return res.status(404).json({ success: false, error: 'Member not found' });
   
   res.json({

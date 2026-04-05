@@ -4,17 +4,17 @@ document.addEventListener('DOMContentLoaded', function () {
   // View toggle buttons
   const webLogsBtn = document.getElementById('web-logs-btn');
   const gymAttendanceBtn = document.getElementById('gym-attendance-btn');
-  const expiredMembershipsBtn = document.getElementById('expired-memberships-btn'); // ADDED
+  const expiredMembershipsBtn = document.getElementById('expired-memberships-btn');
 
   // Filters Containers
   const webLogsFilters = document.getElementById('web-logs-filters');
   const gymAttendanceFilters = document.getElementById('gym-attendance-filters');
-  const expiredMembershipsFilters = document.getElementById('expired-memberships-filters'); // ADDED
+  const expiredMembershipsFilters = document.getElementById('expired-memberships-filters');
 
   // Table headers
   const webLogsHeader = document.getElementById('web-logs-header');
   const gymAttendanceHeader = document.getElementById('gym-attendance-header');
-  const expiredMembershipsHeader = document.getElementById('expired-memberships-header'); // ADDED
+  const expiredMembershipsHeader = document.getElementById('expired-memberships-header');
 
   // Web Log Filter Elements
   const webNameSearch = document.getElementById('web-name-search');
@@ -34,14 +34,34 @@ document.addEventListener('DOMContentLoaded', function () {
   const searchBtn = document.getElementById('search-btn');
   const resetBtn = document.getElementById('reset-btn');
 
-  // Expired Memberships Filter Elements (ADDED)
+  // Expired Memberships Filter Elements
   const expiredNameSearch = document.getElementById('expired-name-search');
   const expiredStartDate = document.getElementById('expired-start-date');
   const expiredStartIcon = document.getElementById('expiredStartIcon');
   const expiredSearchBtn = document.getElementById('expired-search-btn');
   const expiredResetBtn = document.getElementById('expired-reset-btn');
 
+  // Pagination Elements
+  const pageSizeSelect = document.getElementById('pageSize');
+  const prevPageBtn = document.getElementById('prevPage');
+  const nextPageBtn = document.getElementById('nextPage');
+  const pageInfo = document.getElementById('pageInfo');
+
   let currentView = 'web'; // 'web', 'gym', or 'expired'
+  let currentPage = 1;
+  let pageSize = 25;
+
+  // --- Utility: Refresh View with Page Reset ---
+  function triggerSearch() {
+    currentPage = 1;
+    refreshCurrentView();
+  }
+
+  function refreshCurrentView() {
+    if (currentView === 'web') fetchWebLogs();
+    else if (currentView === 'gym') fetchGymAttendance();
+    else if (currentView === 'expired') fetchExpiredMemberships();
+  }
 
   // --- Handlers for linking Start and End dates ---
   function handleStartDateChange(startInput, endInput, endIcon, fetchFunction) {
@@ -57,17 +77,17 @@ document.addEventListener('DOMContentLoaded', function () {
       endIcon.disabled = true;
       endInput.value = '';
     }
-    fetchFunction();
+    triggerSearch();
   }
 
   // Date Event Listeners
-  webStartDate.addEventListener('change', () => handleStartDateChange(webStartDate, webEndDate, webEndIcon, fetchWebLogs));
-  webEndDate.addEventListener('change', fetchWebLogs);
+  webStartDate.addEventListener('change', () => handleStartDateChange(webStartDate, webEndDate, webEndIcon, triggerSearch));
+  webEndDate.addEventListener('change', triggerSearch);
 
-  gymStartDate.addEventListener('change', () => handleStartDateChange(gymStartDate, gymEndDate, gymEndIcon, fetchGymAttendance));
-  gymEndDate.addEventListener('change', fetchGymAttendance);
+  gymStartDate.addEventListener('change', () => handleStartDateChange(gymStartDate, gymEndDate, gymEndIcon, triggerSearch));
+  gymEndDate.addEventListener('change', triggerSearch);
   
-  expiredStartDate.addEventListener('change', fetchExpiredMemberships); // ADDED
+  expiredStartDate.addEventListener('change', triggerSearch);
 
 
   // --- Initialize mini-calendars ---
@@ -77,12 +97,12 @@ document.addEventListener('DOMContentLoaded', function () {
   initMiniCalendar('gym-start-date', 'gymStartIcon', 'gymStartPopup', () => { gymStartDate.dispatchEvent(new Event('change')) });
   initMiniCalendar('gym-end-date', 'gymEndIcon', 'gymEndPopup', () => { gymEndDate.dispatchEvent(new Event('change')) }, 'gym-start-date');
 
-  // ADDED: Init Expired Memberships mini-calendar
   initMiniCalendar('expired-start-date', 'expiredStartIcon', 'expiredStartPopup', () => { expiredStartDate.dispatchEvent(new Event('change')) });
 
   // --- View Toggle ---
   function setView(view) {
     currentView = view;
+    currentPage = 1; // Reset page on view switch
     
     // Reset all
     webLogsBtn.classList.remove('active');
@@ -101,19 +121,48 @@ document.addEventListener('DOMContentLoaded', function () {
       webLogsBtn.classList.add('active');
       webLogsFilters.style.display = 'flex';
       webLogsHeader.style.display = 'table-header-group';
-      fetchWebLogs();
     } else if (view === 'gym') {
       gymAttendanceBtn.classList.add('active');
       gymAttendanceFilters.style.display = 'flex';
       gymAttendanceHeader.style.display = 'table-header-group';
-      fetchGymAttendance();
-    } else if (view === 'expired') { // ADDED VIEW LOGIC
+    } else if (view === 'expired') {
       expiredMembershipsBtn.classList.add('active');
       expiredMembershipsFilters.style.display = 'flex';
       expiredMembershipsHeader.style.display = 'table-header-group';
-      fetchExpiredMemberships();
     }
+
+    refreshCurrentView();
   }
+
+  // --- Pagination Logic ---
+  function updatePaginationUI(pagination) {
+    if (!pagination) return;
+    const { page, pages, total } = pagination;
+    
+    const totalPages = pages > 0 ? pages : 1;
+    pageInfo.textContent = `Page ${page} of ${totalPages} (${total} total)`;
+    
+    prevPageBtn.disabled = page <= 1;
+    nextPageBtn.disabled = page >= totalPages;
+  }
+
+  pageSizeSelect.addEventListener('change', (e) => {
+    pageSize = parseInt(e.target.value, 10);
+    currentPage = 1; // Reset to page 1 on page size change
+    refreshCurrentView();
+  });
+
+  prevPageBtn.addEventListener('click', () => {
+    if (currentPage > 1) {
+      currentPage--;
+      refreshCurrentView();
+    }
+  });
+
+  nextPageBtn.addEventListener('click', () => {
+    currentPage++;
+    refreshCurrentView();
+  });
 
   // --- Data Fetching ---
   async function fetchWebLogs() {
@@ -129,14 +178,18 @@ document.addEventListener('DOMContentLoaded', function () {
       if (roleFilter.value) params.append('role', roleFilter.value);
       if (webStartDate.value) params.append('startDate', webStartDate.value);
       if (webEndDate.value && !webEndDate.disabled) params.append('endDate', webEndDate.value);
+      
+      params.append('page', currentPage);
+      params.append('limit', pageSize);
 
       const url = `http://localhost:8080/api/logs?${params.toString()}`;
 
       const response = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
       if (!response.ok) throw new Error('Failed to fetch web logs');
 
-      const { data } = await response.json();
+      const { data, pagination } = await response.json();
       displayWebLogs(data);
+      updatePaginationUI(pagination);
     } catch (error) {
       console.error('Error fetching web logs:', error);
       logsTableBody.innerHTML = '<tr><td colspan="6">Error fetching web logs.</td></tr>';
@@ -173,14 +226,18 @@ document.addEventListener('DOMContentLoaded', function () {
       if (logTypeFilter.value) params.append('logType', logTypeFilter.value);
       if (gymStartDate.value) params.append('startDate', gymStartDate.value);
       if (gymEndDate.value && !gymEndDate.disabled) params.append('endDate', gymEndDate.value);
+      
+      params.append('page', currentPage);
+      params.append('limit', pageSize);
 
       const url = `http://localhost:8080/api/attendance-logs?${params.toString()}`;
 
       const response = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
       if (!response.ok) throw new Error('Failed to fetch gym attendance');
 
-      const { data } = await response.json();
+      const { data, pagination } = await response.json();
       displayGymAttendance(data);
+      updatePaginationUI(pagination);
     } catch (error) {
       console.error('Error fetching gym attendance:', error);
       logsTableBody.innerHTML = '<tr><td colspan="4">Error fetching gym attendance.</td></tr>';
@@ -205,7 +262,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }).join('');
   }
 
-  // ADDED: Fetch and Display Expired Memberships
   async function fetchExpiredMemberships() {
     try {
       const token = localStorage.getItem('token');
@@ -217,14 +273,18 @@ document.addEventListener('DOMContentLoaded', function () {
       const params = new URLSearchParams();
       if (expiredNameSearch.value.trim()) params.append('name', expiredNameSearch.value.trim());
       if (expiredStartDate.value) params.append('startDate', expiredStartDate.value);
+      
+      params.append('page', currentPage);
+      params.append('limit', pageSize);
 
       const url = `http://localhost:8080/api/logs/expired?${params.toString()}`;
 
       const response = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
       if (!response.ok) throw new Error('Failed to fetch expired memberships');
 
-      const { data } = await response.json();
+      const { data, pagination } = await response.json();
       displayExpiredMemberships(data);
+      updatePaginationUI(pagination);
     } catch (error) {
       console.error('Error fetching expired memberships:', error);
       logsTableBody.innerHTML = '<tr><td colspan="6">Error fetching expired memberships.</td></tr>';
@@ -255,11 +315,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // Web Logs View Listeners
   webLogsBtn.addEventListener('click', () => setView('web'));
-  roleFilter.addEventListener('change', fetchWebLogs);
-  webSearchBtn.addEventListener('click', fetchWebLogs);
+  roleFilter.addEventListener('change', triggerSearch);
+  webSearchBtn.addEventListener('click', triggerSearch);
   
   webNameSearch.addEventListener('keyup', (e) => {
-    if (e.key === 'Enter') fetchWebLogs();
+    if (e.key === 'Enter') triggerSearch();
   });
 
   webResetBtn.addEventListener('click', () => {
@@ -269,17 +329,17 @@ document.addEventListener('DOMContentLoaded', function () {
     webEndDate.value = '';
     webEndDate.disabled = true;
     webEndIcon.disabled = true;
-    fetchWebLogs();
+    triggerSearch();
   });
 
   // Gym Attendance View Listeners
   gymAttendanceBtn.addEventListener('click', () => setView('gym'));
-  searchBtn.addEventListener('click', fetchGymAttendance);
+  searchBtn.addEventListener('click', triggerSearch);
   
-  logTypeFilter.addEventListener('change', fetchGymAttendance);
+  logTypeFilter.addEventListener('change', triggerSearch);
   
   nameSearch.addEventListener('keyup', (e) => {
-    if (e.key === 'Enter') fetchGymAttendance();
+    if (e.key === 'Enter') triggerSearch();
   });
 
   resetBtn.addEventListener('click', () => {
@@ -289,21 +349,21 @@ document.addEventListener('DOMContentLoaded', function () {
     gymEndDate.disabled = true;
     gymEndIcon.disabled = true;
     logTypeFilter.value = '';
-    fetchGymAttendance();
+    triggerSearch();
   });
 
-  // ADDED: Expired Memberships View Listeners
+  // Expired Memberships View Listeners
   expiredMembershipsBtn.addEventListener('click', () => setView('expired'));
-  expiredSearchBtn.addEventListener('click', fetchExpiredMemberships);
+  expiredSearchBtn.addEventListener('click', triggerSearch);
   
   expiredNameSearch.addEventListener('keyup', (e) => {
-    if (e.key === 'Enter') fetchExpiredMemberships();
+    if (e.key === 'Enter') triggerSearch();
   });
 
   expiredResetBtn.addEventListener('click', () => {
     expiredNameSearch.value = '';
     expiredStartDate.value = '';
-    fetchExpiredMemberships();
+    triggerSearch();
   });
 
   // Initial load

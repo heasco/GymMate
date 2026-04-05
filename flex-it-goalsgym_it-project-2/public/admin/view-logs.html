@@ -230,6 +230,24 @@
               </tbody>
             </table>
           </div>
+
+          <div class="tx-pagination-wrapper" id="paginationWrapper">
+            <div class="tx-page-size">
+              <label for="pageSize">Rows per page:</label>
+              <select id="pageSize">
+                <option value="25" selected>25</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+                <option value="200">200</option>
+              </select>
+            </div>
+            <div class="tx-page-controls">
+              <button id="prevPage" class="pagination-btn" title="Previous Page" disabled>‹</button>
+              <span id="pageInfo">Page 1 of 1</span>
+              <button id="nextPage" class="pagination-btn" title="Next Page" disabled>›</button>
+            </div>
+          </div>
+
         </div>
       </main>
     </div>
