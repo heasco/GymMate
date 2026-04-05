@@ -1,4 +1,0 @@
-backend server = https://flex-it-goalsgym-it-project-2.onrender.com
-front end provider (gitlab) = 
-MongoDB database connection (Use this path do connect to MongoDB
-on Local Machine (MongoDB compass)) = mongodb+srv://herodvelasco023:Qn0ihspOECvY5vq2@cluster0.vejigze.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0
