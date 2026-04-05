@@ -416,8 +416,7 @@ body {
         font-size: 0.9rem;
     }
     
-    .dashboard-table th,
-    .dashboard-table td {
+    .dashboard-table th,\n    .dashboard-table td {
         padding: 0.8rem 0.5rem;
     }
 }
@@ -467,8 +466,7 @@ body {
         font-size: 0.8rem;
     }
     
-    .dashboard-table th,
-    .dashboard-table td {
+    .dashboard-table th,\n    .dashboard-table td {
         padding: 0.6rem 0.4rem;
     }
     
@@ -484,4 +482,23 @@ body {
   font-weight: 500;
   opacity: 0.9;
   text-align: center;
+}
+
+/* ========================================
+   LIGHT THEME OVERRIDES FOR DASHBOARD TABLE
+   ======================================== */
+body.light-mode .dashboard-table td {
+    color: #111111 !important; 
+    font-weight: 500;
+    text-shadow: 0px 1px 2px rgba(0, 0, 0, 0.05) !important;
+}
+
+body.light-mode .dashboard-table tbody tr td strong {
+    color: #000000 !important; 
+    font-weight: 700;
+    text-shadow: 0px 1px 2px rgba(0, 0, 0, 0.1) !important;
+}
+
+body.light-mode .dashboard-table tbody tr:hover td {
+    color: #111111 !important; 
 }

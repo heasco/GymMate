@@ -1,0 +1,183 @@
+@import url('manage-members.css');
+
+/* ========================================
+   PASSWORD FIELD FIX
+   ======================================== */
+input[type="password"] {
+    width: 100%;
+    padding: 1rem 1.2rem;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: var(--radius, 8px);
+    font-size: 1rem;
+    background: rgba(0, 0, 0, 0.5);
+    color: var(--accent, #ffffff);
+    font-family: 'Poppins', sans-serif;
+    transition: var(--transition, all 0.3s ease);
+}
+
+input[type="password"]:focus {
+    outline: none;
+    border-color: var(--primary, #B30000);
+    box-shadow: 0 0 0 2px rgba(179, 0, 0, 0.2);
+    background: rgba(0, 0, 0, 0.7);
+}
+
+/* Hover effect for the outline button */
+#updatePasswordBtn:hover {
+    background: #ff3333 !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 15px rgba(255, 51, 51, 0.3);
+    transition: all 0.3s ease;
+}
+
+/* ========================================
+   SETTINGS UI
+   ======================================== */
+.settings-group {
+    background: rgba(0, 0, 0, 0.3);
+    padding: 1.5rem;
+    border-radius: var(--radius, 8px);
+    border-left: 4px solid var(--primary, #B30000);
+    margin-bottom: 2rem;
+}
+
+.settings-group h3 {
+    color: var(--primary, #B30000);
+    margin-bottom: 1.5rem;
+    font-size: 1.3rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.toggle-group {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 6px;
+}
+
+.toggle-group label {
+    margin: 0;
+}
+
+.toggle-group .sub-text {
+    color: #888;
+    font-size: 0.85rem;
+    margin-top: 5px;
+    font-weight: normal;
+    text-transform: none;
+    letter-spacing: normal;
+}
+
+/* Toggle Switch CSS */
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 50px;
+    height: 28px;
+}
+
+.switch input { 
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-color: #555;
+    transition: .4s;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 20px;
+    width: 20px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    transition: .4s;
+}
+
+input:checked + .slider {
+    background-color: #28a745;
+}
+
+input:checked + .slider:before {
+    transform: translateX(22px);
+}
+
+.slider.round {
+    border-radius: 34px;
+}
+
+.slider.round:before {
+    border-radius: 50%;
+}
+
+/* ========================================
+   DASHBOARD LIGHT MODE OVERRIDES
+   ======================================== */
+body.light-mode .dashboard-stat-card {
+    background: #FFFFFF;
+    border: 1px solid #DDDDDA;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+}
+
+body.light-mode .dashboard-stat-card:hover {
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+
+body.light-mode .stat-title {
+    color: #555555;
+}
+
+body.light-mode .stat-value {
+    color: #1A1A1A;
+    text-shadow: none; /* Remove dark shadow in light mode */
+}
+
+body.light-mode .dashboard-stat-in-gym {
+    background: rgba(40, 167, 69, 0.05);
+    border: 1px solid rgba(40, 167, 69, 0.2);
+}
+
+body.light-mode .dashboard-stat-in-gym .stat-value {
+    color: #28a745;
+    text-shadow: none;
+}
+
+body.light-mode .dashboard-table {
+    background: #FFFFFF;
+    border: 1px solid #DDDDDA;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+}
+
+body.light-mode .dashboard-table thead {
+    background: #E8E8E4;
+}
+
+body.light-mode .dashboard-table th {
+    color: #1A1A1A;
+    border-bottom: 2px solid #B30000;
+}
+
+body.light-mode .dashboard-table td {
+    color: #333333;
+    border-bottom: 1px solid #EEEEEE;
+}
+
+body.light-mode .dashboard-table tbody tr:hover td {
+    background: rgba(179, 0, 0, 0.05);
+    color: #1A1A1A;
+}
+
+body.light-mode .admin-fullname {
+    color: #555555;
+}

@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Settings - GOALS Gym</title>
+  <link rel="icon" type="image/png" href="image/logo2.png">
+  <link rel="stylesheet" href="./admin-css/admin-mainpage.css">
+  <link rel="stylesheet" href="./admin-css/admin-settings.css">
+  <link rel="stylesheet" href="./admin-css/light-theme.css">
+  <script src="https://kit.fontawesome.com/1d0b8c9b1d.js" crossorigin="anonymous"></script>
+</head>
+<body>
+  <div class="admin-container">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <h2>GOALS Gym Admin</h2>
+        <p id="adminFullName" class="admin-fullname">Loading...</p>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="./admin-mainpage.html"><span>Dashboard</span></a>
+        <a href="./add-member.html"><span>Add Member</span></a>
+        <a href="./manage-members.html"><span>Manage Member</span></a>
+        <a href="./manage-products.html"><span>Manage Products</span></a>
+        <a href="./add-and-view-transaction.html"><span>Add & View Transaction</span></a>
+        <a href="./attendance-checker.html"><span>Attendance System</span></a>
+        <a href="./send-announcement-email.html"><span>Send Announcement</span></a>
+        <a href="./view-logs.html"><span>View Logs</span></a>
+        <a href="./admin-settings.html" class="active"><span>Settings</span></a>
+      </nav>
+    </aside>
+
+    <header class="header">
+      <button class="menu-toggle" id="menuToggle">☰</button>
+      <h1>Admin Settings</h1>
+      <button class="logout-btn" id="logoutBtn">Logout</button>
+    </header>
+
+    <main class="main-content">
+      <div class="container">
+        <div id="serverStatus" class="server-status" style="display: none;"></div>
+        <div id="successMessage" class="success-message"></div>
+        <div id="errorMessage" class="error-message"></div>
+
+        <div id="settingsSection" class="section active">
+          <h2 style="border-bottom: 2px solid #ff3333; padding-bottom: 0.5rem;"><i class="fas fa-cog"></i> Account Settings</h2>
+          
+          <form id="adminSettingsForm">
+            <div class="settings-group">
+              <h3><i class="fas fa-user-edit"></i> Profile Information</h3>
+              <div class="form-group">
+                <label for="adminName">Full Name *</label>
+                <input type="text" id="adminName" required placeholder="Enter your name">
+              </div>
+              <div class="form-group">
+                <label for="adminUsername">Username</label>
+                <input type="text" id="adminUsername" disabled style="cursor: not-allowed;" title="Username cannot be changed">
+                <small style="color: #888;">Username cannot be changed.</small>
+              </div>
+            </div>
+
+            <div class="settings-group">
+              <h3><i class="fas fa-lock"></i> Change Password</h3>
+              <div class="form-group">
+                <label for="currentPassword">Current Password</label>
+                <input type="password" id="currentPassword" placeholder="Enter current password">
+              </div>
+              <div class="form-group">
+                <label for="newPassword">New Password</label>
+                <input type="password" id="newPassword" placeholder="Enter new password">
+              </div>
+              <div class="form-group">
+                <label for="confirmPassword">Confirm New Password</label>
+                <input type="password" id="confirmPassword" placeholder="Confirm new password">
+              </div>
+              <button type="button" id="updatePasswordBtn" class="action-button" style="background: transparent; border: 2px solid #ff3333; color: #ff3333; margin-top: 10px; width: 100%; padding: 1rem;">Update Password</button>
+            </div>
+
+            <div class="settings-group">
+              <h3><i class="fas fa-shield-alt"></i> Security</h3>
+              <div class="form-group toggle-group">
+                <label for="twoFactorToggle">
+                  <strong>Two-Factor Authentication (2FA)</strong>
+                  <p class="sub-text">Require an email verification code when logging in from unrecognized devices.</p>
+                </label>
+                <label class="switch">
+                  <input type="checkbox" id="twoFactorToggle">
+                  <span class="slider round"></span>
+                </label>
+              </div>
+            </div>
+
+            <div class="settings-group">
+              <h3><i class="fas fa-paint-brush"></i> Appearance</h3>
+              <div class="form-group toggle-group">
+                <label for="themeToggle">
+                  <strong>Light Mode</strong>
+                  <p class="sub-text">Switch the dashboard theme from dark to light.</p>
+                </label>
+                <label class="switch">
+                  <input type="checkbox" id="themeToggle">
+                  <span class="slider round"></span>
+                </label>
+              </div>
+            </div>
+
+            <div class="nav-buttons" style="margin-top: 2rem;">
+              <button type="submit" class="action-button" style="background: #ff3333; color: white; width: 100%; padding: 1rem; font-size: 1.1rem;">Save Preferences</button>
+            </div>
+          </form>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+<script src="../assets/js/form-persistence.js" defer></script>
+<script src="./admin-js/admin-settings.js"></script>
+</body>
+</html>

@@ -173,4 +173,74 @@ router.post(
   })
 );
 
+
+// @desc    Update Admin Settings
+// @route   PUT /api/admin/settings
+// @access  Private/Admin
+router.put(
+  '/admin/settings',
+  asyncHandler(async (req, res) => {
+    // ensure we parse user ID from token middleware here (e.g., req.user._id)
+    // As a placeholder, we use the token parsing method you're using.
+    const authHeader = req.headers.authorization || '';
+    const token = authHeader.split(' ')[1];
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    
+    if (decoded.role !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Not authorized' });
+    }
+
+    const { name, twoFactorEnabled, theme } = req.body;
+    
+    const admin = await Admin.findByIdAndUpdate(
+      decoded.id, 
+      { $set: { name, twoFactorEnabled, theme } }, 
+      { new: true, runValidators: true }
+    );
+
+    if (!admin) return res.status(404).json({ success: false, message: 'Admin not found' });
+
+    res.json({ success: true, message: 'Settings updated' });
+  })
+);
 module.exports = router;
+
+// @desc    Update Admin Password
+// @route   PUT /api/admin/password
+// @access  Private/Admin
+router.put(
+  '/admin/password',
+  asyncHandler(async (req, res) => {
+    const authHeader = req.headers.authorization || '';
+    const token = authHeader.split(' ')[1];
+    let decoded;
+    
+    try {
+        decoded = jwt.verify(token, process.env.JWT_SECRET);
+    } catch (err) {
+        return res.status(401).json({ success: false, message: 'Invalid token.' });
+    }
+    
+    if (decoded.role !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Not authorized' });
+    }
+
+    const { currentPassword, newPassword } = req.body;
+    
+    // Fetch user securely
+    const admin = await Admin.findById(decoded.id);
+    if (!admin) return res.status(404).json({ success: false, message: 'Admin not found' });
+
+    // Verify existing password
+    const isMatch = await bcrypt.compare(currentPassword, admin.password);
+    if (!isMatch) {
+      return res.status(400).json({ success: false, message: 'Incorrect current password' });
+    }
+
+    // Update password (your Admin.js pre-save hook will hash it automatically)
+    admin.password = newPassword;
+    await admin.save();
+
+    res.json({ success: true, message: 'Password updated successfully' });
+  })
+);

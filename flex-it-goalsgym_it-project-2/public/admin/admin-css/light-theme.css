@@ -1,0 +1,267 @@
+/* ========================================
+   GLOBAL LIGHT MODE - DIRTY WHITE, GREY & RED
+   ======================================== */
+
+/* Force the main backgrounds to be a comfortable, slightly darker gray */
+html.light-mode,
+body.light-mode,
+body.light-mode .admin-container,
+body.light-mode .main-content {
+    background-color: #E8EAED !important;
+    background-image: none !important;
+    color: #222222 !important;
+}
+
+/* -----------------------------
+   Sidebar & Header
+   ----------------------------- */
+body.light-mode .sidebar {
+    background: #F4F4F2 !important; /* Dirty White */
+    border-right: 1px solid #D1D5DB !important;
+    box-shadow: 2px 0 12px rgba(0,0,0,0.05) !important;
+}
+body.light-mode .sidebar-header {
+    border-bottom: 1px solid #D1D5DB !important;
+}
+body.light-mode .sidebar-header h2 { 
+    color: #B30000 !important; 
+    text-shadow: 0px 1px 1px rgba(179, 0, 0, 0.2) !important;
+}
+body.light-mode .sidebar-header p { color: #444444 !important; }
+body.light-mode .sidebar-nav a { 
+    color: #333333 !important; 
+    font-weight: 600 !important; 
+}
+body.light-mode .sidebar-nav a:hover, 
+body.light-mode .sidebar-nav a.active { 
+    background: #EEDDDD !important; /* Very soft red/gray */
+    color: #B30000 !important; 
+    border-right: 4px solid #B30000 !important;
+    text-shadow: 0px 1px 1px rgba(179, 0, 0, 0.1) !important;
+}
+
+body.light-mode .header { 
+    background: #F4F4F2 !important; 
+    border-bottom: 1px solid #D1D5DB !important; 
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05) !important;
+}
+body.light-mode .header h1,
+body.light-mode .menu-toggle { 
+    color: #111111 !important; 
+    text-shadow: 0px 1px 2px rgba(0,0,0,0.1) !important;
+}
+
+body.light-mode .logout-btn {
+    background: #F4F4F2 !important;
+    border: 1px solid #D1D5DB !important;
+    color: #111111 !important;
+    font-weight: 600 !important;
+}
+body.light-mode .logout-btn:hover { 
+    background: #E8EAED !important; 
+    color: #B30000 !important;
+}
+
+/* -----------------------------
+   Typography (Fixes Invisible Text)
+   ----------------------------- */
+/* Force all main-content headings to be dark with a pretty shadow */
+body.light-mode .main-content h1,
+body.light-mode .main-content h2,
+body.light-mode .main-content h3,
+body.light-mode .main-content h4 { 
+    color: #111111 !important; 
+    text-shadow: 0px 1px 2px rgba(0,0,0,0.1) !important; 
+}
+
+body.light-mode .section h2,
+body.light-mode .card h2,
+body.light-mode .settings-group h3,
+body.light-mode .settings-group label strong { 
+    color: #111111 !important; 
+    text-shadow: 0px 1px 2px rgba(0,0,0,0.1) !important; 
+}
+
+body.light-mode .stat-value { 
+    color: #111111 !important; 
+    text-shadow: 0px 2px 4px rgba(0,0,0,0.15) !important; /* Makes numbers pop */
+}
+
+body.light-mode .form-group label,
+body.light-mode .stat-title,
+body.light-mode p,
+body.light-mode .sub-text,
+body.light-mode small {
+    color: #444444 !important;
+    font-weight: 500 !important;
+}
+
+/* -----------------------------
+   Sections, Cards, and Containers
+   ----------------------------- */
+body.light-mode .section, 
+body.light-mode .card,
+body.light-mode .settings-group,
+body.light-mode .membership-container,
+body.light-mode .dashboard-stat-card { 
+    background: #F4F4F2 !important; /* Dirty White */
+    border: 1px solid #D1D5DB !important; 
+    border-radius: 8px !important;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05) !important; 
+}
+
+body.light-mode .settings-group {
+    border-left: 4px solid #B30000 !important;
+}
+
+body.light-mode .toggle-group {
+    background: #E8EAED !important;
+    border: 1px solid #D1D5DB !important;
+}
+
+/* -----------------------------
+   Inputs, Selects, & Textareas
+   ----------------------------- */
+body.light-mode input[type="text"], 
+body.light-mode input[type="number"], 
+body.light-mode input[type="date"], 
+body.light-mode input[type="password"], 
+body.light-mode select,
+body.light-mode textarea { 
+    background: #FAFAFA !important; 
+    color: #111111 !important; 
+    border: 1px solid #B0B5BA !important; /* Darker border for visibility */
+    border-radius: 6px !important;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.05) !important;
+}
+
+body.light-mode input:focus, 
+body.light-mode select:focus { 
+    border-color: #B30000 !important; 
+    box-shadow: 0 0 0 3px rgba(179, 0, 0, 0.15) !important; 
+    background: #FFFFFF !important;
+}
+
+body.light-mode input:disabled { 
+    background: #E8EAED !important; 
+    color: #777777 !important; 
+}
+
+/* -----------------------------
+   Dashboard Specifics
+   ----------------------------- */
+body.light-mode .dashboard-stat-in-gym {
+    background: #E6F4EA !important;
+    border: 1px solid #A8DAB5 !important;
+}
+body.light-mode .dashboard-stat-in-gym .stat-value { color: #0D652D !important; }
+body.light-mode .dashboard-stat-in-gym .stat-title { color: #137333 !important; }
+
+/* -----------------------------
+   Tables & Data
+   ----------------------------- */
+body.light-mode .dashboard-table,
+body.light-mode .tx-table-wrapper,
+body.light-mode .member-list table {
+    background: #F4F4F2 !important;
+    border: 1px solid #D1D5DB !important;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05) !important; 
+    border-radius: 8px !important;
+}
+body.light-mode .dashboard-table thead,
+body.light-mode .tx-table thead,
+body.light-mode .member-list th {
+    background: #E8EAED !important;
+    color: #111111 !important;
+    font-weight: 700 !important;
+    border-bottom: 2px solid #B30000 !important; /* Red accent on table headers */
+    text-shadow: 0px 1px 1px rgba(0,0,0,0.05) !important;
+}
+body.light-mode .dashboard-table td,
+body.light-mode .tx-table th,
+body.light-mode .tx-table td,
+body.light-mode .member-list td {
+    color: #222222 !important;
+    border-bottom: 1px solid #D1D5DB !important;
+}
+body.light-mode .dashboard-table tbody tr:hover td,
+body.light-mode .tx-table tbody tr:hover,
+body.light-mode .member-list tr:hover {
+    background: #EEDDDD !important; /* Very soft red hover */
+    color: #111111 !important;
+}
+
+/* -----------------------------
+   Buttons & Toggles
+   ----------------------------- */
+body.light-mode .secondary-btn,
+body.light-mode .view-button {
+    background: #FAFAFA !important;
+    color: #111111 !important;
+    border: 1px solid #B0B5BA !important;
+    font-weight: 600 !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05) !important;
+}
+body.light-mode .secondary-btn:hover,
+body.light-mode .view-button:hover {
+    background: #E8EAED !important;
+    color: #B30000 !important;
+    border-color: #B30000 !important;
+}
+
+body.light-mode .tx-toggle-bar {
+    background: #E8EAED !important;
+    padding: 4px !important;
+    border-radius: 8px !important;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.1) !important;
+}
+body.light-mode .tx-toggle-btn,
+body.light-mode .tab-btn {
+    background: transparent !important;
+    color: #555555 !important;
+    border: none !important;
+    font-weight: 600 !important;
+}
+body.light-mode .tx-toggle-btn.active,
+body.light-mode .tab-btn.active {
+    background: #F4F4F2 !important;
+    color: #B30000 !important;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1) !important;
+    border-radius: 6px !important;
+    text-shadow: 0px 1px 1px rgba(179,0,0,0.1) !important;
+}
+
+/* -----------------------------
+   Modals
+   ----------------------------- */
+body.light-mode .modal-content {
+    background: #F4F4F2 !important;
+    color: #222222 !important;
+    border: 1px solid #D1D5DB !important;
+    box-shadow: 0 15px 30px rgba(0,0,0,0.15) !important;
+}
+body.light-mode .modal-title,
+body.light-mode .renewal-header h3 {
+    color: #111111 !important;
+    border-bottom: 2px solid #D1D5DB !important;
+    text-shadow: 0px 1px 2px rgba(0,0,0,0.1) !important;
+}
+body.light-mode .close-btn { color: #777777 !important; }
+body.light-mode .close-btn:hover { color: #B30000 !important; }
+
+/* Force inline overrides for modal text */
+body.light-mode .detail-group p,
+body.light-mode .modal-content p strong,
+body.light-mode .member-info-card h4 {
+    color: #111111 !important;
+}
+body.light-mode .member-info-card p {
+    color: #444444 !important;
+}
+body.light-mode #joinDateDisplay,
+body.light-mode #renewalDateDisplay,
+body.light-mode .edit-start-date-display {
+    background: #E8EAED !important;
+    color: #111111 !important;
+    border-color: #B0B5BA !important;
+}

@@ -25,6 +25,16 @@ const AdminSchema = new mongoose.Schema({
     type: String,
     default: 'admin',
     enum: ['admin', 'superadmin']
+  },
+  // Added fields for Admin Settings
+  twoFactorEnabled: {
+    type: Boolean,
+    default: false
+  },
+  theme: {
+    type: String,
+    default: 'dark',
+    enum: ['dark', 'light']
   }
 }, {
   timestamps: true,

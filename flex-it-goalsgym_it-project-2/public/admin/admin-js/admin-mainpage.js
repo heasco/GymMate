@@ -1,5 +1,22 @@
 // public/admin/admin-js/admin-mainpage.js
 
+// --- Theme Init & Real-Time Sync ---
+function applyTheme(theme) {
+    if (theme === 'light') {
+        document.body.classList.add('light-mode');
+    } else {
+        document.body.classList.remove('light-mode');
+    }
+}
+
+// 1. Apply immediately when the dashboard loads
+applyTheme(localStorage.getItem('admin_theme'));
+
+// 2. Listen for changes (If you change it in Settings on another tab, the Dashboard updates instantly)
+window.addEventListener('storage', (e) => {
+    if (e.key === 'admin_theme') applyTheme(e.newValue);
+});
+
 // --------------------------------------
 // Server & session configuration
 // --------------------------------------

@@ -1,6 +1,26 @@
 // --------------------------------------
 // Server & session configuration
 // --------------------------------------
+
+// --- Theme Init & Real-Time Sync ---
+function applyTheme(theme) {
+    if (theme === 'light') {
+        document.documentElement.classList.add('light-mode');
+        document.body.classList.add('light-mode');
+    } else {
+        document.documentElement.classList.remove('light-mode');
+        document.body.classList.remove('light-mode');
+    }
+}
+
+// 1. Apply immediately when the dashboard loads
+applyTheme(localStorage.getItem('admin_theme'));
+
+// 2. Listen for changes
+window.addEventListener('storage', (e) => {
+    if (e.key === 'admin_theme') applyTheme(e.newValue);
+});
+
 const SERVER_URL = 'http://localhost:8080';
 const ADMIN_SESSION_MAX_AGE_MS = 2 * 60 * 60 * 1000; // 2 hours
 
