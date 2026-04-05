@@ -27,11 +27,20 @@
             </div>
 
             <nav class="business-nav">
-                <a href="#home" class="active">Home</a>
                 <a href="#facilities">Facilities</a>
                 <a href="#programs">Programs</a>
                 <a href="#classes">Classes</a>
                 <a href="#contact">Contact</a>
+                
+                <div class="theme-switch-wrapper">
+                    <i class="fas fa-moon"></i>
+                    <label class="theme-switch" for="checkbox">
+                        <input type="checkbox" id="checkbox" />
+                        <div class="slider round"></div>
+                    </label>
+                    <i class="fas fa-sun"></i>
+                </div>
+
                 <a href="./login.html">Log In</a>
             </nav>
         </div>
@@ -84,7 +93,7 @@
         <div class="container section-container">
             <h3>OUR FACILITIES</h3>
             <div class="divider"></div>
-            <p style="color: var(--neutral); margin-bottom: 3rem; max-width: 700px; margin-left: auto; margin-right: auto;">
+            <p class="section-desc">
                 Located at the very top of the Abanao Shopping Complex, our two-floor facility is fully equipped for strength, combat, and rhythm.
             </p>
             <div class="facilities-grid">
@@ -211,16 +220,16 @@
 
                 <div class="rates-card">
                     <h4>Classes & Packages</h4>
-                    <p style="color: var(--neutral); margin-bottom: 1.5rem; margin-top: 0.5rem; font-size: 0.85rem;">We offer specialized Dance, HIIT, Strength & Conditioning, and Training Packages!</p>
+                    <p class="rates-card-desc">We offer specialized Dance, HIIT, Strength & Conditioning, and Training Packages!</p>
                     
-                    <ul style="text-align: left; margin-bottom: 2rem; padding-left: 0.5rem; color: var(--neutral); list-style-type: none; flex-grow: 1; display: flex; flex-direction: column; justify-content: space-around;">
-                        <li style="margin-bottom: 10px; font-size: 0.85rem;"><i class="fas fa-music" style="color: var(--primary); margin-right: 15px; width: 20px; text-align: center;"></i>Dancesport (Latin & Standard)</li>
-                        <li style="margin-bottom: 10px; font-size: 0.85rem;"><i class="fas fa-child-reaching" style="color: var(--primary); margin-right: 15px; width: 20px; text-align: center;"></i>Kids & Adult Hip Hop</li>
-                        <li style="margin-bottom: 10px; font-size: 0.85rem;"><i class="fas fa-fire-flame-curved" style="color: var(--primary); margin-right: 15px; width: 20px; text-align: center;"></i>HIIT & Strength Conditioning</li>
-                        <li style="margin-bottom: 10px; font-size: 0.85rem;"><i class="fas fa-crown" style="color: var(--primary); margin-right: 15px; width: 20px; text-align: center;"></i>Bronze, Silver & Gold Packages</li>
+                    <ul class="rates-package-list">
+                        <li><i class="fas fa-music"></i>Dancesport (Latin & Standard)</li>
+                        <li><i class="fas fa-child-reaching"></i>Kids & Adult Hip Hop</li>
+                        <li><i class="fas fa-fire-flame-curved"></i>HIIT & Strength Conditioning</li>
+                        <li><i class="fas fa-crown"></i>Bronze, Silver & Gold Packages</li>
                     </ul>
                     
-                    <button id="openClassesModal" class="business-btn" style="width: 100%; padding: 0.8rem; margin-top: auto; font-size: 0.9rem;">View Full Rates</button>
+                    <button id="openClassesModal" class="business-btn modal-btn">View Full Rates</button>
                 </div>
             </div>
         </div>
@@ -230,11 +239,11 @@
         <div class="container section-container">
             <h3>GYM GALLERY</h3>
             <div class="divider"></div>
-            <p style="color: var(--neutral); margin-bottom: 2rem;">Witness the hard work and dedication of our Goals Gym community. You could be next!</p>
+            <p class="gallery-desc">Witness the hard work and dedication of our Goals Gym community. You could be next!</p>
             
             <div class="gallery-slider-container">
                 <div class="gallery-track" id="galleryTrack">
-                    </div>
+                </div>
             </div>
         </div>
     </section>
@@ -302,7 +311,7 @@
             <div class="section-heading">
                 <h2>Our <em>Classes</em></h2>
                 <div class="line-dec"></div>
-                <p>We provide high quality training for anyone who is willing to take the challenge.</p>
+                <p class="section-desc">We provide high quality training for anyone who is willing to take the challenge.</p>
             </div>
             <div class="classes-container">
                 <div class="classes-tabs">
@@ -410,7 +419,7 @@
         <div class="container">
             <div class="contact-container">
                 <div class="map-container">
-                    <iframe src="https://www.google.com/maps/embed/v1/place?key=AIzaSyBAM2o7PiQqwk15LC1XRH2e_KJ-jUa7KYk&zoom=17&maptype=roadmap&q=goals+gym+baguio" width="100%" height="500px" frameborder="0" style="border:0" allowfullscreen></iframe>
+                    <iframe src="https://www.google.com/maps/embed/v1/place?key=AIzaSyBAM2o7PiQqwk15LC1XRH2e_KJ-jUa7KYk&zoom=17&maptype=roadmap&q=goals+gym+baguio" width="100%" height="500px" allowfullscreen></iframe>
                 </div>
                 <div class="contact-form-container">
                     <h3>Contact Us</h3>
@@ -478,11 +487,11 @@
     <div id="classesModal" class="custom-modal">
         <div class="custom-modal-content">
             <span class="close-custom-modal">×</span>
-            <h3 style="color: var(--primary); margin-bottom: 0.5rem; text-align: center; font-size: 2rem; font-weight: 800;">CLASS RATES & PACKAGES</h3>
-            <p style="text-align: center; color: var(--neutral); margin-bottom: 2rem; font-style: italic;">*Rates are introductory (Pre-Opening).</p>
+            <h3 class="custom-modal-title">CLASS RATES & PACKAGES</h3>
+            <p class="custom-modal-subtitle">*Rates are introductory (Pre-Opening).</p>
             
             <div class="modal-table-container">
-                <h4 style="color: var(--accent); margin-bottom: 1rem; border-left: 3px solid var(--primary); padding-left: 10px;">Dance Classes (DC)</h4>
+                <h4 class="modal-table-title">Dance Classes (DC)</h4>
                 <table class="rates-table">
                     <thead>
                         <tr>
@@ -508,7 +517,7 @@
             </div>
 
             <div class="modal-table-container">
-                <h4 style="color: var(--accent); margin-bottom: 1rem; border-left: 3px solid var(--primary); padding-left: 10px;">Exercise & Sweat Classes</h4>
+                <h4 class="modal-table-title">Exercise & Sweat Classes</h4>
                 <table class="rates-table">
                     <thead>
                         <tr>
@@ -528,7 +537,7 @@
             </div>
 
             <div class="modal-table-container">
-                <h4 style="color: var(--accent); margin-bottom: 1rem; border-left: 3px solid var(--primary); padding-left: 10px;">Training Packages</h4>
+                <h4 class="modal-table-title">Training Packages</h4>
                 <table class="rates-table">
                     <thead>
                         <tr>
@@ -540,31 +549,85 @@
                     <tbody>
                         <tr>
                             <td><strong>Bronze Package</strong><br>(10 Sessions)</td>
-                            <td>6 Dance Class + 2 Strength & Conditioning or Yoga Class + 2 HIIT<br><em style="font-size:0.85rem; color: var(--neutral);">Consumable in 1 Month. No Walk-in.</em></td>
+                            <td>6 Dance Class + 2 Strength & Conditioning or Yoga Class + 2 HIIT<br><em class="modal-table-note">Consumable in 1 Month. No Walk-in.</em></td>
                             <td><span class="price-highlight">₱2,500.00</span></td>
                         </tr>
                         <tr>
                             <td><strong>Silver Package</strong><br>(14 Sessions)</td>
-                            <td>8 Dance Class + 4 Strength & Conditioning or Yoga Class + 2 HIIT<br><em style="font-size:0.85rem; color: var(--neutral);">Consumable in 1.5 Months. No Walk-in.</em></td>
+                            <td>8 Dance Class + 4 Strength & Conditioning or Yoga Class + 2 HIIT<br><em class="modal-table-note">Consumable in 1.5 Months. No Walk-in.</em></td>
                             <td><span class="price-highlight">₱3,500.00</span></td>
                         </tr>
                         <tr>
                             <td><strong>Gold Package</strong><br>(16 Sessions)</td>
-                            <td>10 Dance Class + 5 Strength & Conditioning or Yoga Class + 3 HIIT<br><em style="font-size:0.85rem; color: var(--neutral);">Consumable in 2 Months. No Walk-in.</em></td>
+                            <td>10 Dance Class + 5 Strength & Conditioning or Yoga Class + 3 HIIT<br><em class="modal-table-note">Consumable in 2 Months. No Walk-in.</em></td>
                             <td><span class="price-highlight">₱4,500.00</span></td>
                         </tr>
                     </tbody>
                 </table>
             </div>
 
-            <div style="background-color: rgba(179, 0, 0, 0.1); border-left: 3px solid var(--primary); padding: 1rem; margin-top: 2rem;">
-                <ul style="color: var(--neutral); font-size: 0.9rem; list-style-type: none;">
+            <div class="modal-footer-notes">
+                <ul>
                     <li><strong>*</strong> Classes are consumable in 1 month (unless package specifies otherwise).</li>
                     <li><strong>*</strong> One-on-one or personal training shall be conducted in the open-time schedule (TBA). Rates to be updated.</li>
                     <li><strong>*</strong> Open Training Membership (₱1,500.00) - Consumable in 1 month during open-time schedule.</li>
                     <li><strong>*</strong> Juvenile = Elementary | Junior = Junior High School | Youth = Senior High School | DS = Dancesport</li>
                 </ul>
             </div>
+        </div>
+    </div>
+
+    <div id="cookieBanner" class="cookie-banner">
+        <div class="cookie-content">
+            <h4>We Value Your Privacy</h4>
+            <p>We use cookies to enhance your browsing experience, serve personalized ads or content, and analyze our traffic. By clicking "Accept All", you consent to our use of cookies.</p>
+        </div>
+        <div class="cookie-buttons">
+            <button id="manageCookiesBtn" class="cookie-btn manage-btn">Manage</button>
+            <button id="acceptCookiesBtn" class="cookie-btn accept-btn">Accept All</button>
+        </div>
+    </div>
+
+    <div id="manageCookiesModal" class="custom-modal">
+        <div class="custom-modal-content cookie-modal-content">
+            <span class="close-cookie-modal">×</span>
+            <h3 class="custom-modal-title">Manage Cookies</h3>
+            <p class="custom-modal-subtitle">Select which cookies you want to accept.</p>
+            
+            <div class="cookie-options">
+                <div class="cookie-option">
+                    <div class="cookie-option-text">
+                        <strong>Strictly Necessary Cookies</strong>
+                        <p>These cookies are required for the website to function and cannot be switched off.</p>
+                    </div>
+                    <label class="theme-switch">
+                        <input type="checkbox" checked disabled>
+                        <div class="slider round disabled"></div>
+                    </label>
+                </div>
+                <div class="cookie-option">
+                    <div class="cookie-option-text">
+                        <strong>Analytics Cookies</strong>
+                        <p>Help us improve our website by collecting and reporting information on its usage.</p>
+                    </div>
+                    <label class="theme-switch">
+                        <input type="checkbox" id="analyticsCookies" checked>
+                        <div class="slider round"></div>
+                    </label>
+                </div>
+                <div class="cookie-option">
+                    <div class="cookie-option-text">
+                        <strong>Marketing Cookies</strong>
+                        <p>Used to track visitors across websites to display relevant ads.</p>
+                    </div>
+                    <label class="theme-switch">
+                        <input type="checkbox" id="marketingCookies" checked>
+                        <div class="slider round"></div>
+                    </label>
+                </div>
+            </div>
+            
+            <button id="saveCookiePreferences" class="business-btn modal-btn">Save Preferences</button>
         </div>
     </div>
 

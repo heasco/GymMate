@@ -340,3 +340,127 @@ if (classesModal && openModalBtn && closeCustomModalBtn) {
         }
     });
 }
+
+// ==============================================
+// THEME SWITCHER (LIGHT/DARK MODE)
+// ==============================================
+const toggleSwitch = document.querySelector('.theme-switch input[type="checkbox"]');
+const currentTheme = localStorage.getItem('theme');
+
+// On load, check if the user previously selected light mode
+if (currentTheme) {
+    document.documentElement.setAttribute('data-theme', currentTheme);
+    if (currentTheme === 'light') {
+        if (toggleSwitch) toggleSwitch.checked = true;
+    }
+}
+
+// Function to handle switching and saving to localStorage
+function switchTheme(e) {
+    if (e.target.checked) {
+        document.documentElement.setAttribute('data-theme', 'light');
+        localStorage.setItem('theme', 'light');
+    } else {
+        document.documentElement.setAttribute('data-theme', 'dark');
+        localStorage.setItem('theme', 'dark');
+    }    
+}
+
+// Attach listener to the toggle switch
+if (toggleSwitch) {
+    toggleSwitch.addEventListener('change', switchTheme, false);
+}
+
+// ==============================================
+// COOKIE POLICY BANNER & MODAL
+// ==============================================
+const cookieBanner = document.getElementById('cookieBanner');
+const acceptCookiesBtn = document.getElementById('acceptCookiesBtn');
+const manageCookiesBtn = document.getElementById('manageCookiesBtn');
+const manageCookiesModal = document.getElementById('manageCookiesModal');
+const closeCookieModalBtn = document.querySelector('.close-cookie-modal');
+const saveCookiePreferencesBtn = document.getElementById('saveCookiePreferences');
+
+if (cookieBanner) {
+    // Check if user has already made a choice
+    const cookieConsent = localStorage.getItem('cookieConsent');
+    
+    if (!cookieConsent) {
+        // Show banner after a short delay
+        setTimeout(() => {
+            cookieBanner.classList.add('show');
+        }, 1000);
+    }
+
+    // Accept All
+    acceptCookiesBtn.addEventListener('click', () => {
+        localStorage.setItem('cookieConsent', 'all');
+        cookieBanner.classList.remove('show');
+    });
+
+    // Open Manage Modal
+    manageCookiesBtn.addEventListener('click', () => {
+        manageCookiesModal.style.display = 'block';
+        cookieBanner.classList.remove('show'); // Slide banner down to get out of the way
+        document.body.style.overflow = 'hidden';
+    });
+
+    // Close Manage Modal without saving
+    closeCookieModalBtn.addEventListener('click', () => {
+        manageCookiesModal.style.display = 'none';
+        document.body.style.overflow = 'auto';
+        
+        // If they haven't given consent yet, show banner again
+        if (!localStorage.getItem('cookieConsent')) {
+            setTimeout(() => {
+                cookieBanner.classList.add('show');
+            }, 300);
+        }
+    });
+
+    // Save Preferences
+    saveCookiePreferencesBtn.addEventListener('click', () => {
+        const analytics = document.getElementById('analyticsCookies').checked;
+        const marketing = document.getElementById('marketingCookies').checked;
+        
+        const preferences = {
+            necessary: true,
+            analytics: analytics,
+            marketing: marketing
+        };
+        
+        localStorage.setItem('cookieConsent', JSON.stringify(preferences));
+        manageCookiesModal.style.display = 'none';
+        document.body.style.overflow = 'auto';
+    });
+    
+    // Close modal on outside click without saving
+    window.addEventListener('click', (e) => {
+        if (e.target === manageCookiesModal) {
+            manageCookiesModal.style.display = 'none';
+            document.body.style.overflow = 'auto';
+            
+            // Bring banner back up if they just clicked away
+            if (!localStorage.getItem('cookieConsent')) {
+                setTimeout(() => {
+                    cookieBanner.classList.add('show');
+                }, 300);
+            }
+        }
+    });
+
+    // Close Modal via ESC key without saving
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && manageCookiesModal.style.display === 'block') {
+            manageCookiesModal.style.display = 'none';
+            document.body.style.overflow = 'auto';
+
+            // Bring banner back up
+            if (!localStorage.getItem('cookieConsent')) {
+                setTimeout(() => {
+                    cookieBanner.classList.add('show');
+                }, 300);
+            }
+        }
+    });
+}
