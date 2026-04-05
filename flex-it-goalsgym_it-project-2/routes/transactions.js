@@ -92,9 +92,22 @@ router.get('/member/:id', asyncHandler(async (req, res) => {
 
 // GET /api/transactions
 router.get('/', asyncHandler(async (req, res) => {
-    const transactions = await Transaction.find({})
+    const { status } = req.query;
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 25;
+    
+    const query = {};
+    if (status && status !== 'all') {
+      query.status = status;
+    }
+
+    const total = await Transaction.countDocuments(query);
+    const startIndex = (page - 1) * limit;
+
+    const transactions = await Transaction.find(query)
       .sort({ payment_date: -1, createdAt: -1 })
-      .limit(10)
+      .skip(startIndex)
+      .limit(limit)
       .lean();
 
     const memberIds = [...new Set(transactions.map((t) => t.member_id))];
@@ -123,12 +136,24 @@ router.get('/', asyncHandler(async (req, res) => {
       };
     });
 
-    res.json({ success: true, count: data.length, data });
+    res.json({ 
+      success: true, 
+      count: data.length, 
+      data,
+      pagination: {
+        total,
+        page,
+        pages: Math.ceil(total / limit),
+        limit
+      }
+    });
 }));
 
 // GET /api/transactions/search
 router.get('/search', asyncHandler(async (req, res) => {
-    const { q } = req.query;
+    const { q, status } = req.query;
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 25;
     const query = (q || '').trim();
 
     if (!query) return res.status(400).json({ success: false, error: 'Search query is required' });
@@ -143,14 +168,26 @@ router.get('/search', asyncHandler(async (req, res) => {
     const members = await Member.find(memberFilter).select('memberId name').lean();
     const memberIds = members.map((m) => m.memberId);
 
-    const txFilter = { $or: [] };
-    if (memberIds.length) txFilter.$or.push({ member_id: { $in: memberIds } });
-    txFilter.$or.push({ transaction_id: { $regex: query, $options: 'i' } });
-    txFilter.$or.push({ member_id: { $regex: query, $options: 'i' } }); // Search Walk-in names too
+    const txFilter = { $and: [] };
+    const orFilter = [];
+    
+    if (memberIds.length) orFilter.push({ member_id: { $in: memberIds } });
+    orFilter.push({ transaction_id: { $regex: query, $options: 'i' } });
+    orFilter.push({ member_id: { $regex: query, $options: 'i' } }); // Search Walk-in names too
+    
+    txFilter.$and.push({ $or: orFilter });
+
+    if (status && status !== 'all') {
+      txFilter.$and.push({ status });
+    }
+
+    const total = await Transaction.countDocuments(txFilter);
+    const startIndex = (page - 1) * limit;
 
     const transactions = await Transaction.find(txFilter)
       .sort({ payment_date: -1, createdAt: -1 })
-      .limit(50)
+      .skip(startIndex)
+      .limit(limit)
       .lean();
 
     const memberMap = new Map(members.map((m) => [m.memberId, { name: m.name, memberId: m.memberId }]));
@@ -177,13 +214,29 @@ router.get('/search', asyncHandler(async (req, res) => {
       };
     });
 
-    res.json({ success: true, count: data.length, data });
+    res.json({ 
+      success: true, 
+      count: data.length, 
+      data,
+      pagination: {
+        total,
+        page,
+        pages: Math.ceil(total / limit),
+        limit
+      }
+    });
 }));
 
 // GET /api/transactions/range
 router.get('/range', asyncHandler(async (req, res) => {
-    const { startDate, endDate } = req.query;
+    const { startDate, endDate, status } = req.query;
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 25;
     let query = {};
+
+    if (status && status !== 'all') {
+      query.status = status;
+    }
 
     if (startDate) {
         const start = new Date(startDate);
@@ -205,9 +258,21 @@ router.get('/range', asyncHandler(async (req, res) => {
         return res.status(400).json({ success: false, error: 'Start date is required if end date is provided' });
     }
 
-    // No limit added so Total Sales can fetch all matching documents
+    const total = await Transaction.countDocuments(query);
+    const startIndex = (page - 1) * limit;
+
+    // Calculate total revenue of "paid" items for the filtered range globally
+    const revenueQuery = { ...query, status: 'paid' };
+    const totalSalesAgg = await Transaction.aggregate([
+      { $match: revenueQuery },
+      { $group: { _id: null, total: { $sum: "$amount" } } }
+    ]);
+    const totalRevenue = totalSalesAgg.length > 0 ? totalSalesAgg[0].total : 0;
+
     const transactions = await Transaction.find(query)
       .sort({ payment_date: -1, createdAt: -1 })
+      .skip(startIndex)
+      .limit(limit)
       .lean();
 
     const memberIds = [...new Set(transactions.map((t) => t.member_id))];
@@ -236,7 +301,18 @@ router.get('/range', asyncHandler(async (req, res) => {
       };
     });
 
-    res.json({ success: true, count: data.length, data });
+    res.json({ 
+      success: true, 
+      count: data.length, 
+      data,
+      totalRevenue,
+      pagination: {
+        total,
+        page,
+        pages: Math.ceil(total / limit),
+        limit
+      }
+    });
 }));
 
 // PUT /api/transactions/:transaction_id

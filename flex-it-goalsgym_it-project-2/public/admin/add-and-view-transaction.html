@@ -277,6 +277,24 @@
             <div id="txEmpty" class="empty-state hidden">
               No transactions found for the current criteria.
             </div>
+
+            <div class="tx-pagination-wrapper" id="viewPaginationWrapper">
+              <div class="tx-page-size">
+                <label for="viewPageSize">Rows per page:</label>
+                <select id="viewPageSize">
+                  <option value="25" selected>25</option>
+                  <option value="50">50</option>
+                  <option value="100">100</option>
+                  <option value="200">200</option>
+                </select>
+              </div>
+              <div class="tx-page-controls">
+                <button id="viewPrevPage" class="pagination-btn" title="Previous Page" disabled>‹</button>
+                <span id="viewPageInfo">Page 1 of 1</span>
+                <button id="viewNextPage" class="pagination-btn" title="Next Page" disabled>›</button>
+              </div>
+            </div>
+
           </div>
         </section>
 
@@ -352,6 +370,23 @@
 
             <div id="salesEmpty" class="empty-state hidden">
               No sales found for the current period.
+            </div>
+
+            <div class="tx-pagination-wrapper" id="salesPaginationWrapper">
+              <div class="tx-page-size">
+                <label for="salesPageSize">Rows per page:</label>
+                <select id="salesPageSize">
+                  <option value="25" selected>25</option>
+                  <option value="50">50</option>
+                  <option value="100">100</option>
+                  <option value="200">200</option>
+                </select>
+              </div>
+              <div class="tx-page-controls">
+                <button id="salesPrevPage" class="pagination-btn" title="Previous Page" disabled>‹</button>
+                <span id="salesPageInfo">Page 1 of 1</span>
+                <button id="salesNextPage" class="pagination-btn" title="Next Page" disabled>›</button>
+              </div>
             </div>
 
           </div>
