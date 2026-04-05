@@ -4,6 +4,10 @@ const allMembersMap = new Map();
 let selectedMemberForRenewal = null;
 let activeProducts = []; 
 
+// Pagination State
+let currentPage = 1;
+let pageSize = 25;
+
 // --- Admin Auth Boilerplate ---
 const ADMIN_SESSION_MAX_AGE_MS = 2 * 60 * 60 * 1000;
 const ADMIN_KEYS = { token: 'admin_token', authUser: 'admin_authUser', role: 'admin_role', logoutEvent: 'adminLogoutEvent' };
@@ -78,8 +82,13 @@ async function fetchActiveProducts() {
     } catch (error) { console.error('Failed to load products:', error); }
 }
 
+function getCurrentTab() {
+  const tabActive = document.getElementById('tabActive');
+  return tabActive?.classList.contains('active') ? 'active' : 'inactive';
+}
+
 // ------------------------------
-// Tab elements
+// Initialization & Tab Elements
 // ------------------------------
 const tabActive = document.getElementById('tabActive');
 const tabInactive = document.getElementById('tabInactive');
@@ -94,6 +103,8 @@ if (tabActive) {
     if (memberListSection) memberListSection.classList.add('active');
     if (inactiveListSection) inactiveListSection.classList.remove('active');
     if (editMemberSection) editMemberSection.classList.remove('active'); 
+    
+    currentPage = 1; // Reset to page 1 on switch
     loadMembersStrict('active'); 
   });
 }
@@ -105,6 +116,8 @@ if (tabInactive) {
     if (inactiveListSection) inactiveListSection.classList.add('active');
     if (memberListSection) memberListSection.classList.remove('active');
     if (editMemberSection) editMemberSection.classList.remove('active'); 
+    
+    currentPage = 1; // Reset to page 1 on switch
     await loadMembersStrict('inactive'); 
   });
 }
@@ -116,16 +129,19 @@ document.addEventListener('DOMContentLoaded', async () => {
   await fetchActiveProducts(); 
   setupRenewalForm();
   await checkServerConnection();
-  await loadMembersStrict('active'); 
+  
+  setupPagination();
   setupSearchListener();
 
   const statusFilter = document.getElementById('status_filter');
   if (statusFilter) {
     statusFilter.addEventListener('change', () => {
-      const currentTab = tabActive?.classList.contains('active') ? 'active' : 'inactive';
-      loadMembersStrict(currentTab);
+      currentPage = 1; // Reset to page 1 on filter
+      loadMembersStrict(getCurrentTab());
     });
   }
+
+  await loadMembersStrict('active'); 
 });
 
 function setupSidebarAndSession() {
@@ -162,7 +178,12 @@ async function checkServerConnection() {
 // ------------------------------
 function setupSearchListener() {
   const searchInput = document.getElementById('member_search');
-  if (searchInput) searchInput.addEventListener('input', debounce(searchMembersStrict, 300));
+  if (searchInput) {
+    searchInput.addEventListener('input', debounce(() => {
+      currentPage = 1; // Reset to page 1 on new search
+      loadMembersStrict(getCurrentTab());
+    }, 400));
+  }
 }
 
 function debounce(func, wait) {
@@ -172,56 +193,83 @@ function debounce(func, wait) {
   };
 }
 
-async function searchMembersStrict() {
-  const query = document.getElementById('member_search')?.value.trim();
-  const suggestions = document.getElementById('autocompleteSuggestions');
-  const currentTab = tabActive?.classList.contains('active') ? 'active' : 'inactive';
+// ------------------------------
+// Pagination Logic
+// ------------------------------
+function setupPagination() {
+  const pageSizeSelect = document.getElementById('pageSize');
+  const prevPageBtn = document.getElementById('prevPage');
+  const nextPageBtn = document.getElementById('nextPage');
 
-  if (suggestions) { suggestions.innerHTML = ''; suggestions.style.display = 'none'; }
-  if (!query || query.length < 2) { await loadMembersStrict(currentTab); return; }
+  if (pageSizeSelect) {
+    pageSizeSelect.addEventListener('change', (e) => {
+      pageSize = parseInt(e.target.value, 10);
+      currentPage = 1;
+      loadMembersStrict(getCurrentTab());
+    });
+  }
 
-  try {
-    const result = await apiFetch(`/api/members/search?query=${encodeURIComponent(query)}`);
-    const data = Array.isArray(result.data) ? result.data.filter((m) => (m.status || 'active') === currentTab) : [];
-    storeMembers(data);
-
-    if (data.length > 0) {
-      if (suggestions) {
-        suggestions.style.display = 'block';
-        data.forEach((member) => {
-          const suggestion = document.createElement('div');
-          suggestion.className = 'autocomplete-suggestion';
-          suggestion.textContent = `${member.name} (${member.memberId})`;
-          suggestion.onclick = () => selectMember(member.memberId, member.name);
-          suggestions.appendChild(suggestion);
-        });
+  if (prevPageBtn) {
+    prevPageBtn.addEventListener('click', () => {
+      if (currentPage > 1) {
+        currentPage--;
+        loadMembersStrict(getCurrentTab());
       }
-      currentTab === 'active' ? displayMembersActive(data) : displayMembersInactive(data);
-    } else {
-      const tbody = currentTab === 'active' ? document.getElementById('memberListBody') : document.getElementById('inactiveListBody');
-      if (tbody) tbody.innerHTML = '<tr><td colspan="7">No members found</td></tr>';
-    }
-  } catch (error) {}
+    });
+  }
+
+  if (nextPageBtn) {
+    nextPageBtn.addEventListener('click', () => {
+      currentPage++;
+      loadMembersStrict(getCurrentTab());
+    });
+  }
 }
 
-function selectMember(memberId, memberName) {
-  const searchInput = document.getElementById('member_search');
-  const suggestions = document.getElementById('autocompleteSuggestions');
-  if (searchInput) searchInput.value = memberName;
-  if (suggestions) suggestions.style.display = 'none';
-  searchMembersStrict();
+function updatePaginationUI(pagination) {
+  const prevPageBtn = document.getElementById('prevPage');
+  const nextPageBtn = document.getElementById('nextPage');
+  const pageInfo = document.getElementById('pageInfo');
+  
+  if (!pagination) return;
+  const { page, pages, total } = pagination;
+  const totalPages = pages > 0 ? pages : 1;
+  
+  if (pageInfo) pageInfo.textContent = `Page ${page} of ${totalPages} (${total} total)`;
+  if (prevPageBtn) prevPageBtn.disabled = page <= 1;
+  if (nextPageBtn) nextPageBtn.disabled = page >= totalPages;
 }
 
-async function loadMembersStrict(strictStatus) {
-  if (strictStatus === 'inactive') { await loadInactiveMembers(); return; }
-  const tbody = document.getElementById('memberListBody');
-  if (tbody) tbody.innerHTML = '<tr><td colspan="7">Loading...</td></tr>';
+// ------------------------------
+// Member Loading & Display
+// ------------------------------
+async function loadMembersStrict(status) {
+  const tbody = status === 'active' ? document.getElementById('memberListBody') : document.getElementById('inactiveListBody');
+  if (tbody) tbody.innerHTML = `<tr><td colspan="7" class="text-center" style="text-align:center;">Loading...</td></tr>`;
+  
+  const query = document.getElementById('member_search')?.value.trim();
+  
+  let url = `/api/members?status=${status}&page=${currentPage}&limit=${pageSize}`;
+  if (query) {
+    url += `&search=${encodeURIComponent(query)}`;
+  }
+
   try {
-    const result = await apiFetch('/api/members?status=active');
-    const data = Array.isArray(result.data) ? result.data.filter((m) => (m.status || 'active') === 'active') : [];
+    const result = await apiFetch(url);
+    const data = Array.isArray(result.data) ? result.data : [];
     storeMembers(data);
-    data.length > 0 ? displayMembersActive(data) : (tbody.innerHTML = '<tr><td colspan="7">No members found</td></tr>');
-  } catch (error) {}
+    
+    if (data.length > 0) {
+      status === 'active' ? displayMembersActive(data) : displayMembersInactive(data);
+    } else {
+      if (tbody) tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;">No ${status} members found</td></tr>`;
+    }
+    
+    updatePaginationUI(result.pagination);
+  } catch (error) {
+    console.error("Error loading members:", error);
+    if (tbody) tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;">Error loading members</td></tr>`;
+  }
 }
 
 function displayMembersActive(members) {
@@ -250,18 +298,6 @@ function displayMembersActive(members) {
     `;
     tbody.appendChild(row);
   });
-}
-
-async function loadInactiveMembers() {
-  const tbody = document.getElementById('inactiveListBody');
-  if (!tbody) return;
-  tbody.innerHTML = '<tr><td colspan="7">Loading...</td></tr>';
-  try {
-    const result = await apiFetch('/api/members?status=inactive');
-    const data = Array.isArray(result.data) ? result.data.filter((m) => (m.status || 'active') === 'inactive') : [];
-    storeMembers(data);
-    data.length > 0 ? displayMembersInactive(data) : (tbody.innerHTML = '<tr><td colspan="7">No inactive members</td></tr>');
-  } catch (error) {}
 }
 
 function displayMembersInactive(members) {
@@ -354,7 +390,7 @@ async function archiveMember(memberId, status) {
     if (result.success) {
       const sm = document.getElementById('successMessage');
       if (sm) { sm.textContent = result.message; sm.style.display = 'block'; setTimeout(() => sm.style.display = 'none', 5000); }
-      await loadMembersStrict('active'); 
+      await loadMembersStrict(getCurrentTab()); 
     }
   } catch (error) {}
 }
@@ -617,8 +653,9 @@ async function executeRenewalSave() {
         
         document.getElementById('renewalPaymentModal').style.display = 'none';
         document.getElementById('renewalModal').style.display = 'none';
-        await loadMembersStrict('inactive'); 
-        await loadMembersStrict('active');
+        
+        // Reload list directly
+        await loadMembersStrict(getCurrentTab());
 
     } catch (error) {
         const em = document.getElementById('errorMessage');
@@ -732,7 +769,9 @@ if (document.getElementById('editMemberForm')) {
     });
 
     try {
-      const res = await fetch(`${getApiBase()}/api/members/${member._id}`, {
+      // Changed to window.location based endpoint logic to match apiFetch logic
+      const url = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? `${SERVER_URL}/api/members/${member._id}` : `/api/members/${member._id}`;
+      const res = await fetch(url, {
         method: 'PUT', headers: { 'Authorization': `Bearer ${AdminStore.getToken()}`, 'Content-Type': 'application/json' }, body
       });
       const data = await res.json();

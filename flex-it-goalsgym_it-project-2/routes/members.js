@@ -17,17 +17,53 @@ const faceUploads = upload.fields([
   { name: 'faceImage3', maxCount: 1 },
 ]);
 
+// @desc    Get all members with pagination and search
+// @route   GET /api/members
+// @access  Private/Admin
 router.get('/', protect, asyncHandler(async (req, res) => {
-  const { status } = req.query;
+  const { status, search } = req.query;
+  const page = parseInt(req.query.page, 10) || 1;
+  const limit = parseInt(req.query.limit, 10) || 25;
   const filter = {};
+
   if (status && ['active', 'inactive', 'suspended'].includes(status)) {
     filter.status = status;
   }
-  const members = await Member.find(filter).lean();
+
+  // Server-side search by Name or MemberID
+  if (search) {
+    filter.$or = [
+      { name: { $regex: search, $options: 'i' } },
+      { memberId: { $regex: search, $options: 'i' } }
+    ];
+  }
+
+  const startIndex = (page - 1) * limit;
+  const total = await Member.countDocuments(filter);
+
+  // Added .sort({ _id: -1 }) to show latest members first
+  const members = await Member.find(filter)
+    .sort({ _id: -1 }) 
+    .skip(startIndex)
+    .limit(limit)
+    .lean();
+
   members.forEach(m => delete m.password);
-  res.json({ success: true, count: members.length, data: members });
+
+  res.json({ 
+    success: true, 
+    count: members.length, 
+    data: members,
+    pagination: {
+      total,
+      page,
+      pages: Math.ceil(total / limit),
+      limit
+    }
+  });
 }));
 
+// Keeping search endpoint intact in case other features use it (like Attendance)
 router.get('/search', asyncHandler(async (req, res) => {
   const { query, type } = req.query;
   if (!query || query.trim().length < 2) {
@@ -163,13 +199,11 @@ router.post('/', protect, faceUploads, asyncHandler(async (req, res) => {
   try {
       saved = await newMember.save();
   } catch (error) {
-      // FIX: Automatically resolve MongoDB legacy unique index conflicts for email/phone
       if (error.code === 11000) {
           const field = Object.keys(error.keyValue)[0];
           
           if (field === 'email' || field === 'phone') {
               try {
-                  // Drop the problematic index and seamlessly retry the save
                   await mongoose.connection.db.collection('members').dropIndex(`${field}_1`);
                   saved = await newMember.save(); 
               } catch (retryError) {
