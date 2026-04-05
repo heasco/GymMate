@@ -6,32 +6,48 @@ const Product = require('../models/Product');
 const router = express.Router();
 
 // Get all products (with optional status filter)
-router.get('/', protect, asyncHandler(async (req, res) => {
-  const { status } = req.query;
-  const filter = status ? { status } : {};
-  const products = await Product.find(filter).sort({ createdAt: -1 });
-  res.json({ success: true, count: products.length, data: products });
-}));
+router.get('/', asyncHandler(async (req, res) => {
+  const { status, search } = req.query;
+  const page = parseInt(req.query.page, 10) || 1;
+  const limit = parseInt(req.query.limit, 10) || 25;
+  const filter = {};
 
-// Add a new product
-router.post('/', protect, asyncHandler(async (req, res) => {
-  // Added sessions to the destructured body
-  const { product_name, description, membership_type, price, schedule, sessions } = req.body;
-
-  if (!product_name || !membership_type || price === undefined) {
-    return res.status(400).json({ success: false, error: 'Product name, membership type, and price are required.' });
+  if (status && status !== 'all') {
+    filter.status = status;
   }
 
-  const newProduct = await Product.create({
-    product_name,
-    description,
-    membership_type,
-    price,
-    schedule,
-    sessions // Save the sessions to the database
-  });
+  // Server-side search by product name or membership type
+  if (search) {
+    filter.$or = [
+      { product_name: { $regex: search, $options: 'i' } },
+      { membership_type: { $regex: search, $options: 'i' } }
+    ];
+  }
 
-  res.status(201).json({ success: true, data: newProduct });
+  const startIndex = (page - 1) * limit;
+  const total = await Product.countDocuments(filter);
+
+  // Get all unique categories for the frontend dropdowns
+  const categories = await Product.distinct('membership_type');
+
+  // Fetch paginated products, newest first
+  const products = await Product.find(filter)
+    .sort({ _id: -1 })
+    .skip(startIndex)
+    .limit(limit)
+    .lean();
+
+  res.json({
+    success: true,
+    data: products,
+    categories: categories, // Send unique categories back
+    pagination: {
+      total,
+      page,
+      pages: Math.ceil(total / limit),
+      limit
+    }
+  });
 }));
 
 // Update a product

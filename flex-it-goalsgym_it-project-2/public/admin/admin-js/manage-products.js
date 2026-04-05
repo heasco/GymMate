@@ -2,6 +2,11 @@ const SERVER_URL = 'http://localhost:8080';
 const ADMIN_SESSION_MAX_AGE_MS = 2 * 60 * 60 * 1000;
 let allProducts = [];
 
+// Pagination & Debounce State
+let currentPage = 1;
+let pageSize = 25;
+let debounceTimeout;
+
 // --- Admin Auth Boilerplate ---
 const ADMIN_KEYS = { token: 'admin_token', authUser: 'admin_authUser', role: 'admin_role', logoutEvent: 'adminLogoutEvent' };
 const AdminStore = {
@@ -46,7 +51,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupSidebar();
   setupModals();
   await checkServerConnection(); 
-  await loadProducts();
+  
+  setupPagination();
 
   const addForm = document.getElementById('addProductForm');
   if (addForm) addForm.addEventListener('submit', handleAddProduct);
@@ -63,12 +69,23 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Event Listeners for Search & Filter
   const searchInput = document.getElementById('searchProduct');
-  if (searchInput) searchInput.addEventListener('input', filterAndRenderProducts);
+  if (searchInput) {
+    searchInput.addEventListener('input', debounce(() => {
+      currentPage = 1; 
+      loadProducts();
+    }, 400));
+  }
   
   const filterStatus = document.getElementById('filterStatus');
-  if (filterStatus) filterStatus.addEventListener('change', filterAndRenderProducts);
+  if (filterStatus) {
+    filterStatus.addEventListener('change', () => {
+      currentPage = 1;
+      loadProducts();
+    });
+  }
 
   toggleFields('add'); 
+  await loadProducts();
 });
 
 // --- Server Health Check ---
@@ -89,21 +106,28 @@ async function checkServerConnection() {
   }
 }
 
+// --- Debounce ---
+function debounce(func, wait) {
+  return function (...args) {
+    clearTimeout(debounceTimeout);
+    debounceTimeout = setTimeout(() => func.apply(this, args), wait);
+  };
+}
+
 // --- Dynamically Build Dropdown ---
-function populateCategoryDropdowns() {
+function populateCategoryDropdowns(uniqueCategories = []) {
   const addSelect = document.getElementById('membership_type');
   const editSelect = document.getElementById('edit_membership_type');
   
   const standardTypes = ['monthly', 'combative', 'dance', 'walk-in', 'others'];
-  const uniqueCategories = [...new Set(allProducts.map(p => p.membership_type))]
-                           .filter(c => c && !standardTypes.includes(c));
+  const extraCategories = uniqueCategories.filter(c => c && !standardTypes.includes(c));
 
   const buildOptions = () => `
     <option value="monthly">Monthly Access (Gym)</option>
     <option value="combative">Combative Class</option>
     <option value="dance">Dance Class</option>
     <option value="walk-in">Walk-in Session</option>
-    ${uniqueCategories.map(cat => `<option value="${cat}">${cat}</option>`).join('')}
+    ${extraCategories.map(cat => `<option value="${cat}">${cat}</option>`).join('')}
     <option value="others">Others (Create New)</option>
   `;
 
@@ -163,6 +187,7 @@ function setupTabs() {
 
   tabList.addEventListener('click', () => {
     switchSection('productListSection', 'tabList');
+    currentPage = 1;
     loadProducts();
   });
 
@@ -195,37 +220,75 @@ function showMessage(msg, type = 'success') {
   setTimeout(() => el.style.display = 'none', 4000);
 }
 
+// --- Pagination Setup ---
+function setupPagination() {
+  const pageSizeSelect = document.getElementById('pageSize');
+  const prevPageBtn = document.getElementById('prevPage');
+  const nextPageBtn = document.getElementById('nextPage');
+
+  if (pageSizeSelect) {
+    pageSizeSelect.addEventListener('change', (e) => {
+      pageSize = parseInt(e.target.value, 10);
+      currentPage = 1;
+      loadProducts();
+    });
+  }
+
+  if (prevPageBtn) {
+    prevPageBtn.addEventListener('click', () => {
+      if (currentPage > 1) {
+        currentPage--;
+        loadProducts();
+      }
+    });
+  }
+
+  if (nextPageBtn) {
+    nextPageBtn.addEventListener('click', () => {
+      currentPage++;
+      loadProducts();
+    });
+  }
+}
+
+function updatePaginationUI(pagination) {
+  const prevPageBtn = document.getElementById('prevPage');
+  const nextPageBtn = document.getElementById('nextPage');
+  const pageInfo = document.getElementById('pageInfo');
+  
+  if (!pagination) return;
+  const { page, pages, total } = pagination;
+  const totalPages = pages > 0 ? pages : 1;
+  
+  if (pageInfo) pageInfo.textContent = `Page ${page} of ${totalPages} (${total} total)`;
+  if (prevPageBtn) prevPageBtn.disabled = page <= 1;
+  if (nextPageBtn) nextPageBtn.disabled = page >= totalPages;
+}
+
 // --- Core Logic ---
 async function loadProducts() {
   const tbody = document.getElementById('productListBody');
   if(!tbody) return;
   tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;">Loading...</td></tr>';
   
+  const searchTerm = (document.getElementById('searchProduct')?.value || '').trim();
+  const statusVal = document.getElementById('filterStatus')?.value || 'all';
+
+  let url = `/api/products?page=${currentPage}&limit=${pageSize}`;
+  if (searchTerm) url += `&search=${encodeURIComponent(searchTerm)}`;
+  if (statusVal && statusVal !== 'all') url += `&status=${statusVal}`;
+
   try {
-    // Note: We fetch ALL products now (removed ?status=active) to handle the filter locally.
-    const result = await apiFetch('/api/products');
+    const result = await apiFetch(url);
     allProducts = result.data || [];
-    populateCategoryDropdowns(); // Update UI Select Menus dynamically
-    filterAndRenderProducts(); // Calls renderTable with filtered items
+    
+    populateCategoryDropdowns(result.categories || []); 
+    renderTable(allProducts);
+    updatePaginationUI(result.pagination);
   } catch (error) {
     showMessage(error.message, 'error');
     tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: #ff3333;">Failed to load products</td></tr>';
   }
-}
-
-function filterAndRenderProducts() {
-  const searchTerm = (document.getElementById('searchProduct')?.value || '').toLowerCase();
-  const statusVal = document.getElementById('filterStatus')?.value || 'active';
-
-  const filtered = allProducts.filter(p => {
-    const matchesSearch = p.product_name.toLowerCase().includes(searchTerm) || 
-                          p.membership_type.toLowerCase().includes(searchTerm);
-    const matchesStatus = statusVal === 'all' ? true : p.status === statusVal;
-    
-    return matchesSearch && matchesStatus;
-  });
-
-  renderTable(filtered);
 }
 
 function renderTable(products) {
@@ -305,7 +368,8 @@ async function handleAddProduct(e) {
     e.target.reset();
     toggleFields('add'); 
     showProductList();
-    loadProducts(); // This refreshes table AND dropdowns
+    currentPage = 1;
+    loadProducts(); 
   } catch (error) {
     showMessage(error.message, 'error');
   } finally {
@@ -369,7 +433,7 @@ async function handleEditProduct(e) {
     await apiFetch(`/api/products/${id}`, { method: 'PUT', body: JSON.stringify(data) });
     showMessage('Product updated successfully!');
     showProductList();
-    loadProducts(); // This refreshes table AND dropdowns
+    loadProducts(); 
   } catch (error) {
     showMessage(error.message, 'error');
   } finally {
