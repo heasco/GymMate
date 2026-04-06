@@ -43,9 +43,9 @@ h3 {
 .member-form {
     background: rgba(30, 30, 30, 0.9);
     padding: 2.5rem;
-    border-radius: var(--radius);
+    border-radius: 16px; /* Prettier, rounder corners */
     border: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 10px 35px rgba(0, 0, 0, 0.4); /* Enhanced deep shadow */
     backdrop-filter: blur(10px);
     max-width: 600px;
     margin: 0 auto;
@@ -57,7 +57,7 @@ h3 {
 
 .form-group label {
     color: var(--accent);
-    font-weight: 600;
+    font-weight: 600; /* Thicker text */
     margin-bottom: 0.5rem;
     display: block;
     font-size: 0.95rem;
@@ -72,8 +72,9 @@ h3 {
     width: 100%;
     padding: 1rem 1.2rem;
     border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: var(--radius);
+    border-radius: 10px; /* Prettier edges */
     font-size: 1rem;
+    font-weight: 500; /* Thicker input text */
     background: rgba(0, 0, 0, 0.5);
     color: var(--accent);
     font-family: 'Poppins', sans-serif;
@@ -93,7 +94,7 @@ h3 {
 
 .field .label {
     color: var(--accent);
-    font-weight: 600;
+    font-weight: 600; /* Thicker text */
     margin-bottom: 0.5rem;
     display: block;
     font-size: 0.95rem;
@@ -111,8 +112,9 @@ h3 {
     width: 100%;
     padding: 1rem 1.2rem;
     border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: var(--radius);
+    border-radius: 10px; /* Prettier edges */
     font-size: 1rem;
+    font-weight: 500; /* Thicker input text */
     background-color: rgba(0, 0, 0, 0.5);
     color: var(--accent);
     font-family: 'Poppins', sans-serif;
@@ -199,8 +201,9 @@ input[type="date"].hidden-date {
     width: 100%;
     padding: 1rem 3rem 1rem 1.2rem; 
     border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: var(--radius, 4px);
+    border-radius: 10px; /* Prettier edges */
     font-size: 1rem;
+    font-weight: 500;
     background: rgba(0, 0, 0, 0.5);
     color: var(--accent, #ffffff);
     font-family: 'Poppins', sans-serif;
@@ -352,7 +355,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     padding: 1rem 2rem;
     border-radius: var(--radius);
     font-size: 1.1rem;
-    font-weight: 600;
+    font-weight: 700;
     cursor: pointer;
     transition: var(--transition);
     text-transform: uppercase;
@@ -426,7 +429,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .modal-content {
     background: #1e1e1e;
     padding: 2.5rem;
-    border-radius: 8px;
+    border-radius: 20px; /* Softer, prettier modal corners */
     position: relative;
     box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6);
     border: 1px solid rgba(255, 51, 51, 0.3);
@@ -463,7 +466,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .face-modal-content {
     background: #1e1e1e;
     padding: 2rem;
-    border-radius: 8px;
+    border-radius: 20px;
     max-width: 600px;
 }
 
@@ -527,12 +530,13 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .search-input {
     flex: 1;
     padding: 1rem 1.2rem !important;
-    border-radius: var(--radius);
+    border-radius: 10px;
     border: 1px solid rgba(255, 255, 255, 0.2);
     background: rgba(0, 0, 0, 0.5) !important;
     color: #fff !important;
     font-family: 'Poppins', sans-serif;
     font-size: 1rem;
+    font-weight: 500;
     transition: var(--transition);
 }
 
@@ -733,7 +737,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     background: linear-gradient(135deg, rgba(255, 190, 24, 0.15) 0%, rgba(255, 190, 24, 0.05) 100%);
     border: 2px solid #ffbe18;
     border-left: 5px solid #ffbe18;
-    border-radius: var(--radius);
+    border-radius: 12px;
     padding: 1.5rem;
     margin: 1.5rem 0;
     color: var(--accent);
@@ -752,7 +756,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .info-item {
     padding: 1rem;
     background: rgba(0, 0, 0, 0.3);
-    border-radius: var(--radius);
+    border-radius: 10px;
     margin-bottom: 1rem;
     border-left: 3px solid var(--primary);
 }
@@ -835,7 +839,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .face-modal {
     background: var(--darker);
     padding: 2.5rem;
-    border-radius: var(--radius);
+    border-radius: 20px;
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
     border: 1px solid rgba(255, 255, 255, 0.1);
     max-width: 650px;
@@ -1057,7 +1061,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     margin-top: 1.5rem;
     background-color: #0d0d0d; /* Slightly different dark bg to distinguish */
     padding: 1.5rem;
-    border-radius: var(--radius);
+    border-radius: 12px;
     border-left: 4px solid var(--primary); /* Intense red accent line */
     opacity: 0;
     transition: opacity 0.3s ease-in-out;
@@ -1081,7 +1085,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 /* Red Product Selection Card */
 .product-select-card {
     background-color: var(--primary); /* Full Intense Red Background */
-    border-radius: 6px;
+    border-radius: 10px;
     color: #ffffff; /* White text on red */
     overflow: hidden;
     box-shadow: 0 4px 15px rgba(179, 0, 0, 0.2);
@@ -1097,7 +1101,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     font-size: 0.9rem;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    font-weight: 500;
+    font-weight: 700;
     opacity: 0.8;
 }
 
@@ -1119,7 +1123,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     display: flex;
     align-items: center;
     gap: 0.8rem;
-    font-weight: 400;
+    font-weight: 500;
 }
 
 /* Icons within list (assuming fontawesome) */
@@ -1142,7 +1146,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     padding: 0.6rem 1.5rem;
     border-radius: 4px;
     font-size: 0.9rem;
-    font-weight: 500;
+    font-weight: 600;
     cursor: pointer;
     text-transform: uppercase;
     letter-spacing: 0.5px;

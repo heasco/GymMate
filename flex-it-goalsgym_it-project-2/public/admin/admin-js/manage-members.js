@@ -307,7 +307,8 @@ function displayMembersActive(members) {
     const row = document.createElement('tr');
     row.innerHTML = `
       <td>${member.memberId}</td><td>${member.name}</td><td>${member.phone || '-'}</td>
-      <td>${member.email || '-'}</td><td>${membershipsText}</td><td>${member.status}</td>
+      <td>${member.email || '-'}</td><td>${membershipsText}</td>
+      <td><span class="status-badge status-${member.status}">${member.status}</span></td>
       <td>
         <div class="action-buttons">
           <button class="view-button" onclick="openViewDetailsModal('${member.memberId}')">View</button>
@@ -335,7 +336,8 @@ function displayMembersInactive(members) {
     const row = document.createElement('tr');
     row.innerHTML = `
       <td>${member.memberId}</td><td>${member.name}</td><td>${member.phone || '-'}</td>
-      <td>${member.email || '-'}</td><td>${membershipsText}</td><td>${member.status}</td>
+      <td>${member.email || '-'}</td><td>${membershipsText}</td>
+      <td><span class="status-badge status-${member.status}">${member.status}</span></td>
       <td>
         <div class="action-buttons">
           <button class="view-button" onclick="openViewDetailsModal('${member.memberId}')">View</button>

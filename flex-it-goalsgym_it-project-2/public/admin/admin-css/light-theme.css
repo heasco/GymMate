@@ -1,267 +1,555 @@
 /* ========================================
-   GLOBAL LIGHT MODE - DIRTY WHITE, GREY & RED
+   GLOBAL LIGHT MODE - ENHANCED & EYE-FRIENDLY
    ======================================== */
 
-/* Force the main backgrounds to be a comfortable, slightly darker gray */
+/* 1. Darker, cooler background to reduce eye strain */
 html.light-mode,
 body.light-mode,
 body.light-mode .admin-container,
 body.light-mode .main-content {
-    background-color: #E8EAED !important;
+    background-color: #DFE3E8 !important; /* Cool dark-white/gray */
     background-image: none !important;
-    color: #222222 !important;
+    color: #2D3748 !important;
 }
 
-/* -----------------------------
-   Sidebar & Header
-   ----------------------------- */
+/* 2. Thicker Text Across All Pages */
+body.light-mode * {
+    text-shadow: none !important; /* Remove old blurry shadows */
+}
+
+body.light-mode,
+body.light-mode p,
+body.light-mode span:not([class*="fa-"]), /* Protect FontAwesome icons */
+body.light-mode input,
+body.light-mode select,
+body.light-mode textarea,
+body.light-mode td,
+body.light-mode .sub-text {
+    font-weight: 500 !important;
+    color: #111111 !important; /* Make standard text/data near-black */
+}
+
+body.light-mode h1,
+body.light-mode h2,
+body.light-mode h3,
+body.light-mode h4,
+body.light-mode h5,
+body.light-mode label,
+body.light-mode th,
+body.light-mode strong,
+body.light-mode .stat-value,
+body.light-mode .sidebar-nav a {
+    font-weight: 700 !important;
+    color: #000000 !important; /* Pure black for maximum readability on names/headings */
+}
+
+/* 3. Sidebar & Header */
 body.light-mode .sidebar {
-    background: #F4F4F2 !important; /* Dirty White */
-    border-right: 1px solid #D1D5DB !important;
-    box-shadow: 2px 0 12px rgba(0,0,0,0.05) !important;
+    background: #F4F6F8 !important; 
+    border-right: 1px solid #CBD5E0 !important;
+    box-shadow: 4px 0 20px rgba(0,0,0,0.03) !important;
 }
 body.light-mode .sidebar-header {
-    border-bottom: 1px solid #D1D5DB !important;
+    border-bottom: 1px solid #CBD5E0 !important;
 }
 body.light-mode .sidebar-header h2 { 
-    color: #B30000 !important; 
-    text-shadow: 0px 1px 1px rgba(179, 0, 0, 0.2) !important;
-}
-body.light-mode .sidebar-header p { color: #444444 !important; }
-body.light-mode .sidebar-nav a { 
-    color: #333333 !important; 
-    font-weight: 600 !important; 
+    color: #C53030 !important; /* Theme Red */
 }
 body.light-mode .sidebar-nav a:hover, 
 body.light-mode .sidebar-nav a.active { 
-    background: #EEDDDD !important; /* Very soft red/gray */
-    color: #B30000 !important; 
-    border-right: 4px solid #B30000 !important;
-    text-shadow: 0px 1px 1px rgba(179, 0, 0, 0.1) !important;
+    background: #FFF5F5 !important; 
+    color: #C53030 !important; 
+    border-right: 5px solid #C53030 !important;
 }
 
 body.light-mode .header { 
-    background: #F4F4F2 !important; 
-    border-bottom: 1px solid #D1D5DB !important; 
-    box-shadow: 0 2px 10px rgba(0,0,0,0.05) !important;
-}
-body.light-mode .header h1,
-body.light-mode .menu-toggle { 
-    color: #111111 !important; 
-    text-shadow: 0px 1px 2px rgba(0,0,0,0.1) !important;
+    background: #F4F6F8 !important; 
+    border-bottom: 1px solid #CBD5E0 !important; 
+    box-shadow: 0 4px 20px rgba(0,0,0,0.03) !important;
 }
 
+/* 4. RED Logout Button on Every Page */
 body.light-mode .logout-btn {
-    background: #F4F4F2 !important;
-    border: 1px solid #D1D5DB !important;
-    color: #111111 !important;
-    font-weight: 600 !important;
+    background-color: #E53E3E !important; /* Bright Red */
+    color: #FFFFFF !important;
+    border: none !important;
+    font-weight: 700 !important;
+    border-radius: 8px !important;
+    padding: 0.6rem 1.2rem !important;
+    box-shadow: 0 4px 10px rgba(229, 62, 62, 0.3) !important;
+    transition: all 0.3s ease !important;
 }
-body.light-mode .logout-btn:hover { 
-    background: #E8EAED !important; 
-    color: #B30000 !important;
-}
-
-/* -----------------------------
-   Typography (Fixes Invisible Text)
-   ----------------------------- */
-/* Force all main-content headings to be dark with a pretty shadow */
-body.light-mode .main-content h1,
-body.light-mode .main-content h2,
-body.light-mode .main-content h3,
-body.light-mode .main-content h4 { 
-    color: #111111 !important; 
-    text-shadow: 0px 1px 2px rgba(0,0,0,0.1) !important; 
+body.light-mode .logout-btn:hover {
+    background-color: #C53030 !important; /* Darker Red */
+    transform: translateY(-2px) !important;
+    box-shadow: 0 6px 15px rgba(229, 62, 62, 0.4) !important;
 }
 
-body.light-mode .section h2,
-body.light-mode .card h2,
-body.light-mode .settings-group h3,
-body.light-mode .settings-group label strong { 
-    color: #111111 !important; 
-    text-shadow: 0px 1px 2px rgba(0,0,0,0.1) !important; 
-}
-
-body.light-mode .stat-value { 
-    color: #111111 !important; 
-    text-shadow: 0px 2px 4px rgba(0,0,0,0.15) !important; /* Makes numbers pop */
-}
-
-body.light-mode .form-group label,
-body.light-mode .stat-title,
-body.light-mode p,
-body.light-mode .sub-text,
-body.light-mode small {
-    color: #444444 !important;
-    font-weight: 500 !important;
-}
-
-/* -----------------------------
-   Sections, Cards, and Containers
-   ----------------------------- */
+/* 5. Prettier Forms & Cards (Rounded Corners, Red Glow & Dirty White BG) */
+body.light-mode .member-form,
 body.light-mode .section, 
 body.light-mode .card,
 body.light-mode .settings-group,
-body.light-mode .membership-container,
 body.light-mode .dashboard-stat-card { 
-    background: #F4F4F2 !important; /* Dirty White */
-    border: 1px solid #D1D5DB !important; 
-    border-radius: 8px !important;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05) !important; 
+    background: #F0F2F5 !important; /* Slightly dirty/off white for sections */
+    border: 1px solid #FED7D7 !important; /* Soft red tint on the border */
+    border-radius: 16px !important; /* Much rounder corners */
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08), 0 0 20px rgba(229, 62, 62, 0.12) !important; /* Drop shadow + subtle red glow */
 }
 
 body.light-mode .settings-group {
-    border-left: 4px solid #B30000 !important;
+    border-left: 5px solid #C53030 !important;
 }
 
-body.light-mode .toggle-group {
-    background: #E8EAED !important;
-    border: 1px solid #D1D5DB !important;
-}
-
-/* -----------------------------
-   Inputs, Selects, & Textareas
-   ----------------------------- */
+/* 6. Inputs & Selects */
 body.light-mode input[type="text"], 
 body.light-mode input[type="number"], 
 body.light-mode input[type="date"], 
+body.light-mode input[type="tel"], 
+body.light-mode input[type="email"], 
 body.light-mode input[type="password"], 
 body.light-mode select,
 body.light-mode textarea { 
-    background: #FAFAFA !important; 
+    background: #FFFFFF !important; /* Pure white inputs against dirty white form */
     color: #111111 !important; 
-    border: 1px solid #B0B5BA !important; /* Darker border for visibility */
-    border-radius: 6px !important;
-    box-shadow: inset 0 1px 3px rgba(0,0,0,0.05) !important;
+    border: 2px solid #E2E8F0 !important; /* Thicker borders */
+    border-radius: 10px !important; /* Softer edges */
+    padding: 0.9rem 1.2rem !important;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.02) !important;
+    transition: all 0.3s ease !important;
 }
 
 body.light-mode input:focus, 
-body.light-mode select:focus { 
-    border-color: #B30000 !important; 
-    box-shadow: 0 0 0 3px rgba(179, 0, 0, 0.15) !important; 
+body.light-mode select:focus,
+body.light-mode textarea:focus { 
+    border-color: #C53030 !important; 
+    box-shadow: 0 0 0 4px rgba(197, 48, 48, 0.15) !important; 
     background: #FFFFFF !important;
+    outline: none !important;
 }
 
-body.light-mode input:disabled { 
-    background: #E8EAED !important; 
-    color: #777777 !important; 
+/* Fix invisible white arrows on dropdowns in light mode */
+body.light-mode select,
+body.light-mode .payment-select,
+body.light-mode .dob-dropdowns select {
+    background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%234A5568%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E") !important;
 }
 
-/* -----------------------------
-   Dashboard Specifics
-   ----------------------------- */
-body.light-mode .dashboard-stat-in-gym {
-    background: #E6F4EA !important;
-    border: 1px solid #A8DAB5 !important;
+body.light-mode input:disabled,
+body.light-mode select:disabled { 
+    background: #EDF2F7 !important; 
+    color: #A0AEC0 !important; 
 }
-body.light-mode .dashboard-stat-in-gym .stat-value { color: #0D652D !important; }
-body.light-mode .dashboard-stat-in-gym .stat-title { color: #137333 !important; }
 
-/* -----------------------------
-   Tables & Data
-   ----------------------------- */
+/* Fix Icons */
+body.light-mode .date-icon {
+    color: #C53030 !important;
+}
+
+/* 7. Tables & Modals */
+body.light-mode .modal-content {
+    background: #F0F2F5 !important;
+    border-radius: 20px !important; /* Softer modal corners */
+    box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25), 0 0 30px rgba(229, 62, 62, 0.15) !important; /* Add red glow to modal corners */
+    border: 1px solid #FED7D7 !important;
+}
+
 body.light-mode .dashboard-table,
 body.light-mode .tx-table-wrapper,
 body.light-mode .member-list table {
-    background: #F4F4F2 !important;
-    border: 1px solid #D1D5DB !important;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05) !important; 
-    border-radius: 8px !important;
+    background: #FFFFFF !important;
+    border: 1px solid #FED7D7 !important;
+    border-radius: 12px !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04), 0 0 15px rgba(229, 62, 62, 0.12) !important; /* Red glow on table corners */
+    border-collapse: collapse !important;
+    overflow: hidden !important; /* Ensures background respects rounded corners */
 }
+
+/* Solid Red Table Headers (No Gradient) */
 body.light-mode .dashboard-table thead,
 body.light-mode .tx-table thead,
-body.light-mode .member-list th {
-    background: #E8EAED !important;
-    color: #111111 !important;
-    font-weight: 700 !important;
-    border-bottom: 2px solid #B30000 !important; /* Red accent on table headers */
-    text-shadow: 0px 1px 1px rgba(0,0,0,0.05) !important;
-}
-body.light-mode .dashboard-table td,
-body.light-mode .tx-table th,
-body.light-mode .tx-table td,
-body.light-mode .member-list td {
-    color: #222222 !important;
-    border-bottom: 1px solid #D1D5DB !important;
-}
-body.light-mode .dashboard-table tbody tr:hover td,
-body.light-mode .tx-table tbody tr:hover,
-body.light-mode .member-list tr:hover {
-    background: #EEDDDD !important; /* Very soft red hover */
-    color: #111111 !important;
-}
-
-/* -----------------------------
-   Buttons & Toggles
-   ----------------------------- */
-body.light-mode .secondary-btn,
-body.light-mode .view-button {
-    background: #FAFAFA !important;
-    color: #111111 !important;
-    border: 1px solid #B0B5BA !important;
-    font-weight: 600 !important;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05) !important;
-}
-body.light-mode .secondary-btn:hover,
-body.light-mode .view-button:hover {
-    background: #E8EAED !important;
-    color: #B30000 !important;
-    border-color: #B30000 !important;
-}
-
-body.light-mode .tx-toggle-bar {
-    background: #E8EAED !important;
-    padding: 4px !important;
-    border-radius: 8px !important;
-    box-shadow: inset 0 1px 3px rgba(0,0,0,0.1) !important;
-}
-body.light-mode .tx-toggle-btn,
-body.light-mode .tab-btn {
-    background: transparent !important;
-    color: #555555 !important;
+body.light-mode .member-list thead {
+    background: #E53E3E !important; /* Solid darker red */
     border: none !important;
+}
+
+body.light-mode .dashboard-table th,
+body.light-mode .tx-table th,
+body.light-mode .member-list th {
+    background: transparent !important;
+    color: #FFFFFF !important; /* White text on red background */
+    border-right: 1px solid rgba(255, 255, 255, 0.2) !important; /* Soft white dividers */
+    border-bottom: none !important;
+}
+
+body.light-mode .dashboard-table th:last-child,
+body.light-mode .tx-table th:last-child,
+body.light-mode .member-list th:last-child {
+    border-right: none !important; 
+}
+
+/* Pretty line on every table row */
+body.light-mode .member-list td,
+body.light-mode .dashboard-table td,
+body.light-mode .tx-table td {
+    border-bottom: 1px solid #E2E8F0 !important;
+}
+
+/* Remove bottom border on last row */
+body.light-mode .member-list tr:last-child td,
+body.light-mode .dashboard-table tr:last-child td,
+body.light-mode .tx-table tr:last-child td {
+    border-bottom: none !important;
+}
+
+/* VIEW & FEEDBACK BUTTONS - Darker Text Fix */
+body.light-mode .view-button {
+    color: #111111 !important; /* Near black for high visibility */
+    border: 1px solid #A0AEC0 !important;
+    background: #FFFFFF !important;
+    font-weight: 600 !important;
+    transition: all 0.2s ease !important;
+}
+body.light-mode .view-button:hover {
+    background: #EDF2F7 !important;
+    color: #000000 !important;
+    border-color: #718096 !important;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05) !important;
+}
+
+/* 8. Details from Add Member Page */
+body.light-mode .product-select-container {
+    background: #FFF5F5 !important;
+    border: 1px solid #FED7D7 !important;
+    border-left: 5px solid #C53030 !important;
+    border-radius: 12px !important;
+}
+body.light-mode .product-select-card {
+    box-shadow: 0 8px 20px rgba(197, 48, 48, 0.15) !important;
+}
+body.light-mode .renewal-info-box {
+    background: linear-gradient(135deg, rgba(254, 235, 200, 0.6) 0%, rgba(255, 255, 255, 0.8) 100%) !important;
+    border-color: #D69E2E !important;
+    color: #111111 !important;
+    border-radius: 12px !important;
+}
+body.light-mode .info-item {
+    background: #FFFFFF !important;
+    border: 1px solid #E2E8F0 !important;
+    border-left: 4px solid #C53030 !important;
+    border-radius: 8px !important;
+}
+body.light-mode .member-info-card {
+    background: #F8FAFC !important;
+    border: 1px solid #E2E8F0 !important;
+    border-left: 5px solid #C53030 !important;
+}
+body.light-mode .search-result-item {
+    background: #FFFFFF !important;
+    border: 1px solid #E2E8F0 !important;
+    border-radius: 10px !important;
+}
+body.light-mode .search-result-item:hover {
+    background: #F8FAFC !important;
+    border-left: 4px solid #C53030 !important;
+    box-shadow: 0 6px 15px rgba(0,0,0,0.06) !important;
+}
+
+body.light-mode [style*="background: rgba(255, 190, 24, 0.05)"] {
+    background: #FFFFF0 !important;
+    border: 1px solid #FEFCBF !important;
+    border-left: 4px solid #D69E2E !important;
+    border-radius: 12px !important;
+}
+body.light-mode [style*="color: #ffbe18;"] {
+    color: #B7791F !important;
+}
+
+/* ========================================
+   9. ADD & VIEW TRANSACTION SPECIFICS 
+   ======================================== */
+
+/* Fix invisible faint grey text & amounts in tables */
+body.light-mode .tx-table td {
+    color: #111111 !important; /* Near black */
+}
+body.light-mode .tx-table td small {
+    color: #4A5568 !important; /* Dark grey for secondary text */
+}
+body.light-mode .tx-table td.right-align,
+body.light-mode #salesTableBody td:last-child {
+    color: #000000 !important; /* Pure black for amounts */
+    font-weight: 800 !important;
+    font-size: 1.05rem !important;
+}
+
+/* Make "Total Revenue" text thicker & fix faint subtext */
+body.light-mode .sales-total-box {
+    background: #FFFFFF !important;
+    border: 2px solid #FED7D7 !important;
+    box-shadow: 0 10px 25px rgba(197, 48, 48, 0.05), 0 0 15px rgba(229, 62, 62, 0.1) !important; /* Added subtle red glow */
+    border-radius: 12px !important;
+}
+body.light-mode .sales-total-box h3 {
+    font-weight: 900 !important; /* Maximum thickness */
+    color: #000000 !important; /* Pure black */
+}
+body.light-mode .sales-total-box p,
+body.light-mode .sales-total-box small {
+    color: #111111 !important; /* Near black */
     font-weight: 600 !important;
 }
-body.light-mode .tx-toggle-btn.active,
-body.light-mode .tab-btn.active {
-    background: #F4F4F2 !important;
-    color: #B30000 !important;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1) !important;
-    border-radius: 6px !important;
-    text-shadow: 0px 1px 1px rgba(179,0,0,0.1) !important;
+
+/* Beautiful Toggle Buttons */
+body.light-mode .tx-toggle-bar {
+    background: #FFFFFF !important;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05) !important;
+    border: 1px solid #E2E8F0 !important;
+    padding: 0.4rem !important;
+}
+body.light-mode .tx-toggle-btn {
+    background: transparent !important;
+    color: #4A5568 !important;
+    border: none !important;
+    box-shadow: none !important;
+    font-weight: 700 !important;
+}
+body.light-mode .tx-toggle-btn:hover:not(.active) {
+    background: #F8FAFC !important;
+    color: #000000 !important;
+}
+body.light-mode .tx-toggle-btn.active {
+    background: linear-gradient(135deg, #E53E3E 0%, #C53030 100%) !important;
+    color: #FFFFFF !important;
+    box-shadow: 0 4px 12px rgba(197, 48, 48, 0.3) !important;
 }
 
-/* -----------------------------
-   Modals
-   ----------------------------- */
-body.light-mode .modal-content {
-    background: #F4F4F2 !important;
-    color: #222222 !important;
-    border: 1px solid #D1D5DB !important;
-    box-shadow: 0 15px 30px rgba(0,0,0,0.15) !important;
+/* FIX: Filter Container Overlay - Removes the ugly white box behind filters */
+body.light-mode .tx-filters {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
 }
-body.light-mode .modal-title,
-body.light-mode .renewal-header h3 {
-    color: #111111 !important;
-    border-bottom: 2px solid #D1D5DB !important;
-    text-shadow: 0px 1px 2px rgba(0,0,0,0.1) !important;
-}
-body.light-mode .close-btn { color: #777777 !important; }
-body.light-mode .close-btn:hover { color: #B30000 !important; }
 
-/* Force inline overrides for modal text */
-body.light-mode .detail-group p,
-body.light-mode .modal-content p strong,
-body.light-mode .member-info-card h4 {
-    color: #111111 !important;
+/* Prettier Search & Form Buttons */
+body.light-mode .tx-filter-buttons button:not(.secondary-btn),
+body.light-mode #submitTransactionBtn,
+body.light-mode #sendBtn {
+    background: linear-gradient(135deg, #E53E3E 0%, #C53030 100%) !important;
+    color: #FFFFFF !important;
+    font-weight: 700 !important;
+    box-shadow: 0 4px 10px rgba(197, 48, 48, 0.2) !important;
+    border: none !important;
 }
-body.light-mode .member-info-card p {
-    color: #444444 !important;
-}
-body.light-mode #joinDateDisplay,
-body.light-mode #renewalDateDisplay,
-body.light-mode .edit-start-date-display {
-    background: #E8EAED !important;
+body.light-mode .tx-filter-buttons .secondary-btn {
+    background: #FFFFFF !important;
     color: #111111 !important;
-    border-color: #B0B5BA !important;
+    border: 2px solid #E2E8F0 !important;
+    font-weight: 700 !important;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.02) !important;
+}
+body.light-mode .tx-filter-buttons .secondary-btn:hover {
+    background: #F8FAFC !important;
+    color: #000000 !important;
+    border-color: #CBD5E0 !important;
+}
+
+/* Mini Calendar Popups */
+body.light-mode .mini-calendar-btn {
+    background: #F8FAFC !important;
+    color: #4A5568 !important;
+    border: 2px solid #E2E8F0 !important;
+}
+body.light-mode .mini-calendar-btn:hover {
+    background: #FFF5F5 !important;
+    color: #C53030 !important;
+    border-color: #FEB2B2 !important;
+}
+body.light-mode .mini-calendar-popup {
+    background: #FFFFFF !important;
+    border: 1px solid #E2E8F0 !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1) !important;
+}
+body.light-mode .mini-calendar-title { color: #000000 !important; font-weight: 700 !important; }
+body.light-mode .mini-cal-nav { background: #F8FAFC !important; color: #111111 !important; border: 1px solid #E2E8F0 !important; }
+body.light-mode .mini-cal-day-header { color: #4A5568 !important; }
+body.light-mode .mini-cal-day { color: #111111 !important; font-weight: 600 !important; }
+body.light-mode .mini-cal-day:hover { background: #FFF5F5 !important; color: #C53030 !important; }
+body.light-mode .mini-cal-day-selected { background: #C53030 !important; color: #FFFFFF !important; }
+
+/* Edit/Delete Table Actions */
+body.light-mode .tx-action-btn {
+    background: #FFFFFF !important;
+    font-weight: 700 !important;
+}
+body.light-mode .tx-action-btn.edit {
+    border: 2px solid #319795 !important; 
+    color: #319795 !important;
+}
+body.light-mode .tx-action-btn.edit:hover {
+    background: #319795 !important;
+    color: #FFFFFF !important;
+}
+body.light-mode .tx-action-btn.delete {
+    border: 2px solid #E53E3E !important;
+    color: #E53E3E !important;
+}
+body.light-mode .tx-action-btn.delete:hover {
+    background: #E53E3E !important;
+    color: #FFFFFF !important;
+}
+
+/* Prettier Pagination */
+body.light-mode .tx-pagination-wrapper {
+    background: #FFFFFF !important;
+    border: 1px solid #E2E8F0 !important;
+}
+body.light-mode .pagination-btn {
+    background: #FFFFFF !important;
+    color: #111111 !important;
+    border: 2px solid #E2E8F0 !important;
+}
+body.light-mode .pagination-btn:hover:not(:disabled) {
+    background: #FFF5F5 !important;
+    color: #C53030 !important;
+    border-color: #FEB2B2 !important;
+}
+body.light-mode #viewPageInfo, 
+body.light-mode #salesPageInfo {
+    color: #000000 !important;
+}
+
+
+/* ========================================
+   10. SEND ANNOUNCEMENT SPECIFICS 
+   ======================================== */
+
+/* Force the container to be white and visible */
+body.light-mode #selectedRecipients {
+    background-color: #FFFFFF !important;
+    border: 2px solid #E2E8F0 !important;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.02) !important;
+    min-height: 54px !important; /* Ensures it doesn't collapse */
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+    padding: 10px !important;
+    border-radius: 8px !important;
+}
+
+/* Red line accent when MORE THAN ONE member is added */
+body.light-mode #selectedRecipients:has(.recipient-tag:nth-child(2)) {
+    border-bottom: 4px solid #E53E3E !important;
+    box-shadow: 0 4px 10px rgba(229, 62, 62, 0.1) !important;
+}
+
+/* Fix recipient tags so names are clearly visible */
+body.light-mode .recipient-tag,
+body.light-mode #selectedRecipients .recipient-tag {
+    background: #FFF5F5 !important;
+    border: 1px solid #FC8181 !important;
+    font-weight: 700 !important;
+    padding: 6px 12px !important;
+    border-radius: 9999px !important; /* Pill shape */
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+}
+
+/* Force text inside the tag to be deep red */
+body.light-mode .recipient-tag span,
+body.light-mode .recipient-tag div,
+body.light-mode #selectedRecipients * {
+    color: #B30000 !important; 
+}
+
+/* X button styling */
+body.light-mode .recipient-tag .remove-btn,
+body.light-mode .recipient-tag i {
+    color: #E53E3E !important;
+    cursor: pointer !important;
+}
+
+body.light-mode .recipient-tag:hover {
+    background: #FEE2E2 !important;
+}
+
+/* Fix grey overlay on multi-select box */
+body.light-mode select[multiple],
+body.light-mode #recipientSelect {
+    background: #FFFFFF !important;
+    border: 2px solid #E2E8F0 !important;
+    padding: 0.5rem !important;
+    color: #000000 !important; /* Pure black text */
+}
+body.light-mode select[multiple] option {
+    color: #000000 !important; /* Force black text */
+    background: #FFFFFF !important;
+    padding: 0.6rem !important;
+    border-bottom: 1px solid #F0F2F5 !important;
+    font-weight: 600 !important;
+}
+body.light-mode select[multiple] option:checked,
+body.light-mode select[multiple] option:hover {
+    background-color: #E53E3E !important; /* Red highlight on select */
+    color: #FFFFFF !important; /* White text on red background */
+}
+
+/* Fix Announcement Details Modal (History View) */
+body.light-mode .view-recipients-box,
+body.light-mode .view-body-box {
+    background: #FFFFFF !important;
+    color: #111111 !important;
+    border: 1px solid #E2E8F0 !important;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.02) !important;
+    border-radius: 8px !important;
+}
+
+/* Override inline #fff color on the subject span */
+body.light-mode #viewSubject {
+    color: #000000 !important;
+    font-weight: 800 !important;
+}
+
+/* Fix Recipient Popup List */
+body.light-mode .recipient-popup-list li {
+    color: #111111 !important;
+    border-bottom: 1px solid #E2E8F0 !important;
+}
+body.light-mode .recipient-popup-list li:hover {
+    background: #FFF5F5 !important;
+    color: #C53030 !important;
+}
+
+/* ========================================
+   DASHBOARD STAT CARDS (LIGHT MODE FIX)
+   ======================================== */
+
+/* Make the text inside the boxes darker and prettier */
+body.light-mode .dashboard-stat-card .stat-title {
+    color: #4A5568 !important; /* Readable dark gray for the label */
+    font-weight: 800 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+}
+
+body.light-mode .dashboard-stat-card .stat-value {
+    color: #000000 !important; /* Pure black for the big numbers */
+    font-weight: 900 !important;
+}
+
+/* Beautiful Green Glow for "In Gym Right Now" */
+body.light-mode .dashboard-stat-card.dashboard-stat-in-gym {
+    background: #F0FFF4 !important; /* Crisp light green background */
+    border: 2px solid #86EFAC !important; /* Pretty green border */
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08), 0 0 20px rgba(34, 197, 94, 0.3) !important; /* Neon green glow */
+}
+
+/* Make the text match the green theme for that specific box */
+body.light-mode .dashboard-stat-card.dashboard-stat-in-gym .stat-title {
+    color: #15803D !important; /* Deep green */
+}
+
+body.light-mode .dashboard-stat-card.dashboard-stat-in-gym .stat-value {
+    color: #16A34A !important; /* Vibrant dark green */
 }

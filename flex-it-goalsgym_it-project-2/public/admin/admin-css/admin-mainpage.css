@@ -502,3 +502,21 @@ body.light-mode .dashboard-table tbody tr td strong {
 body.light-mode .dashboard-table tbody tr:hover td {
     color: #111111 !important; 
 }
+
+/* ========================================
+   "IN GYM" CARD - GREEN GLOW (DARK THEME)
+   ======================================== */
+
+.dashboard-stat-card.dashboard-stat-in-gym {
+    border: 1px solid #23d160 !important;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3), 0 0 15px rgba(35, 209, 96, 0.2) !important;
+}
+
+.dashboard-stat-card.dashboard-stat-in-gym .stat-title {
+    color: #23d160 !important;
+}
+
+.dashboard-stat-card.dashboard-stat-in-gym .stat-value {
+    color: #23d160 !important;
+    text-shadow: 0 0 10px rgba(35, 209, 96, 0.4) !important;
+}

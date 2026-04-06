@@ -502,3 +502,55 @@ textarea#body {
   background: #dc3545;
   color: #ffffff;
 }
+
+/* ========================================
+   LIGHT MODE OVERRIDES 
+   (Only applies when light theme is active)
+   ======================================== */
+
+/* Force the container to be white and visible */
+body.light-mode #selectedRecipients {
+    background-color: #FFFFFF !important;
+    border: 2px solid #E2E8F0 !important;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.02) !important;
+    min-height: 54px !important; /* Ensures it doesn't collapse */
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+    padding: 10px !important;
+    border-radius: 8px !important;
+}
+
+/* Red line accent when MORE THAN ONE member is added */
+body.light-mode #selectedRecipients:has(.recipient-tag:nth-child(2)) {
+    border-bottom: 4px solid #E53E3E !important;
+    box-shadow: 0 4px 10px rgba(229, 62, 62, 0.1) !important;
+}
+
+/* Fix recipient tags so names are clearly visible */
+body.light-mode .recipient-tag {
+    background: #FFF5F5 !important;
+    border: 1px solid #FC8181 !important;
+    font-weight: 700 !important;
+    padding: 6px 12px !important;
+    border-radius: 9999px !important; /* Pill shape */
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+}
+
+/* Force text inside the tag to be deep red */
+body.light-mode .recipient-tag span {
+    color: #B30000 !important; 
+}
+
+/* X button styling */
+body.light-mode .recipient-tag .remove-btn,
+body.light-mode .recipient-tag i {
+    color: #E53E3E !important;
+    cursor: pointer !important;
+}
+
+body.light-mode .recipient-tag:hover {
+    background: #FEE2E2 !important;
+}
