@@ -471,12 +471,17 @@ async function loadRecipients() {
 function displayRecipients(recipients) {
     const recipientList = document.getElementById('recipientList');
     recipientList.innerHTML = '';
-    recipients.forEach(r => {
+    
+    // Add 'index' to the callback parameters
+    recipients.forEach((r, index) => {
+        // Create a guaranteed unique ID using either the Mongo _id or the loop index
+        const uniqueId = r._id ? `recipient_${r._id}` : `recipient_${index}`;
+        
         const item = document.createElement('div');
         item.className = 'recipient-item';
         item.innerHTML = `
-            <input type="checkbox" id="recipient_${r.email}" name="recipients" value="${r.email}" data-role="${r.role}">
-            <label for="recipient_${r.email}">${r.name} (${r.email})</label>
+            <input type="checkbox" id="${uniqueId}" name="recipients" value="${r.email}" data-role="${r.role}">
+            <label for="${uniqueId}">${r.name} (${r.email})</label>
         `;
         recipientList.appendChild(item);
     });
