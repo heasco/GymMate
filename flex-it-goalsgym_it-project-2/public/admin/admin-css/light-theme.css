@@ -57,7 +57,7 @@ body.light-mode .sidebar-header h2 {
 }
 body.light-mode .sidebar-nav a:hover, 
 body.light-mode .sidebar-nav a.active { 
-    background: #FFF5F5 !important; 
+    background: #FEE2E2 !important; /* Darker hover background */
     color: #C53030 !important; 
     border-right: 5px solid #C53030 !important;
 }
@@ -265,6 +265,36 @@ body.light-mode [style*="color: #ffbe18;"] {
     color: #B7791F !important;
 }
 
+/* Specific overrides for manage-members.css */
+body.light-mode .manage-button,
+body.light-mode .view-activity-button {
+    color: #2D3748 !important;
+    border-color: #2D3748 !important;
+    background: transparent !important;
+    padding: 6px 14px !important;
+    border-radius: 4px !important;
+}
+body.light-mode .manage-button:hover,
+body.light-mode .view-activity-button:hover {
+    background: rgba(0,0,0,0.1) !important;
+    color: #000000 !important;
+}
+
+/* Specific overrides for manage-products.css */
+body.light-mode .product-manage-btn,
+body.light-mode .product-edit-btn {
+    color: #2D3748 !important;
+    border-color: #2D3748 !important;
+    background: transparent !important;
+    padding: 6px 14px !important;
+    border-radius: 4px !important;
+}
+body.light-mode .product-manage-btn:hover,
+body.light-mode .product-edit-btn:hover {
+    background: rgba(0,0,0,0.1) !important;
+    color: #000000 !important;
+}
+
 /* ========================================
    9. ADD & VIEW TRANSACTION SPECIFICS 
    ======================================== */
@@ -294,10 +324,16 @@ body.light-mode .sales-total-box h3 {
     font-weight: 900 !important; /* Maximum thickness */
     color: #000000 !important; /* Pure black */
 }
+body.light-mode .sales-total-box h3 span {
+    font-weight: bold !important;
+    font-style: unset !important;
+    color: #28a745 !important; /* Success Green */
+}
 body.light-mode .sales-total-box p,
 body.light-mode .sales-total-box small {
+    font-size: small !important;
     color: #111111 !important; /* Near black */
-    font-weight: 600 !important;
+    font-weight: 550 !important;
 }
 
 /* Beautiful Toggle Buttons */
@@ -552,4 +588,84 @@ body.light-mode .dashboard-stat-card.dashboard-stat-in-gym .stat-title {
 
 body.light-mode .dashboard-stat-card.dashboard-stat-in-gym .stat-value {
     color: #16A34A !important; /* Vibrant dark green */
+}
+
+/* ========================================
+   11. EDIT TRANSACTION MODAL FIXES
+   ======================================== */
+
+/* Lighter background for the dark overlay */
+body.light-mode .edit-tx-overlay {
+    background: rgba(0, 0, 0, 0.5) !important; 
+}
+
+/* Make the edit panel match the other light mode cards */
+body.light-mode .edit-tx-panel {
+    background: #F0F2F5 !important;
+    border: 1px solid #FED7D7 !important;
+    border-radius: 16px !important;
+    box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25), 0 0 30px rgba(229, 62, 62, 0.15) !important;
+}
+
+/* Fix header text */
+body.light-mode .edit-tx-header h2 {
+    color: #C53030 !important; /* Theme Red */
+    font-weight: 800 !important;
+}
+
+/* Fix close button */
+body.light-mode .edit-tx-close {
+    color: #E53E3E !important;
+    transition: all 0.2s ease !important;
+}
+
+body.light-mode .edit-tx-close:hover {
+    background: #FEE2E2 !important;
+    color: #C53030 !important;
+}
+
+/* Fix input labels */
+body.light-mode .edit-tx-panel label {
+    color: #000000 !important;
+    font-weight: 700 !important;
+}
+
+/* Fix input fields */
+body.light-mode .edit-tx-panel input,
+body.light-mode .edit-tx-panel select,
+body.light-mode .edit-tx-panel textarea {
+    background: #FFFFFF !important;
+    color: #111111 !important;
+    border: 2px solid #E2E8F0 !important;
+}
+
+/* Fix disabled inputs so they look uneditable but readable */
+body.light-mode .edit-tx-panel input:disabled {
+    background: #EDF2F7 !important;
+    color: #718096 !important;
+    border-color: #E2E8F0 !important;
+}
+
+/* Fix the Cancel button in footer */
+body.light-mode .edit-tx-footer .secondary-btn {
+    background: #FFFFFF !important;
+    color: #111111 !important;
+    border: 2px solid #E2E8F0 !important;
+    font-weight: 700 !important;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.02) !important;
+}
+
+body.light-mode .edit-tx-footer .secondary-btn:hover {
+    background: #F8FAFC !important;
+    color: #000000 !important;
+    border-color: #CBD5E0 !important;
+}
+
+/* Fix the Save Changes button in footer */
+body.light-mode #editTxSaveBtn {
+    background: linear-gradient(135deg, #E53E3E 0%, #C53030 100%) !important;
+    color: #FFFFFF !important;
+    font-weight: 700 !important;
+    border: none !important;
+    box-shadow: 0 4px 10px rgba(197, 48, 48, 0.2) !important;
 }

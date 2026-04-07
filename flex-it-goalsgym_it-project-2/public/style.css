@@ -2168,3 +2168,41 @@ section {
         align-self: flex-end;
     }
 }
+
+/* ========================================
+   UNIFIED LOGIN PAGE BACKGROUND
+   ======================================== */
+body.login-page-bg {
+    /* The linear-gradient adds a dark, semi-transparent overlay to keep the form readable */
+    background-image: linear-gradient(rgba(0, 0, 0, 0.65), rgba(0, 0, 0, 0.75)), url('image/anime-goals.png');
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    background-repeat: no-repeat;
+    
+    /* Fallback color matching your dark theme */
+    background-color: var(--darker); 
+}
+
+/* Optional: Add a slight backdrop blur to the login container for a glassmorphism effect */
+.login-page-bg .login-container {
+    background-color: rgba(17, 17, 17, 0.85); /* Slightly more transparent */
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid var(--border-color);
+}
+
+/* ========================================
+   MOBILE FIX FOR LOGIN BACKGROUND
+   ======================================== */
+@media (max-width: 768px) {
+    body.login-page-bg {
+        /* Swap to the mobile-specific image, keeping the dark overlay */
+        background-image: linear-gradient(rgba(0, 0, 0, 0.65), rgba(0, 0, 0, 0.75)), url('image/mobile-anime-goals.png');
+
+    .login-container {
+        /* Put the login box back in the dead center */
+        top: 44%; 
+    }
+}
+}
