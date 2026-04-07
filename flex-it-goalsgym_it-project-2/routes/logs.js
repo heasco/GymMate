@@ -3,7 +3,6 @@ const express = require('express');
 const router = express.Router();
 const Log = require('../models/Log');
 const Admin = require('../models/Admin');
-const Trainer = require('../models/Trainer');
 const Member = require('../models/Member');
 const MembershipHistory = require('../models/MembershipHistory'); 
 const asyncHandler = require('../middleware/asyncHandler');
@@ -39,12 +38,11 @@ router.get(
     // Server-side search by name across collections
     if (name) {
       const nameRegex = new RegExp(name, 'i');
-      const [admins, trainers, members] = await Promise.all([
+      const [admins, members] = await Promise.all([
         Admin.find({ $or: [{ name: nameRegex }, { username: nameRegex }] }).select('_id'),
-        Trainer.find({ $or: [{ name: nameRegex }, { username: nameRegex }] }).select('_id'),
         Member.find({ name: nameRegex }).select('_id')
       ]);
-      const matchedUserIds = [...admins, ...trainers, ...members].map(u => u._id);
+      const matchedUserIds = [...admins, ...members].map(u => u._id);
       filter.userId = { $in: matchedUserIds };
     }
 
@@ -66,7 +64,7 @@ router.get(
     }, {});
 
     const userMaps = {};
-    const models = { Admin, Trainer, Member };
+    const models = { Admin, Member };
 
     for (const modelName in userIdsByModel) {
       const userIds = Array.from(userIdsByModel[modelName]).filter(Boolean);

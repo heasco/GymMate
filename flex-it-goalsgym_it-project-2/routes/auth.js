@@ -7,7 +7,6 @@ const axios = require('axios');
 
 const Admin = require('../models/Admin');
 const Member = require('../models/Member');
-const Trainer = require('../models/Trainer');
 const ActiveSession = require('../models/ActiveSession');
 const Log = require('../models/Log');
 const asyncHandler = require('../middleware/asyncHandler');
@@ -35,10 +34,6 @@ router.post(
     // Search across collections to find user and determine role
     let user = await Admin.findOne({ username }).lean();
     let userRole = 'admin';
-    if (!user) {
-      user = await Trainer.findOne({ username }).lean();
-      userRole = 'trainer';
-    }
     if (!user) {
       user = await Member.findOne({ username }).lean();
       userRole = 'member';
