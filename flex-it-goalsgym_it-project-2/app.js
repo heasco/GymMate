@@ -17,6 +17,8 @@ const attendanceLogRoutes = require('./routes/attendance-logs');
 const productRoutes = require('./routes/products'); 
 
 
+
+
 const errorHandler = require('./middleware/errorHandler');
 const { protect, admin } = require('./middleware/auth'); // NEW: Import protect middleware
 const initAdmin = require('./utils/initAdmin');
