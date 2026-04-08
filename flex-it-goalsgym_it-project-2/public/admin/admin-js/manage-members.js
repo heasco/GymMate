@@ -8,15 +8,10 @@ function applyTheme(theme) {
         document.body.classList.remove('light-mode');
     }
 }
-
-// 1. Apply immediately when the dashboard loads
 applyTheme(localStorage.getItem('admin_theme'));
-
-// 2. Listen for changes
 window.addEventListener('storage', (e) => {
     if (e.key === 'admin_theme') applyTheme(e.newValue);
 });
-
 
 const SERVER_URL = 'http://localhost:8080';
 let debounceTimeout;
@@ -24,11 +19,9 @@ const allMembersMap = new Map();
 let selectedMemberForRenewal = null;
 let activeProducts = []; 
 
-// Pagination State
 let currentPage = 1;
 let pageSize = 25;
 
-// --- Admin Auth Boilerplate ---
 const ADMIN_SESSION_MAX_AGE_MS = 2 * 60 * 60 * 1000;
 const ADMIN_KEYS = { token: 'admin_token', authUser: 'admin_authUser', role: 'admin_role', logoutEvent: 'adminLogoutEvent' };
 
@@ -86,9 +79,6 @@ async function apiFetch(endpoint, options = {}) {
   return response.json();
 }
 
-// ------------------------------
-// Utility functions
-// ------------------------------
 function formatDate(date) {
   return new Date(date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 }
@@ -107,9 +97,6 @@ function getCurrentTab() {
   return tabActive?.classList.contains('active') ? 'active' : 'inactive';
 }
 
-// ------------------------------
-// Initialization & Tab Elements
-// ------------------------------
 const tabActive = document.getElementById('tabActive');
 const tabInactive = document.getElementById('tabInactive');
 const memberListSection = document.getElementById('memberListSection');
@@ -123,8 +110,7 @@ if (tabActive) {
     if (memberListSection) memberListSection.classList.add('active');
     if (inactiveListSection) inactiveListSection.classList.remove('active');
     if (editMemberSection) editMemberSection.classList.remove('active'); 
-    
-    currentPage = 1; // Reset to page 1 on switch
+    currentPage = 1; 
     loadMembersStrict('active'); 
   });
 }
@@ -136,8 +122,7 @@ if (tabInactive) {
     if (inactiveListSection) inactiveListSection.classList.add('active');
     if (memberListSection) memberListSection.classList.remove('active');
     if (editMemberSection) editMemberSection.classList.remove('active'); 
-    
-    currentPage = 1; // Reset to page 1 on switch
+    currentPage = 1; 
     await loadMembersStrict('inactive'); 
   });
 }
@@ -149,18 +134,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   await fetchActiveProducts(); 
   setupRenewalForm();
   await checkServerConnection();
-  
   setupPagination();
   setupSearchListener();
 
   const statusFilter = document.getElementById('status_filter');
   if (statusFilter) {
     statusFilter.addEventListener('change', () => {
-      currentPage = 1; // Reset to page 1 on filter
+      currentPage = 1; 
       loadMembersStrict(getCurrentTab());
     });
   }
-
   await loadMembersStrict('active'); 
 });
 
@@ -169,7 +152,6 @@ function setupSidebarAndSession() {
   const sidebar = document.querySelector('.sidebar');
   const logoutBtn = document.getElementById('logoutBtn');
   const adminNameEl = document.getElementById('adminFullName');
-  
   if (adminNameEl) {
     const authUser = AdminStore.getAuthUser();
     adminNameEl.textContent = authUser?.name ? authUser.name : 'Admin';
@@ -193,14 +175,11 @@ async function checkServerConnection() {
   }
 }
 
-// ------------------------------
-// Search + debounce
-// ------------------------------
 function setupSearchListener() {
   const searchInput = document.getElementById('member_search');
   if (searchInput) {
     searchInput.addEventListener('input', debounce(() => {
-      currentPage = 1; // Reset to page 1 on new search
+      currentPage = 1; 
       loadMembersStrict(getCurrentTab());
     }, 400));
   }
@@ -213,9 +192,6 @@ function debounce(func, wait) {
   };
 }
 
-// ------------------------------
-// Pagination Logic
-// ------------------------------
 function setupPagination() {
   const pageSizeSelect = document.getElementById('pageSize');
   const prevPageBtn = document.getElementById('prevPage');
@@ -228,20 +204,14 @@ function setupPagination() {
       loadMembersStrict(getCurrentTab());
     });
   }
-
   if (prevPageBtn) {
     prevPageBtn.addEventListener('click', () => {
-      if (currentPage > 1) {
-        currentPage--;
-        loadMembersStrict(getCurrentTab());
-      }
+      if (currentPage > 1) { currentPage--; loadMembersStrict(getCurrentTab()); }
     });
   }
-
   if (nextPageBtn) {
     nextPageBtn.addEventListener('click', () => {
-      currentPage++;
-      loadMembersStrict(getCurrentTab());
+      currentPage++; loadMembersStrict(getCurrentTab());
     });
   }
 }
@@ -260,9 +230,6 @@ function updatePaginationUI(pagination) {
   if (nextPageBtn) nextPageBtn.disabled = page >= totalPages;
 }
 
-// ------------------------------
-// Member Loading & Display
-// ------------------------------
 async function loadMembersStrict(status) {
   const tbody = status === 'active' ? document.getElementById('memberListBody') : document.getElementById('inactiveListBody');
   if (tbody) tbody.innerHTML = `<tr><td colspan="7" class="text-center" style="text-align:center;">Loading...</td></tr>`;
@@ -270,9 +237,7 @@ async function loadMembersStrict(status) {
   const query = document.getElementById('member_search')?.value.trim();
   
   let url = `/api/members?status=${status}&page=${currentPage}&limit=${pageSize}`;
-  if (query) {
-    url += `&search=${encodeURIComponent(query)}`;
-  }
+  if (query) url += `&search=${encodeURIComponent(query)}`;
 
   try {
     const result = await apiFetch(url);
@@ -284,7 +249,6 @@ async function loadMembersStrict(status) {
     } else {
       if (tbody) tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;">No ${status} members found</td></tr>`;
     }
-    
     updatePaginationUI(result.pagination);
   } catch (error) {
     console.error("Error loading members:", error);
@@ -297,12 +261,15 @@ function displayMembersActive(members) {
   if (!tbody) return;
   tbody.innerHTML = '';
   const filtered = members.filter((m) => (m.status || 'active') === 'active');
+  
   filtered.forEach((member) => {
     const activeMemberships = (member.memberships || []).filter(m => m.status === 'active');
     let membershipsText = activeMemberships.length > 0 ? activeMemberships.map((m) => {
         const durationLabel = ['combative', 'dance'].includes(m.type) ? `${m.remainingSessions || m.duration} sessions` : `${m.duration} months`;
-        return `${m.type} (${m.status}, ${durationLabel}, ends ${new Date(m.endDate).toLocaleDateString()})`;
-    }).join(', ') : 'None';
+        const pName = m.productName || m.type.toUpperCase();
+        const txLabel = m.transactionId ? ` | ID: ${m.transactionId}` : '';
+        return `<strong>${pName}</strong><br><small>(${m.status}, ${durationLabel}, ends ${new Date(m.endDate).toLocaleDateString()}${txLabel})</small>`;
+    }).join('<br><br>') : 'None';
       
     const row = document.createElement('tr');
     row.innerHTML = `
@@ -331,7 +298,9 @@ function displayMembersInactive(members) {
       const m = [...member.memberships].sort((a, b) => new Date(b.endDate) - new Date(a.endDate))[0];
       const durationLabel = ['combative', 'dance'].includes(m.type) ? `${m.remainingSessions || m.duration} sessions` : `${m.duration} months`;
       const verb = new Date(m.endDate) < new Date() ? 'ended' : 'ends';
-      membershipsText = `${m.type} (${m.status}, ${durationLabel}, ${verb} ${new Date(m.endDate).toLocaleDateString()})`;
+      const pName = m.productName || m.type.toUpperCase();
+      const txLabel = m.transactionId ? ` | ID: ${m.transactionId}` : '';
+      membershipsText = `<strong>${pName}</strong><br><small>(${m.status}, ${durationLabel}, ${verb} ${new Date(m.endDate).toLocaleDateString()}${txLabel})</small>`;
     }
     const row = document.createElement('tr');
     row.innerHTML = `
@@ -349,15 +318,24 @@ function displayMembersInactive(members) {
   });
 }
 
-// ------------------------------
-// Modals & Details
-// ------------------------------
 function openViewDetailsModal(memberId) {
     const member = allMembersMap.get(memberId);
     if (!member) return;
     const dob = member.dob ? new Date(member.dob).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : 'N/A';
     const joinDate = member.joinDate ? new Date(member.joinDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : 'N/A';
     const ec = member.emergencyContact || {};
+
+    let membershipHTML = '<p style="color: #ccc;">No memberships found.</p>';
+    if (member.memberships && member.memberships.length > 0) {
+        membershipHTML = member.memberships.map(m => {
+            const pName = m.productName || m.type.toUpperCase();
+            const tx = m.transactionId ? ` <span style="color:#888; font-size: 0.85rem;">[${m.transactionId}]</span>` : '';
+            return `<div style="background: rgba(255,255,255,0.05); padding: 8px; margin-bottom: 5px; border-radius: 4px; border-left: 3px solid ${m.status==='active' ? '#28a745' : '#dc3545'};">
+                <strong>${pName}</strong>${tx}<br>
+                <small>Status: ${m.status} | Ends: ${new Date(m.endDate).toLocaleDateString()}</small>
+            </div>`;
+        }).join('');
+    }
 
     document.getElementById('viewDetailsBody').innerHTML = `
         <div class="details-grid">
@@ -372,6 +350,7 @@ function openViewDetailsModal(memberId) {
                 <p>${ec.name || 'N/A'} (${ec.relation || 'N/A'}) <br> <span style="color: #ccc; font-size: 0.95rem;">${ec.phone || 'N/A'}</span></p></div>
             <div class="detail-group"><h4>Join Date</h4><p>${joinDate}</p></div>
             <div class="detail-group"><h4>Face Enrolled</h4><p>${member.faceEnrolled ? '<span class="status-active">Yes</span>' : '<span class="status-inactive">No</span>'}</p></div>
+            <div class="detail-group full-width"><h4>Membership History</h4>${membershipHTML}</div>
         </div>
     `;
     document.getElementById('viewDetailsModal').style.display = 'flex';
@@ -417,9 +396,6 @@ async function archiveMember(memberId, status) {
   } catch (error) {}
 }
 
-// ------------------------------
-// Renewal Flow (Product + Payment)
-// ------------------------------
 function openRenewalModal(memberId) {
     const member = allMembersMap.get(memberId);
     if (!member) return;
@@ -436,8 +412,10 @@ function openRenewalModal(memberId) {
 
     let membershipHTML = member.memberships && member.memberships.length > 0 ? member.memberships.map((m) => {
             const expired = new Date(m.endDate) < new Date();
+            const pName = m.productName || m.type.toUpperCase();
+            const tx = m.transactionId ? ` <span style="color:#aaa; font-size: 0.8rem;">[${m.transactionId}]</span>` : '';
             return `<div class="membership-item ${expired ? 'expired' : m.status}">
-                <span class="membership-type">${m.type.toUpperCase()}</span><span class="membership-status">${m.status}</span>
+                <span class="membership-type">${pName}${tx}</span><span class="membership-status">${m.status}</span>
                 <span class="membership-date">Expires: ${formatDate(m.endDate)}</span></div>`;
         }).join('') : '<p style="color: #ccc;">No existing memberships.</p>';
 
@@ -480,12 +458,31 @@ function setupRenewalForm() {
             filtered.forEach(p => {
                 const opt = document.createElement('option');
                 opt.value = p._id; opt.dataset.price = p.price; opt.dataset.name = p.product_name;
+                opt.dataset.sessions = p.sessions || ''; // FEATURE: Log the DB sessions onto the element
                 opt.textContent = `${p.product_name} - ₱${p.price.toLocaleString()}`;
                 productSelect.appendChild(opt);
             });
         }
     }
     updateRenewalInfo();
+  }
+
+  // Add a listener to populate manual inputs if a product carries session parameters
+  const productSelect = document.getElementById('renewalProductSelect');
+  if (productSelect) {
+      productSelect.addEventListener('change', () => {
+          const selectedOpt = productSelect.options[productSelect.selectedIndex];
+          if (!selectedOpt) return;
+          const prodSessions = selectedOpt.dataset.sessions ? parseInt(selectedOpt.dataset.sessions) : 0;
+          
+          if (prodSessions > 0) {
+              const combativeInput = document.getElementById('renewCombativeSessions');
+              const danceInput = document.getElementById('renewDanceSessions');
+              if (combativeInput) combativeInput.value = prodSessions;
+              if (danceInput) danceInput.value = prodSessions;
+          }
+          updateRenewalInfo();
+      });
   }
 
   if (renewMonthly) renewMonthly.addEventListener('change', toggleRenewDetails);
@@ -606,6 +603,22 @@ async function executeRenewalSave() {
 
     try {
         const renewalDate = new Date(document.getElementById('renewalDate').value);
+        
+        // CREATE TRANSACTION FIRST TO OBTAIN TX ID
+        const txPayload = {
+            member_id: selectedMemberForRenewal.memberId,
+            amount: parseFloat(selectedOpt.dataset.price),
+            payment_method: paymentMethod,
+            status: isPaid ? 'paid' : 'unpaid',
+            payment_date: renewalDate.toISOString(),
+            description: `Renewed Plan: ${selectedOpt.dataset.name}`
+        };
+        const txResult = await apiFetch('/api/transactions', { method: 'POST', body: JSON.stringify(txPayload) });
+        if (!txResult.success) throw new Error('Failed to log transaction. Renewal aborted.');
+        
+        const generatedTxId = txResult.data.transaction_id;
+
+        // POPULATE MEMBERSHIP PAYLOAD
         const updatedMemberships = [];
         const monthlyChecked = document.getElementById('renewMonthly').checked;
         const combativeChecked = document.getElementById('renewCombative').checked;
@@ -625,7 +638,8 @@ async function executeRenewalSave() {
             const endDate = calculateNewEndDate(renewalDate, cm?.endDate, duration, 'monthly');
             updatedMemberships.push({
                 type: 'monthly', duration: duration, startDate: renewalDate.toISOString(),
-                endDate: endDate.toISOString(), status: 'active', paymentStatus: isPaid ? 'paid' : 'unpaid'
+                endDate: endDate.toISOString(), status: 'active', paymentStatus: isPaid ? 'paid' : 'unpaid',
+                productId: selectedOpt.value, productName: selectedOpt.dataset.name, transactionId: generatedTxId 
             });
         }
 
@@ -637,7 +651,8 @@ async function executeRenewalSave() {
             updatedMemberships.push({
                 type: 'combative', duration: duration, remainingSessions: sessions,
                 startDate: renewalDate.toISOString(), endDate: endDate.toISOString(),
-                status: 'active', paymentStatus: isPaid ? 'paid' : 'unpaid'
+                status: 'active', paymentStatus: isPaid ? 'paid' : 'unpaid',
+                productId: selectedOpt.value, productName: selectedOpt.dataset.name, transactionId: generatedTxId 
             });
         }
 
@@ -649,7 +664,8 @@ async function executeRenewalSave() {
             updatedMemberships.push({
                 type: 'dance', duration: duration, remainingSessions: sessions,
                 startDate: renewalDate.toISOString(), endDate: endDate.toISOString(),
-                status: 'active', paymentStatus: isPaid ? 'paid' : 'unpaid'
+                status: 'active', paymentStatus: isPaid ? 'paid' : 'unpaid',
+                productId: selectedOpt.value, productName: selectedOpt.dataset.name, transactionId: generatedTxId 
             });
         }
 
@@ -659,24 +675,12 @@ async function executeRenewalSave() {
         });
         if (!result.success) throw new Error(result.error || 'Failed to renew membership');
 
-        const txPayload = {
-            member_id: selectedMemberForRenewal.memberId,
-            amount: parseFloat(selectedOpt.dataset.price),
-            payment_method: paymentMethod,
-            status: isPaid ? 'paid' : 'unpaid',
-            payment_date: renewalDate.toISOString(),
-            description: `Renewed Plan: ${selectedOpt.dataset.name}`
-        };
-        const txResult = await apiFetch('/api/transactions', { method: 'POST', body: JSON.stringify(txPayload) });
-        if (!txResult.success) throw new Error('Renewed successfully, but failed to log transaction.');
-
         const sm = document.getElementById('successMessage');
         if (sm) { sm.textContent = 'Member activated, renewed, and transaction logged!'; sm.style.display = 'block'; setTimeout(() => sm.style.display = 'none', 5000); }
         
         document.getElementById('renewalPaymentModal').style.display = 'none';
         document.getElementById('renewalModal').style.display = 'none';
         
-        // Reload list directly
         await loadMembersStrict(getCurrentTab());
 
     } catch (error) {
@@ -688,9 +692,6 @@ async function executeRenewalSave() {
     }
 }
 
-// ------------------------------
-// Edit member flow
-// ------------------------------
 function editMemberById(memberId) {
     const member = allMembersMap.get(memberId);
     if (!member) return;
@@ -722,9 +723,10 @@ function createActiveMembershipEditField(membership, index) {
   div.dataset.originalIndex = index;
   const sdValue = membership.startDate ? new Date(membership.startDate).toISOString().split('T')[0] : '';
   const durValue = membership.duration || 1; 
-
+  const pNameDisplay = membership.productName ? ` - ${membership.productName}` : '';
+  
   div.innerHTML = `
-    <h4>Editing Active Membership (${membership.type.toUpperCase()})</h4>
+    <h4>Editing Active Membership (${membership.type.toUpperCase()}${pNameDisplay})</h4>
     <div class="form-group">
       <label>Membership Type:</label>
       <select id="membership_type_${index}" class="edit-type-select" required>
@@ -791,7 +793,6 @@ if (document.getElementById('editMemberForm')) {
     });
 
     try {
-      // Changed to window.location based endpoint logic to match apiFetch logic
       const url = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? `${SERVER_URL}/api/members/${member._id}` : `/api/members/${member._id}`;
       const res = await fetch(url, {
         method: 'PUT', headers: { 'Authorization': `Bearer ${AdminStore.getToken()}`, 'Content-Type': 'application/json' }, body

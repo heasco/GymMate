@@ -50,6 +50,29 @@ router.get('/', asyncHandler(async (req, res) => {
   });
 }));
 
+// Create a new product (NEW ROUTE ADDED HERE)
+router.post('/', protect, asyncHandler(async (req, res) => {
+  const { product_name, membership_type, price, sessions, schedule, description } = req.body;
+  
+  if (!product_name || !membership_type || price === undefined) {
+    return res.status(400).json({ 
+      success: false, 
+      error: 'Product name, membership type, and price are required.' 
+    });
+  }
+
+  const product = await Product.create({
+    product_name,
+    membership_type,
+    price,
+    sessions,
+    schedule,
+    description
+  });
+
+  res.status(201).json({ success: true, data: product });
+}));
+
 // Update a product
 router.put('/:id', protect, asyncHandler(async (req, res) => {
   const { id } = req.params;

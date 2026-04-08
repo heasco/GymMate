@@ -8,11 +8,7 @@ function applyTheme(theme) {
         document.body.classList.remove('light-mode');
     }
 }
-
-// 1. Apply immediately when the dashboard loads
 applyTheme(localStorage.getItem('admin_theme'));
-
-// 2. Listen for changes
 window.addEventListener('storage', (e) => {
     if (e.key === 'admin_theme') applyTheme(e.newValue);
 });
@@ -25,11 +21,7 @@ let selectedMember = null;
 let activeProducts = []; 
 let paymentContext = 'add'; 
 
-// --------------------------------------
-// Admin session configuration
-// --------------------------------------
 const ADMIN_SESSION_MAX_AGE_MS = 2 * 60 * 60 * 1000; 
-
 const ADMIN_KEYS = { token: 'admin_token', authUser: 'admin_authUser', role: 'admin_role', logoutEvent: 'adminLogoutEvent' };
 
 const AdminStore = {
@@ -38,7 +30,7 @@ const AdminStore = {
       const authUser = { ...(userPayload || {}), timestamp: Date.now(), role: 'admin', token };
       localStorage.setItem(ADMIN_KEYS.token, token); localStorage.setItem(ADMIN_KEYS.authUser, JSON.stringify(authUser)); localStorage.setItem(ADMIN_KEYS.role, 'admin');
       sessionStorage.setItem(ADMIN_KEYS.token, token); sessionStorage.setItem(ADMIN_KEYS.authUser, JSON.stringify(authUser)); sessionStorage.setItem(ADMIN_KEYS.role, 'admin');
-    } catch (e) { console.error('[AdminStore.set] failed:', e); }
+    } catch (e) { console.error(e); }
   },
   getToken() { return sessionStorage.getItem(ADMIN_KEYS.token) || localStorage.getItem(ADMIN_KEYS.token) || null; },
   getAuthUser() {
@@ -89,9 +81,6 @@ async function apiFetch(endpoint, options = {}) {
   return response.json();
 }
 
-// ------------------------------
-// Init
-// ------------------------------
 document.addEventListener('DOMContentLoaded', async () => {
   if (!requireAuth('admin', '../login.html')) return;
   setupSidebarAndSession();
@@ -137,9 +126,6 @@ function setupSidebarAndSession() {
   if (logoutBtn) logoutBtn.addEventListener('click', async () => { adminLogout(); });
 }
 
-// ------------------------------
-// Form setup & Shared Payment Modal
-// ------------------------------
 function initializeForm() {
   setupDOBDropdowns();
   const today = new Date();
@@ -264,7 +250,7 @@ function validateAndShowAddPaymentModal() {
     const productSelect = document.getElementById('productSelect');
     
     if (!name) return showMessage('Full Name is required', 'error');
-    if (!bYear || !bMonth || !bDay) return showMessage('Date of Birth is incomplete. Please select Day, Month, and Year.', 'error');
+    if (!bYear || !bMonth || !bDay) return showMessage('Date of Birth is incomplete.', 'error');
     if (!genderVal) return showMessage('Gender is required', 'error');
     if (!joinDate) return showMessage('Join Date is required', 'error');
     if (!document.getElementById('monthlyRadio').checked && !document.getElementById('combativeRadio').checked && !document.getElementById('danceRadio').checked) return showMessage('Please select a Membership Type', 'error');
@@ -293,8 +279,13 @@ async function processAddMember(btn) {
     const productSelect = document.getElementById('productSelect');
     const selectedOpt = productSelect.options[productSelect.selectedIndex];
     const membershipType = document.getElementById('monthlyRadio').checked ? 'monthly' : document.getElementById('combativeRadio').checked ? 'combative' : 'dance';
+    
+    const bYear = document.getElementById('birthYear').value;
+    const bMonth = document.getElementById('birthMonth').value;
+    const bDay = document.getElementById('birthDay').value;
+    const dob = `${bYear}-${bMonth.padStart(2, '0')}-${bDay.padStart(2, '0')}`;
+    const joinDate = document.getElementById('joinDate').value;
 
-    // FEATURE ADDED: Include Product details inside the membership payload
     const memberships = [{ 
         type: membershipType, 
         productId: selectedOpt.value,
@@ -302,12 +293,6 @@ async function processAddMember(btn) {
         duration: 1, 
         paymentStatus: isPaid ? 'paid' : 'unpaid' 
     }];
-    
-    const bYear = document.getElementById('birthYear').value;
-    const bMonth = document.getElementById('birthMonth').value;
-    const bDay = document.getElementById('birthDay').value;
-    const dob = `${bYear}-${bMonth.padStart(2, '0')}-${bDay.padStart(2, '0')}`;
-    const joinDate = document.getElementById('joinDate').value;
 
     const formData = new FormData();
     formData.append('name', document.getElementById('memberName').value.trim());
@@ -333,6 +318,7 @@ async function processAddMember(btn) {
         const memberResult = await apiFetch('/api/members', { method: 'POST', body: formData });
         if (!memberResult.success) throw new Error(memberResult.error || 'Failed to add member');
 
+        // CREATE TRANSACTION
         const transactionPayload = {
             member_id: memberResult.data.mongoId || memberResult.data.memberId,
             amount: parseFloat(selectedOpt.dataset.price),
@@ -344,6 +330,19 @@ async function processAddMember(btn) {
 
         const txResult = await apiFetch('/api/transactions', { method: 'POST', body: JSON.stringify(transactionPayload) });
         if (!txResult.success) throw new Error('Member created, but failed to log transaction.');
+
+        // ASSOCIATE TRANSACTION ID WITH MEMBER
+        const txId = txResult.data.transaction_id;
+        const memberData = memberResult.data;
+        const latestMemberships = memberData.memberships;
+        
+        if (latestMemberships.length > 0) {
+            latestMemberships[latestMemberships.length - 1].transactionId = txId;
+            await apiFetch(`/api/members/${memberData.mongoId}`, {
+                method: 'PUT',
+                body: JSON.stringify({ memberships: latestMemberships })
+            });
+        }
 
         showMessage('Member & Transaction saved successfully!', 'success');
 
@@ -524,9 +523,9 @@ function selectMemberForRenewal(member) {
   if (member.memberships && member.memberships.length > 0) {
     membershipHTML = member.memberships.map((m) => {
         const isExpired = new Date(m.endDate) < new Date();
-        // FEATURE: Prioritize showing the specific product name over the generic type
         const displayName = m.productName ? m.productName : m.type.toUpperCase();
-        return `<div class="membership-item ${isExpired ? 'expired' : m.status}"><span class="membership-type">${displayName}</span><span class="membership-status">${m.status}</span><span class="membership-date">Expires: ${formatDate(m.endDate.split('T')[0])}</span></div>`;
+        const tx = m.transactionId ? ` <span style="color:#aaa; font-size: 0.8rem;">[${m.transactionId}]</span>` : '';
+        return `<div class="membership-item ${isExpired ? 'expired' : m.status}"><span class="membership-type">${displayName}${tx}</span><span class="membership-status">${m.status}</span><span class="membership-date">Expires: ${formatDate(m.endDate.split('T')[0])}</span></div>`;
       }).join('');
   } else membershipHTML = '<p class="no-membership">No active memberships</p>';
 
@@ -631,6 +630,21 @@ async function processRenewal(btn) {
 
     try {
         const renewalDate = new Date(document.getElementById('renewalDate').value);
+
+        // CREATE TX FIRST TO OBTAIN TX ID
+        const txPayload = {
+            member_id: selectedMember.memberId,
+            amount: parseFloat(selectedOpt.dataset.price),
+            payment_method: safePaymentMethod,
+            status: isPaid ? 'paid' : 'unpaid',
+            payment_date: renewalDate.toISOString(),
+            description: `Renewed Plan: ${selectedOpt.dataset.name}`
+        };
+        const txResult = await apiFetch('/api/transactions', { method: 'POST', body: JSON.stringify(txPayload) });
+        if (!txResult.success) throw new Error('Failed to log transaction. Aborting...');
+        
+        const generatedTxId = txResult.data.transaction_id;
+
         const updatedMemberships = [];
         const monthlyChecked = document.getElementById('renewMonthly').checked;
         const combativeChecked = document.getElementById('renewCombative').checked;
@@ -644,20 +658,15 @@ async function processRenewal(btn) {
             });
         }
 
-        // FEATURE ADDED: Include Product details inside the updated memberships array
         if (monthlyChecked) {
             const duration = parseInt(document.getElementById('renewMonthlyDuration').value) || 1;
             const cm = selectedMember.memberships?.find((m) => m.type === 'monthly');
             const endDate = calculateNewEndDate(renewalDate, cm?.endDate, duration, 'monthly');
             updatedMemberships.push({ 
                 type: 'monthly', 
-                productId: selectedOpt.value,
-                productName: selectedOpt.dataset.name,
-                duration: duration, 
-                startDate: renewalDate.toISOString(), 
-                endDate: endDate.toISOString(), 
-                status: 'active', 
-                paymentStatus: isPaid ? 'paid' : 'unpaid' 
+                productId: selectedOpt.value, productName: selectedOpt.dataset.name, transactionId: generatedTxId,
+                duration: duration, startDate: renewalDate.toISOString(), 
+                endDate: endDate.toISOString(), status: 'active', paymentStatus: isPaid ? 'paid' : 'unpaid' 
             });
         }
 
@@ -667,14 +676,9 @@ async function processRenewal(btn) {
             const endDate = calculateNewEndDate(renewalDate, cm?.endDate, 1, 'combative'); 
             updatedMemberships.push({ 
                 type: 'combative', 
-                productId: selectedOpt.value,
-                productName: selectedOpt.dataset.name,
-                duration: 1, 
-                remainingSessions: sessions, 
-                startDate: renewalDate.toISOString(), 
-                endDate: endDate.toISOString(), 
-                status: 'active', 
-                paymentStatus: isPaid ? 'paid' : 'unpaid' 
+                productId: selectedOpt.value, productName: selectedOpt.dataset.name, transactionId: generatedTxId,
+                duration: 1, remainingSessions: sessions, startDate: renewalDate.toISOString(), 
+                endDate: endDate.toISOString(), status: 'active', paymentStatus: isPaid ? 'paid' : 'unpaid' 
             });
         }
 
@@ -684,14 +688,9 @@ async function processRenewal(btn) {
             const endDate = calculateNewEndDate(renewalDate, cm?.endDate, 1, 'dance'); 
             updatedMemberships.push({ 
                 type: 'dance', 
-                productId: selectedOpt.value,
-                productName: selectedOpt.dataset.name,
-                duration: 1, 
-                remainingSessions: sessions, 
-                startDate: renewalDate.toISOString(), 
-                endDate: endDate.toISOString(), 
-                status: 'active', 
-                paymentStatus: isPaid ? 'paid' : 'unpaid' 
+                productId: selectedOpt.value, productName: selectedOpt.dataset.name, transactionId: generatedTxId,
+                duration: 1, remainingSessions: sessions, startDate: renewalDate.toISOString(), 
+                endDate: endDate.toISOString(), status: 'active', paymentStatus: isPaid ? 'paid' : 'unpaid' 
             });
         }
 
@@ -700,17 +699,6 @@ async function processRenewal(btn) {
         });
 
         if (!result.success) throw new Error(result.error || 'Failed to renew membership');
-
-        const txPayload = {
-            member_id: selectedMember.memberId,
-            amount: parseFloat(selectedOpt.dataset.price),
-            payment_method: safePaymentMethod,
-            status: isPaid ? 'paid' : 'unpaid',
-            payment_date: renewalDate.toISOString(),
-            description: `Renewed Plan: ${selectedOpt.dataset.name}`
-        };
-        const txResult = await apiFetch('/api/transactions', { method: 'POST', body: JSON.stringify(txPayload) });
-        if (!txResult.success) throw new Error('Renewed successfully, but failed to log transaction.');
 
         showMessage('Membership renewed & transaction logged!', 'success');
         setTimeout(() => { 

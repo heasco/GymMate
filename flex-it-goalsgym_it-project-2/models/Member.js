@@ -9,10 +9,13 @@ const membershipSchema = new mongoose.Schema({
   },
   productId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Product' // Links to the specific product in your inventory
+    ref: 'Product' 
   },
   productName: {
-    type: String // Stores the specific product name (e.g., "Monthly Premium Gym")
+    type: String 
+  },
+  transactionId: {
+    type: String // NEW: Stores the transaction ID generated upon purchase
   },
   duration: {
     type: Number 

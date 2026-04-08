@@ -4,6 +4,7 @@ const asyncHandler = require('../middleware/asyncHandler');
 const { protect } = require('../middleware/auth'); 
 const Member = require('../models/Member');
 const MembershipHistory = require('../models/MembershipHistory'); 
+const Product = require('../models/Product'); // NEW: Added Product Model
 const transporter = require('../utils/nodemailer');
 const axios = require('axios');
 const FormData = require('form-data');
@@ -150,11 +151,18 @@ router.post('/', protect, faceUploads, asyncHandler(async (req, res) => {
     const startDate = m.startDate ? new Date(m.startDate) : (joinDate ? new Date(joinDate) : new Date());
     const endDate = new Date(startDate);
     
-    // FEATURE: Capture Product Info
+    // FEATURE: Lookup product sessions from DB
+    let prodSessions = null;
+    if (m.productId) {
+       const prod = await Product.findById(m.productId);
+       if (prod && prod.sessions) prodSessions = prod.sessions;
+    }
+
     const membershipData = {
       type: m.type,
       productId: m.productId || undefined,
       productName: m.productName || undefined,
+      transactionId: m.transactionId || undefined,
       duration: Number(m.duration), 
       startDate,
       status: m.status && ['active', 'inactive', 'suspended', 'expired', 'cancelled'].includes(m.status) ? m.status : 'active',
@@ -168,7 +176,8 @@ router.post('/', protect, faceUploads, asyncHandler(async (req, res) => {
     } else {
       endDate.setMonth(endDate.getMonth() + Number(m.duration));
       membershipData.endDate = endDate;
-      membershipData.remainingSessions = Number(m.duration) * 12;
+      // FEATURE: Safely inject backend product sessions directly into the model
+      membershipData.remainingSessions = prodSessions !== null ? prodSessions : (m.remainingSessions !== undefined ? Number(m.remainingSessions) : Number(m.duration) * 12);
     }
 
     validatedMemberships.push(membershipData);
@@ -371,7 +380,7 @@ router.put('/:id', protect, asyncHandler(async (req, res) => {
   }
 
   if (Array.isArray(memberships)) {
-    const validated = memberships.map(m => {
+    const validated = await Promise.all(memberships.map(async m => {
       if (!m?.type || !['monthly', 'combative', 'dance'].includes(m.type)) {
         throw new Error('Each membership must have a valid type');
       }
@@ -379,6 +388,13 @@ router.put('/:id', protect, asyncHandler(async (req, res) => {
         throw new Error('Each membership must have a valid duration (at least 1)');
       }
       const startDate = m.startDate ? new Date(m.startDate) : new Date();
+
+      let prodSessions = null;
+      if (m.productId) {
+         const prod = await Product.findById(m.productId);
+         if (prod && prod.sessions) prodSessions = prod.sessions;
+      }
+
       const out = {
         type: m.type,
         productId: m.productId || undefined,
@@ -387,9 +403,12 @@ router.put('/:id', protect, asyncHandler(async (req, res) => {
         startDate,
         status: m.status && ['active', 'inactive', 'suspended', 'expired', 'cancelled'].includes(m.status) ? m.status : 'active'
       };
-      if (m.type === 'combative' || m.type === 'dance') out.remainingSessions = Number(m.duration) * 12;
+      
+      if (m.type === 'combative' || m.type === 'dance') {
+         out.remainingSessions = prodSessions !== null ? prodSessions : (m.remainingSessions !== undefined ? Number(m.remainingSessions) : Number(m.duration) * 12);
+      }
       return out;
-    });
+    }));
 
     updates.memberships = validated.map(m => {
       const end = new Date(m.startDate);
@@ -478,7 +497,7 @@ router.put('/:id/renew', protect, asyncHandler(async (req, res) => {
       }
     }
 
-    const validated = memberships.map(m => {
+    const validated = await Promise.all(memberships.map(async m => {
       if (!m?.type || !['monthly', 'combative', 'dance'].includes(m.type)) {
         throw new Error('Each membership must have a valid type');
       }
@@ -493,7 +512,13 @@ router.put('/:id/renew', protect, asyncHandler(async (req, res) => {
         endDate.setMonth(endDate.getMonth() + Number(m.duration));
       }
 
-      // FEATURE: Track Product inside renewed membership
+      // FEATURE: Lookup sessions from product DB for safe processing
+      let prodSessions = null;
+      if (m.productId) {
+         const prod = await Product.findById(m.productId);
+         if (prod && prod.sessions) prodSessions = prod.sessions;
+      }
+
       const out = {
         type: m.type,
         productId: m.productId || undefined,
@@ -507,12 +532,13 @@ router.put('/:id/renew', protect, asyncHandler(async (req, res) => {
       
       if (m._id) out._id = m._id; 
       if (m.type === 'combative' || m.type === 'dance') {
-         out.remainingSessions = m.remainingSessions !== undefined ? Number(m.remainingSessions) : Number(m.duration) * 12;
+         // Safely push the DB sessions fallback into the remainingSessions
+         out.remainingSessions = prodSessions !== null ? prodSessions : (m.remainingSessions !== undefined ? Number(m.remainingSessions) : Number(m.duration) * 12);
       } else {
          out.remainingSessions = 0;
       }
       return out;
-    });
+    }));
 
     currentMember.memberships = validated;
   }
