@@ -27,7 +27,7 @@ const { initMembershipExpiryReminder } = require('./jobs/membershipExpiryReminde
 const { initMembershipStatusUpdate } = require('./jobs/membershipDeactivation');
 
 console.log('Routes mounted.');
-
+ 
 const app = express();
 const PORT = process.env.PORT || 8080;
 const DB_URL = process.env.MONGODB_URI;

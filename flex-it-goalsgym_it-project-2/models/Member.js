@@ -7,6 +7,13 @@ const membershipSchema = new mongoose.Schema({
     enum: ['monthly', 'combative', 'student', 'dance', 'dropsin'],
     required: true
   },
+  productId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Product' // Links to the specific product in your inventory
+  },
+  productName: {
+    type: String // Stores the specific product name (e.g., "Monthly Premium Gym")
+  },
   duration: {
     type: Number 
   },
@@ -43,7 +50,6 @@ const memberSchema = new mongoose.Schema({
     type: String,
     required: true,
     trim: true
-    // No unique tag here, duplicates allowed
   },
   username: { 
     type: String, 
@@ -59,11 +65,11 @@ const memberSchema = new mongoose.Schema({
     type: String,
     lowercase: true,
     trim: true,
-    default: "" // Safely allows empty strings instead of null
+    default: ""
   },
   phone: {
     type: String,
-    default: "" // Safely allows empty strings instead of null
+    default: ""
   },
   dob: {
     type: Date,

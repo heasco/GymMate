@@ -41,7 +41,6 @@ router.get('/', protect, asyncHandler(async (req, res) => {
   const startIndex = (page - 1) * limit;
   const total = await Member.countDocuments(filter);
 
-  // Added .sort({ _id: -1 }) to show latest members first
   const members = await Member.find(filter)
     .sort({ _id: -1 }) 
     .skip(startIndex)
@@ -63,7 +62,6 @@ router.get('/', protect, asyncHandler(async (req, res) => {
   });
 }));
 
-// Keeping search endpoint intact in case other features use it (like Attendance)
 router.get('/search', asyncHandler(async (req, res) => {
   const { query, type } = req.query;
   if (!query || query.trim().length < 2) {
@@ -96,6 +94,7 @@ router.get('/:id', protect, asyncHandler(async (req, res) => {
   res.json({ success: true, data: member });
 }));
 
+// Create a new member
 router.post('/', protect, faceUploads, asyncHandler(async (req, res) => {
   let memberships = req.body.memberships;
   if (typeof memberships === 'string') {
@@ -143,37 +142,36 @@ router.post('/', protect, faceUploads, asyncHandler(async (req, res) => {
   const validatedMemberships = [];
   for (const m of memberships) {
     if (!m?.type || !['monthly', 'combative', 'dance'].includes(m.type)) {
-      return res.status(400).json({ success: false, error: 'Each membership must have a valid type (monthly or combative)' });
+      return res.status(400).json({ success: false, error: 'Each membership must have a valid type' });
     }
     if (!m?.duration || Number(m.duration) < 1) {
-      return res.status(400).json({ success: false, error: 'Each membership must have a valid duration (at least 1)' });
+      return res.status(400).json({ success: false, error: 'Each membership must have a valid duration' });
     }
     const startDate = m.startDate ? new Date(m.startDate) : (joinDate ? new Date(joinDate) : new Date());
     const endDate = new Date(startDate);
     
+    // FEATURE: Capture Product Info
+    const membershipData = {
+      type: m.type,
+      productId: m.productId || undefined,
+      productName: m.productName || undefined,
+      duration: Number(m.duration), 
+      startDate,
+      status: m.status && ['active', 'inactive', 'suspended', 'expired', 'cancelled'].includes(m.status) ? m.status : 'active',
+      paymentStatus: m.paymentStatus === 'unpaid' ? 'unpaid' : 'paid' 
+    };
+
     if (m.type === 'monthly') {
       endDate.setMonth(endDate.getMonth() + Number(m.duration));
-      validatedMemberships.push({
-        type: m.type,
-        duration: Number(m.duration), 
-        startDate,
-        endDate,
-        status: m.status && ['active', 'inactive', 'suspended', 'expired', 'cancelled'].includes(m.status) ? m.status : 'active',
-        remainingSessions: 0,
-        paymentStatus: m.paymentStatus === 'unpaid' ? 'unpaid' : 'paid' 
-      });
+      membershipData.endDate = endDate;
+      membershipData.remainingSessions = 0;
     } else {
       endDate.setMonth(endDate.getMonth() + Number(m.duration));
-      validatedMemberships.push({
-        type: m.type,
-        duration: Number(m.duration), 
-        startDate,
-        endDate,
-        status: m.status && ['active', 'inactive', 'suspended', 'expired', 'cancelled'].includes(m.status) ? m.status : 'active',
-        remainingSessions: Number(m.duration) * 12,
-        paymentStatus: m.paymentStatus === 'unpaid' ? 'unpaid' : 'paid' 
-      });
+      membershipData.endDate = endDate;
+      membershipData.remainingSessions = Number(m.duration) * 12;
     }
+
+    validatedMemberships.push(membershipData);
   }
   
   const newMember = new Member({
@@ -374,8 +372,8 @@ router.put('/:id', protect, asyncHandler(async (req, res) => {
 
   if (Array.isArray(memberships)) {
     const validated = memberships.map(m => {
-      if (!m?.type || !['monthly', 'combative'].includes(m.type)) {
-        throw new Error('Each membership must have a valid type (monthly or combative)');
+      if (!m?.type || !['monthly', 'combative', 'dance'].includes(m.type)) {
+        throw new Error('Each membership must have a valid type');
       }
       if (!m?.duration || Number(m.duration) < 1) {
         throw new Error('Each membership must have a valid duration (at least 1)');
@@ -383,11 +381,13 @@ router.put('/:id', protect, asyncHandler(async (req, res) => {
       const startDate = m.startDate ? new Date(m.startDate) : new Date();
       const out = {
         type: m.type,
+        productId: m.productId || undefined,
+        productName: m.productName || undefined,
         duration: Number(m.duration), 
         startDate,
         status: m.status && ['active', 'inactive', 'suspended', 'expired', 'cancelled'].includes(m.status) ? m.status : 'active'
       };
-      if (m.type === 'combative') out.remainingSessions = Number(m.duration) * 12;
+      if (m.type === 'combative' || m.type === 'dance') out.remainingSessions = Number(m.duration) * 12;
       return out;
     });
 
@@ -463,6 +463,8 @@ router.put('/:id/renew', protect, asyncHandler(async (req, res) => {
             member: currentMember._id,
             memberIdString: currentMember.memberId,
             type: m.type,
+            productId: m.productId,
+            productName: m.productName,
             duration: dur || 1, 
             startDate: m.startDate,
             endDate: now, 
@@ -477,7 +479,7 @@ router.put('/:id/renew', protect, asyncHandler(async (req, res) => {
     }
 
     const validated = memberships.map(m => {
-      if (!m?.type || !['monthly', 'combative'].includes(m.type)) {
+      if (!m?.type || !['monthly', 'combative', 'dance'].includes(m.type)) {
         throw new Error('Each membership must have a valid type');
       }
       
@@ -491,8 +493,11 @@ router.put('/:id/renew', protect, asyncHandler(async (req, res) => {
         endDate.setMonth(endDate.getMonth() + Number(m.duration));
       }
 
+      // FEATURE: Track Product inside renewed membership
       const out = {
         type: m.type,
+        productId: m.productId || undefined,
+        productName: m.productName || undefined,
         duration: Number(m.duration),
         startDate,
         endDate,
@@ -501,7 +506,7 @@ router.put('/:id/renew', protect, asyncHandler(async (req, res) => {
       };
       
       if (m._id) out._id = m._id; 
-      if (m.type === 'combative') {
+      if (m.type === 'combative' || m.type === 'dance') {
          out.remainingSessions = m.remainingSessions !== undefined ? Number(m.remainingSessions) : Number(m.duration) * 12;
       } else {
          out.remainingSessions = 0;
@@ -551,6 +556,8 @@ router.patch('/:id/archive', protect, asyncHandler(async (req, res) => {
           member: member._id,
           memberIdString: member.memberId,
           type: m.type,
+          productId: m.productId,
+          productName: m.productName,
           duration: dur || 1, 
           startDate: m.startDate,
           endDate: now, 

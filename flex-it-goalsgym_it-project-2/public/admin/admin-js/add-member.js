@@ -294,7 +294,14 @@ async function processAddMember(btn) {
     const selectedOpt = productSelect.options[productSelect.selectedIndex];
     const membershipType = document.getElementById('monthlyRadio').checked ? 'monthly' : document.getElementById('combativeRadio').checked ? 'combative' : 'dance';
 
-    const memberships = [{ type: membershipType, duration: 1, paymentStatus: isPaid ? 'paid' : 'unpaid' }];
+    // FEATURE ADDED: Include Product details inside the membership payload
+    const memberships = [{ 
+        type: membershipType, 
+        productId: selectedOpt.value,
+        productName: selectedOpt.dataset.name,
+        duration: 1, 
+        paymentStatus: isPaid ? 'paid' : 'unpaid' 
+    }];
     
     const bYear = document.getElementById('birthYear').value;
     const bMonth = document.getElementById('birthMonth').value;
@@ -340,7 +347,6 @@ async function processAddMember(btn) {
 
         showMessage('Member & Transaction saved successfully!', 'success');
 
-        // FIX: Properly clear inline styles to allow CSS classes to control the dropdown visibility
         setTimeout(() => {
             document.getElementById('paymentModal').style.display = 'none';
             document.getElementById('memberForm').reset();
@@ -348,7 +354,7 @@ async function processAddMember(btn) {
             const productSelectContainer = document.getElementById('productSelectContainer');
             if (productSelectContainer) {
                 productSelectContainer.classList.remove('active');
-                productSelectContainer.style.display = ''; // Clears the bug-causing inline style
+                productSelectContainer.style.display = ''; 
             }
             
             document.getElementById('faceStatus').textContent = '';
@@ -518,7 +524,9 @@ function selectMemberForRenewal(member) {
   if (member.memberships && member.memberships.length > 0) {
     membershipHTML = member.memberships.map((m) => {
         const isExpired = new Date(m.endDate) < new Date();
-        return `<div class="membership-item ${isExpired ? 'expired' : m.status}"><span class="membership-type">${m.type.toUpperCase()}</span><span class="membership-status">${m.status}</span><span class="membership-date">Expires: ${formatDate(m.endDate.split('T')[0])}</span></div>`;
+        // FEATURE: Prioritize showing the specific product name over the generic type
+        const displayName = m.productName ? m.productName : m.type.toUpperCase();
+        return `<div class="membership-item ${isExpired ? 'expired' : m.status}"><span class="membership-type">${displayName}</span><span class="membership-status">${m.status}</span><span class="membership-date">Expires: ${formatDate(m.endDate.split('T')[0])}</span></div>`;
       }).join('');
   } else membershipHTML = '<p class="no-membership">No active memberships</p>';
 
@@ -550,14 +558,14 @@ function updateRenewalInfo() {
   }
 
   if (combativeChecked) {
-    const duration = parseInt(document.getElementById('renewCombativeSessions')?.value) || 12; // defaulting to 12 if tracking by sessions
+    const duration = parseInt(document.getElementById('renewCombativeSessions')?.value) || 12; 
     const currentMembership = selectedMember.memberships?.find((m) => m.type === 'combative');
-    const endDate = calculateNewEndDate(renewalDate, currentMembership?.endDate, 1, 'combative'); // Assuming combative renews for 1 month block at a time
+    const endDate = calculateNewEndDate(renewalDate, currentMembership?.endDate, 1, 'combative'); 
     infoHTML += `<div class="info-item"><strong>Combative Membership:</strong><br><span class="detail-line">Start Date: ${formatDate(renewalDateInput.value)}</span><br><span class="detail-line">End Date: ${formatDate(endDate.toISOString().split('T')[0])}</span><br><span class="detail-line">Sessions: ${duration}</span></div>`;
   }
 
   if (danceChecked) {
-    const duration = parseInt(document.getElementById('renewDanceSessions')?.value) || 12; // assuming dance tracks similarly to combative
+    const duration = parseInt(document.getElementById('renewDanceSessions')?.value) || 12; 
     const currentMembership = selectedMember.memberships?.find((m) => m.type === 'dance');
     const endDate = calculateNewEndDate(renewalDate, currentMembership?.endDate, 1, 'dance');
     infoHTML += `<div class="info-item"><strong>Dance Class:</strong><br><span class="detail-line">Start Date: ${formatDate(renewalDateInput.value)}</span><br><span class="detail-line">End Date: ${formatDate(endDate.toISOString().split('T')[0])}</span><br><span class="detail-line">Sessions: ${duration}</span></div>`;
@@ -636,26 +644,55 @@ async function processRenewal(btn) {
             });
         }
 
+        // FEATURE ADDED: Include Product details inside the updated memberships array
         if (monthlyChecked) {
             const duration = parseInt(document.getElementById('renewMonthlyDuration').value) || 1;
             const cm = selectedMember.memberships?.find((m) => m.type === 'monthly');
             const endDate = calculateNewEndDate(renewalDate, cm?.endDate, duration, 'monthly');
-            updatedMemberships.push({ type: 'monthly', duration: duration, startDate: renewalDate.toISOString(), endDate: endDate.toISOString(), status: 'active', paymentStatus: isPaid ? 'paid' : 'unpaid' });
+            updatedMemberships.push({ 
+                type: 'monthly', 
+                productId: selectedOpt.value,
+                productName: selectedOpt.dataset.name,
+                duration: duration, 
+                startDate: renewalDate.toISOString(), 
+                endDate: endDate.toISOString(), 
+                status: 'active', 
+                paymentStatus: isPaid ? 'paid' : 'unpaid' 
+            });
         }
 
         if (combativeChecked) {
-            // duration mapping is handled safely - 1 month block for the number of sessions
             const sessions = parseInt(document.getElementById('renewCombativeSessions').value) || 12;
             const cm = selectedMember.memberships?.find((m) => m.type === 'combative');
             const endDate = calculateNewEndDate(renewalDate, cm?.endDate, 1, 'combative'); 
-            updatedMemberships.push({ type: 'combative', duration: 1, remainingSessions: sessions, startDate: renewalDate.toISOString(), endDate: endDate.toISOString(), status: 'active', paymentStatus: isPaid ? 'paid' : 'unpaid' });
+            updatedMemberships.push({ 
+                type: 'combative', 
+                productId: selectedOpt.value,
+                productName: selectedOpt.dataset.name,
+                duration: 1, 
+                remainingSessions: sessions, 
+                startDate: renewalDate.toISOString(), 
+                endDate: endDate.toISOString(), 
+                status: 'active', 
+                paymentStatus: isPaid ? 'paid' : 'unpaid' 
+            });
         }
 
         if (danceChecked) {
             const sessions = parseInt(document.getElementById('renewDanceSessions').value) || 12;
             const cm = selectedMember.memberships?.find((m) => m.type === 'dance');
             const endDate = calculateNewEndDate(renewalDate, cm?.endDate, 1, 'dance'); 
-            updatedMemberships.push({ type: 'dance', duration: 1, remainingSessions: sessions, startDate: renewalDate.toISOString(), endDate: endDate.toISOString(), status: 'active', paymentStatus: isPaid ? 'paid' : 'unpaid' });
+            updatedMemberships.push({ 
+                type: 'dance', 
+                productId: selectedOpt.value,
+                productName: selectedOpt.dataset.name,
+                duration: 1, 
+                remainingSessions: sessions, 
+                startDate: renewalDate.toISOString(), 
+                endDate: endDate.toISOString(), 
+                status: 'active', 
+                paymentStatus: isPaid ? 'paid' : 'unpaid' 
+            });
         }
 
         const result = await apiFetch(`/api/members/${selectedMember._id}/renew`, {
