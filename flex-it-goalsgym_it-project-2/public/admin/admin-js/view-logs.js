@@ -307,22 +307,26 @@ document.addEventListener('DOMContentLoaded', function () {
       updatePaginationUI(pagination);
     } catch (error) {
       console.error('Error fetching expired memberships:', error);
-      logsTableBody.innerHTML = '<tr><td colspan="6">Error fetching expired memberships.</td></tr>';
+      logsTableBody.innerHTML = '<tr><td colspan="8">Error fetching expired memberships.</td></tr>';
     }
   }
 
   function displayExpiredMemberships(logs) {
     if (logs.length === 0) {
-      logsTableBody.innerHTML = '<tr><td colspan="6" class="center-align">No expired memberships found.</td></tr>';
+      logsTableBody.innerHTML = '<tr><td colspan="8" class="center-align">No expired memberships found.</td></tr>';
       return;
     }
     logsTableBody.innerHTML = logs.map(log => {
       const memberName = log.member && log.member.name ? log.member.name : 'Unknown or Deleted Member';
+      const productName = log.productName || 'N/A';
+      const transactionId = log.transactionId || 'N/A';
       return `
         <tr>
           <td>${new Date(log.archivedAt).toLocaleString()}</td>
           <td><strong>${memberName}</strong></td>
           <td>${log.type.toUpperCase()}</td>
+          <td>${productName}</td>
+          <td>${transactionId}</td>
           <td>${log.duration} Days</td>
           <td>${new Date(log.startDate).toLocaleDateString()}</td>
           <td>${new Date(log.endDate).toLocaleDateString()}</td>

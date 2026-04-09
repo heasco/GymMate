@@ -4,7 +4,7 @@ const asyncHandler = require('../middleware/asyncHandler');
 const { protect } = require('../middleware/auth'); 
 const Member = require('../models/Member');
 const MembershipHistory = require('../models/MembershipHistory'); 
-const Product = require('../models/Product'); // NEW: Added Product Model
+const Product = require('../models/Product'); 
 const transporter = require('../utils/nodemailer');
 const axios = require('axios');
 const FormData = require('form-data');
@@ -176,7 +176,6 @@ router.post('/', protect, faceUploads, asyncHandler(async (req, res) => {
     } else {
       endDate.setMonth(endDate.getMonth() + Number(m.duration));
       membershipData.endDate = endDate;
-      // FEATURE: Safely inject backend product sessions directly into the model
       membershipData.remainingSessions = prodSessions !== null ? prodSessions : (m.remainingSessions !== undefined ? Number(m.remainingSessions) : Number(m.duration) * 12);
     }
 
@@ -208,22 +207,15 @@ router.post('/', protect, faceUploads, asyncHandler(async (req, res) => {
   } catch (error) {
       if (error.code === 11000) {
           const field = Object.keys(error.keyValue)[0];
-          
           if (field === 'email' || field === 'phone') {
               try {
                   await mongoose.connection.db.collection('members').dropIndex(`${field}_1`);
                   saved = await newMember.save(); 
               } catch (retryError) {
-                  return res.status(400).json({ 
-                      success: false, 
-                      error: `Could not auto-resolve database index. Please manually drop the unique index for ${field}.` 
-                  });
+                  return res.status(400).json({ success: false, error: `Could not auto-resolve database index. Please manually drop the unique index for ${field}.` });
               }
           } else {
-              return res.status(400).json({ 
-                  success: false, 
-                  error: `Database Conflict: ${field} is already in use.` 
-              });
+              return res.status(400).json({ success: false, error: `Database Conflict: ${field} is already in use.` });
           }
       } else {
           throw error; 
@@ -262,14 +254,11 @@ router.post('/', protect, faceUploads, asyncHandler(async (req, res) => {
               <h2>Welcome to the family, ${saved.name}!</h2>
               <p>Your membership account has been successfully created. We are thrilled to have you join us and can't wait to see you crush your fitness goals!</p>
               <p>Below are your official account credentials to access the member portal:</p>
-              
               <div class="credentials-box">
                 <p><strong>Username:</strong> <span class="highlight">${saved.username}</span></p>
                 <p><strong>Temporary Password:</strong> <span class="highlight">${tempPassword}</span></p>
               </div>
-              
               <p class="note">* For your own security, please make sure to change your password immediately after your first login.</p>
-              
               <p>See you on the gym floor!</p>
               <p><strong>- The GOALS Gym Team</strong></p>
             </div>
@@ -395,14 +384,19 @@ router.put('/:id', protect, asyncHandler(async (req, res) => {
          if (prod && prod.sessions) prodSessions = prod.sessions;
       }
 
+      // ADDED transactionId and paymentStatus handling so it doesn't get stripped.
       const out = {
         type: m.type,
         productId: m.productId || undefined,
         productName: m.productName || undefined,
+        transactionId: m.transactionId || undefined, 
         duration: Number(m.duration), 
         startDate,
-        status: m.status && ['active', 'inactive', 'suspended', 'expired', 'cancelled'].includes(m.status) ? m.status : 'active'
+        status: m.status && ['active', 'inactive', 'suspended', 'expired', 'cancelled'].includes(m.status) ? m.status : 'active',
+        paymentStatus: m.paymentStatus || 'unpaid'
       };
+      
+      if (m._id) out._id = m._id; 
       
       if (m.type === 'combative' || m.type === 'dance') {
          out.remainingSessions = prodSessions !== null ? prodSessions : (m.remainingSessions !== undefined ? Number(m.remainingSessions) : Number(m.duration) * 12);
@@ -484,6 +478,7 @@ router.put('/:id/renew', protect, asyncHandler(async (req, res) => {
             type: m.type,
             productId: m.productId,
             productName: m.productName,
+            transactionId: m.transactionId,
             duration: dur || 1, 
             startDate: m.startDate,
             endDate: now, 
@@ -512,27 +507,28 @@ router.put('/:id/renew', protect, asyncHandler(async (req, res) => {
         endDate.setMonth(endDate.getMonth() + Number(m.duration));
       }
 
-      // FEATURE: Lookup sessions from product DB for safe processing
       let prodSessions = null;
       if (m.productId) {
          const prod = await Product.findById(m.productId);
          if (prod && prod.sessions) prodSessions = prod.sessions;
       }
 
+      // ADDED transactionId & corrected paymentStatus
       const out = {
         type: m.type,
         productId: m.productId || undefined,
         productName: m.productName || undefined,
+        transactionId: m.transactionId || undefined,
         duration: Number(m.duration),
         startDate,
         endDate,
         status: m.status || 'active',
-        paymentStatus: 'paid'
+        paymentStatus: m.paymentStatus || 'paid' 
       };
       
       if (m._id) out._id = m._id; 
+      
       if (m.type === 'combative' || m.type === 'dance') {
-         // Safely push the DB sessions fallback into the remainingSessions
          out.remainingSessions = prodSessions !== null ? prodSessions : (m.remainingSessions !== undefined ? Number(m.remainingSessions) : Number(m.duration) * 12);
       } else {
          out.remainingSessions = 0;
@@ -584,6 +580,7 @@ router.patch('/:id/archive', protect, asyncHandler(async (req, res) => {
           type: m.type,
           productId: m.productId,
           productName: m.productName,
+          transactionId: m.transactionId,
           duration: dur || 1, 
           startDate: m.startDate,
           endDate: now, 

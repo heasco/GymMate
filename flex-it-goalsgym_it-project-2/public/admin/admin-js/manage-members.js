@@ -458,7 +458,7 @@ function setupRenewalForm() {
             filtered.forEach(p => {
                 const opt = document.createElement('option');
                 opt.value = p._id; opt.dataset.price = p.price; opt.dataset.name = p.product_name;
-                opt.dataset.sessions = p.sessions || ''; // FEATURE: Log the DB sessions onto the element
+                opt.dataset.sessions = p.sessions || ''; 
                 opt.textContent = `${p.product_name} - ₱${p.price.toLocaleString()}`;
                 productSelect.appendChild(opt);
             });
@@ -467,7 +467,6 @@ function setupRenewalForm() {
     updateRenewalInfo();
   }
 
-  // Add a listener to populate manual inputs if a product carries session parameters
   const productSelect = document.getElementById('renewalProductSelect');
   if (productSelect) {
       productSelect.addEventListener('change', () => {
