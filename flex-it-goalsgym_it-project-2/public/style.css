@@ -2199,10 +2199,10 @@ body.login-page-bg {
     body.login-page-bg {
         /* Swap to the mobile-specific image, keeping the dark overlay */
         background-image: linear-gradient(rgba(0, 0, 0, 0.65), rgba(0, 0, 0, 0.75)), url('image/mobile-anime-goals.png');
+    }
 
     .login-container {
         /* Put the login box back in the dead center */
         top: 44%; 
     }
-}
 }

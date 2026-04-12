@@ -61,22 +61,22 @@
                 <div class="slider-container">
                     <div class="slider-track">
                         <div class="slide">
-                            <h3>Summer Fitness Challenge</h3>
-                            <p class="slide-date">June 15, 2023</p>
-                            <p>Join our 30-day summer fitness challenge and get a chance to win free personal training sessions and supplements!</p>
-                            <a href="#" class="slide-btn">Learn More</a>
+                            <h3>Premium Training</h3>
+                            <p class="slide-date">One-on-One Excellence</p>
+                            <p>We offer specialized one-on-one training and multiple premium amenities to support your fitness journey. Experience elite coaching today!</p>
+                            <a href="#programs" class="slide-btn">Learn More</a>
                         </div>
                         <div class="slide">
-                            <h3>New Equipment Arrival</h3>
-                            <p class="slide-date">June 10, 2023</p>
-                            <p>We've just added new state-of-the-art strength training equipment to our facility. Come try them out!</p>
-                            <a href="#" class="slide-btn">View Equipment</a>
+                            <h3>New Classes Coming Soon</h3>
+                            <p class="slide-date">HIIT • YOGA • DANCE</p>
+                            <p>New dance, HIIT and yoga classes soon! Join our community and discover a fun way to stay in shape.</p>
+                            <a href="javascript:void(0)" class="slide-btn" onclick="openClassesModal()">Learn More</a>
                         </div>
                         <div class="slide">
-                            <h3>Yoga Classes Starting Soon</h3>
-                            <p class="slide-date">June 5, 2023</p>
-                            <p>New yoga classes with certified instructors begin next month. Limited slots available, register now!</p>
-                            <a href="#" class="slide-btn">Register Now</a>
+                            <h3>System Upgrade</h3>
+                            <p class="slide-date">Secure Access</p>
+                            <p>New fingerprint implementation soon will be added for a faster and more secure check-in experience.</p>
+                            <a href="javascript:void(0)" class="slide-btn" onclick="openFingerprintModal()">Learn More</a>
                         </div>
                     </div>
                 </div>
@@ -257,12 +257,12 @@
                     <div class="program-icon">
                         <i class="fas fa-user-tie"></i>
                     </div>
-                    <h4>Personal Training</h4>
-                    <p>1-on-1 customized workout plans with certified trainers</p>
+                    <h4>One-on-One Training</h4>
+                    <p>Personalized coaching and access to multiple premium amenities</p>
                     <ul>
-                        <li>Customized workout plans</li>
-                        <li>Progress tracking</li>
-                        <li>Flexible scheduling</li>
+                        <li>Individualized training plans</li>
+                        <li>Full access to gym amenities</li>
+                        <li>Flexible scheduling & support</li>
                     </ul>
                     <a href="#" class="program-btn">Learn More</a>
                 </div>
@@ -424,7 +424,7 @@
                 <div class="contact-form-container">
                     <h3>Contact Us</h3>
                     <div class="divider"></div>
-                    <form class="contact-form" id="contact" action="" method="post">
+                    <form class="contact-form" id="contact" action="mailto:herodvelasco023@gmail.com" method="post" enctype="text/plain">
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="name">Your Name*</label>
@@ -577,6 +577,24 @@
         </div>
     </div>
 
+    <div id="fingerprintModal" class="custom-modal">
+        <div class="custom-modal-content">
+            <span class="close-custom-modal" onclick="closeFingerprintModal()">×</span>
+            <h3 class="custom-modal-title">GOALS GYM BIOMETRICS</h3>
+            <p class="custom-modal-subtitle">*Enhanced Member Experience</p>
+            
+            <div style="text-align: center; padding: 20px; color: var(--neutral);">
+                <i class="fas fa-fingerprint" style="font-size: 4rem; color: var(--primary); margin-bottom: 20px;"></i>
+                <p style="font-size: 1.1rem; line-height: 1.6;">
+                    A new fingerprint implementation will be done soon for <strong>Goals Gym</strong> for better experience. 
+                    This system will allow for faster check-ins, tighter security, and a seamless workout flow for all our members. 
+                    Stay tuned for the official launch date!
+                </p>
+            </div>
+            <button class="business-btn modal-btn" onclick="closeFingerprintModal()" style="width: 100%;">GOT IT!</button>
+        </div>
+    </div>
+
     <div id="cookieBanner" class="cookie-banner">
         <div class="cookie-content">
             <h4>We Value Your Privacy</h4>
@@ -630,6 +648,27 @@
             <button id="saveCookiePreferences" class="business-btn modal-btn">Save Preferences</button>
         </div>
     </div>
+
+    <script>
+        // Inline functions to ensure the buttons work even if index.js is not loaded
+        function openClassesModal() {
+            document.getElementById('classesModal').style.display = 'block';
+        }
+        function openFingerprintModal() {
+            document.getElementById('fingerprintModal').style.display = 'block';
+        }
+        function closeFingerprintModal() {
+            document.getElementById('fingerprintModal').style.display = 'none';
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            let fpModal = document.getElementById('fingerprintModal');
+            let clModal = document.getElementById('classesModal');
+            if (event.target == fpModal) fpModal.style.display = "none";
+            if (event.target == clModal) clModal.style.display = "none";
+        }
+    </script>
 
     <script src="assets/js/form-persistence.js" defer></script>
     <script src="index.js" defer></script>
