@@ -264,7 +264,6 @@
                         <li>Full access to gym amenities</li>
                         <li>Flexible scheduling & support</li>
                     </ul>
-                    <a href="#" class="program-btn">Learn More</a>
                 </div>
                 <div class="program-card">
                     <div class="program-icon">
@@ -277,7 +276,6 @@
                         <li>Nutrition counseling</li>
                         <li>Supplement guidance</li>
                     </ul>
-                    <a href="#" class="program-btn">Learn More</a>
                 </div>
                 <div class="program-card">
                     <div class="program-icon">
@@ -290,7 +288,6 @@
                         <li>Weekly progress checks</li>
                         <li>Guaranteed results</li>
                     </ul>
-                    <a href="#" class="program-btn">Learn More</a>
                 </div>
             </div>
         </div>
@@ -424,27 +421,27 @@
                 <div class="contact-form-container">
                     <h3>Contact Us</h3>
                     <div class="divider"></div>
-                    <form class="contact-form" id="contact" action="mailto:herodvelasco023@gmail.com" method="post" enctype="text/plain">
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="name">Your Name*</label>
-                                <input name="name" type="text" id="name" placeholder="Your Name" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="email">Your Email*</label>
-                                <input name="email" type="email" id="email" placeholder="Your Email" required>
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label for="subject">Subject</label>
-                            <input name="subject" type="text" id="subject" placeholder="Subject">
-                        </div>
-                        <div class="form-group">
-                            <label for="message">Message*</label>
-                            <textarea name="message" rows="6" id="message" placeholder="Message" required></textarea>
-                        </div>
-                        <button type="submit" id="form-submit" class="submit-button">Send Message</button>
-                    </form>
+<form class="contact-form" id="contact" action="https://formspree.io/f/mzdyprgw" method="POST">
+    <div class="form-row">
+        <div class="form-group">
+            <label for="name">Your Name*</label>
+            <input name="name" type="text" id="name" placeholder="Your Name" required>
+        </div>
+        <div class="form-group">
+            <label for="email">Your Email*</label>
+            <input name="email" type="email" id="email" placeholder="Your Email" required>
+        </div>
+    </div>
+    <div class="form-group">
+        <label for="subject">Subject</label>
+        <input name="subject" type="text" id="subject" placeholder="Subject">
+    </div>
+    <div class="form-group">
+        <label for="message">Message*</label>
+        <textarea name="message" rows="6" id="message" placeholder="Message" required></textarea>
+    </div>
+    <button type="submit" id="form-submit" class="submit-button">Send Message</button>
+</form>
                 </div>
             </div>
         </div>
@@ -471,7 +468,7 @@
                 </div>
             </div>
             <div class="copyright">
-                <p>Copyright © 2025 GOALS Gym Baguio - Created by GymMate Team</p>
+                <p>Copyright © 2026 GOALS Gym Baguio - Created by GymMate Team</p>
             </div>
         </div>
     </footer>
@@ -648,27 +645,6 @@
             <button id="saveCookiePreferences" class="business-btn modal-btn">Save Preferences</button>
         </div>
     </div>
-
-    <script>
-        // Inline functions to ensure the buttons work even if index.js is not loaded
-        function openClassesModal() {
-            document.getElementById('classesModal').style.display = 'block';
-        }
-        function openFingerprintModal() {
-            document.getElementById('fingerprintModal').style.display = 'block';
-        }
-        function closeFingerprintModal() {
-            document.getElementById('fingerprintModal').style.display = 'none';
-        }
-
-        // Close modal when clicking outside
-        window.onclick = function(event) {
-            let fpModal = document.getElementById('fingerprintModal');
-            let clModal = document.getElementById('classesModal');
-            if (event.target == fpModal) fpModal.style.display = "none";
-            if (event.target == clModal) clModal.style.display = "none";
-        }
-    </script>
 
     <script src="assets/js/form-persistence.js" defer></script>
     <script src="index.js" defer></script>

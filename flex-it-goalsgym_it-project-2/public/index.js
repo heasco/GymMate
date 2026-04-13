@@ -464,3 +464,27 @@ if (cookieBanner) {
         }
     });
 }
+
+// ==============================================
+// INLINE MODAL FUNCTIONS (from index.html)
+// ==============================================
+document.addEventListener('DOMContentLoaded', function() {
+    // Functions to ensure the buttons work
+    window.openClassesModal = function() {
+        document.getElementById('classesModal').style.display = 'block';
+    };
+    window.openFingerprintModal = function() {
+        document.getElementById('fingerprintModal').style.display = 'block';
+    };
+    window.closeFingerprintModal = function() {
+        document.getElementById('fingerprintModal').style.display = 'none';
+    };
+
+    // Close modal when clicking outside
+    window.onclick = function(event) {
+        let fpModal = document.getElementById('fingerprintModal');
+        let clModal = document.getElementById('classesModal');
+        if (event.target == fpModal) fpModal.style.display = "none";
+        if (event.target == clModal) clModal.style.display = "none";
+    };
+});
