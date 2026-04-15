@@ -70,13 +70,13 @@
                             <h3>New Classes Coming Soon</h3>
                             <p class="slide-date">HIIT • YOGA • DANCE</p>
                             <p>New dance, HIIT and yoga classes soon! Join our community and discover a fun way to stay in shape.</p>
-                            <a href="javascript:void(0)" class="slide-btn" onclick="openClassesModal()">Learn More</a>
+                            <a href="javascript:void(0)" class="slide-btn" data-modal="classesModal">Learn More</a>
                         </div>
                         <div class="slide">
                             <h3>System Upgrade</h3>
                             <p class="slide-date">Secure Access</p>
                             <p>New fingerprint implementation soon will be added for a faster and more secure check-in experience.</p>
-                            <a href="javascript:void(0)" class="slide-btn" onclick="openFingerprintModal()">Learn More</a>
+                            <a href="javascript:void(0)" class="slide-btn" data-modal="fingerprintModal">Learn More</a>
                         </div>
                     </div>
                 </div>
@@ -319,113 +319,172 @@
             <div class="classes-container">
                 <div class="classes-tabs">
                     <ul>
-                        <li>
+                        <li class="mobile-accordion-item">
                             <a href="#" class="tab-link active" data-tab="tab-1">
                                 <div class="tab-icon">
                                     <i class="fas fa-hand-fist"></i>
                                 </div>
-                                Boxing Class
+                                <span class="tab-title">Boxing Class</span>
+                                <i class="fas fa-chevron-down accordion-arrow"></i>
                             </a>
+                            <div class="mobile-tab-panel" id="mobile-tab-1">
+                                <img src="https://res.cloudinary.com/dwwa23ssw/image/upload/v1776247798/boxing_fwvv4i.webp" alt="Boxing Class" class="class-image">
+                                <div class="class-details">
+                                    <h4>Boxing Class: The Striking Revolution</h4>
+                                    <p>Baguio City sits at an elevation of over 5,000 feet, making its thin mountain air the ultimate natural forge for cardiovascular endurance. It is no secret why eight division world champion Manny Pacquiao chose these very mountains for his most grueling training camps to build his legendary stamina. At GOALS Gym Baguio, we channel that historic legacy alongside the unbreakable grit of Filipino icons like Flash Elorde, Nonito Donaire, and Donnie Nietes. In our classes, you will dive deep into the sweet science. You will learn the biomechanics behind generating knockout power from the ground up, how to utilize angles to slip attacks, and the footwork required to command the ring. Whether your goal is to build iron clad lungs, learn elite self defense, or master the chess match of striking, our boxing program will turn your hands into serious weapons.</p>
+                                </div>
+                            </div>
                         </li>
-                        <li>
+                        <li class="mobile-accordion-item">
                             <a href="#" class="tab-link" data-tab="tab-2">
                                 <div class="tab-icon">
                                     <i class="fas fa-person-running"></i>
                                 </div>
-                                Kick Boxing Class
+                                <span class="tab-title">Kick Boxing Class</span>
+                                <i class="fas fa-chevron-down accordion-arrow"></i>
                             </a>
+                            <div class="mobile-tab-panel" id="mobile-tab-2">
+                                <img src="https://res.cloudinary.com/dwwa23ssw/image/upload/v1776249082/kickb_yhsytb.webp" alt="Kick Boxing Class" class="class-image">
+                                <p class="image-credit">Image Credit - ONE FC</p>
+                                <div class="class-details">
+                                    <h4>Kick Boxing Class: Where East Meets West</h4>
+                                    <p>Kickboxing is a dynamic combat sport that merges the crisp footwork and punching mechanics of traditional western boxing with the powerful kicks of martial arts like Karate and Taekwondo. The sport was born in the 1950s when Japanese martial artists wanted to test their skills in full contact bouts, eventually exploding in global popularity during the legendary K1 kickboxing era. Today, the sport is thriving in the Philippines, and the Cordilleras are the absolute epicenter of that striking revolution. We take massive pride in local highland warriors like Jean Claude Saclag, a multi gold medalist at the Southeast Asian Games who showcased the immense striking power of our region to the world. At GOALS Gym Baguio, you will learn how to seamlessly chain boxing combinations into lightning fast head and body kicks. It is the perfect discipline for anyone looking to build explosive speed, elite cardiovascular endurance, and practical self defense skills without having to worry about takedowns or ground fighting.</p>
+                                </div>
+                            </div>
                         </li>
-                        <li>
+                        <li class="mobile-accordion-item">
                             <a href="#" class="tab-link" data-tab="tab-3">
                                 <div class="tab-icon">
                                     <i class="fas fa-hand-fist"></i>
                                 </div>
-                                Muay Thai Class
+                                <span class="tab-title">Muay Thai Class</span>
+                                <i class="fas fa-chevron-down accordion-arrow"></i>
                             </a>
+                            <div class="mobile-tab-panel" id="mobile-tab-3">
+                                <img src="https://res.cloudinary.com/dwwa23ssw/image/upload/v1776247831/muay_thai_mfmncj.webp" alt="Muay Thai Class" class="class-image">
+                                <div class="class-details">
+                                    <h4>Muay Thai Class: The Art of Eight Limbs</h4>
+                                    <p>Known globally as the Art of Eight Limbs, Muay Thai transforms your fists, elbows, knees, and shins into a devastating arsenal. The sport is steeped in ancient traditions, like the Wai Kru Ram Muay dance of respect, and the legendary shin conditioning that allows fighters to literally kick through baseball bats. Here in Baguio City, the striking arts run deep in our blood. We are incredibly proud of homegrown Cordilleran athletes like Islay Erika Bomogao, who showcased our local striking power to the world by becoming an IFMA World Champion. In our classes, we mix that fierce local fighting spirit with the brutal, highly technical systems of global legends like Buakaw Banchamek. You will master thunderous roundhouse kicks, tactical clinch work that dictates the pace, and the elite conditioning that makes Thai fighters the most feared strikers on earth.</p>
+                                </div>
+                            </div>
                         </li>
-                        <li>
+                        <li class="mobile-accordion-item">
                             <a href="#" class="tab-link" data-tab="tab-4">
                                 <div class="tab-icon">
                                     <i class="fas fa-user-ninja"></i>
                                 </div>
-                                Adult MMA Class
+                                <span class="tab-title">Adult MMA Class</span>
+                                <i class="fas fa-chevron-down accordion-arrow"></i>
                             </a>
+                            <div class="mobile-tab-panel" id="mobile-tab-4">
+                                <img src="https://res.cloudinary.com/dwwa23ssw/image/upload/v1776249316/mma_omahca.webp" alt="Adult MMA Class" class="class-image">
+                                <p class="image-credit">Image Credit - ONE FC</p>
+                                <div class="class-details">
+                                    <h4>Adult MMA: The Complete Combat System</h4>
+                                    <p>Mixed Martial Arts is the ultimate proving ground for human combat. While the concept traces its ancient roots back to the brutal Greek Olympic games of Pankration, the modern sport exploded into mainstream consciousness in the 1990s with the famous rise of the UFC. The early days of the Ultimate Fighting Championship were created to answer one simple question about which martial art works best in a real fight. The world quickly learned that a true fighter must master them all. MMA fuses the devastating striking of Boxing and Kickboxing, the relentless takedowns of Wrestling, and the chess like ground control of Brazilian Jiu Jitsu. The Philippines, and specifically our home in the Cordilleras, has produced some of the most feared MMA warriors on the planet. Incredible local athletes like Eduard Folayang, Joshua Pacio, Kevin Belingon, and Danny Kingad have captured world titles and dominated the ONE Championship cage, proving that the mountain warrior spirit is truly world class. At GOALS Gym Baguio, our Adult MMA program teaches you this complete and battle tested system. You will learn how to strike with knockout power, transition seamlessly into takedowns, and control or finish fights on the mat.</p>
+                                </div>
+                            </div>
                         </li>
-                          <li>
+                        <li class="mobile-accordion-item">
                             <a href="#" class="tab-link" data-tab="tab-5">
                                 <div class="tab-icon">
                                     <i class="fas fa-child-reaching"></i>
                                 </div>
-                                Kids MMA Class
+                                <span class="tab-title">Kids MMA Class</span>
+                                <i class="fas fa-chevron-down accordion-arrow"></i>
                             </a>
+                            <div class="mobile-tab-panel" id="mobile-tab-5">
+                                <img src="https://images.unsplash.com/photo-1702911702574-d19c882eae5b?q=80&w=1160&auto=format&fit=crop&w=2070&q=80" alt="Kids MMA Class" class="class-image">
+                                <div class="class-details">
+                                    <h4>Kids MMA: Building Little Champions (Ages 11 and below)</h4>
+                                    <p>Every great martial artist starts somewhere, and science shows that combat sports drastically improve a child's focus, emotional regulation, and physical coordination. At GOALS Gym Baguio, our Kids MMA program molds the next generation by blending basic striking, grappling, and practical self defense into highly engaging lessons. We ground our teachings in deep rooted Filipino values of respect and discipline. Beyond just learning how to throw a proper punch or secure a takedown safely, this training instills a true champion mindset. Your kids will learn perseverance when facing challenges, respect for their coaches and training partners, and the quiet, bully proof confidence to stand up for themselves. Watch them build functional habits that will set them up for a lifetime of success.</p>
+                                </div>
+                            </div>
                         </li>
-                          <li>
+                        <li class="mobile-accordion-item">
                             <a href="#" class="tab-link" data-tab="tab-6">
                                 <div class="tab-icon">
                                     <i class="fas fa-grip-lines"></i>
                                 </div>
-                                Brazilian Jui Jitsu Class
+                                <span class="tab-title">Brazilian Jui Jitsu Class</span>
+                                <i class="fas fa-chevron-down accordion-arrow"></i>
                             </a>
+                            <div class="mobile-tab-panel" id="mobile-tab-6">
+                                <img src="https://res.cloudinary.com/dwwa23ssw/image/upload/v1776247911/jiu-jitsu_k45pe7.webp" alt="Brazilian Jiu-Jitsu Class" class="class-image">
+                                <div class="class-details">
+                                    <h4>Brazilian Jiu-Jitsu: The Gentle Art That Conquered the World (MWF, Sat)</h4>
+                                    <p>Brazilian Jiu Jitsu completely revolutionized the martial arts world by proving that skeletal structure and leverage can neutralize sheer size and brute strength. The secret lies in taking the fight to the ground and utilizing the "guard" position, turning your legs into a defensive and offensive shield. It is physical chess played at lightning speed. The BJJ scene in the Philippines is exploding right now, driven by world class homegrown champions like Meggie Ochoa and Annie Ramirez who have firmly put our country on the global grappling map. At GOALS Gym Baguio, you will learn how to bypass an opponent's defenses, control their center of gravity, and apply precise joint locks and chokes. BJJ builds incredible core strength, sharpens your split second problem solving skills under pressure, and proves that technical intelligence always beats physical intimidation.</p>
+                                </div>
+                            </div>
                         </li>
-                        <li>
+                        <li class="mobile-accordion-item">
                             <a href="#" class="tab-link" data-tab="tab-7">
                                 <div class="tab-icon">
                                     <i class="fas fa-yin-yang"></i>
                                 </div>
-                                Wushu Taolu Class
+                                <span class="tab-title">Wushu Taolu Class</span>
+                                <i class="fas fa-chevron-down accordion-arrow"></i>
                             </a>
+                            <div class="mobile-tab-panel" id="mobile-tab-7">
+                                <img src="https://res.cloudinary.com/dwwa23ssw/image/upload/v1776247876/wushu_j7yklm.webp" alt="Wushu Taolu Class" class="class-image">
+                                <div class="class-details">
+                                    <h4>Wushu Taolu: The Heritage of Mountain Warriors</h4>
+                                    <p>The Cordilleras are rightfully recognized as the combat sports capital of the Philippines, and much of that fearsome reputation was built on the foundation of Wushu. Legendary martial artists from Baguio and Benguet, such as Eduard Folayang, Joshua Pacio, and Danny Kingad, began their phenomenal combat journeys competing in Wushu Sanda. Sanda is the gritty, full contact sparring side of Wushu that combines brutal kickboxing with lightning fast, high amplitude takedowns that score massive points. On the flip side is Wushu Taolu, the spectacular performance based art. Taolu involves highly choreographed forms, gravity defying aerial kicks, and flowing movements that require extreme flexibility and balance. At GOALS Gym Baguio, our program honors this deeply rooted local heritage. Whether you are drawn to the explosive striking power of our local MMA heroes or the beautiful cinematic agility of Taolu, you will forge the iron focus and athleticism that built the champions of our mountains.</p>
+                                </div>
+                            </div>
                         </li>
                     </ul>
-                    
                 </div>
                 <div class="classes-content">
                     <div class="tab-content active" id="tab-1">
-                        <img src="https://images.unsplash.com/photo-1549719386-74dfcbf7dbed?auto=format&fit=crop&w=2070&q=80" alt="Boxing Class" class="class-image">
+                        <img src="https://res.cloudinary.com/dwwa23ssw/image/upload/v1776247798/boxing_fwvv4i.webp" alt="Boxing Class" class="class-image">
                         <div class="class-details">
-                            <h4>Boxing Class</h4>
-                            <p>Improve your punches, footwork, and overall conditioning through our boxing program. At GOALS Gym Baguio, we focus on proper technique and discipline while giving you a workout that builds confidence, strength, and stamina perfect for beginners and hobbyists in Baguio.</p>
+                            <h4>Boxing Class: The Striking Revolution</h4>
+                            <p>Baguio City sits at an elevation of over 5,000 feet, making its thin mountain air the ultimate natural forge for cardiovascular endurance. It is no secret why eight division world champion Manny Pacquiao chose these very mountains for his most grueling training camps to build his legendary stamina. At GOALS Gym Baguio, we channel that historic legacy alongside the unbreakable grit of Filipino icons like Flash Elorde, Nonito Donaire, and Donnie Nietes. In our classes, you will dive deep into the sweet science. You will learn the biomechanics behind generating knockout power from the ground up, how to utilize angles to slip attacks, and the footwork required to command the ring. Whether your goal is to build iron clad lungs, learn elite self defense, or master the chess match of striking, our boxing program will turn your hands into serious weapons.</p>
                         </div>
                     </div>
                     <div class="tab-content" id="tab-2">
-                        <img src="https://images.unsplash.com/photo-1729673517102-68967c4e96b5?q=80&w=1171&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D0" alt="Kick Boxing Class" class="class-image">
+                        <img src="https://res.cloudinary.com/dwwa23ssw/image/upload/v1776249082/kickb_yhsytb.webp" alt="Kick Boxing Class" class="class-image">
+                        <p class="image-credit">Image Credit - ONE FC</p>
                         <div class="class-details">
-                            <h4>Kick Boxing Class</h4>
-                            <p>Experience the “Art of Eight Limbs” with our Muay Thai training. At GOALS Gym Baguio, we teach real striking techniques using punches, kicks, elbows, and knees. This class helps improve balance, power, and confidence swak para sa mga gustong matuto ng totoong striking.</p>
-                        </div>
+                            <h4>Kick Boxing Class: Where East Meets West</h4>
+                            <p>Kickboxing is a dynamic combat sport that merges the crisp footwork and punching mechanics of traditional western boxing with the powerful kicks of martial arts like Karate and Taekwondo. The sport was born in the 1950s when Japanese martial artists wanted to test their skills in full contact bouts, eventually exploding in global popularity during the legendary K1 kickboxing era. Today, the sport is thriving in the Philippines, and the Cordilleras are the absolute epicenter of that striking revolution. We take massive pride in local highland warriors like Jean Claude Saclag, a multi gold medalist at the Southeast Asian Games who showcased the immense striking power of our region to the world. At GOALS Gym Baguio, you will learn how to seamlessly chain boxing combinations into lightning fast head and body kicks. It is the perfect discipline for anyone looking to build explosive speed, elite cardiovascular endurance, and practical self defense skills without having to worry about takedowns or ground fighting.</p>
+                    </div>
                     </div>
                     <div class="tab-content" id="tab-3">
-                        <img src="https://images.unsplash.com/photo-1611816153165-fed23698666d?q=80&w=1170&auto=format&fit=crop&w=2070&q=80" alt="Muay Thai Class" class="class-image">
+                        <img src="https://res.cloudinary.com/dwwa23ssw/image/upload/v1776247831/muay_thai_mfmncj.webp" alt="Muay Thai Class" class="class-image">
                         <div class="class-details">
-                            <h4>Muay Thai Class</h4>
-                            <p>Muay Thai is a combat sport from Thailand that uses eight points of contact—fists, elbows, knees, and shins and is known as "The Art of Eight Limbs" for its comprehensive striking system.</p>
-                        </div>
+                            <h4>Muay Thai Class: The Art of Eight Limbs</h4>
+                            <p>Known globally as the Art of Eight Limbs, Muay Thai transforms your fists, elbows, knees, and shins into a devastating arsenal. The sport is steeped in ancient traditions, like the Wai Kru Ram Muay dance of respect, and the legendary shin conditioning that allows fighters to literally kick through baseball bats. Here in Baguio City, the striking arts run deep in our blood. We are incredibly proud of homegrown Cordilleran athletes like Islay Erika Bomogao, who showcased our local striking power to the world by becoming an IFMA World Champion. In our classes, we mix that fierce local fighting spirit with the brutal, highly technical systems of global legends like Buakaw Banchamek. You will master thunderous roundhouse kicks, tactical clinch work that dictates the pace, and the elite conditioning that makes Thai fighters the most feared strikers on earth.</p>
+                    </div>
                     </div>
                     <div class="tab-content" id="tab-4">
-                        <img src="https://images.unsplash.com/photo-1615117972428-28de67cda58e?q=80&w=1170&auto=format&fit=crop&w=2070&q=80" alt="Adult MMA Class" class="class-image">
+                        <img src="https://res.cloudinary.com/dwwa23ssw/image/upload/v1776249316/mma_omahca.webp" alt="Adult MMA Class" class="class-image">
+                        <p class="image-credit">Image Credit - ONE FC</p>
                         <div class="class-details">
-                            <h4>Adult MMA Class</h4>
-                            <p>Our Adult MMA class combines striking, grappling, and ground fighting. At GOALS Gym Baguio, you’ll train in a supportive environment while building strength, flexibility, and self-defense skills. Whether fitness or competition ang goal mo, this class is perfect for adults in Baguio.</p>
-                        </div>
+                            <h4>Adult MMA: The Complete Combat System</h4>
+                            <p>Mixed Martial Arts is the ultimate proving ground for human combat. While the concept traces its ancient roots back to the brutal Greek Olympic games of Pankration, the modern sport exploded into mainstream consciousness in the 1990s with the famous rise of the UFC. The early days of the Ultimate Fighting Championship were created to answer one simple question about which martial art works best in a real fight. The world quickly learned that a true fighter must master them all. MMA fuses the devastating striking of Boxing and Kickboxing, the relentless takedowns of Wrestling, and the chess like ground control of Brazilian Jiu Jitsu. The Philippines, and specifically our home in the Cordilleras, has produced some of the most feared MMA warriors on the planet. Incredible local athletes like Eduard Folayang, Joshua Pacio, Kevin Belingon, and Danny Kingad have captured world titles and dominated the ONE Championship cage, proving that the mountain warrior spirit is truly world class. At GOALS Gym Baguio, our Adult MMA program teaches you this complete and battle tested system. You will learn how to strike with knockout power, transition seamlessly into takedowns, and control or finish fights on the mat.</p>
+                    </div>
                     </div>
                     <div class="tab-content" id="tab-5">
                         <img src="https://images.unsplash.com/photo-1702911702574-d19c882eae5b?q=80&w=1160&auto=format&fit=crop&w=2070&q=80" alt="Kids MMA Class" class="class-image">
                         <div class="class-details">
-                            <h4>Kids MMA Class (11 years old and below)</h4>
-                            <p>Kids MMA at GOALS Gym Baguio helps children build discipline, confidence, and coordination through fun and safe martial arts training. This class teaches basic skills while developing respect, focus, and healthy habits for kids.</p>
-                        </div>
+                            <h4>Kids MMA: Building Little Champions (Ages 11 and below)</h4>
+                            <p>Every great martial artist starts somewhere, and science shows that combat sports drastically improve a child's focus, emotional regulation, and physical coordination. At GOALS Gym Baguio, our Kids MMA program molds the next generation by blending basic striking, grappling, and practical self defense into highly engaging lessons. We ground our teachings in deep rooted Filipino values of respect and discipline. Beyond just learning how to throw a proper punch or secure a takedown safely, this training instills a true champion mindset. Your kids will learn perseverance when facing challenges, respect for their coaches and training partners, and the quiet, bully proof confidence to stand up for themselves. Watch them build functional habits that will set them up for a lifetime of success.</p>
                     </div>
+                </div>
                     <div class="tab-content" id="tab-6">
-                        <img src="https://images.unsplash.com/photo-1515025617920-e1e674b5033c?q=80&w=1244&auto=format&fit=crop&w=2070&q=80" alt="Brazilian Jiu-Jitsu Class" class="class-image">
+                        <img src="https://res.cloudinary.com/dwwa23ssw/image/upload/v1776247911/jiu-jitsu_k45pe7.webp" alt="Brazilian Jiu-Jitsu Class" class="class-image">
                         <div class="class-details">
-                            <h4>Brazilian Jiu-Jitsu Class (MWF, Sat)</h4>
-                            <p>Learn Brazilian Jiu-Jitsu a martial art focused on technique, leverage, and ground control. At GOALS Gym Baguio, this class helps improve problem-solving, strength, and self-defense awareness. Perfect for anyone looking for a practical and mentally engaging martial art here in Baguio.</p>
+                            <h4>Brazilian Jiu-Jitsu: The Gentle Art That Conquered the World (MWF, Sat)</h4>
+                            <p>Brazilian Jiu Jitsu completely revolutionized the martial arts world by proving that skeletal structure and leverage can neutralize sheer size and brute strength. The secret lies in taking the fight to the ground and utilizing the "guard" position, turning your legs into a defensive and offensive shield. It is physical chess played at lightning speed. The BJJ scene in the Philippines is exploding right now, driven by world class homegrown champions like Meggie Ochoa and Annie Ramirez who have firmly put our country on the global grappling map. At GOALS Gym Baguio, you will learn how to bypass an opponent's defenses, control their center of gravity, and apply precise joint locks and chokes. BJJ builds incredible core strength, sharpens your split second problem solving skills under pressure, and proves that technical intelligence always beats physical intimidation.</p>
                         </div>
                     </div>
                     <div class="tab-content" id="tab-7">
-                        <img src="https://images.unsplash.com/photo-1555597673-b21d5c935879?q=80&w=1172&auto=format&fit=crop" alt="Wushu Taolu Class" class="class-image">
+                        <img src="https://res.cloudinary.com/dwwa23ssw/image/upload/v1776247876/wushu_j7yklm.webp" alt="Wushu Taolu Class" class="class-image">
                         <div class="class-details">
-                            <h4>Wushu Taolu Class</h4>
-                            <p>Experience the art of Wushu Taolu at GOALS Gym Baguio, a dynamic Chinese martial art combining elegant forms, acrobatic kicks, and fluid movements. This class improves flexibility, balance, coordination, and mental focus. Whether you're training for competition or personal development, Wushu Taolu offers a beautiful and disciplined path to fitness.</p>
+                            <h4>Wushu Taolu: The Heritage of Mountain Warriors</h4>
+                            <p>The Cordilleras are rightfully recognized as the combat sports capital of the Philippines, and much of that fearsome reputation was built on the foundation of Wushu. Legendary martial artists from Baguio and Benguet, such as Eduard Folayang, Joshua Pacio, and Danny Kingad, began their phenomenal combat journeys competing in Wushu Sanda. Sanda is the gritty, full contact sparring side of Wushu that combines brutal kickboxing with lightning fast, high amplitude takedowns that score massive points. On the flip side is Wushu Taolu, the spectacular performance based art. Taolu involves highly choreographed forms, gravity defying aerial kicks, and flowing movements that require extreme flexibility and balance. At GOALS Gym Baguio, our program honors this deeply rooted local heritage. Whether you are drawn to the explosive striking power of our local MMA heroes or the beautiful cinematic agility of Taolu, you will forge the iron focus and athleticism that built the champions of our mountains.</p>
                         </div>
                     </div>
                 </div>
@@ -442,98 +501,28 @@
                 <div class="contact-form-container">
                     <h3>Contact Us</h3>
                     <div class="divider"></div>
-<form class="contact-form" id="contact" action="https://formspree.io/f/mzdyprgw" method="POST" onsubmit="return validateForm(event)" autocomplete="off">
+<form class="contact-form" id="contact" action="https://formspree.io/f/mzdyprgw" method="POST" autocomplete="off">
     <div class="form-row">
         <div class="form-group">
             <label for="name">Your Name* <span class="char-count" id="name-count">(0/50)</span></label>
-            <input name="name" type="text" id="name" placeholder="Your Name" required maxlength="50" oninput="updateCharCount('name', 'name-count', 50)" autocomplete="off">
+            <input name="name" type="text" id="name" placeholder="Your Name" required maxlength="50" data-count="name-count" data-max="50" class="char-count-input" autocomplete="off">
         </div>
         <div class="form-group">
             <label for="email">Your Email* <span class="char-count" id="email-count">(0/100)</span></label>
-            <input name="email" type="email" id="email" placeholder="Your Email" required maxlength="100" oninput="updateCharCount('email', 'email-count', 100)" autocomplete="off">
+            <input name="email" type="email" id="email" placeholder="Your Email" required maxlength="100" data-count="email-count" data-max="100" class="char-count-input" autocomplete="off">
         </div>
     </div>
     <div class="form-group">
         <label for="subject">Subject <span class="char-count" id="subject-count">(0/100)</span></label>
-        <input name="subject" type="text" id="subject" placeholder="Subject" maxlength="100" oninput="updateCharCount('subject', 'subject-count', 100)" autocomplete="off">
+        <input name="subject" type="text" id="subject" placeholder="Subject" maxlength="100" data-count="subject-count" data-max="100" class="char-count-input" autocomplete="off">
     </div>
     <div class="form-group">
         <label for="message">Message* <span class="char-count" id="message-count">(0/500)</span></label>
-        <textarea name="message" rows="6" id="message" placeholder="Message" required maxlength="500" oninput="updateCharCount('message', 'message-count', 500)" autocomplete="off"></textarea>
+        <textarea name="message" rows="6" id="message" placeholder="Message" required maxlength="500" data-count="message-count" data-max="500" class="char-count-input" autocomplete="off"></textarea>
     </div>
-    <div id="form-error" class="form-error-message" style="display:none;color:#ff4444;margin-bottom:10px;"></div>
+    <div id="form-error" class="form-error-message"></div>
     <button type="submit" id="form-submit" class="submit-button">Send Message</button>
 </form>
-<script>
-function updateCharCount(inputId, countId, max) {
-    const input = document.getElementById(inputId);
-    const count = document.getElementById(countId);
-    const current = input.value.length;
-    count.textContent = '(' + current + '/' + max + ')';
-    if (current >= max) {
-        count.classList.add('at-limit');
-    } else {
-        count.classList.remove('at-limit');
-    }
-}
-function validateForm(e) {
-    const name = document.getElementById('name').value.trim();
-    const email = document.getElementById('email').value.trim();
-    const message = document.getElementById('message').value.trim();
-    const errorDiv = document.getElementById('form-error');
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (name.length < 2) {
-        errorDiv.textContent = 'Name must be at least 2 characters long.';
-        errorDiv.style.display = 'block';
-        return false;
-    }
-    if (!emailRegex.test(email)) {
-        errorDiv.textContent = 'Please enter a valid email address (e.g., name@example.com).';
-        errorDiv.style.display = 'block';
-        return false;
-    }
-    if (message.length < 10) {
-        errorDiv.textContent = 'Message must be at least 10 characters long.';
-        errorDiv.style.display = 'block';
-        return false;
-    }
-    errorDiv.style.display = 'none';
-
-    // Clear form persistence on successful submit
-    clearFormPersistence();
-
-    return true;
-}
-
-function clearFormPersistence() {
-    const formId = 'contact';
-    const fields = ['name', 'email', 'subject', 'message'];
-    const path = window.location.pathname;
-
-    // Clear sessionStorage keys
-    fields.forEach(field => {
-        const key = `${path}-${field}`;
-        sessionStorage.removeItem(key);
-        // Also try without path prefix in case form-persistence.js used different format
-        sessionStorage.removeItem(field);
-        localStorage.removeItem(field);
-    });
-
-    // Clear form fields after a short delay to allow form submission
-    setTimeout(() => {
-        document.getElementById('name').value = '';
-        document.getElementById('email').value = '';
-        document.getElementById('subject').value = '';
-        document.getElementById('message').value = '';
-
-        // Reset character counters
-        updateCharCount('name', 'name-count', 50);
-        updateCharCount('email', 'email-count', 100);
-        updateCharCount('subject', 'subject-count', 100);
-        updateCharCount('message', 'message-count', 500);
-    }, 100);
-}
-</script>
                 </div>
             </div>
         </div>
@@ -568,7 +557,7 @@ function clearFormPersistence() {
     <div id="galleryLightbox" class="lightbox">
         <span class="lightbox-close">×</span>
         <img class="lightbox-content" id="lightboxImg">
-        <div class="lightbox-counter" id="lightboxCounter">1 / 28</div>
+        <div class="lightbox-counter" id="lightboxCounter">1 / 35</div>
         <a class="lightbox-prev" id="lightboxPrev">❮</a>
         <a class="lightbox-next" id="lightboxNext">❯</a>
     </div>
@@ -668,19 +657,19 @@ function clearFormPersistence() {
 
     <div id="fingerprintModal" class="custom-modal">
         <div class="custom-modal-content">
-            <span class="close-custom-modal" onclick="closeFingerprintModal()">×</span>
+            <span class="close-custom-modal close-fingerprint-modal">×</span>
             <h3 class="custom-modal-title">GOALS GYM BIOMETRICS</h3>
             <p class="custom-modal-subtitle">*Enhanced Member Experience</p>
             
-            <div style="text-align: center; padding: 20px; color: var(--neutral);">
-                <i class="fas fa-fingerprint" style="font-size: 4rem; color: var(--primary); margin-bottom: 20px;"></i>
-                <p style="font-size: 1.1rem; line-height: 1.6;">
-                    A new fingerprint implementation will be done soon for <strong>Goals Gym</strong> for better experience. 
-                    This system will allow for faster check-ins, tighter security, and a seamless workout flow for all our members. 
+            <div class="fingerprint-content">
+                <i class="fas fa-fingerprint fingerprint-icon"></i>
+                <p class="fingerprint-text">
+                    A new fingerprint implementation will be done soon for <strong>Goals Gym</strong> for better experience.
+                    This system will allow for faster check-ins, tighter security, and a seamless workout flow for all our members.
                     Stay tuned for the official launch date!
                 </p>
             </div>
-            <button class="business-btn modal-btn" onclick="closeFingerprintModal()" style="width: 100%;">GOT IT!</button>
+            <button class="business-btn modal-btn fingerprint-btn close-fingerprint-modal">GOT IT!</button>
         </div>
     </div>
 

@@ -739,6 +739,144 @@ input:checked + .slider:before {
 
     .classes-container {
         flex-direction: column;
+        min-height: auto;
+        gap: 0;
+    }
+
+    /* Hide desktop content area on mobile */
+    .classes-content {
+        display: none;
+    }
+
+    /* Mobile accordion styles */
+    .classes-tabs {
+        flex: none;
+        width: 100%;
+    }
+
+    /* Show accordion elements on mobile */
+    .mobile-tab-panel {
+        display: block;
+        width: 100%;
+    }
+
+    .mobile-accordion-item {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .mobile-accordion-item > a {
+        width: 100%;
+    }
+
+    .accordion-arrow {
+        display: inline-block;
+    }
+
+    .classes-tabs ul {
+        gap: 0;
+        flex-direction: column;
+    }
+
+    .classes-tabs li {
+        margin-bottom: 0;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .classes-tabs li:last-child {
+        border-bottom: none;
+    }
+
+    .mobile-accordion-item {
+        overflow: hidden;
+    }
+
+    .mobile-accordion-item:first-child {
+        border-radius: var(--radius) var(--radius) 0 0;
+    }
+
+    .mobile-accordion-item:last-child {
+        border-radius: 0 0 var(--radius) var(--radius);
+        border-bottom: none;
+    }
+
+    .mobile-accordion-item:last-child .mobile-tab-panel {
+        border-radius: 0 0 var(--radius) var(--radius);
+    }
+
+    .classes-tabs a {
+        padding: 1rem 1.25rem;
+        font-size: 0.95rem;
+        border-radius: 0;
+        border: none;
+        background-color: var(--card-bg);
+        justify-content: flex-start;
+        position: relative;
+    }
+
+    .classes-tabs a.active {
+        background-color: rgba(179, 0, 0, 0.2);
+        box-shadow: none;
+    }
+
+    .tab-title {
+        flex: 1;
+        text-align: left;
+    }
+
+    .accordion-arrow {
+        margin-left: auto;
+        transition: transform 0.3s ease;
+        font-size: 0.9rem;
+        color: var(--primary);
+    }
+
+    .mobile-accordion-item.expanded .accordion-arrow {
+        transform: rotate(180deg);
+    }
+
+    /* Mobile tab panel - starts hidden */
+    .mobile-tab-panel {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.4s ease-out, padding 0.4s ease-out;
+        background-color: var(--darker);
+        padding: 0 1.25rem;
+    }
+
+    .mobile-accordion-item.expanded .mobile-tab-panel {
+        max-height: 2000px; /* Large enough to fit content */
+        padding: 1.25rem;
+        transition: max-height 0.5s ease-in, padding 0.4s ease-in;
+    }
+
+    .tab-icon {
+        width: 40px;
+        height: 40px;
+        min-width: 40px;
+        font-size: 1rem;
+        margin-right: 0.75rem;
+    }
+
+    .mobile-tab-panel .class-image {
+        height: 180px;
+        width: 100%;
+        object-fit: cover;
+        border-radius: var(--radius);
+        margin-bottom: 0.5rem;
+    }
+
+    .mobile-tab-panel .class-details h4 {
+        font-size: 1.25rem;
+        margin-bottom: 0.75rem;
+        color: var(--accent);
+    }
+
+    .mobile-tab-panel .class-details p {
+        font-size: 0.9rem;
+        line-height: 1.6;
+        color: var(--neutral);
     }
 
     .contact-container {
@@ -752,7 +890,56 @@ input:checked + .slider:before {
 
 @media (max-width: 480px) {
     .gallery-item {
-        flex: 0 0 100%; 
+        flex: 0 0 100%;
+    }
+
+    /* Improved mobile classes section for small screens */
+    .classes-tabs a {
+        padding: 0.9rem 1rem;
+        font-size: 0.9rem;
+    }
+
+    .tab-icon {
+        width: 36px;
+        height: 36px;
+        min-width: 36px;
+        font-size: 0.95rem;
+        margin-right: 0.6rem;
+    }
+
+    .accordion-arrow {
+        font-size: 0.85rem;
+    }
+
+    .mobile-tab-panel {
+        padding: 0 1rem;
+    }
+
+    .mobile-accordion-item.expanded .mobile-tab-panel {
+        padding: 1rem;
+    }
+
+    /* Show 80% of image - use aspect ratio to achieve this */
+    .mobile-tab-panel .class-image {
+        height: auto;
+        aspect-ratio: 16 / 10; /* Shows about 80% of typical image height */
+        min-height: 160px;
+        max-height: 200px;
+    }
+
+    .mobile-tab-panel .class-details h4 {
+        font-size: 1.15rem;
+        margin-bottom: 0.6rem;
+    }
+
+    .mobile-tab-panel .class-details p {
+        font-size: 0.875rem;
+        line-height: 1.55;
+    }
+
+    .image-credit {
+        font-size: 0.7rem;
+        margin-bottom: 0.75rem;
     }
 }
 
@@ -1546,54 +1733,84 @@ section {
 .classes-container {
     display: flex;
     gap: 2rem;
+    align-items: stretch;
+    min-height: 600px;
 }
 
 .classes-tabs {
-    flex: 1;
+    flex: 0 0 380px;
+    display: flex;
+    flex-direction: column;
 }
 
 .classes-tabs ul {
     list-style: none;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    justify-content: space-between;
 }
 
 .classes-tabs li {
-    margin-bottom: 1.5rem;
+    margin-bottom: 0.75rem;
+    flex: 1;
+    display: flex;
+}
+
+.classes-tabs li:last-child {
+    margin-bottom: 0;
 }
 
 .classes-tabs a {
     display: flex;
     align-items: center;
-    padding: 1.5rem;
+    padding: 1rem 1.5rem;
     background-color: var(--card-bg);
     border-radius: var(--radius);
     text-decoration: none;
     color: var(--accent);
     transition: var(--transition);
     border: 1px solid var(--border-color);
+    width: 100%;
+    font-size: 1.1rem;
+    font-weight: 500;
 }
 
 .classes-tabs a:hover {
     border-color: var(--primary);
+    background-color: rgba(179, 0, 0, 0.05);
 }
 
 .classes-tabs a.active {
-    background-color: rgba(179, 0, 0, 0.1);
+    background-color: rgba(179, 0, 0, 0.15);
     border-color: var(--primary);
+    box-shadow: 0 0 15px rgba(179, 0, 0, 0.2);
 }
 
 .tab-icon {
-    width: 40px;
-    height: 40px;
+    width: 50px;
+    height: 50px;
+    min-width: 50px;
     background-color: var(--primary);
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     margin-right: 1rem;
+    font-size: 1.3rem;
 }
 
 .tab-icon i {
     color: #FFFFFF;
+}
+
+/* Hide mobile accordion panels on desktop */
+.mobile-tab-panel {
+    display: none;
+}
+
+.accordion-arrow {
+    display: none;
 }
 
 .view-all-button {
@@ -1614,35 +1831,75 @@ section {
 }
 
 .classes-content {
-    flex: 2;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background-color: var(--card-bg);
+    border-radius: var(--radius);
+    border: 1px solid var(--border-color);
+    padding: 2rem;
+    overflow: visible;
 }
 
-.tab-content {
+.classes-content .tab-content {
+    height: 100%;
     display: none;
+    flex-direction: column;
 }
 
-.tab-content.active {
-    display: block;
+.classes-content .tab-content.active {
+    display: flex;
     animation: fadeIn 0.5s ease;
 }
 
 .class-image {
     width: 100%;
-    height: 300px;
+    height: 220px;
     object-fit: cover;
     border-radius: var(--radius);
-    margin-bottom: 1.5rem;
+    margin-bottom: 0.5rem;
+    flex-shrink: 0;
+    /* Anti-download protection */
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    pointer-events: none;
+    -webkit-user-drag: none;
+    -khtml-user-drag: none;
+    -moz-user-drag: none;
+    -o-user-drag: none;
+}
+
+.image-credit {
+    font-size: 0.75rem;
+    color: var(--neutral);
+    opacity: 0.7;
+    text-align: right;
+    margin-bottom: 1rem;
+    font-style: italic;
+    flex-shrink: 0;
+}
+
+.class-details {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: visible;
 }
 
 .class-details h4 {
-    font-size: 1.8rem;
+    font-size: 1.6rem;
     margin-bottom: 1rem;
     color: var(--accent);
+    line-height: 1.3;
 }
 
 .class-details p {
     color: var(--neutral);
-    margin-bottom: 1.5rem;
+    line-height: 1.7;
+    flex: 1;
+    overflow: visible;
 }
 
 .schedule-button {
@@ -1761,6 +2018,7 @@ section {
     font-size: 0.9rem;
     margin-bottom: 10px;
     padding: 5px 0;
+    display: none;
 }
 
 /* ---------- Footer ---------- */
@@ -1894,8 +2152,18 @@ section {
     left: 0;
     width: 100%;
     height: 100%;
-    object-fit: cover; 
+    object-fit: cover;
     transition: transform 0.3s ease;
+    /* Anti-download protection */
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    pointer-events: none;
+    -webkit-user-drag: none;
+    -khtml-user-drag: none;
+    -moz-user-drag: none;
+    -o-user-drag: none;
 }
 
 .gallery-item::after {
@@ -1917,6 +2185,27 @@ section {
 
 .gallery-item:hover::after {
     background-color: rgba(179, 0, 0, 0.2); 
+}
+
+/* Anti-download protection for gallery images */
+.protected-image {
+    user-select: none !important;
+    -webkit-user-select: none !important;
+    -moz-user-select: none !important;
+    -ms-user-select: none !important;
+    -webkit-user-drag: none !important;
+    -khtml-user-drag: none !important;
+    -moz-user-drag: none !important;
+    -o-user-drag: none !important;
+    pointer-events: none !important;
+}
+
+/* Prevent context menu on gallery items */
+.gallery-item,
+.gallery-item-inner,
+.gallery-item img,
+.lightbox-content {
+    -webkit-touch-callout: none;
 }
 
 /* ---------- Lightbox/Modal ---------- */
@@ -1942,10 +2231,19 @@ section {
     height: auto;
     max-width: 90vw;
     max-height: 85vh;
-    object-fit: contain; 
-    border: 3px solid var(--accent); 
+    object-fit: contain;
+    border: 3px solid var(--accent);
     border-radius: 4px;
-    box-shadow: 0 0 30px rgba(179, 0, 0, 0.5); 
+    box-shadow: 0 0 30px rgba(179, 0, 0, 0.5);
+    /* Anti-download protection */
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    -webkit-user-drag: none;
+    -khtml-user-drag: none;
+    -moz-user-drag: none;
+    -o-user-drag: none;
 }
 
 .lightbox-close {
@@ -2108,6 +2406,28 @@ section {
     color: var(--neutral);
     font-size: 0.9rem;
     list-style-type: none;
+}
+
+/* ---------- Fingerprint Modal Styles ---------- */
+.fingerprint-content {
+    text-align: center;
+    padding: 20px;
+    color: var(--neutral);
+}
+
+.fingerprint-icon {
+    font-size: 4rem;
+    color: var(--primary);
+    margin-bottom: 20px;
+}
+
+.fingerprint-text {
+    font-size: 1.1rem;
+    line-height: 1.6;
+}
+
+.fingerprint-btn {
+    width: 100%;
 }
 
 @media (max-width: 768px) {

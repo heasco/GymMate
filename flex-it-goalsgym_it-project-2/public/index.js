@@ -72,20 +72,59 @@ indicators.forEach(indicator => {
 // Tab functionality for classes section
 const tabLinks = document.querySelectorAll('.tab-link');
 const tabContents = document.querySelectorAll('.tab-content');
+const mobileAccordionItems = document.querySelectorAll('.mobile-accordion-item');
+
+// Check if we're on mobile
+function isMobile() {
+    return window.innerWidth <= 768;
+}
 
 tabLinks.forEach(link => {
     link.addEventListener('click', (e) => {
         e.preventDefault();
-        
-        // Remove active class from all tabs and contents
-        tabLinks.forEach(tab => tab.classList.remove('active'));
-        tabContents.forEach(content => content.classList.remove('active'));
-        
-        // Add active class to clicked tab and corresponding content
-        link.classList.add('active');
         const tabId = link.getAttribute('data-tab');
-        document.getElementById(tabId).classList.add('active');
+        const parentLi = link.closest('.mobile-accordion-item');
+
+        if (isMobile() && parentLi) {
+            // Mobile accordion behavior
+            const isExpanded = parentLi.classList.contains('expanded');
+
+            // Close all accordion items
+            mobileAccordionItems.forEach(item => {
+                item.classList.remove('expanded');
+                item.querySelector('.tab-link').classList.remove('active');
+            });
+
+            // If this wasn't expanded, expand it
+            if (!isExpanded) {
+                parentLi.classList.add('expanded');
+                link.classList.add('active');
+            }
+        } else {
+            // Desktop behavior - update both tabs and content
+            tabLinks.forEach(tab => tab.classList.remove('active'));
+            tabContents.forEach(content => content.classList.remove('active'));
+
+            link.classList.add('active');
+            document.getElementById(tabId).classList.add('active');
+        }
     });
+});
+
+// Handle resize to reset states
+window.addEventListener('resize', () => {
+    if (!isMobile()) {
+        // Reset mobile accordion states when going to desktop
+        mobileAccordionItems.forEach(item => item.classList.remove('expanded'));
+
+        // Make sure first tab is active on desktop
+        if (tabLinks.length > 0 && tabContents.length > 0) {
+            tabLinks.forEach(tab => tab.classList.remove('active'));
+            tabContents.forEach(content => content.classList.remove('active'));
+            tabLinks[0].classList.add('active');
+            tabContents[0].classList.add('active');
+        }
+    }
 });
 
 // Add hover effects to table rows
@@ -132,7 +171,46 @@ document.addEventListener('DOMContentLoaded', function() {
 // GYM GALLERY DYNAMIC POPULATION & LOGIC
 // ==============================================
 
-const TOTAL_IMAGES = 35; // Updated to match your total number of images
+const GALLERY_IMAGES = [
+    'https://res.cloudinary.com/dwwa23ssw/image/upload/v1776242944/1_s6nd7o.webp',
+    'https://res.cloudinary.com/dwwa23ssw/image/upload/v1776243010/2_i7yqlb.webp',
+    'https://res.cloudinary.com/dwwa23ssw/image/upload/v1776243011/3_ctyj42.webp',
+    'https://res.cloudinary.com/dwwa23ssw/image/upload/v1776243012/4_hcbrlf.webp',
+    'https://res.cloudinary.com/dwwa23ssw/image/upload/v1776243013/5_v46mw6.webp',
+    'https://res.cloudinary.com/dwwa23ssw/image/upload/v1776243013/6_nypu7s.webp',
+    'https://res.cloudinary.com/dwwa23ssw/image/upload/v1776243013/7_vwdpg9.webp',
+    'https://res.cloudinary.com/dwwa23ssw/image/upload/v1776243010/8_vrrgmv.webp',
+    'https://res.cloudinary.com/dwwa23ssw/image/upload/v1776243010/9_zvp9ot.webp',
+    'https://res.cloudinary.com/dwwa23ssw/image/upload/v1776243010/10_j4nk3l.webp',
+    'https://res.cloudinary.com/dwwa23ssw/image/upload/v1776243010/11_whypux.webp',
+    'https://res.cloudinary.com/dwwa23ssw/image/upload/v1776243010/12_lxcek4.webp',
+    'https://res.cloudinary.com/dwwa23ssw/image/upload/v1776243011/13_ipf5wm.webp',
+    'https://res.cloudinary.com/dwwa23ssw/image/upload/v1776243011/14_zgvhc5.webp',
+    'https://res.cloudinary.com/dwwa23ssw/image/upload/v1776243011/15_mifmvr.webp',
+    'https://res.cloudinary.com/dwwa23ssw/image/upload/v1776243011/16_zzhgxz.webp',
+    'https://res.cloudinary.com/dwwa23ssw/image/upload/v1776243012/17_we15iu.webp',
+    'https://res.cloudinary.com/dwwa23ssw/image/upload/v1776243012/18_q4r4eb.webp',
+    'https://res.cloudinary.com/dwwa23ssw/image/upload/v1776243012/19_wr14vo.webp',
+    'https://res.cloudinary.com/dwwa23ssw/image/upload/v1776243012/20_dj5one.webp',
+    'https://res.cloudinary.com/dwwa23ssw/image/upload/v1776243012/21_etsrjk.webp',
+    'https://res.cloudinary.com/dwwa23ssw/image/upload/v1776243013/22_s4bzyb.webp',
+    'https://res.cloudinary.com/dwwa23ssw/image/upload/v1776243013/23_qawykq.webp',
+    'https://res.cloudinary.com/dwwa23ssw/image/upload/v1776243013/24_mlklky.webp',
+    'https://res.cloudinary.com/dwwa23ssw/image/upload/v1776243013/25_g7ndfl.webp',
+    'https://res.cloudinary.com/dwwa23ssw/image/upload/v1776243014/26_uxvwd2.webp',
+    'https://res.cloudinary.com/dwwa23ssw/image/upload/v1776243014/27_z5mbkl.webp',
+    'https://res.cloudinary.com/dwwa23ssw/image/upload/v1776243014/28_iwa8ck.webp',
+    'https://res.cloudinary.com/dwwa23ssw/image/upload/v1776243014/29_d2m7at.webp',
+    'https://res.cloudinary.com/dwwa23ssw/image/upload/v1776243014/30_wiq5yr.webp',
+    'https://res.cloudinary.com/dwwa23ssw/image/upload/v1776243014/31_ohoipm.webp',
+    'https://res.cloudinary.com/dwwa23ssw/image/upload/v1776243015/32_k8m1od.webp',
+    'https://res.cloudinary.com/dwwa23ssw/image/upload/v1776243015/33_i4ditw.webp',
+    'https://res.cloudinary.com/dwwa23ssw/image/upload/v1776243015/34_vmzxsi.webp',
+    'https://res.cloudinary.com/dwwa23ssw/image/upload/v1776243015/35_jffcsp.webp',
+    'https://res.cloudinary.com/dwwa23ssw/image/upload/v1776248076/GoalsGym-Baguio-1_yroujs.webp'
+];
+
+const TOTAL_IMAGES = GALLERY_IMAGES.length;
 const SWITCH_INTERVAL = 3000; // 3 seconds
 
 // FIX: Align JS breakpoints perfectly with CSS breakpoints
@@ -148,12 +226,13 @@ document.addEventListener('DOMContentLoaded', function() {
     const lightbox = document.getElementById('galleryLightbox');
     const lightboxImg = document.getElementById('lightboxImg');
     const counter = document.getElementById('lightboxCounter');
-    
+
     // Safety check if gallery doesn't exist on page
     if(!track || !lightbox) return;
 
     // --- 1. Dynamically Populate Gallery Track ---
-    for (let i = 1; i <= TOTAL_IMAGES; i++) {
+    GALLERY_IMAGES.forEach((imageUrl, index) => {
+        const i = index + 1; // 1-based index
         const item = document.createElement('div');
         item.classList.add('gallery-item');
         item.dataset.index = i; // Store index for lightbox
@@ -162,19 +241,20 @@ document.addEventListener('DOMContentLoaded', function() {
         inner.classList.add('gallery-item-inner');
 
         const img = document.createElement('img');
-        img.src = `image/${i}.jpg`; // Fetches image/1.jpg up to image/35.jpg
+        img.src = imageUrl;
         img.alt = `Goals Gym Member Workout ${i}`;
-        
+        img.classList.add('protected-image'); // Add class for anti-download CSS
+
         // Handle image loading errors gracefully
         img.onerror = function() {
-            console.warn(`Gallery image not found: image/${i}.jpg`);
+            console.warn(`Gallery image failed to load: ${imageUrl}`);
             this.src = 'https://via.placeholder.com/300?text=GOALS+GYM'; // Placeholder
         };
 
         inner.appendChild(img);
         item.appendChild(inner);
         track.appendChild(item);
-    }
+    });
 
     // --- 2. Slider Logic (Auto-rotation dynamically responsive) ---
     const galleryItems = document.querySelectorAll('.gallery-item');
@@ -227,8 +307,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function openLightbox(index) {
         lightbox.style.display = 'block';
-        lightboxImg.src = `image/${index}.jpg`;
-        counter.textContent = `${index} / ${TOTAL_IMAGES}`; 
+        lightboxImg.src = GALLERY_IMAGES[index - 1]; // Array is 0-indexed
+        lightboxImg.classList.add('protected-image'); // Add protection class
+        counter.textContent = `${index} / ${TOTAL_IMAGES}`;
         document.body.style.overflow = 'hidden'; // Prevent page scroll
     }
 
@@ -466,6 +547,26 @@ if (cookieBanner) {
 }
 
 // ==============================================
+// ANTI-DOWNLOAD PROTECTION FOR CLASS IMAGES
+// ==============================================
+document.addEventListener('DOMContentLoaded', function() {
+    // Prevent right-click on class images
+    const classImages = document.querySelectorAll('.class-image');
+    classImages.forEach(img => {
+        img.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            return false;
+        });
+
+        // Also prevent drag
+        img.addEventListener('dragstart', (e) => {
+            e.preventDefault();
+            return false;
+        });
+    });
+});
+
+// ==============================================
 // INLINE MODAL FUNCTIONS (from index.html)
 // ==============================================
 document.addEventListener('DOMContentLoaded', function() {
@@ -487,4 +588,120 @@ document.addEventListener('DOMContentLoaded', function() {
         if (event.target == fpModal) fpModal.style.display = "none";
         if (event.target == clModal) clModal.style.display = "none";
     };
+
+    // ==============================================
+    // MODAL TRIGGER BUTTONS (data-modal attributes)
+    // ==============================================
+    document.querySelectorAll('[data-modal]').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const modalId = this.getAttribute('data-modal');
+            if (modalId === 'classesModal') {
+                document.getElementById('classesModal').style.display = 'block';
+            } else if (modalId === 'fingerprintModal') {
+                document.getElementById('fingerprintModal').style.display = 'block';
+            }
+        });
+    });
+
+    // Fingerprint modal close buttons
+    document.querySelectorAll('.close-fingerprint-modal').forEach(btn => {
+        btn.addEventListener('click', closeFingerprintModal);
+    });
+
+    // ==============================================
+    // CONTACT FORM VALIDATION
+    // ==============================================
+    const contactForm = document.getElementById('contact');
+    if (contactForm) {
+        contactForm.addEventListener('submit', validateForm);
+
+        // Initialize character counters on page load and attach listeners
+        document.querySelectorAll('.char-count-input').forEach(input => {
+            const countId = input.getAttribute('data-count');
+            const max = parseInt(input.getAttribute('data-max'), 10);
+            const inputId = input.id;
+
+            // Initial update
+            updateCharCount(inputId, countId, max);
+
+            // Attach listener
+            input.addEventListener('input', function() {
+                updateCharCount(inputId, countId, max);
+            });
+        });
+    }
 });
+
+function updateCharCount(inputId, countId, max) {
+    const input = document.getElementById(inputId);
+    const count = document.getElementById(countId);
+    if (!input || !count) return;
+    const current = input.value.length;
+    count.textContent = '(' + current + '/' + max + ')';
+    if (current >= max) {
+        count.classList.add('at-limit');
+    } else {
+        count.classList.remove('at-limit');
+    }
+}
+
+function validateForm(e) {
+    const name = document.getElementById('name').value.trim();
+    const email = document.getElementById('email').value.trim();
+    const message = document.getElementById('message').value.trim();
+    const errorDiv = document.getElementById('form-error');
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (name.length < 2) {
+        errorDiv.textContent = 'Name must be at least 2 characters long.';
+        errorDiv.style.display = 'block';
+        e.preventDefault();
+        return false;
+    }
+    if (!emailRegex.test(email)) {
+        errorDiv.textContent = 'Please enter a valid email address (e.g., name@example.com).';
+        errorDiv.style.display = 'block';
+        e.preventDefault();
+        return false;
+    }
+    if (message.length < 10) {
+        errorDiv.textContent = 'Message must be at least 10 characters long.';
+        errorDiv.style.display = 'block';
+        e.preventDefault();
+        return false;
+    }
+    errorDiv.style.display = 'none';
+
+    // Clear form persistence on successful submit
+    clearFormPersistence();
+
+    return true;
+}
+
+function clearFormPersistence() {
+    const fields = ['name', 'email', 'subject', 'message'];
+    const path = window.location.pathname;
+
+    // Clear sessionStorage keys
+    fields.forEach(field => {
+        const key = `${path}-${field}`;
+        sessionStorage.removeItem(key);
+        // Also try without path prefix in case form-persistence.js used different format
+        sessionStorage.removeItem(field);
+        localStorage.removeItem(field);
+    });
+
+    // Clear form fields after a short delay to allow form submission
+    setTimeout(() => {
+        document.getElementById('name').value = '';
+        document.getElementById('email').value = '';
+        document.getElementById('subject').value = '';
+        document.getElementById('message').value = '';
+
+        // Reset character counters
+        updateCharCount('name', 'name-count', 50);
+        updateCharCount('email', 'email-count', 100);
+        updateCharCount('subject', 'subject-count', 100);
+        updateCharCount('message', 'message-count', 500);
+    }, 100);
+}
