@@ -757,42 +757,124 @@ input:checked + .slider:before {
     /* Show accordion elements on mobile */
     .mobile-tab-panel {
         display: block;
-        width: 100%;
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), padding 0.4s ease;
+        background-color: var(--darker);
+        padding: 0;
+    }
+
+    .mobile-accordion-item.expanded .mobile-tab-panel {
+        max-height: 2000px;
+        padding: 1.25rem;
+    }
+
+    .mobile-tab-panel-inner {
+        opacity: 0;
+        transform: translateY(-10px);
+        transition: opacity 0.3s ease 0.1s, transform 0.3s ease 0.1s;
+    }
+
+    .mobile-accordion-item.expanded .mobile-tab-panel-inner {
+        opacity: 1;
+        transform: translateY(0);
     }
 
     .mobile-accordion-item {
         display: flex;
         flex-direction: column;
         width: 100%;
+        border-bottom: 1px solid var(--border-color);
+        overflow: hidden;
     }
 
-    .mobile-accordion-item > a {
+    .mobile-accordion-item:last-child {
+        border-bottom: none;
+    }
+
+    /* Accordion Header Styles */
+    .accordion-header {
+        display: flex;
+        align-items: center;
         width: 100%;
+        background-color: var(--card-bg);
+        border: none;
+        padding: 0;
+    }
+
+    .accordion-header .tab-link {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        padding: 1rem 0 1rem 1.25rem;
+        text-decoration: none;
+        color: var(--accent);
+        font-size: 0.95rem;
+        border: none;
+        background: transparent;
+        border-radius: 0;
+        justify-content: flex-start;
+        position: relative;
+    }
+
+    .accordion-toggle {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 44px;
+        height: 44px;
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: var(--primary);
+        font-size: 1rem;
+        padding: 0;
+        margin-right: 0.25rem;
+    }
+
+    .accordion-toggle:hover {
+        background-color: rgba(179, 0, 0, 0.1);
+        border-radius: 50%;
+    }
+
+    .accordion-header .tab-link.active {
+        background-color: transparent;
+        box-shadow: none;
+    }
+
+    .accordion-header:hover {
+        background-color: var(--card-bg);
     }
 
     .accordion-arrow {
         display: inline-block;
+        transition: transform 0.3s ease;
+        font-size: 0.9rem;
+        color: var(--primary);
+        margin: 0;
+    }
+
+    .mobile-accordion-item.expanded .accordion-arrow {
+        transform: rotate(180deg);
     }
 
     .classes-tabs ul {
         gap: 0;
         flex-direction: column;
+        height: auto;
     }
 
     .classes-tabs li {
         margin-bottom: 0;
-        border-bottom: 1px solid var(--border-color);
-    }
-
-    .classes-tabs li:last-child {
-        border-bottom: none;
-    }
-
-    .mobile-accordion-item {
-        overflow: hidden;
+        display: flex;
+        flex-direction: column;
     }
 
     .mobile-accordion-item:first-child {
+        border-radius: var(--radius) var(--radius) 0 0;
+    }
+
+    .mobile-accordion-item:first-child .accordion-header {
         border-radius: var(--radius) var(--radius) 0 0;
     }
 
@@ -805,50 +887,9 @@ input:checked + .slider:before {
         border-radius: 0 0 var(--radius) var(--radius);
     }
 
-    .classes-tabs a {
-        padding: 1rem 1.25rem;
-        font-size: 0.95rem;
-        border-radius: 0;
-        border: none;
-        background-color: var(--card-bg);
-        justify-content: flex-start;
-        position: relative;
-    }
-
-    .classes-tabs a.active {
-        background-color: rgba(179, 0, 0, 0.2);
-        box-shadow: none;
-    }
-
     .tab-title {
         flex: 1;
         text-align: left;
-    }
-
-    .accordion-arrow {
-        margin-left: auto;
-        transition: transform 0.3s ease;
-        font-size: 0.9rem;
-        color: var(--primary);
-    }
-
-    .mobile-accordion-item.expanded .accordion-arrow {
-        transform: rotate(180deg);
-    }
-
-    /* Mobile tab panel - starts hidden */
-    .mobile-tab-panel {
-        max-height: 0;
-        overflow: hidden;
-        transition: max-height 0.4s ease-out, padding 0.4s ease-out;
-        background-color: var(--darker);
-        padding: 0 1.25rem;
-    }
-
-    .mobile-accordion-item.expanded .mobile-tab-panel {
-        max-height: 2000px; /* Large enough to fit content */
-        padding: 1.25rem;
-        transition: max-height 0.5s ease-in, padding 0.4s ease-in;
     }
 
     .tab-icon {
@@ -894,9 +935,14 @@ input:checked + .slider:before {
     }
 
     /* Improved mobile classes section for small screens */
-    .classes-tabs a {
-        padding: 0.9rem 1rem;
+    .accordion-header .tab-link {
+        padding: 0.9rem 0 0.9rem 1rem;
         font-size: 0.9rem;
+    }
+
+    .accordion-toggle {
+        width: 40px;
+        height: 40px;
     }
 
     .tab-icon {
@@ -909,10 +955,6 @@ input:checked + .slider:before {
 
     .accordion-arrow {
         font-size: 0.85rem;
-    }
-
-    .mobile-tab-panel {
-        padding: 0 1rem;
     }
 
     .mobile-accordion-item.expanded .mobile-tab-panel {
@@ -1749,16 +1791,12 @@ section {
     flex-direction: column;
     height: 100%;
     justify-content: space-between;
+    gap: 0.75rem;
 }
 
 .classes-tabs li {
-    margin-bottom: 0.75rem;
     flex: 1;
     display: flex;
-}
-
-.classes-tabs li:last-child {
-    margin-bottom: 0;
 }
 
 .classes-tabs a {
@@ -1787,6 +1825,22 @@ section {
     box-shadow: 0 0 15px rgba(179, 0, 0, 0.2);
 }
 
+/* Desktop accordion header styling */
+.accordion-header {
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+
+.accordion-header .tab-link {
+    flex: 1;
+    border: 1px solid var(--border-color);
+}
+
+.accordion-toggle {
+    display: none;
+}
+
 .tab-icon {
     width: 50px;
     height: 50px;
@@ -1811,6 +1865,29 @@ section {
 
 .accordion-arrow {
     display: none;
+}
+
+.accordion-header {
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+
+.accordion-header .tab-link {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+}
+
+.accordion-toggle {
+    display: none;
+    background: none;
+    border: none;
+    padding: 0.5rem;
+    cursor: pointer;
+    color: var(--primary);
+    font-size: 1rem;
 }
 
 .view-all-button {
@@ -2617,5 +2694,121 @@ body.login-page-bg {
     .login-container {
         /* Put the login box back in the dead center */
         top: 44%; 
+    }
+}
+
+/* ====================================================
+   BULLETPROOF MOBILE ACCORDION V3 (ADD TO BOTTOM OF STYLE.CSS)
+   ==================================================== */
+@media (max-width: 992px) {
+    /* 1. KILL THE SQUISHED WIDTH & MASSIVE VERTICAL GAPS */
+    .classes-container {
+        display: block !important; 
+        min-height: auto !important; /* Stops the 600px vertical stretching */
+    }
+    
+    .classes-tabs {
+        flex: none !important;
+        width: 100% !important; /* Allows it to take full screen width */
+        max-width: 100% !important;
+        display: block !important;
+    }
+
+    .classes-tabs ul {
+        height: auto !important; /* Stops buttons from stretching vertically */
+        gap: 1rem !important; /* Creates a clean, normal space between buttons */
+        flex-direction: column !important;
+    }
+
+    /* 2. Hide Desktop Elements */
+    .classes-content {
+        display: none !important;
+    }
+    
+    .accordion-toggle {
+        display: none !important;
+    }
+
+    /* 3. Button Layout Reset */
+    .mobile-accordion-item {
+        border: none !important;
+        margin-bottom: 0 !important;
+        display: flex !important;
+        flex-direction: column !important;
+        width: 100% !important;
+    }
+
+    .accordion-header {
+        background: transparent !important;
+        padding: 0 !important;
+        width: 100% !important;
+        border: none !important;
+    }
+
+    /* 4. Restore the beautiful Button Design */
+    .accordion-header .tab-link {
+        display: flex !important;
+        align-items: center !important;
+        padding: 1rem 1.5rem !important;
+        background-color: var(--card-bg) !important;
+        border-radius: var(--radius) !important;
+        border: 1px solid var(--border-color) !important;
+        width: 100% !important;
+        font-size: 1.1rem !important;
+        font-weight: 500 !important;
+        color: var(--accent) !important;
+        transition: all 0.3s ease !important;
+        box-sizing: border-box !important;
+        cursor: pointer !important;
+    }
+
+    /* Active state for the button (Flatten bottom so it connects to panel) */
+    .mobile-accordion-item.expanded .tab-link {
+        background-color: rgba(179, 0, 0, 0.15) !important;
+        border-color: var(--primary) !important;
+        border-bottom-left-radius: 0 !important;
+        border-bottom-right-radius: 0 !important;
+    }
+
+    /* 5. Dropdown Panel Setup */
+    .mobile-tab-panel {
+        display: block !important;
+        max-height: 0 !important; 
+        overflow: hidden !important;
+        padding: 0 1.25rem !important;
+        margin: 0 !important;
+        background-color: var(--darker) !important; 
+        border: 1px solid transparent !important; 
+        border-top: none !important;
+        border-bottom-left-radius: var(--radius) !important;
+        border-bottom-right-radius: var(--radius) !important;
+        transition: max-height 0.4s ease, padding 0.4s ease, border-color 0.4s ease !important;
+        width: 100% !important; /* Force panel to match button width */
+        box-sizing: border-box !important;
+    }
+
+    /* 6. Open Panel State */
+    .mobile-accordion-item.expanded .mobile-tab-panel {
+        max-height: 2500px !important; 
+        padding: 1.5rem 1.25rem !important;
+        border-color: var(--primary) !important; 
+        margin-bottom: 0.5rem !important;
+    }
+
+    /* 7. Inner Content Visibility */
+    .mobile-accordion-item.expanded .mobile-tab-panel-inner {
+        opacity: 1 !important;
+        transform: translateY(0) !important;
+        visibility: visible !important;
+    }
+    
+    /* 8. Fix inner images so they don't break the container */
+    .mobile-tab-panel .class-image {
+        width: 100% !important;
+        height: auto !important;
+        max-height: 250px !important;
+        object-fit: cover !important;
+        border-radius: var(--radius) !important;
+        margin-bottom: 1rem !important;
     }
 }

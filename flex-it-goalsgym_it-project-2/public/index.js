@@ -69,16 +69,86 @@ indicators.forEach(indicator => {
     });
 });
 
-// Tab functionality for classes section
+// ==============================================
+// TAB FUNCTIONALITY FOR CLASSES SECTION (FIXED)
+// ==============================================
 const tabLinks = document.querySelectorAll('.tab-link');
 const tabContents = document.querySelectorAll('.tab-content');
 const mobileAccordionItems = document.querySelectorAll('.mobile-accordion-item');
 
-// Check if we're on mobile
 function isMobile() {
-    return window.innerWidth <= 768;
+    return window.innerWidth <= 992;
 }
 
+// Open the first tab by default on mobile load
+if (isMobile() && mobileAccordionItems.length > 0) {
+    mobileAccordionItems[0].classList.add('expanded');
+}
+
+function toggleAccordion(item) {
+    if (!isMobile()) return;
+
+    const isExpanded = item.classList.contains('expanded');
+
+    // Close all accordion items
+    mobileAccordionItems.forEach(accItem => {
+        accItem.classList.remove('expanded');
+        const link = accItem.querySelector('.tab-link');
+        if (link) link.classList.remove('active');
+    });
+
+    // If this wasn't expanded, expand it
+    if (!isExpanded) {
+        item.classList.add('expanded');
+        const link = item.querySelector('.tab-link');
+        if (link) link.classList.add('active');
+    }
+}
+
+// Handle tab link clicks - mobile accordion AND desktop tabs
+tabLinks.forEach(link => {
+    link.addEventListener('click', (e) => {
+        e.preventDefault();
+        
+        // THE MAGIC BULLET: This kills any duplicate click listeners instantly
+        e.stopImmediatePropagation(); 
+
+        const tabId = link.getAttribute('data-tab');
+        const parentLi = link.closest('.mobile-accordion-item');
+
+        if (isMobile() && parentLi) {
+            // Mobile accordion behavior
+            toggleAccordion(parentLi);
+        } else {
+            // Desktop behavior - update both tabs and content
+            tabLinks.forEach(tab => tab.classList.remove('active'));
+            tabContents.forEach(content => content.classList.remove('active'));
+
+            link.classList.add('active');
+            const targetTab = document.getElementById(tabId);
+            if(targetTab) targetTab.classList.add('active');
+        }
+    });
+});
+
+// Handle resize to reset states
+window.addEventListener('resize', () => {
+    if (!isMobile()) {
+        // Reset mobile accordion states when going to desktop
+        mobileAccordionItems.forEach(item => item.classList.remove('expanded'));
+
+        // Make sure first tab is active on desktop
+        if (tabLinks.length > 0 && tabContents.length > 0) {
+            tabLinks.forEach(tab => tab.classList.remove('active'));
+            tabContents.forEach(content => content.classList.remove('active'));
+            tabLinks[0].classList.add('active');
+            tabContents[0].classList.add('active');
+        }
+    }
+});
+// ==============================================
+
+// Handle tab link clicks - mobile accordion AND desktop tabs
 tabLinks.forEach(link => {
     link.addEventListener('click', (e) => {
         e.preventDefault();
@@ -87,19 +157,7 @@ tabLinks.forEach(link => {
 
         if (isMobile() && parentLi) {
             // Mobile accordion behavior
-            const isExpanded = parentLi.classList.contains('expanded');
-
-            // Close all accordion items
-            mobileAccordionItems.forEach(item => {
-                item.classList.remove('expanded');
-                item.querySelector('.tab-link').classList.remove('active');
-            });
-
-            // If this wasn't expanded, expand it
-            if (!isExpanded) {
-                parentLi.classList.add('expanded');
-                link.classList.add('active');
-            }
+            toggleAccordion(parentLi);
         } else {
             // Desktop behavior - update both tabs and content
             tabLinks.forEach(tab => tab.classList.remove('active'));
